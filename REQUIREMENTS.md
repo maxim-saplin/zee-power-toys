@@ -1,0 +1,37 @@
+- zee_hud_2 is symlinked research repo with abundance of info
+ - zee_hud_2/phase0-diagnostics is the test app that implemented most of the integrations and got tested on the car
+ - Review all code, avoid carry over of unneccesary code
+- Only direct API calls, no reliance on Launcher proxy
+- Flutter UI for best in class UI framework, with hot reloads, fast iterations
+- Well organized native/Kotlin part relying on phase0 achievements, carefully design the system
+- Docs
+- Tests
+- Build with tresting flexbility, develop locally stubbing car APIs, easily switch to prod build with ADB driving for on-car tests
+- Debug bridge, make sure we can as efficinetly look into our app and drive it via CLI as Phase0
+  - Explicitly focus on driving UI for agentic loops
+    - Resue fultter debug skill
+- 2 main areas in app UI
+  - HUD
+    - Enabling and configuring YNavi minimap through YNavi mod integration
+      - Disable YNavi in HUD if no compatible YNavi mod is installed in the system
+      - Add basic and andavacned config modes (presets + manual controls of diomensions, llooks etc.)
+      - Add ability to choose present for dark/light theeme following system change (which typicxally follows external luminocity)
+    - Copntrol (toggling on/off, configuring) various utility info in HUD
+      - When charging - allow to show stats in HUD (and hid when not charging)
+      - Blinkers, battery level and temp
+        - For blinkers allow to chose shape (yellow dots as now, actual arrows as in normal car, tyello smiless) and size, adjust position
+   - UI preview for HUD, target accurate presentation in the mai UI of what might be expected in HID
+     - I guess start with gray BG to have experience close to projecting on transprent glass
+   - Simulate accurate scaling and bounds given safe area specifics for HUD
+  - Rest of the app 
+    - Allow to download from GitHub and install
+      - Modded Launcher with YNavi cnfigured as default navi
+      - YNavi mod with HUD support
+    - Feature to change SYSTEM and Instrument Cluster language
+  - Dashboard to display system values (e.g. battery temp)
+    - Cleanup and update the phase0 AP browser
+  - Localizaed, EN and RU, picks system lang, allows to choose in the UI
+    - Investigae/decopmpile ZSettings and discover how it contreols ADB
+    - 
+  - Auto launching, working in the background, persistance of configs
+- Efficiency concerned, no power hungry code, no unneccesary wake locks
