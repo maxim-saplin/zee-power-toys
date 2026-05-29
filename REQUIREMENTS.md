@@ -16,6 +16,12 @@
       - Disable YNavi in HUD if no compatible YNavi mod is installed in the system
       - Add basic and andavacned config modes (presets + manual controls of diomensions, llooks etc.)
       - Add ability to choose present for dark/light theeme following system change (which typicxally follows external luminocity)
+    - Speedcam
+      - Harvest open source for map location (OpenStreetMap)
+      - Do Smart off-line/online DB sync
+      - Toggles for relevant cams (e.g. only those in my lane, cams controling the opposite lane are of lesses interest)
+      - Some sort of radar with speed/direction, Visual/sound notificaiton of most dangerous cam
+      - Bonus, Alien mode, visualization style to Marine radar from the movies with very specific sounds
     - Copntrol (toggling on/off, configuring) various utility info in HUD
       - When charging - allow to show stats in HUD (and hid when not charging)
       - Blinkers, battery level and temp
