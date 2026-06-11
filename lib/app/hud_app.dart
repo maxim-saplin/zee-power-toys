@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../providers/config.dart';
+import '../hud/hud_root.dart';
 
 /// Shot key — exposed at library level so main.dart can pass it to extensions.
 final GlobalKey hudShotKey = GlobalKey();
 
-/// HUD surface app — ugly on purpose; no theming yet.
-/// Renders a solid yellow box when hudBoxOn is true, nothing when false.
+/// HUD surface app — black background, real HudRoot content.
+/// No Material theming: HUD is emissive-on-black; Scaffold is used only to
+/// pin a deterministic background colour so RepaintBoundary captures correctly.
 class HudApp extends StatelessWidget {
   const HudApp({super.key});
 
@@ -20,24 +20,18 @@ class HudApp extends StatelessWidget {
   }
 }
 
-class _HudScreen extends ConsumerWidget {
+class _HudScreen extends StatelessWidget {
   const _HudScreen();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hudBoxOn = ref.watch(hudBoxOnProvider);
-
-    return Scaffold(
+  Widget build(BuildContext context) {
+    // Scaffold only for the black background guarantee; HudRoot fills it.
+    // showSafeAreaBorder is false on the real HUD surface — the border is only
+    // useful in the DHU preview.
+    return const Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: hudBoxOn
-            ? Container(
-                width: 200,
-                height: 200,
-                color: const Color(0xFFFFEB3B), // yellow — clearly visible
-              )
-            : const SizedBox.shrink(),
-      ),
+      body: HudRoot(),
     );
   }
 }
+

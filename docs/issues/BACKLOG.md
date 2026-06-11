@@ -59,7 +59,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | — | Blinker customization — shape (dots / arrows / smiley), size, position | HUD · Blinker | backlog |
 | — | Battery & temp widget — Steam-Deck-style looks | HUD · utility info | backlog |
 | — | Charging stats — show while charging, hide otherwise | HUD · utility info | backlog |
-| — | HUD preview + Safe-Area simulation in the main UI (grey BG) | HUD · preview | backlog |
+| [0006](0006-hud-layout-safe-area-preview.md) | HUD preview + Safe-Area simulation in the main UI (grey BG) — HUD layout scaffold | HUD · preview | **done** |
 | — | Install modded Launcher + YNavi mod from GitHub | App-shell · install | backlog |
 | — | System + Cluster language change | App-shell · language | backlog |
 | — | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | backlog |

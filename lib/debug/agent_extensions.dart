@@ -46,8 +46,11 @@ void registerZeeExtensions({
   });
 
   // readViewModel returns the full derived view-model (ADR 0004).
+  // HUD layout state (safeArea + active slots) is included so the Feedback Loop
+  // can verify layout changes without a screenshot.
   developer.registerExtension('ext.zee.readViewModel', (method, params) async {
     final snap = carSignals?.snapshot;
+    final sa = store.value.safeArea;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -59,14 +62,52 @@ void registerZeeExtensions({
         'batteryPct': snap?.batteryPct,
         'batteryTempC': snap?.batteryTempC,
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
+        // HUD layout state — safeArea fractions + which slots are active.
+        'safeArea': sa.toJson(),
+        'activeSlots': <String>['blinker', 'battery', 'guidance', 'minimap'],
       }),
     );
   });
 
+  // setConfig — supports hudBoxOn and safeArea.
+  // safeArea param: JSON-encoded object string e.g. '{"left":0.1,"top":0.3,...}'
+  // or individual edge keys: safeLeft, safeTop, safeRight, safeBottom.
   developer.registerExtension('ext.zee.setConfig', (method, params) async {
-    final raw = params['hudBoxOn'];
-    final parsed = raw == 'true';
-    final next = store.value.copyWith(hudBoxOn: parsed);
+    var next = store.value;
+
+    final rawHudBoxOn = params['hudBoxOn'];
+    if (rawHudBoxOn != null) {
+      next = next.copyWith(hudBoxOn: rawHudBoxOn == 'true');
+    }
+
+    // Accept safeArea as a JSON object string.
+    final rawSafeArea = params['safeArea'];
+    if (rawSafeArea != null) {
+      try {
+        final decoded = jsonDecode(rawSafeArea) as Map<String, Object?>;
+        next = next.copyWith(safeArea: HudSafeArea.fromJson(decoded));
+      } catch (e) {
+        return _extError('setConfig: invalid safeArea JSON: $e');
+      }
+    }
+
+    // Also support individual safe-area edge keys for convenience.
+    final sa = next.safeArea;
+    final saLeft = double.tryParse(params['safeLeft'] ?? '');
+    final saTop = double.tryParse(params['safeTop'] ?? '');
+    final saRight = double.tryParse(params['safeRight'] ?? '');
+    final saBottom = double.tryParse(params['safeBottom'] ?? '');
+    if (saLeft != null || saTop != null || saRight != null || saBottom != null) {
+      next = next.copyWith(
+        safeArea: sa.copyWith(
+          left: saLeft,
+          top: saTop,
+          right: saRight,
+          bottom: saBottom,
+        ),
+      );
+    }
+
     await store.setConfig(next);
     if (onSetConfig != null) await onSetConfig(next);
     return developer.ServiceExtensionResponse.result(
@@ -227,6 +268,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
     jsonEncode(<String, Object?>{
       'surface': surface,
       'hudBoxOn': store.value.hudBoxOn,
+      'safeArea': store.value.safeArea.toJson(),
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>

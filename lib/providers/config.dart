@@ -14,10 +14,20 @@ final appConfigProvider = StreamProvider<AppConfig>((ref) {
 /// the stream has not yet emitted (first frame).
 final hudBoxOnProvider = Provider<bool>((ref) {
   final async = ref.watch(appConfigProvider);
-  // valueOrNull is available on AsyncData; use when() to be explicit.
+  // .when() avoids touching valueOrNull which does not exist in Riverpod 3.x.
   return async.when(
     data: (cfg) => cfg.hudBoxOn,
     loading: () => ref.watch(configStoreProvider).value.hudBoxOn,
     error: (e, _) => ref.watch(configStoreProvider).value.hudBoxOn,
+  );
+});
+
+/// Current Safe Area rectangle, updated whenever the config changes.
+final safeAreaProvider = Provider<HudSafeArea>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.safeArea,
+    loading: () => ref.watch(configStoreProvider).value.safeArea,
+    error: (e, _) => ref.watch(configStoreProvider).value.safeArea,
   );
 });
