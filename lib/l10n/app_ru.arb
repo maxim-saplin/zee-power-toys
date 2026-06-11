@@ -1,0 +1,105 @@
+{
+  "@@locale": "ru",
+
+  "appTitle": "Zee Power Toys",
+  "@appTitle": { "description": "Application title" },
+
+  "settingsTitle": "Настройки",
+  "@settingsTitle": { "description": "Settings hub screen title" },
+
+  "sectionHud": "HUD",
+  "@sectionHud": { "description": "HUD settings section label" },
+
+  "sectionHudSubtitle": "Поворотники, аккумулятор, компоновка",
+  "@sectionHudSubtitle": { "description": "HUD settings section subtitle" },
+
+  "sectionDiagnostics": "Диагностика",
+  "@sectionDiagnostics": { "description": "Diagnostics section label" },
+
+  "sectionDiagnosticsSubtitle": "Скоро будет доступно",
+  "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
+
+  "sectionLanguage": "Язык",
+  "@sectionLanguage": { "description": "Language settings section label" },
+
+  "sectionLanguageSubtitle": "Язык отображения приложения",
+  "@sectionLanguageSubtitle": { "description": "Language section subtitle" },
+
+  "sectionInstall": "Установка",
+  "@sectionInstall": { "description": "Install section label" },
+
+  "sectionInstallSubtitle": "Скоро будет доступно",
+  "@sectionInstallSubtitle": { "description": "Install section subtitle" },
+
+  "languageTitle": "Язык",
+  "@languageTitle": { "description": "Language picker screen title" },
+
+  "languageSystem": "По умолчанию",
+  "@languageSystem": { "description": "Option: follow the system locale" },
+
+  "languageEnglish": "English",
+  "@languageEnglish": { "description": "Option: English language" },
+
+  "languageRussian": "Русский",
+  "@languageRussian": { "description": "Option: Russian language" },
+
+  "comingSoon": "Скоро будет доступно",
+  "@comingSoon": { "description": "Placeholder text for unimplemented sections" },
+
+  "hudSettingsTitle": "Настройки HUD",
+  "@hudSettingsTitle": { "description": "HUD settings screen app-bar title" },
+
+  "blinkerSection": "Поворотники",
+  "@blinkerSection": { "description": "Blinker section heading" },
+
+  "blinkerShape": "Форма",
+  "@blinkerShape": { "description": "Blinker shape label" },
+
+  "blinkerShapeDots": "Точки",
+  "@blinkerShapeDots": { "description": "Blinker shape: dots" },
+
+  "blinkerShapeArrows": "Стрелки",
+  "@blinkerShapeArrows": { "description": "Blinker shape: arrows" },
+
+  "blinkerShapeSmiley": "Смайлик",
+  "@blinkerShapeSmiley": { "description": "Blinker shape: smiley" },
+
+  "blinkerSize": "Размер",
+  "@blinkerSize": { "description": "Blinker size slider label" },
+
+  "blinkerVerticalPosition": "Вертикальное положение",
+  "@blinkerVerticalPosition": { "description": "Blinker vertical position slider label" },
+
+  "blinkerSidePadding": "Боковой отступ (от края)",
+  "@blinkerSidePadding": { "description": "Blinker side-padding slider label" },
+
+  "batterySection": "Аккумулятор",
+  "@batterySection": { "description": "Battery section heading" },
+
+  "showBattery": "Показывать индикатор заряда",
+  "@showBattery": { "description": "Toggle: show battery indicator" },
+
+  "showTemp": "Показывать температуру",
+  "@showTemp": { "description": "Toggle: show battery temperature" },
+
+  "showChargingStats": "Показывать данные зарядки (при зарядке)",
+  "@showChargingStats": { "description": "Toggle: show charging stats panel" },
+
+  "safeAreaSection": "Безопасная область (доли)",
+  "@safeAreaSection": { "description": "Safe Area readout heading" },
+
+  "safeAreaInset": "Отступ безопасной области",
+  "@safeAreaInset": { "description": "Safe Area inset slider label" },
+
+  "debugHudBox": "Отладочная рамка HUD",
+  "@debugHudBox": { "description": "Debug toggle label for HUD bounding box" },
+
+  "positionTop": "Сверху",
+  "@positionTop": { "description": "Slider start label: top" },
+
+  "positionBottom": "Снизу",
+  "@positionBottom": { "description": "Slider end label: bottom" },
+
+  "positionEdge": "Край",
+  "@positionEdge": { "description": "Slider start label: edge" }
+}

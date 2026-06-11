@@ -1,0 +1,105 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Zee Power Toys",
+  "@appTitle": { "description": "Application title" },
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": { "description": "Settings hub screen title" },
+
+  "sectionHud": "HUD",
+  "@sectionHud": { "description": "HUD settings section label" },
+
+  "sectionHudSubtitle": "Blinker, battery, layout",
+  "@sectionHudSubtitle": { "description": "HUD settings section subtitle" },
+
+  "sectionDiagnostics": "Diagnostics",
+  "@sectionDiagnostics": { "description": "Diagnostics section label" },
+
+  "sectionDiagnosticsSubtitle": "Coming soon",
+  "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
+
+  "sectionLanguage": "Language",
+  "@sectionLanguage": { "description": "Language settings section label" },
+
+  "sectionLanguageSubtitle": "App display language",
+  "@sectionLanguageSubtitle": { "description": "Language section subtitle" },
+
+  "sectionInstall": "Install",
+  "@sectionInstall": { "description": "Install section label" },
+
+  "sectionInstallSubtitle": "Coming soon",
+  "@sectionInstallSubtitle": { "description": "Install section subtitle" },
+
+  "languageTitle": "Language",
+  "@languageTitle": { "description": "Language picker screen title" },
+
+  "languageSystem": "System default",
+  "@languageSystem": { "description": "Option: follow the system locale" },
+
+  "languageEnglish": "English",
+  "@languageEnglish": { "description": "Option: English language" },
+
+  "languageRussian": "Русский",
+  "@languageRussian": { "description": "Option: Russian language" },
+
+  "comingSoon": "Coming soon",
+  "@comingSoon": { "description": "Placeholder text for unimplemented sections" },
+
+  "hudSettingsTitle": "HUD Settings",
+  "@hudSettingsTitle": { "description": "HUD settings screen app-bar title" },
+
+  "blinkerSection": "Blinker",
+  "@blinkerSection": { "description": "Blinker section heading" },
+
+  "blinkerShape": "Shape",
+  "@blinkerShape": { "description": "Blinker shape label" },
+
+  "blinkerShapeDots": "Dots",
+  "@blinkerShapeDots": { "description": "Blinker shape: dots" },
+
+  "blinkerShapeArrows": "Arrows",
+  "@blinkerShapeArrows": { "description": "Blinker shape: arrows" },
+
+  "blinkerShapeSmiley": "Smiley",
+  "@blinkerShapeSmiley": { "description": "Blinker shape: smiley" },
+
+  "blinkerSize": "Size",
+  "@blinkerSize": { "description": "Blinker size slider label" },
+
+  "blinkerVerticalPosition": "Vertical position",
+  "@blinkerVerticalPosition": { "description": "Blinker vertical position slider label" },
+
+  "blinkerSidePadding": "Side padding (from edge)",
+  "@blinkerSidePadding": { "description": "Blinker side-padding slider label" },
+
+  "batterySection": "Battery",
+  "@batterySection": { "description": "Battery section heading" },
+
+  "showBattery": "Show battery indicator",
+  "@showBattery": { "description": "Toggle: show battery indicator" },
+
+  "showTemp": "Show temperature",
+  "@showTemp": { "description": "Toggle: show battery temperature" },
+
+  "showChargingStats": "Show charging stats (while charging)",
+  "@showChargingStats": { "description": "Toggle: show charging stats panel" },
+
+  "safeAreaSection": "Safe Area (fractions)",
+  "@safeAreaSection": { "description": "Safe Area readout heading" },
+
+  "safeAreaInset": "Safe Area inset",
+  "@safeAreaInset": { "description": "Safe Area inset slider label" },
+
+  "debugHudBox": "Debug HUD box",
+  "@debugHudBox": { "description": "Debug toggle label for HUD bounding box" },
+
+  "positionTop": "Top",
+  "@positionTop": { "description": "Slider start label: top" },
+
+  "positionBottom": "Bottom",
+  "@positionBottom": { "description": "Slider end label: bottom" },
+
+  "positionEdge": "Edge",
+  "@positionEdge": { "description": "Slider start label: edge" }
+}

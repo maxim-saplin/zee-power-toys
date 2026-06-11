@@ -64,6 +64,8 @@ void registerZeeExtensions({
       jsonEncode(<String, Object?>{
         'surface': surface,
         'hudBoxOn': store.value.hudBoxOn,
+        // locale: null = follow system; 'en'/'ru' = explicit override.
+        'locale': store.value.locale,
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
           'state': snap?.blinker.name ?? BlinkerState.off.name,
@@ -172,6 +174,14 @@ void registerZeeExtensions({
               : null,
           sizeScale: double.tryParse(rawBatterySize ?? ''),
         ),
+      );
+    }
+
+    // locale: en|ru|system  (system → null, clears the override)
+    final rawLocale = params['locale'];
+    if (rawLocale != null) {
+      next = next.copyWith(
+        locale: rawLocale == 'system' ? null : rawLocale,
       );
     }
 
@@ -385,6 +395,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'surface': surface,
       'hudBoxOn': store.value.hudBoxOn,
       'hudEnabled': store.value.hudEnabled,
+      'locale': store.value.locale,
       'safeArea': store.value.safeArea.toJson(),
       'blinker': store.value.blinker.toJson(),
       'battery': store.value.battery.toJson(),

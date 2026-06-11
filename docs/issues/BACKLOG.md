@@ -42,7 +42,6 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 |----|-------|---------|--------|
 | [0001](0001-walking-skeleton.md) | **Walking skeleton** — T1 end-to-end loop: gesture → ConfigStore write → event → both isolates re-derive → pixel change, driven + read via the Feedback Loop | ADR 0001/0003/0004/0006 | **done** |
 | — | Android two-engine host: `FlutterEngineGroup` + secondary `Presentation` + `FlutterView` on Display-2 | ADR 0001/0005 | _moved to [0004](0004-android-two-engine-host.md)_ → **done** |
-| — | Environment-selected adapters: single APK, AdaptAPI-or-simulator auto-select, ADB override + native CarSignals + broadcast feedback channel | ADR 0002/0004 | **ready-for-agent** |
 | — | Services/ports skeleton (CarSignals, ConfigStore, MinimapHost, HudHost, Installer, SystemConfig) + Riverpod injection | ADR 0003/0006 | _moved to [0003](0003-services-ports-skeleton.md)_ → **done** |
 | [0002](0002-feedback-loop-client.md) | Feedback Loop client: dual-channel (VM-service `ext.zee.*` + native ADB/broadcast dump), tier-agnostic | ADR 0004 | **done** |
 | — | Environment-selected adapters: single APK, AdaptAPI-or-simulator auto-select, ADB override + native CarSignals + broadcast feedback channel | ADR 0002/0004 | _moved to [0005](0005-environment-selected-carsignals.md)_ → **done** |
@@ -63,7 +62,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | — | Install modded Launcher + YNavi mod from GitHub | App-shell · install | backlog |
 | — | System + Cluster language change | App-shell · language | backlog |
 | — | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | backlog |
-| — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | backlog |
+| — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | _moved to [0011](0011-localization-nav-shell.md)_ → **done** (+ DHU nav shell) |
 | — | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | backlog |
 
 ### Out of scope (post-MVP, architecture-ready)

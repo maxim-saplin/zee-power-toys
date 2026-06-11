@@ -243,6 +243,7 @@ class AppConfig {
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
     this.battery = const BatteryConfig(),
+    this.locale,
   });
 
   final bool hudBoxOn;
@@ -263,18 +264,26 @@ class AppConfig {
   /// Battery widget appearance (show/hide elements, size).
   final BatteryConfig battery;
 
+  /// UI language override: null = follow system locale; 'en' or 'ru' = explicit
+  /// override.  Stored as a plain string so the JSON round-trip is trivial and
+  /// future locale codes need no schema change.
+  final String? locale;
+
   AppConfig copyWith({
     bool? hudBoxOn,
     bool? hudEnabled,
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
     BatteryConfig? battery,
+    // Use a sentinel to distinguish "set to null" from "leave unchanged".
+    Object? locale = _unset,
   }) => AppConfig(
     hudBoxOn: hudBoxOn ?? this.hudBoxOn,
     hudEnabled: hudEnabled ?? this.hudEnabled,
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
     battery: battery ?? this.battery,
+    locale: identical(locale, _unset) ? this.locale : locale as String?,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -283,6 +292,7 @@ class AppConfig {
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
     'battery': battery.toJson(),
+    if (locale != null) 'locale': locale,
   };
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
@@ -297,6 +307,7 @@ class AppConfig {
     battery: json['battery'] is Map<String, Object?>
         ? BatteryConfig.fromJson(json['battery']! as Map<String, Object?>)
         : const BatteryConfig(),
+    locale: json['locale'] as String?,
   );
 
   /// Convenience: round-trip through JSON string (used by SharedPrefsConfigStore).
@@ -310,11 +321,16 @@ class AppConfig {
       other.hudEnabled == hudEnabled &&
       other.safeArea == safeArea &&
       other.blinker == blinker &&
-      other.battery == battery;
+      other.battery == battery &&
+      other.locale == locale;
 
   @override
-  int get hashCode => Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery);
+  int get hashCode =>
+      Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery, locale);
 }
+
+// Sentinel used by copyWith to distinguish "pass null" from "omit".
+const Object _unset = Object();
 
 /// Port for config persistence. Each isolate owns its own instance.
 abstract class ConfigStore {

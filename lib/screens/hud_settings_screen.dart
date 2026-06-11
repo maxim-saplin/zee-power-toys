@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../providers/services.dart';
 import '../services/config_store.dart';
@@ -18,6 +19,7 @@ class HudSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final safeArea = ref.watch(safeAreaProvider);
     final hudBoxOn = ref.watch(hudBoxOnProvider);
     final blinkerCfg = ref.watch(blinkerConfigProvider);
@@ -31,7 +33,7 @@ class HudSettingsScreen extends ConsumerWidget {
     final currentInset = (safeArea.left + safeArea.top) / 2;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('HUD Settings')),
+      appBar: AppBar(title: Text(l10n.hudSettingsTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -43,9 +45,9 @@ class HudSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Safe Area inset slider.
-            const Text(
-              'Safe Area inset',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              l10n.safeAreaInset,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Row(
@@ -81,7 +83,7 @@ class HudSettingsScreen extends ConsumerWidget {
             // Debug: hudBox toggle (retained from Block 0001 skeleton).
             Row(
               children: <Widget>[
-                const Text('Debug HUD box'),
+                Text(l10n.debugHudBox),
                 const SizedBox(width: 12),
                 Switch(
                   key: const ValueKey('dhu-toggle'),
@@ -98,31 +100,31 @@ class HudSettingsScreen extends ConsumerWidget {
             // ----------------------------------------------------------------
             // Blinker section
             // ----------------------------------------------------------------
-            const Text(
-              'Blinker',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Text(
+              l10n.blinkerSection,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
 
             // Shape selector — three segments.
-            const Text('Shape'),
+            Text(l10n.blinkerShape),
             const SizedBox(height: 8),
             SegmentedButton<BlinkerShape>(
-              segments: const <ButtonSegment<BlinkerShape>>[
+              segments: <ButtonSegment<BlinkerShape>>[
                 ButtonSegment(
                   value: BlinkerShape.dots,
-                  label: Text('Dots'),
-                  icon: Icon(Icons.circle_outlined),
+                  label: Text(l10n.blinkerShapeDots),
+                  icon: const Icon(Icons.circle_outlined),
                 ),
                 ButtonSegment(
                   value: BlinkerShape.arrows,
-                  label: Text('Arrows'),
-                  icon: Icon(Icons.arrow_forward),
+                  label: Text(l10n.blinkerShapeArrows),
+                  icon: const Icon(Icons.arrow_forward),
                 ),
                 ButtonSegment(
                   value: BlinkerShape.smiley,
-                  label: Text('Smiley'),
-                  icon: Icon(Icons.sentiment_satisfied_alt),
+                  label: Text(l10n.blinkerShapeSmiley),
+                  icon: const Icon(Icons.sentiment_satisfied_alt),
                 ),
               ],
               selected: <BlinkerShape>{blinkerCfg.shape},
@@ -174,7 +176,7 @@ class HudSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Size slider.
-            const Text('Size'),
+            Text(l10n.blinkerSize),
             Row(
               children: <Widget>[
                 const Text('0.5×'),
@@ -202,10 +204,10 @@ class HudSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Vertical position slider.
-            const Text('Vertical position'),
+            Text(l10n.blinkerVerticalPosition),
             Row(
               children: <Widget>[
-                const Text('Top'),
+                Text(l10n.positionTop),
                 Expanded(
                   child: Slider(
                     key: const ValueKey('blinker-vert'),
@@ -223,15 +225,15 @@ class HudSettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ),
-                const Text('Bottom'),
+                Text(l10n.positionBottom),
               ],
             ),
 
             // Side padding slider.
-            const Text('Side padding (from edge)'),
+            Text(l10n.blinkerSidePadding),
             Row(
               children: <Widget>[
-                const Text('Edge'),
+                Text(l10n.positionEdge),
                 Expanded(
                   child: Slider(
                     key: const ValueKey('blinker-side-pad'),
@@ -258,16 +260,16 @@ class HudSettingsScreen extends ConsumerWidget {
             // ----------------------------------------------------------------
             // Battery section
             // ----------------------------------------------------------------
-            const Text(
-              'Battery',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Text(
+              l10n.batterySection,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
 
             // Show battery toggle.
             Row(
               children: <Widget>[
-                const Expanded(child: Text('Show battery indicator')),
+                Expanded(child: Text(l10n.showBattery)),
                 Switch(
                   key: const ValueKey('battery-show-battery'),
                   value: batteryCfg.showBattery,
@@ -283,7 +285,7 @@ class HudSettingsScreen extends ConsumerWidget {
             // Show temperature toggle.
             Row(
               children: <Widget>[
-                const Expanded(child: Text('Show temperature')),
+                Expanded(child: Text(l10n.showTemp)),
                 Switch(
                   key: const ValueKey('battery-show-temp'),
                   value: batteryCfg.showTemp,
@@ -299,9 +301,7 @@ class HudSettingsScreen extends ConsumerWidget {
             // Show charging stats toggle.
             Row(
               children: <Widget>[
-                const Expanded(
-                  child: Text('Show charging stats (while charging)'),
-                ),
+                Expanded(child: Text(l10n.showChargingStats)),
                 Switch(
                   key: const ValueKey('battery-show-charging'),
                   value: batteryCfg.showChargingStats,
@@ -317,7 +317,7 @@ class HudSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 8),
 
             // Battery size slider.
-            const Text('Size'),
+            Text(l10n.blinkerSize),
             Row(
               children: <Widget>[
                 const Text('0.5×'),
@@ -345,7 +345,7 @@ class HudSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Current Safe Area values — useful during T3 calibration.
-            _SafeAreaReadout(safeArea: safeArea),
+            _SafeAreaReadout(safeArea: safeArea, l10n: l10n),
           ],
         ),
       ),
@@ -354,9 +354,10 @@ class HudSettingsScreen extends ConsumerWidget {
 }
 
 class _SafeAreaReadout extends StatelessWidget {
-  const _SafeAreaReadout({required this.safeArea});
+  const _SafeAreaReadout({required this.safeArea, required this.l10n});
 
   final HudSafeArea safeArea;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -365,9 +366,9 @@ class _SafeAreaReadout extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const Text(
-            'Safe Area (fractions)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          Text(
+            l10n.safeAreaSection,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           Text('left:   ${safeArea.left.toStringAsFixed(4)}'),
           Text('top:    ${safeArea.top.toStringAsFixed(4)}'),
@@ -378,4 +379,3 @@ class _SafeAreaReadout extends StatelessWidget {
     );
   }
 }
-
