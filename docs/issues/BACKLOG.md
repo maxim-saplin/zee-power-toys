@@ -63,7 +63,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | [0015](0015-system-cluster-language.md) | System + Cluster language change | App-shell · language | **done** |
 | [0012](0012-diagnostics-dashboard.md) | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | **done** |
 | — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | _moved to [0011](0011-localization-nav-shell.md)_ → **done** (+ DHU nav shell) |
-| — | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | backlog |
+| [0016](0016-usb-adb-toggle.md) | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | **done** |
 
 ### Out of scope (post-MVP, architecture-ready)
 - **Speedcam** (+ Alien mode) — slots in as a future `SpeedcamService` + a location signal; no design effort now. ADR 0003's service-port model makes it additive (events out: nearest cam, danger level; commands in: lane toggles), with radar / alien visuals being more Flutter HUD content (ADR 0001).

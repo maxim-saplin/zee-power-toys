@@ -3,7 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/car_signals.dart';
+import '../providers/usb_mode.dart';
 import '../services/car_signals.dart';
+import '../services/usb_mode.dart';
 
 /// Live DHU diagnostics dashboard — shows current car-signal values grouped by
 /// domain.  Updates via [ref.watch] on the CarSignals providers; no polling
@@ -14,15 +16,36 @@ import '../services/car_signals.dart';
 /// It is intentionally focused: show the values that matter, no AP-browser
 /// bloat.  Raw snapshot dump is available via an optional ExpansionTile for
 /// debugging sessions.
-class DiagnosticsScreen extends ConsumerWidget {
+///
+/// Block 0016: adds a "USB / ADB" section with a 3-state SegmentedButton
+/// (Peripheral / Host / Auto).  When [UsbModePort.writable] is false the
+/// controls are disabled and a localized hint is shown.
+class DiagnosticsScreen extends ConsumerStatefulWidget {
   const DiagnosticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiagnosticsScreen> createState() => _DiagnosticsScreenState();
+}
+
+class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
+  // Last USB mode set result — shown below the segmented button on error.
+  String? _usbResult;
+
+  Future<void> _setUsbMode(UsbMode mode) async {
+    final port = ref.read(usbModeProvider);
+    final result = await port.setUsbMode(mode);
+    if (mounted) {
+      setState(() {
+        _usbResult = result.ok ? null : result.reason;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    // Read all live providers — each rebuilds only the widget that watches it;
-    // wrapping the whole screen in a single ConsumerWidget is fine at this scale.
+    // Read all live providers — each rebuilds only the widget that watches it.
     final speed = ref.watch(speedProvider);
     final blinker = ref.watch(blinkerProvider);
     final charging = ref.watch(chargingProvider);
@@ -30,6 +53,11 @@ class DiagnosticsScreen extends ConsumerWidget {
     final batteryPct = ref.watch(batteryPctProvider);
     final batteryTempC = ref.watch(batteryTempCProvider);
     final powerFlow = ref.watch(powerFlowProvider);
+
+    // Block 0016: watch USB mode port for writable + current mode.
+    // ref.watch ensures the section rebuilds when the port's writable state
+    // changes (e.g. after the first failed setUsbMode on T2).
+    final usbPort = ref.watch(usbModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.diagnosticsTitle)),
@@ -109,6 +137,18 @@ class DiagnosticsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
 
+          // ---- USB / ADB (Block 0016) ----------------------------------------
+          // 3-state segmented button: Peripheral / Host / Auto.
+          // Disabled + hint shown when not writable (requires platform signing).
+          _UsbAdbSection(
+            currentMode: usbPort.currentMode,
+            writable: usbPort.writable,
+            onModeChanged: _setUsbMode,
+            errorText: _usbResult,
+            l10n: l10n,
+          ),
+          const SizedBox(height: 8),
+
           // ---- Raw snapshot (debug) -----------------------------------------
           // Collapsible dump of CarSnapshot JSON fields — handy on-car without
           // a debugger; not shown by default.
@@ -148,6 +188,119 @@ class DiagnosticsScreen extends ConsumerWidget {
       PowerFlow.standstill => l10n.diagPowerFlowStandstill,
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// _UsbAdbSection — USB / ADB mode card (Block 0016).
+//
+// Shows:
+//   - Section heading "USB / ADB" via _SectionCard.
+//   - Current mode readout ("Current: Peripheral").
+//   - SegmentedButton<UsbMode> — 3 segments: Peripheral / Host / Auto.
+//   - When writable=false: disabled button + localized signing-required hint.
+//   - When a write fails: error text from UsbModeResult.reason.
+// ---------------------------------------------------------------------------
+
+class _UsbAdbSection extends StatelessWidget {
+  const _UsbAdbSection({
+    required this.currentMode,
+    required this.writable,
+    required this.onModeChanged,
+    required this.l10n,
+    this.errorText,
+  });
+
+  final UsbMode currentMode;
+  final bool writable;
+  final void Function(UsbMode) onModeChanged;
+  final AppLocalizations l10n;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentLabel = _modeLabel(currentMode, l10n);
+
+    return _SectionCard(
+      title: l10n.usbAdbTitle,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            '${l10n.usbCurrentMode}: $currentLabel',
+            style: theme.textTheme.bodySmall,
+          ),
+        ),
+        if (!writable)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              l10n.usbPlatformSigningRequired,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: SegmentedButton<UsbMode>(
+            key: const ValueKey('usb-mode-selector'),
+            segments: <ButtonSegment<UsbMode>>[
+              ButtonSegment<UsbMode>(
+                value: UsbMode.peripheral,
+                label: Text(
+                  l10n.usbModePeripheral,
+                  key: const ValueKey('usb-peripheral'),
+                ),
+              ),
+              ButtonSegment<UsbMode>(
+                value: UsbMode.host,
+                label: Text(
+                  l10n.usbModeHost,
+                  key: const ValueKey('usb-host'),
+                ),
+              ),
+              ButtonSegment<UsbMode>(
+                value: UsbMode.auto,
+                label: Text(
+                  l10n.usbModeAuto,
+                  key: const ValueKey('usb-auto'),
+                ),
+              ),
+            ],
+            selected: {currentMode},
+            // When not writable, pass null to disable the button group.
+            // SegmentedButton with null onSelectionChanged renders as disabled.
+            onSelectionChanged: writable
+                ? (Set<UsbMode> selection) {
+                    if (selection.isNotEmpty) {
+                      onModeChanged(selection.first);
+                    }
+                  }
+                : null,
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              errorText!,
+              style: TextStyle(
+                color: theme.colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  static String _modeLabel(UsbMode mode, AppLocalizations l10n) =>
+      switch (mode) {
+        UsbMode.peripheral => l10n.usbModePeripheral,
+        UsbMode.host => l10n.usbModeHost,
+        UsbMode.auto => l10n.usbModeAuto,
+      };
 }
 
 // ---------------------------------------------------------------------------

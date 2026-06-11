@@ -14,6 +14,7 @@ import '../services/fakes/fake_car_signals.dart';
 import '../services/installer.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
+import '../services/usb_mode.dart';
 
 /// Register ext.zee.* VM-service extensions for [surface] (either 'dhu' or 'hud').
 ///
@@ -31,6 +32,8 @@ import '../services/system_config.dart';
 /// the Feedback Loop can trigger and observe install progress.
 /// [systemConfig] is optional; when provided, ext.zee.setLanguage is registered
 /// and readViewModel includes {systemLocale, clusterSupported} (Block 0015).
+/// [usbMode] is optional; when provided, ext.zee.setUsbMode is registered
+/// and readViewModel includes {usbMode, usbWritable} (Block 0016).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
@@ -41,6 +44,7 @@ void registerZeeExtensions({
   Future<Map<String, Object?>> Function()? getBootState,
   Installer? installer,
   SystemConfig? systemConfig,
+  UsbModePort? usbMode,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -129,6 +133,11 @@ void registerZeeExtensions({
         // clusterSupported: false on emulator (no AdaptAPI), true on Zeekr car.
         'systemLocale': systemLocaleTag,
         'clusterSupported': clusterSupported,
+        // Block 0016: USB mode + writability.
+        // usbMode: "peripheral"|"host"|"auto" (null when UsbModePort absent).
+        // usbWritable: false on emulator (requires platform signing), true on car (T3).
+        'usbMode': usbMode?.currentMode.name,
+        'usbWritable': usbMode?.writable,
       }),
     );
   });
@@ -318,6 +327,43 @@ void registerZeeExtensions({
           return _extError('ext.zee.setLanguage: unknown scope "$scope"; '
               'expected app|system|cluster');
       }
+    });
+  }
+
+  // ext.zee.setUsbMode — set USB mode via UsbModePort (Block 0016).
+  //
+  // Params: value=peripheral|host|auto
+  //
+  // Returns {ok, reason?, usbMode, usbWritable}.
+  // On T2 emulator returns {ok:false, reason:"requires-platform-signing"}.
+  // T1 FakeUsbMode reflects the mode immediately (writable=true).
+  // Registered only when [usbMode] is provided (DHU surface).
+  if (usbMode != null) {
+    developer.registerExtension('ext.zee.setUsbMode', (method, params) async {
+      final rawValue = params['value'];
+      final UsbMode? mode = switch (rawValue) {
+        'peripheral' => UsbMode.peripheral,
+        'host' => UsbMode.host,
+        'auto' => UsbMode.auto,
+        _ => null,
+      };
+      if (mode == null) {
+        return _extError(
+          'ext.zee.setUsbMode: unknown value "$rawValue"; '
+          'expected peripheral|host|auto',
+        );
+      }
+      final result = await usbMode.setUsbMode(mode);
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'surface': surface,
+          'value': rawValue,
+          'ok': result.ok,
+          if (result.reason != null) 'reason': result.reason,
+          'usbMode': usbMode.currentMode.name,
+          'usbWritable': usbMode.writable,
+        }),
+      );
     });
   }
 

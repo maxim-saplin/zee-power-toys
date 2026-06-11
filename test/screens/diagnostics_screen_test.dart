@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/l10n/app_localizations.dart';
 import 'package:zee_power_toys/providers/services.dart';
+import 'package:zee_power_toys/providers/usb_mode.dart';
 import 'package:zee_power_toys/screens/diagnostics_screen.dart';
 import 'package:zee_power_toys/services/car_signals.dart';
 import 'package:zee_power_toys/services/config_store.dart';
@@ -13,6 +14,7 @@ import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
+import 'package:zee_power_toys/services/fakes/fake_usb_mode.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 // ---------------------------------------------------------------------------
@@ -28,6 +30,8 @@ Widget _wrap(Widget child, ConfigStore store, FakeCarSignals fake) =>
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
+        // Block 0016: inject FakeUsbMode so DiagnosticsScreen can watch usbModeProvider.
+        usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],
       child: MaterialApp(
         localizationsDelegates: const [

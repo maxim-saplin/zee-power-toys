@@ -631,6 +631,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Light'**
   String get minimapThemeLight;
+
+  /// USB/ADB settings section label
+  ///
+  /// In en, this message translates to:
+  /// **'USB / ADB'**
+  String get sectionUsbAdb;
+
+  /// USB/ADB section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'USB host/peripheral mode'**
+  String get sectionUsbAdbSubtitle;
+
+  /// USB/ADB screen app-bar title (also used as section heading)
+  ///
+  /// In en, this message translates to:
+  /// **'USB / ADB'**
+  String get usbAdbTitle;
+
+  /// USB mode: peripheral (ADB target, DHU is the USB device)
+  ///
+  /// In en, this message translates to:
+  /// **'Peripheral'**
+  String get usbModePeripheral;
+
+  /// USB mode: host (DHU is the USB host)
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get usbModeHost;
+
+  /// USB mode: auto (peripheral restored on every boot)
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get usbModeAuto;
+
+  /// Prefix label for current USB mode readout
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get usbCurrentMode;
+
+  /// Hint shown when USB mode write requires platform signing (T3 only)
+  ///
+  /// In en, this message translates to:
+  /// **'Requires platform signing — available on the car'**
+  String get usbPlatformSigningRequired;
 }
 
 class _AppLocalizationsDelegate

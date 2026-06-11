@@ -278,4 +278,29 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get minimapThemeLight => 'Светлая';
+
+  @override
+  String get sectionUsbAdb => 'USB / ADB';
+
+  @override
+  String get sectionUsbAdbSubtitle => 'Режим USB: хост/устройство';
+
+  @override
+  String get usbAdbTitle => 'USB / ADB';
+
+  @override
+  String get usbModePeripheral => 'Периферийное устройство';
+
+  @override
+  String get usbModeHost => 'Хост';
+
+  @override
+  String get usbModeAuto => 'Авто';
+
+  @override
+  String get usbCurrentMode => 'Текущий';
+
+  @override
+  String get usbPlatformSigningRequired =>
+      'Требуется системная подпись — доступно в автомобиле';
 }

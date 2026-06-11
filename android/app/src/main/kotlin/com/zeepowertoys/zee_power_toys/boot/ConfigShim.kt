@@ -34,22 +34,39 @@ internal object ConfigShim {
      * cannot be parsed — fail-open is safer than silently disabling the HUD.
      */
     fun readHudEnabled(context: Context): Boolean {
+        return readBooleanField(context, "hudEnabled", default = true)
+    }
+
+    /**
+     * Returns `autoUsbPeripheral` from the persisted AppConfig.
+     * Defaults to **false** when absent — do not force USB mode unless explicitly set.
+     * Block 0016: read by BootReceiver to re-apply peripheral on BOOT_COMPLETED.
+     */
+    fun readAutoUsbPeripheral(context: Context): Boolean {
+        return readBooleanField(context, "autoUsbPeripheral", default = false)
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared JSON field reader.
+    // -------------------------------------------------------------------------
+
+    private fun readBooleanField(context: Context, field: String, default: Boolean): Boolean {
         return try {
             val prefs = context.applicationContext
                 .getSharedPreferences(SP_FILE, Context.MODE_PRIVATE)
             val raw = prefs.getString(CONFIG_KEY, null)
             if (raw == null) {
-                Log.d(TAG, "ConfigShim: key '$CONFIG_KEY' absent — defaulting hudEnabled=true")
-                return true
+                Log.d(TAG, "ConfigShim: key '$CONFIG_KEY' absent — defaulting $field=$default")
+                return default
             }
             val json = JSONObject(raw)
             // optBoolean: returns the default when the key is missing or not a boolean.
-            val result = json.optBoolean("hudEnabled", true)
-            Log.i(TAG, "ConfigShim: read hudEnabled=$result from '$CONFIG_KEY'")
+            val result = json.optBoolean(field, default)
+            Log.i(TAG, "ConfigShim: read $field=$result from '$CONFIG_KEY'")
             result
         } catch (e: Exception) {
-            Log.w(TAG, "ConfigShim: failed to read config, defaulting hudEnabled=true", e)
-            true
+            Log.w(TAG, "ConfigShim: failed to read config, defaulting $field=$default", e)
+            default
         }
     }
 }

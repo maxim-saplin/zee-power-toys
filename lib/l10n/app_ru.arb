@@ -266,5 +266,29 @@
   "@minimapThemeDark": { "description": "Minimap theme: force dark palette" },
 
   "minimapThemeLight": "Светлая",
-  "@minimapThemeLight": { "description": "Minimap theme: force light palette" }
+  "@minimapThemeLight": { "description": "Minimap theme: force light palette" },
+
+  "sectionUsbAdb": "USB / ADB",
+  "@sectionUsbAdb": { "description": "USB/ADB settings section label" },
+
+  "sectionUsbAdbSubtitle": "Режим USB: хост/устройство",
+  "@sectionUsbAdbSubtitle": { "description": "USB/ADB section subtitle" },
+
+  "usbAdbTitle": "USB / ADB",
+  "@usbAdbTitle": { "description": "USB/ADB screen app-bar title" },
+
+  "usbModePeripheral": "Периферийное устройство",
+  "@usbModePeripheral": { "description": "USB mode: peripheral" },
+
+  "usbModeHost": "Хост",
+  "@usbModeHost": { "description": "USB mode: host" },
+
+  "usbModeAuto": "Авто",
+  "@usbModeAuto": { "description": "USB mode: auto" },
+
+  "usbCurrentMode": "Текущий",
+  "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
+
+  "usbPlatformSigningRequired": "Требуется системная подпись — доступно в автомобиле",
+  "@usbPlatformSigningRequired": { "description": "Hint when USB mode write requires platform signing" }
 }

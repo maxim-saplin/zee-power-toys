@@ -10,21 +10,25 @@ import 'app/dhu_app.dart';
 import 'app/hud_app.dart';
 import 'debug/agent_extensions.dart';
 import 'providers/services.dart';
+import 'providers/usb_mode.dart';
 import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/adapters/native_system_config.dart';
+import 'services/adapters/native_usb_mode.dart';
 import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
+import 'services/fakes/fake_usb_mode.dart';
 import 'services/installer.dart';
 import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
 import 'services/system_config.dart';
+import 'services/usb_mode.dart';
 
 // ---------------------------------------------------------------------------
 // Entrypoint dispatcher.
@@ -95,6 +99,11 @@ Future<void> dhuMain(List<String> args) async {
     systemConfigRaw = FakeSystemConfig();
   }
 
+  // On Android, NativeUsbMode talks to UsbModeController via zee/usb_mode.
+  // On T1 desktop, FakeUsbMode provides writable in-memory state.
+  final UsbModePort usbModeRaw =
+      (!kIsWeb && Platform.isAndroid) ? NativeUsbMode() : FakeUsbMode();
+
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
@@ -111,6 +120,7 @@ Future<void> dhuMain(List<String> args) async {
     minimapHost: minimapHostRaw,
     installer: installerRaw,
     systemConfig: systemConfigRaw,
+    usbMode: usbModeRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
@@ -126,6 +136,7 @@ Future<void> dhuMain(List<String> args) async {
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(installerRaw),
         systemConfigProvider.overrideWithValue(systemConfigRaw),
+        usbModeProvider.overrideWithValue(usbModeRaw),
       ],
       child: const _DhuRoot(),
     ),
@@ -166,6 +177,7 @@ void hudMain(List<String> args) {
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
+        usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],
       child: const HudApp(),
     ),

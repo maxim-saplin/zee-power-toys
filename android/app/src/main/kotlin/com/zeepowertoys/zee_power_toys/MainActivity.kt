@@ -24,6 +24,7 @@ import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
+import com.zeepowertoys.zee_power_toys.usb.UsbModeController
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterTextureView
@@ -87,6 +88,9 @@ class MainActivity : FlutterActivity() {
 
     // SystemConfig native bridge — DHU engine only (Block 0015).
     private var systemConfigController: SystemConfigController? = null
+
+    // UsbMode native bridge — DHU engine only (Block 0016).
+    private var usbModeController: UsbModeController? = null
 
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
@@ -153,6 +157,10 @@ class MainActivity : FlutterActivity() {
         // Construct SystemConfigController on the DHU engine messenger (Block 0015).
         // Registers zee/system_config MethodChannel for systemLocale read + guarded writes.
         systemConfigController = SystemConfigController(this, flutterEngine.dartExecutor.binaryMessenger)
+
+        // Construct UsbModeController on the DHU engine messenger (Block 0016).
+        // Registers zee/usb_mode MethodChannel for getUsbMode + guarded setUsbMode.
+        usbModeController = UsbModeController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Defer HUD setup: give the primary view time to attach and render.
         handler.postDelayed({ setupHud() }, HUD_SPAWN_DELAY_MS)
@@ -381,6 +389,8 @@ class MainActivity : FlutterActivity() {
         installerController = null
         systemConfigController?.tearDown()
         systemConfigController = null
+        usbModeController?.tearDown()
+        usbModeController = null
         try { hudPresentation?.dismiss() } catch (_: Throwable) {}
         hudEngine?.destroy()
         super.onDestroy()

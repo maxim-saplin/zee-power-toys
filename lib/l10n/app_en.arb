@@ -266,5 +266,29 @@
   "@minimapThemeDark": { "description": "Minimap theme: force dark palette" },
 
   "minimapThemeLight": "Light",
-  "@minimapThemeLight": { "description": "Minimap theme: force light palette" }
+  "@minimapThemeLight": { "description": "Minimap theme: force light palette" },
+
+  "sectionUsbAdb": "USB / ADB",
+  "@sectionUsbAdb": { "description": "USB/ADB settings section label" },
+
+  "sectionUsbAdbSubtitle": "USB host/peripheral mode",
+  "@sectionUsbAdbSubtitle": { "description": "USB/ADB section subtitle" },
+
+  "usbAdbTitle": "USB / ADB",
+  "@usbAdbTitle": { "description": "USB/ADB screen app-bar title (also used as section heading)" },
+
+  "usbModePeripheral": "Peripheral",
+  "@usbModePeripheral": { "description": "USB mode: peripheral (ADB target, DHU is the USB device)" },
+
+  "usbModeHost": "Host",
+  "@usbModeHost": { "description": "USB mode: host (DHU is the USB host)" },
+
+  "usbModeAuto": "Auto",
+  "@usbModeAuto": { "description": "USB mode: auto (peripheral restored on every boot)" },
+
+  "usbCurrentMode": "Current",
+  "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
+
+  "usbPlatformSigningRequired": "Requires platform signing — available on the car",
+  "@usbPlatformSigningRequired": { "description": "Hint shown when USB mode write requires platform signing (T3 only)" }
 }

@@ -277,4 +277,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minimapThemeLight => 'Light';
+
+  @override
+  String get sectionUsbAdb => 'USB / ADB';
+
+  @override
+  String get sectionUsbAdbSubtitle => 'USB host/peripheral mode';
+
+  @override
+  String get usbAdbTitle => 'USB / ADB';
+
+  @override
+  String get usbModePeripheral => 'Peripheral';
+
+  @override
+  String get usbModeHost => 'Host';
+
+  @override
+  String get usbModeAuto => 'Auto';
+
+  @override
+  String get usbCurrentMode => 'Current';
+
+  @override
+  String get usbPlatformSigningRequired =>
+      'Requires platform signing — available on the car';
 }
