@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -17,25 +20,38 @@ import 'services/shared_prefs_config_store.dart';
 // ---------------------------------------------------------------------------
 // Entrypoint dispatcher.
 //
-// RECONCILIATION NOTE: Block 0001's spec mentions a separate
-// @pragma('vm:entry-point') hudMain() — that is the Android FlutterEngineGroup
-// model (a named Dart entrypoint invoked by Kotlin via DartEntrypoint).
-// On T1 desktop, desktop_multi_window 0.3.0 re-runs THIS main() with args
-// ['multi_window', windowId, userArgs]. The HUD path is therefore selected by
-// branching inside main(), NOT via a separate Flutter entrypoint. The separate
-// @pragma hudMain is added in a later Android Block (T2).
+// T1 desktop: desktop_multi_window 0.3.0 re-runs THIS main() with args
+//   ['multi_window', windowId, userArgs] for the HUD sub-window.
+//
+// T2 Android: FlutterEngineGroup in Kotlin launches the HUD engine via the
+//   named Dart entrypoint "hudEntry" (see @pragma below).  main() on Android
+//   always → dhuMain; the native host creates the HUD engine separately.
 // ---------------------------------------------------------------------------
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
   if (args.isNotEmpty && args.first == 'multi_window') {
+    // T1: desktop_multi_window sub-window re-run — start the HUD isolate.
     hudMain(args);
   } else {
     dhuMain(args);
   }
 }
 
+/// Android HUD entrypoint — invoked by FlutterEngineGroup via DartEntrypoint.
+///
+/// @pragma('vm:entry-point') prevents tree-shaking in release/profile builds.
+/// ADR 0001: the HUD engine runs hudMain on both T1 and T2; only the caller
+/// differs (desktop_multi_window on T1, native FlutterEngineGroup on T2).
+/// WidgetsFlutterBinding must be initialised here before hudMain accesses
+/// platform channels (SharedPrefs does so via its BinaryMessenger on load).
+@pragma('vm:entry-point')
+void hudEntry() {
+  WidgetsFlutterBinding.ensureInitialized();
+  hudMain(const []);
+}
+
 // ---------------------------------------------------------------------------
-// DHU — primary surface; owns creating the HUD window.
+// DHU — primary surface; owns creating the HUD window on T1 desktop.
 // ---------------------------------------------------------------------------
 Future<void> dhuMain(List<String> args) async {
   final store = SharedPrefsConfigStore();
@@ -74,7 +90,8 @@ Future<void> dhuMain(List<String> args) async {
 }
 
 // ---------------------------------------------------------------------------
-// HUD — secondary surface; spawned by desktop_multi_window inside DHU's process.
+// HUD — secondary surface; spawned by desktop_multi_window (T1) or by the
+// native FlutterEngineGroup host (T2 Android).
 // ---------------------------------------------------------------------------
 void hudMain(List<String> args) {
   // HUD owns its own CarSignals instance; state arrives only via the relay.
@@ -113,7 +130,9 @@ void hudMain(List<String> args) {
 }
 
 // ---------------------------------------------------------------------------
-// DHU root widget — creates the HUD window after first frame.
+// DHU root widget — creates the HUD window after first frame (T1 desktop only).
+// On Android (T2) the native host creates the HUD engine; we must NOT call
+// WindowController.create() there as desktop_multi_window is desktop-only.
 // ---------------------------------------------------------------------------
 class _DhuRoot extends StatefulWidget {
   const _DhuRoot();
@@ -127,7 +146,10 @@ class _DhuRootState extends State<_DhuRoot> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _createHud());
+    // Only create the HUD window on desktop; the native host owns it on Android.
+    if (_isDesktop) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _createHud());
+    }
   }
 
   Future<void> _createHud() async {
@@ -149,3 +171,9 @@ class _DhuRootState extends State<_DhuRoot> {
     return const DhuApp();
   }
 }
+
+/// True when running on a desktop platform (Linux/macOS/Windows).
+/// kIsWeb guard ensures Platform.isX calls are not made in a web context.
+bool get _isDesktop =>
+    !kIsWeb &&
+    (Platform.isLinux || Platform.isMacOS || Platform.isWindows);

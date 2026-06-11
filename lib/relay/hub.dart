@@ -1,24 +1,102 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 
-/// The desktop "Hub": a native-mediated cross-engine channel.
-/// Routing is done inside the native ChannelRegistry — not via shared Dart heap.
-/// Unidirectional: DHU invokes, HUD handles.
+/// The cross-engine relay abstraction.
 ///
-/// Envelope format: `{"kind": "config" | "carSignal", "payload": <json-string>}`
-/// ADR 0003: only serialized events cross — never a shared Dart object.
-const String kHubChannel = 'zee/hub';
-const WindowMethodChannel _hub =
-    WindowMethodChannel(kHubChannel, mode: ChannelMode.unidirectional);
+/// ADR 0003: only serialized events cross the isolate boundary.
+/// Each tier supplies a concrete transport:
+///   - DesktopRelay: desktop_multi_window WindowMethodChannel (T1)
+///   - AndroidRelay: plain MethodChannel over the native bridge (T2)
+/// Selection is automatic at construction time.
 
 // ---------------------------------------------------------------------------
-// DHU → HUD push helpers
+// Relay abstraction
 // ---------------------------------------------------------------------------
+
+/// Abstract relay: one-directional DHU→HUD transport.
+/// [push] is called on the DHU side; [listen] is called on the HUD side.
+abstract class Relay {
+  /// Send a typed envelope to the HUD isolate.
+  Future<void> push(String kind, String payload);
+
+  /// Register a handler for incoming envelopes (HUD side only).
+  void listen(void Function(String kind, String payload) onMessage);
+}
+
+// ---------------------------------------------------------------------------
+// DesktopRelay — wraps desktop_multi_window WindowMethodChannel (T1)
+// ---------------------------------------------------------------------------
+
+class DesktopRelay implements Relay {
+  // ChannelMode.unidirectional routes DHU→HUD through the native ChannelRegistry.
+  static const WindowMethodChannel _ch =
+      WindowMethodChannel(kHubChannel, mode: ChannelMode.unidirectional);
+
+  @override
+  Future<void> push(String kind, String payload) async {
+    await _ch.invokeMethod('relay', jsonEncode(<String, Object?>{
+      'kind': kind,
+      'payload': payload,
+    }));
+  }
+
+  @override
+  void listen(void Function(String kind, String payload) onMessage) {
+    _ch.setMethodCallHandler((call) async {
+      if (call.method == 'relay') {
+        _dispatch(call.arguments as String, onMessage);
+      }
+      return null;
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AndroidRelay — wraps a plain MethodChannel over the Kotlin native bridge (T2)
+// ---------------------------------------------------------------------------
+
+class AndroidRelay implements Relay {
+  static const MethodChannel _ch = MethodChannel(kHubChannel);
+
+  @override
+  Future<void> push(String kind, String payload) async {
+    await _ch.invokeMethod<void>(
+      'relay',
+      jsonEncode(<String, Object?>{'kind': kind, 'payload': payload}),
+    );
+  }
+
+  @override
+  void listen(void Function(String kind, String payload) onMessage) {
+    _ch.setMethodCallHandler((call) async {
+      if (call.method == 'relay') {
+        _dispatch(call.arguments as String, onMessage);
+      }
+      return null;
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Singleton relay — chosen once at startup based on the current platform.
+// DesktopRelay is selected for all non-Android platforms; AndroidRelay for
+// Android. Using !kIsWeb guard keeps this tree-shaking-safe.
+// ---------------------------------------------------------------------------
+
+final Relay _relay = (!kIsWeb && Platform.isAndroid) ? AndroidRelay() : DesktopRelay();
+
+// ---------------------------------------------------------------------------
+// Public API (stable across tiers)
+// ---------------------------------------------------------------------------
+
+const String kHubChannel = 'zee/hub';
 
 /// Push a changed [AppConfig] to the HUD isolate.
 Future<void> pushConfigToHud(AppConfig c) async {
@@ -32,19 +110,12 @@ Future<void> pushCarSignalToHud(CarSignalEvent event) async {
 
 Future<void> _push(String kind, String payload) async {
   try {
-    await _hub.invokeMethod('relay', jsonEncode(<String, Object?>{
-      'kind': kind,
-      'payload': payload,
-    }));
+    await _relay.push(kind, payload);
   } catch (e) {
-    // HUD window may not be ready yet; log but don't crash.
+    // HUD surface may not be ready yet; log but don't crash.
     debugPrint('zee/hub push($kind) failed: $e');
   }
 }
-
-// ---------------------------------------------------------------------------
-// HUD side: dispatch incoming relay envelopes
-// ---------------------------------------------------------------------------
 
 /// Register a handler for all relay envelopes arriving on the HUD isolate.
 /// [onConfig] and [onCarSignal] are called for their respective kinds.
@@ -52,39 +123,30 @@ void listenForRelay({
   void Function(AppConfig)? onConfig,
   void Function(CarSignalEvent)? onCarSignal,
 }) {
-  _hub.setMethodCallHandler((call) async {
-    if (call.method == 'relay') {
-      try {
-        final envelope =
-            jsonDecode(call.arguments as String) as Map<String, Object?>;
-        final kind = envelope['kind'] as String?;
-        final payload = envelope['payload'] as String?;
-        if (kind == null || payload == null) return null;
-
-        switch (kind) {
-          case 'config':
-            if (onConfig != null) {
-              onConfig(AppConfig.fromJson(
-                jsonDecode(payload) as Map<String, Object?>,
-              ));
-            }
-          case 'carSignal':
-            if (onCarSignal != null) {
-              final event = _carSignalFromJson(
-                jsonDecode(payload) as Map<String, Object?>,
-              );
-              if (event != null) onCarSignal(event);
-            }
-        }
-      } catch (_) {
-        // Ignore malformed relay messages.
+  _relay.listen((kind, payload) {
+    try {
+      switch (kind) {
+        case 'config':
+          if (onConfig != null) {
+            onConfig(AppConfig.fromJson(
+              jsonDecode(payload) as Map<String, Object?>,
+            ));
+          }
+        case 'carSignal':
+          if (onCarSignal != null) {
+            final event = _carSignalFromJson(
+              jsonDecode(payload) as Map<String, Object?>,
+            );
+            if (event != null) onCarSignal(event);
+          }
       }
+    } catch (_) {
+      // Ignore malformed relay messages.
     }
-    return null;
   });
 }
 
-/// Backward-compat alias — config-only relay (used by hudMain before this block).
+/// Backward-compat alias — config-only relay.
 void listenForConfig(void Function(AppConfig) onConfig) {
   listenForRelay(onConfig: onConfig);
 }
@@ -136,4 +198,22 @@ CarSignalEvent? _carSignalFromJson(Map<String, Object?> j) {
       ),
     _ => null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Internal helper: decode and dispatch a relay envelope string.
+// ---------------------------------------------------------------------------
+
+void _dispatch(
+  String raw,
+  void Function(String kind, String payload) onMessage,
+) {
+  try {
+    final envelope = jsonDecode(raw) as Map<String, Object?>;
+    final kind = envelope['kind'] as String?;
+    final payload = envelope['payload'] as String?;
+    if (kind != null && payload != null) onMessage(kind, payload);
+  } catch (_) {
+    // Ignore malformed envelopes.
+  }
 }
