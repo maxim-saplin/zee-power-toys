@@ -13,6 +13,7 @@ import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
 import '../services/installer.dart';
 import '../services/minimap_host.dart';
+import '../services/system_config.dart';
 
 /// Register ext.zee.* VM-service extensions for [surface] (either 'dhu' or 'hud').
 ///
@@ -28,6 +29,8 @@ import '../services/minimap_host.dart';
 /// (DHU surface passes a callback that queries the native FGS state).
 /// [installer] is optional; when provided, ext.zee.install is registered so
 /// the Feedback Loop can trigger and observe install progress.
+/// [systemConfig] is optional; when provided, ext.zee.setLanguage is registered
+/// and readViewModel includes {systemLocale, clusterSupported} (Block 0015).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
@@ -37,6 +40,7 @@ void registerZeeExtensions({
   MinimapHost? minimapHost,
   Future<Map<String, Object?>> Function()? getBootState,
   Installer? installer,
+  SystemConfig? systemConfig,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -73,6 +77,12 @@ void registerZeeExtensions({
     final bool? ynaviAvailable = minimapHost != null
         ? await minimapHost.isYnaviAvailable()
         : null;
+    // systemLocale / clusterSupported — read from SystemConfig when provided.
+    // On T1 FakeSystemConfig returns a fixed locale and false/true for clusterSupported.
+    // On T2 NativeSystemConfig reads the real Android locale and probes AdaptAPI.
+    final String? systemLocaleTag = systemConfig?.systemLocale.toLanguageTag();
+    final bool? clusterSupported =
+        systemConfig != null ? await systemConfig.clusterSupported() : null;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -114,6 +124,11 @@ void registerZeeExtensions({
         'install': Map<String, Object?>.from(
           _installStateHolder[surface] ?? <String, Object?>{},
         ),
+        // Block 0015: system locale + cluster availability.
+        // systemLocale: BCP-47 tag e.g. "en-US" or "ru-RU" (null when SystemConfig absent).
+        // clusterSupported: false on emulator (no AdaptAPI), true on Zeekr car.
+        'systemLocale': systemLocaleTag,
+        'clusterSupported': clusterSupported,
       }),
     );
   });
@@ -240,6 +255,71 @@ void registerZeeExtensions({
       _dumpStateJson(surface, store),
     );
   });
+
+  // ext.zee.setLanguage — attempt a system or cluster language change.
+  //
+  // Block 0015: Feedback Loop path for language writes.
+  //   scope=app     value=en|ru|system  → sets AppConfig.locale (same as setConfig locale=…)
+  //   scope=system  value=en|ru         → calls SystemConfig.setSystemLanguage (T3-only)
+  //   scope=cluster value=en|ru         → calls SystemConfig.setClusterLanguage (T3-only)
+  //
+  // Returns a JSON map with {ok, reason?, surface, scope, value}.
+  // On T2 emulator scope=system|cluster returns {ok:false, reason:"unsupported-on-device"}.
+  // Registered only when [systemConfig] is provided (DHU surface).
+  if (systemConfig != null) {
+    developer.registerExtension('ext.zee.setLanguage', (method, params) async {
+      final scope = params['scope'] ?? 'app';
+      final value = params['value'] ?? 'en';
+
+      switch (scope) {
+        case 'app':
+          final code = value == 'system' ? null : value;
+          var next = store.value;
+          next = next.copyWith(locale: code);
+          await store.setConfig(next);
+          if (onSetConfig != null) await onSetConfig(next);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'surface': surface,
+              'scope': scope,
+              'value': value,
+              'ok': true,
+            }),
+          );
+
+        case 'system':
+          final result = await systemConfig.setSystemLanguage(ui.Locale(value));
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'surface': surface,
+              'scope': scope,
+              'value': value,
+              'ok': result.ok,
+              if (result.reason != null) 'reason': result.reason,
+              // Always include the current system locale tag so the caller
+              // can verify what the mechanism read.
+              'systemLocale': systemConfig.systemLocale.toLanguageTag(),
+            }),
+          );
+
+        case 'cluster':
+          final result = await systemConfig.setClusterLanguage(ui.Locale(value));
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'surface': surface,
+              'scope': scope,
+              'value': value,
+              'ok': result.ok,
+              if (result.reason != null) 'reason': result.reason,
+            }),
+          );
+
+        default:
+          return _extError('ext.zee.setLanguage: unknown scope "$scope"; '
+              'expected app|system|cluster');
+      }
+    });
+  }
 
   // inject — push a fake CarSignalEvent into THIS isolate's FakeCarSignals.
   developer.registerExtension('ext.zee.inject', (method, params) async {

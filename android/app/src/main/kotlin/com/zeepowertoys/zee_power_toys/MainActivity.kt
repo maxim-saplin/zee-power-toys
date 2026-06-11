@@ -85,6 +85,9 @@ class MainActivity : FlutterActivity() {
     // Installer native bridge — DHU engine only (Block 0014).
     private var installerController: InstallerController? = null
 
+    // SystemConfig native bridge — DHU engine only (Block 0015).
+    private var systemConfigController: SystemConfigController? = null
+
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
 
@@ -146,6 +149,10 @@ class MainActivity : FlutterActivity() {
         // Construct InstallerController on the DHU engine messenger (Block 0014).
         // Registers zee/installer MethodChannel and zee/installer/events EventChannel.
         installerController = InstallerController(this, flutterEngine.dartExecutor.binaryMessenger)
+
+        // Construct SystemConfigController on the DHU engine messenger (Block 0015).
+        // Registers zee/system_config MethodChannel for systemLocale read + guarded writes.
+        systemConfigController = SystemConfigController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Defer HUD setup: give the primary view time to attach and render.
         handler.postDelayed({ setupHud() }, HUD_SPAWN_DELAY_MS)
@@ -372,6 +379,8 @@ class MainActivity : FlutterActivity() {
         carSignalsController = null
         installerController?.tearDown()
         installerController = null
+        systemConfigController?.tearDown()
+        systemConfigController = null
         try { hudPresentation?.dismiss() } catch (_: Throwable) {}
         hudEngine?.destroy()
         super.onDestroy()

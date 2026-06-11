@@ -81,18 +81,25 @@ void main() {
   });
 
   group('Language picker', () {
-    testWidgets('shows all three options', (tester) async {
+    testWidgets('shows App language options (System default, EN, RU)', (tester) async {
       final store = await _makeStore();
       await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
       await tester.pump();
 
-      // Navigate to Language.
+      // Navigate to Language — now routes to LanguageSettingsScreen (Block 0015).
       await tester.tap(find.text('Language'));
       await tester.pumpAndSettle();
 
+      // The new screen has 3 sections; App picker keys are still lang-system/en/ru.
+      // 'System default' appears once (only the App section has it).
       expect(find.text('System default'), findsOneWidget);
-      expect(find.text('English'), findsOneWidget);
-      expect(find.text('Русский'), findsOneWidget);
+      // 'English' and 'Русский' appear multiple times (App + System + Cluster sections).
+      expect(find.text('English'), findsWidgets);
+      expect(find.text('Русский'), findsWidgets);
+      // App-language picker keys are present.
+      expect(find.byKey(const ValueKey('lang-system')), findsOneWidget);
+      expect(find.byKey(const ValueKey('lang-en')), findsOneWidget);
+      expect(find.byKey(const ValueKey('lang-ru')), findsOneWidget);
     });
 
     testWidgets('tapping English sets locale=en in ConfigStore', (tester) async {

@@ -380,6 +380,36 @@ abstract class AppLocalizations {
   /// **'Русский'**
   String get languageRussian;
 
+  /// Language screen: App language section heading
+  ///
+  /// In en, this message translates to:
+  /// **'App language'**
+  String get langSectionApp;
+
+  /// Language screen: System language section heading
+  ///
+  /// In en, this message translates to:
+  /// **'System language'**
+  String get langSectionSystem;
+
+  /// Language screen: Instrument-cluster language section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster language'**
+  String get langSectionCluster;
+
+  /// Hint shown when system/cluster write is T3-only (unsupported on emulator)
+  ///
+  /// In en, this message translates to:
+  /// **'Available on the car only'**
+  String get langCarOnly;
+
+  /// Prefix label for the current system locale readout
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get langCurrentValue;
+
   /// Placeholder text for unimplemented sections
   ///
   /// In en, this message translates to:

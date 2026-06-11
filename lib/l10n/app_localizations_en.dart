@@ -152,6 +152,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageRussian => 'Русский';
 
   @override
+  String get langSectionApp => 'App language';
+
+  @override
+  String get langSectionSystem => 'System language';
+
+  @override
+  String get langSectionCluster => 'Cluster language';
+
+  @override
+  String get langCarOnly => 'Available on the car only';
+
+  @override
+  String get langCurrentValue => 'Current';
+
+  @override
   String get comingSoon => 'Coming soon';
 
   @override

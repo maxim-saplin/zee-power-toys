@@ -152,6 +152,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get languageRussian => 'Русский';
 
   @override
+  String get langSectionApp => 'Язык приложения';
+
+  @override
+  String get langSectionSystem => 'Язык системы';
+
+  @override
+  String get langSectionCluster => 'Язык приборной панели';
+
+  @override
+  String get langCarOnly => 'Доступно только в автомобиле';
+
+  @override
+  String get langCurrentValue => 'Текущий';
+
+  @override
   String get comingSoon => 'Скоро будет доступно';
 
   @override

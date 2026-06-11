@@ -142,6 +142,21 @@
   "languageRussian": "Русский",
   "@languageRussian": { "description": "Option: Russian language" },
 
+  "langSectionApp": "Язык приложения",
+  "@langSectionApp": { "description": "Language screen: App language section heading" },
+
+  "langSectionSystem": "Язык системы",
+  "@langSectionSystem": { "description": "Language screen: System language section heading" },
+
+  "langSectionCluster": "Язык приборной панели",
+  "@langSectionCluster": { "description": "Language screen: Instrument-cluster language section heading" },
+
+  "langCarOnly": "Доступно только в автомобиле",
+  "@langCarOnly": { "description": "Hint shown when system/cluster write is T3-only (unsupported on emulator)" },
+
+  "langCurrentValue": "Текущий",
+  "@langCurrentValue": { "description": "Prefix label for the current system locale readout" },
+
   "comingSoon": "Скоро будет доступно",
   "@comingSoon": { "description": "Placeholder text for unimplemented sections" },
 

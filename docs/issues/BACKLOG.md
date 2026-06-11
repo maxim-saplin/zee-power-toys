@@ -60,7 +60,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | — | Charging stats — show while charging, hide otherwise | HUD · utility info | _delivered in [0008](0008-battery-charging.md)_ → **done** |
 | [0006](0006-hud-layout-safe-area-preview.md) | HUD preview + Safe-Area simulation in the main UI (grey BG) — HUD layout scaffold | HUD · preview | **done** |
 | [0014](0014-install-from-github.md) | Install modded Launcher + YNavi mod from GitHub | App-shell · install | **done** |
-| — | System + Cluster language change | App-shell · language | backlog |
+| [0015](0015-system-cluster-language.md) | System + Cluster language change | App-shell · language | **done** |
 | [0012](0012-diagnostics-dashboard.md) | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | **done** |
 | — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | _moved to [0011](0011-localization-nav-shell.md)_ → **done** (+ DHU nav shell) |
 | — | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | backlog |

@@ -14,6 +14,7 @@ import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_minimap_host.dart';
+import 'services/adapters/native_system_config.dart';
 import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
@@ -23,6 +24,7 @@ import 'services/fakes/fake_system_config.dart';
 import 'services/installer.dart';
 import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
+import 'services/system_config.dart';
 
 // ---------------------------------------------------------------------------
 // Entrypoint dispatcher.
@@ -81,6 +83,18 @@ Future<void> dhuMain(List<String> args) async {
   final Installer installerRaw =
       (!kIsWeb && Platform.isAndroid) ? NativeInstaller() : FakeInstaller();
 
+  // On Android, use NativeSystemConfig which reads the real system locale
+  // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
+  // On T1 desktop, FakeSystemConfig provides in-memory state.
+  final SystemConfig systemConfigRaw;
+  if (!kIsWeb && Platform.isAndroid) {
+    final native = NativeSystemConfig();
+    await native.loadSystemLocale();
+    systemConfigRaw = native;
+  } else {
+    systemConfigRaw = FakeSystemConfig();
+  }
+
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
@@ -96,6 +110,7 @@ Future<void> dhuMain(List<String> args) async {
     carSignals: carSignalsRaw,
     minimapHost: minimapHostRaw,
     installer: installerRaw,
+    systemConfig: systemConfigRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
@@ -110,7 +125,7 @@ Future<void> dhuMain(List<String> args) async {
         minimapHostProvider.overrideWithValue(minimapHostRaw),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(installerRaw),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
+        systemConfigProvider.overrideWithValue(systemConfigRaw),
       ],
       child: const _DhuRoot(),
     ),
