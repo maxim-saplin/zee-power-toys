@@ -1,5 +1,96 @@
 import 'dart:convert';
 
+/// Shape of the blinker indicator rendered in the HUD BLINKER slot.
+///
+/// `dots`   — phase0 amber dot cluster (default; faithful to BlinkerOverlayView).
+/// `arrows` — chevron turn-arrows ported from phase0 ic_blinker_left/right SVG.
+/// `smiley` — a yellow smiley face (new, per REQUIREMENTS "yellow smileys").
+enum BlinkerShape { dots, arrows, smiley }
+
+/// Blinker appearance config.  All fields are fractions of the Safe Area unless
+/// otherwise noted so they stay correct at any HUD resolution.
+///
+/// Phase-0 grounding (BlinkerOverlayView):
+///   dot size = 12dp, left X offset -282dp, right X offset +292dp,
+///   Y offset -60.5dp from Safe Area centre.  The dot pair sits in the upper
+///   portion of the display, well clear of the Guidance slot.
+///
+/// `sidePadFrac` is the inward padding from the left/right Safe Area edge, as a
+/// fraction of Safe Area width.  Derived from phase0: the HUD Safe Area was
+/// ~820dp wide; the dots sat ~282/820 ≈ 0.34 in from the nearest edge.
+/// We round to 0.02 so the dot lands near the outer edge and matches phase0.
+///
+/// `vertFrac` is the vertical centre of the blinker mark as a fraction of the
+/// blinker slot height (0 = top, 1 = bottom).  0.40 places it in the upper
+/// portion, matching -60.5dp Y offset from centre in phase0.
+class BlinkerConfig {
+  const BlinkerConfig({
+    this.shape = BlinkerShape.dots,
+    this.sizeScale = 1.0,
+    this.sidePadFrac = 0.02,
+    this.vertFrac = 0.40,
+  });
+
+  final BlinkerShape shape;
+
+  /// Multiplier applied to the base blinker size (1.0 = phase0 size).
+  final double sizeScale;
+
+  /// Inward padding from the left/right edge of the Safe Area, as fraction of
+  /// Safe Area width.  Kept small so the mark stays near the outer edge.
+  final double sidePadFrac;
+
+  /// Vertical position of the blinker mark centre as fraction of the BLINKER
+  /// slot height (0 = top, 1 = bottom).
+  final double vertFrac;
+
+  BlinkerConfig copyWith({
+    BlinkerShape? shape,
+    double? sizeScale,
+    double? sidePadFrac,
+    double? vertFrac,
+  }) => BlinkerConfig(
+    shape: shape ?? this.shape,
+    sizeScale: sizeScale ?? this.sizeScale,
+    sidePadFrac: sidePadFrac ?? this.sidePadFrac,
+    vertFrac: vertFrac ?? this.vertFrac,
+  );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'shape': shape.name,
+    'sizeScale': sizeScale,
+    'sidePadFrac': sidePadFrac,
+    'vertFrac': vertFrac,
+  };
+
+  factory BlinkerConfig.fromJson(Map<String, Object?> json) {
+    final shapeName = json['shape'] as String?;
+    final shape = shapeName != null
+        ? BlinkerShape.values.firstWhere(
+            (e) => e.name == shapeName,
+            orElse: () => BlinkerShape.dots,
+          )
+        : BlinkerShape.dots;
+    return BlinkerConfig(
+      shape: shape,
+      sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
+      sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.02,
+      vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.40,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is BlinkerConfig &&
+      other.shape == shape &&
+      other.sizeScale == sizeScale &&
+      other.sidePadFrac == sidePadFrac &&
+      other.vertFrac == vertFrac;
+
+  @override
+  int get hashCode => Object.hash(shape, sizeScale, sidePadFrac, vertFrac);
+}
+
 /// The sub-rectangle of the HUD's backing display that is optically visible
 /// through the projector optics.  All four values are logical fractions 0..1
 /// relative to the backing display's width (left/right) or height (top/bottom).
@@ -78,21 +169,34 @@ class HudSafeArea {
 /// Minimal app configuration.
 /// Plain JSON serialization so the native boot shim can read it.
 class AppConfig {
-  const AppConfig({this.hudBoxOn = false, this.safeArea = const HudSafeArea()});
+  const AppConfig({
+    this.hudBoxOn = false,
+    this.safeArea = const HudSafeArea(),
+    this.blinker = const BlinkerConfig(),
+  });
 
   final bool hudBoxOn;
 
   /// Safe Area rectangle for the HUD's backing display.
   final HudSafeArea safeArea;
 
-  AppConfig copyWith({bool? hudBoxOn, HudSafeArea? safeArea}) => AppConfig(
+  /// Blinker appearance (shape, size, position).
+  final BlinkerConfig blinker;
+
+  AppConfig copyWith({
+    bool? hudBoxOn,
+    HudSafeArea? safeArea,
+    BlinkerConfig? blinker,
+  }) => AppConfig(
     hudBoxOn: hudBoxOn ?? this.hudBoxOn,
     safeArea: safeArea ?? this.safeArea,
+    blinker: blinker ?? this.blinker,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'hudBoxOn': hudBoxOn,
     'safeArea': safeArea.toJson(),
+    'blinker': blinker.toJson(),
   };
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
@@ -100,6 +204,9 @@ class AppConfig {
     safeArea: json['safeArea'] is Map<String, Object?>
         ? HudSafeArea.fromJson(json['safeArea']! as Map<String, Object?>)
         : const HudSafeArea(),
+    blinker: json['blinker'] is Map<String, Object?>
+        ? BlinkerConfig.fromJson(json['blinker']! as Map<String, Object?>)
+        : const BlinkerConfig(),
   );
 
   /// Convenience: round-trip through JSON string (used by SharedPrefsConfigStore).
@@ -110,10 +217,11 @@ class AppConfig {
   bool operator ==(Object other) =>
       other is AppConfig &&
       other.hudBoxOn == hudBoxOn &&
-      other.safeArea == safeArea;
+      other.safeArea == safeArea &&
+      other.blinker == blinker;
 
   @override
-  int get hashCode => Object.hash(hudBoxOn, safeArea);
+  int get hashCode => Object.hash(hudBoxOn, safeArea, blinker);
 }
 
 /// Port for config persistence. Each isolate owns its own instance.

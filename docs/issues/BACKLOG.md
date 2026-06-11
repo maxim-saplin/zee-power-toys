@@ -56,7 +56,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | ID | Area | Satisfies | Status |
 |----|------|-----------|--------|
 | — | Minimap configuration — YNavi enable/disable, presets, basic/advanced, dark-light auto | HUD · Minimap | backlog |
-| — | Blinker customization — shape (dots / arrows / smiley), size, position | HUD · Blinker | backlog |
+| [0007](0007-blinker-customization.md) | Blinker customization — shape (dots / arrows / smiley), size, position | HUD · Blinker | **done** |
 | — | Battery & temp widget — Steam-Deck-style looks | HUD · utility info | backlog |
 | — | Charging stats — show while charging, hide otherwise | HUD · utility info | backlog |
 | [0006](0006-hud-layout-safe-area-preview.md) | HUD preview + Safe-Area simulation in the main UI (grey BG) — HUD layout scaffold | HUD · preview | **done** |

@@ -51,12 +51,17 @@ void registerZeeExtensions({
   developer.registerExtension('ext.zee.readViewModel', (method, params) async {
     final snap = carSignals?.snapshot;
     final sa = store.value.safeArea;
+    final bl = store.value.blinker;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
         'hudBoxOn': store.value.hudBoxOn,
         'speedKmh': snap?.speedKmh,
-        'blinker': snap?.blinker.name ?? BlinkerState.off.name,
+        'blinker': <String, Object?>{
+          'state': snap?.blinker.name ?? BlinkerState.off.name,
+          'shape': bl.shape.name,
+          'sizeScale': bl.sizeScale,
+        },
         'charging': snap?.charging,
         'kw': snap?.chargeKw,
         'batteryPct': snap?.batteryPct,
@@ -108,6 +113,24 @@ void registerZeeExtensions({
       );
     }
 
+    // Blinker config: blinkerShape=dots|arrows|smiley, blinkerSize=<double>.
+    final rawBlinkerShape = params['blinkerShape'];
+    final rawBlinkerSize = params['blinkerSize'];
+    if (rawBlinkerShape != null || rawBlinkerSize != null) {
+      final bl = next.blinker;
+      BlinkerShape? shape;
+      if (rawBlinkerShape != null) {
+        shape = BlinkerShape.values.firstWhere(
+          (e) => e.name == rawBlinkerShape,
+          orElse: () => bl.shape,
+        );
+      }
+      final size = double.tryParse(rawBlinkerSize ?? '');
+      next = next.copyWith(
+        blinker: bl.copyWith(shape: shape, sizeScale: size),
+      );
+    }
+
     await store.setConfig(next);
     if (onSetConfig != null) await onSetConfig(next);
     return developer.ServiceExtensionResponse.result(
@@ -116,9 +139,6 @@ void registerZeeExtensions({
   });
 
   // inject — push a fake CarSignalEvent into THIS isolate's FakeCarSignals.
-  // On DHU the store.changes.listen in main.dart relays the event to HUD via hub.
-  // On T2 DHU (Android NativeCarSignals) injection must use ADB broadcasts instead.
-  // Params: kind=speed|blinker|charge|battery  + kind-specific values.
   developer.registerExtension('ext.zee.inject', (method, params) async {
     final fake = carSignals is FakeCarSignals ? carSignals : null;
     if (fake == null) {
@@ -269,6 +289,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'surface': surface,
       'hudBoxOn': store.value.hudBoxOn,
       'safeArea': store.value.safeArea.toJson(),
+      'blinker': store.value.blinker.toJson(),
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>

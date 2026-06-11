@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/config.dart';
 import '../services/config_store.dart';
+import 'blinker_widget.dart';
 
 /// The root of the HUD widget subtree.
 ///
@@ -18,9 +19,9 @@ import '../services/config_store.dart';
 /// The Safe Area is the sub-rectangle of the backing display actually visible
 /// through the projector optics.
 ///
-/// Slots for later Blocks: [minimap], [guidance], [blinker], [battery].
-/// Each currently shows a labelled dim outline stub so layout and Safe Area
-/// positioning are verifiable before real content is wired up.
+/// Slots: [blinker] (real content), [battery], [guidance], [minimap] (stubs).
+/// The BLINKER layer spans the full Safe Area so hazard can render both sides;
+/// marks are positioned at the edges by [BlinkerWidget] via its own layout.
 ///
 /// [showSafeAreaBorder] draws a faint outline of the Safe Area (debug aid;
 /// disabled in production by default, enabled in the DHU preview).
@@ -89,9 +90,10 @@ class HudRoot extends ConsumerWidget {
 
 /// Slot layout — four named positions within the Safe Area.
 ///
-/// Placeholder stubs render a thin outlined box with a label so each slot
-/// position is clearly identifiable before real content is provided.
-/// Real Blocks replace these stubs by composing content into the same positions.
+/// BLINKER is now a full-Safe-Area layer at z-order bottom so [BlinkerWidget]
+/// can place the left mark at the left edge and the right mark at the right
+/// edge, including hazard (both sides simultaneously).  The other slots are
+/// still labelled stubs pending their implementation Blocks.
 class _HudSlots extends StatelessWidget {
   const _HudSlots({required this.saWidth, required this.saHeight});
 
@@ -101,15 +103,13 @@ class _HudSlots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Proportional slot geometry inside the Safe Area.
-    // Blinker: left 15% wide, upper 60% tall — mirrors BlinkerOverlayView x-offsets.
-    // Battery: right 15% wide, upper 60% tall.
+    // Battery: right 12% wide, upper 60% tall.
     // Guidance: center 70% wide, upper 55% tall.
     // Minimap: left-aligned square, lower portion.
     final halfH = saHeight * 0.5;
     final upperH = saHeight * 0.6;
     final lowerY = saHeight * 0.55;
     final lowerH = saHeight - lowerY;
-    final blinkerW = saWidth * 0.12;
     final batteryW = saWidth * 0.12;
     final guidanceW = saWidth * 0.70;
     final guidanceX = (saWidth - guidanceW) / 2;
@@ -117,13 +117,11 @@ class _HudSlots extends StatelessWidget {
 
     return Stack(
       children: <Widget>[
-        // BLINKER — top-left corner
-        Positioned(
-          left: 0,
-          top: 0,
-          width: blinkerW,
-          height: upperH,
-          child: const _SlotStub(label: 'BLINKER'),
+        // BLINKER — full Safe Area layer (lowest z-order).
+        // BlinkerWidget positions marks at left/right edges via Positioned inside
+        // its own Stack, so hazard shows both simultaneously.
+        const Positioned.fill(
+          child: BlinkerWidget(),
         ),
 
         // BATTERY — top-right corner

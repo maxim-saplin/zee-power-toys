@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:zee_power_toys/hud/blinker_widget.dart';
 import 'package:zee_power_toys/hud/hud_root.dart';
 import 'package:zee_power_toys/providers/services.dart';
+import 'package:zee_power_toys/services/car_signals.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
 import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
@@ -20,7 +22,11 @@ void main() {
   });
 
   /// Wraps [child] in a minimal ProviderScope with in-memory services.
-  Widget wrapWithProviders(Widget child, {AppConfig? config}) {
+  Widget wrapWithProviders(
+    Widget child, {
+    AppConfig? config,
+    FakeCarSignals? signals,
+  }) {
     final store = SharedPrefsConfigStore();
     if (config != null) {
       // Seed synchronously so the widget sees it on first build.
@@ -29,7 +35,7 @@ void main() {
     return ProviderScope(
       overrides: [
         configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(FakeCarSignals()),
+        carSignalsProvider.overrideWithValue(signals ?? FakeCarSignals()),
         minimapHostProvider.overrideWithValue(FakeMinimapHost()),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
@@ -74,17 +80,20 @@ void main() {
       expect(find.byType(ClipRect), findsOneWidget);
     });
 
-    testWidgets('shows slot stubs — BLINKER, BATTERY, GUIDANCE, MINIMAP', (tester) async {
+    testWidgets('shows slot stubs — BATTERY, GUIDANCE, MINIMAP', (tester) async {
+      // BLINKER is now a real widget (BlinkerWidget), not a stub.
+      // The other three remain stubs until their Blocks are implemented.
       await tester.binding.setSurfaceSize(const Size(1024, 576));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(wrapWithProviders(const HudRoot()));
       await tester.pump();
 
-      expect(find.text('BLINKER'), findsOneWidget);
       expect(find.text('BATTERY'), findsOneWidget);
       expect(find.text('GUIDANCE'), findsOneWidget);
       expect(find.text('MINIMAP'), findsOneWidget);
+      // BlinkerWidget replaced the BLINKER stub.
+      expect(find.byType(BlinkerWidget), findsOneWidget);
     });
 
     testWidgets('Safe Area border absent when showSafeAreaBorder=false', (tester) async {
@@ -229,4 +238,278 @@ void main() {
       expect(config.safeArea, equals(const HudSafeArea()));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // BlinkerConfig model
+  // ---------------------------------------------------------------------------
+
+  group('BlinkerConfig model', () {
+    test('defaults match phase0 values', () {
+      const cfg = BlinkerConfig();
+      expect(cfg.shape, BlinkerShape.dots);
+      expect(cfg.sizeScale, 1.0);
+      expect(cfg.sidePadFrac, closeTo(0.02, 0.001));
+      expect(cfg.vertFrac, closeTo(0.40, 0.001));
+    });
+
+    test('round-trips through JSON for each shape', () {
+      for (final shape in BlinkerShape.values) {
+        final cfg = BlinkerConfig(shape: shape, sizeScale: 1.5);
+        final json = cfg.toJson();
+        final cfg2 = BlinkerConfig.fromJson(json);
+        expect(cfg2, equals(cfg), reason: 'round-trip failed for shape=$shape');
+      }
+    });
+
+    test('fromJson falls back to defaults for missing keys', () {
+      final cfg = BlinkerConfig.fromJson(<String, Object?>{});
+      expect(cfg, equals(const BlinkerConfig()));
+    });
+
+    test('fromJson unknown shape falls back to dots', () {
+      final cfg = BlinkerConfig.fromJson(<String, Object?>{'shape': 'unknown_shape'});
+      expect(cfg.shape, BlinkerShape.dots);
+    });
+
+    test('copyWith only updates named fields', () {
+      const cfg = BlinkerConfig();
+      final cfg2 = cfg.copyWith(shape: BlinkerShape.arrows, sizeScale: 1.8);
+      expect(cfg2.shape, BlinkerShape.arrows);
+      expect(cfg2.sizeScale, 1.8);
+      expect(cfg2.sidePadFrac, cfg.sidePadFrac);
+      expect(cfg2.vertFrac, cfg.vertFrac);
+    });
+
+    test('equality and hashCode', () {
+      const a = BlinkerConfig(shape: BlinkerShape.smiley, sizeScale: 1.2);
+      const b = BlinkerConfig(shape: BlinkerShape.smiley, sizeScale: 1.2);
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+  });
+
+  group('AppConfig includes BlinkerConfig', () {
+    test('toJson / fromJson round-trips blinker config', () {
+      const cfg = AppConfig(
+        blinker: BlinkerConfig(shape: BlinkerShape.arrows, sizeScale: 1.5),
+      );
+      final json = cfg.toJson();
+      final cfg2 = AppConfig.fromJson(json);
+      expect(cfg2.blinker.shape, BlinkerShape.arrows);
+      expect(cfg2.blinker.sizeScale, 1.5);
+    });
+
+    test('fromJson with missing blinker key uses defaults', () {
+      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      expect(cfg.blinker, equals(const BlinkerConfig()));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // BlinkerWidget — shape × side × state
+  // ---------------------------------------------------------------------------
+
+  group('BlinkerWidget', () {
+    testWidgets('off state renders nothing', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        signals: signals,
+      ));
+      await tester.pump();
+
+      // Off → SizedBox.shrink() — no mark keys present.
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsNothing);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsNothing);
+    });
+
+    testWidgets('dots shape — left renders left mark only', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.dots),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.left);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsNothing);
+    });
+
+    testWidgets('dots shape — right renders right mark only', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.dots),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.right);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsNothing);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget);
+    });
+
+    testWidgets('arrows shape — left renders left mark', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.arrows),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.left);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsNothing);
+    });
+
+    testWidgets('arrows shape — right renders right mark', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.arrows),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.right);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsNothing);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget);
+    });
+
+    testWidgets('smiley shape — left renders left mark', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.smiley),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.left);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+    });
+
+    testWidgets('smiley shape — right renders right mark', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.smiley),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.right);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget);
+    });
+
+    testWidgets('hazard renders BOTH left and right marks', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.hazard);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget);
+    });
+
+    testWidgets('off after active clears both marks', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        signals: signals,
+      ));
+
+      signals.emitBlinker(BlinkerState.left);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+
+      signals.emitBlinker(BlinkerState.off);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsNothing);
+    });
+
+    // Each shape × each side (arrows left, arrows right, smiley left, smiley right,
+    // dots hazard) are tested above.  Below confirms arrows left/right are distinct.
+    testWidgets('arrows hazard renders both left and right marks', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(400, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        blinker: const BlinkerConfig(shape: BlinkerShape.arrows),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+        config: config,
+        signals: signals,
+      ));
+      signals.emitBlinker(BlinkerState.hazard);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget);
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget);
+    });
+  });
 }
+

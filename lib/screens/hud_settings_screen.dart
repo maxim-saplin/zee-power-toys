@@ -10,7 +10,8 @@ import '../widgets/hud_preview.dart';
 ///
 /// Shows the [HudPreview] (same widget tree as the real HUD) over a grey
 /// background so any Safe-Area or layout change is immediately visible.
-/// Provides a Safe-Area inset slider and the debug hudBox toggle.
+/// Provides a Safe-Area inset slider, the debug hudBox toggle, and a
+/// Blinker section (shape selector + size slider + position controls).
 class HudSettingsScreen extends ConsumerWidget {
   const HudSettingsScreen({super.key});
 
@@ -18,6 +19,7 @@ class HudSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final safeArea = ref.watch(safeAreaProvider);
     final hudBoxOn = ref.watch(hudBoxOnProvider);
+    final blinkerCfg = ref.watch(blinkerConfigProvider);
     final store = ref.read(configStoreProvider);
 
     // Uniform inset: use the average of left/top insets as the slider value.
@@ -86,6 +88,166 @@ class HudSettingsScreen extends ConsumerWidget {
                     store.value.copyWith(hudBoxOn: !hudBoxOn),
                   ),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // ----------------------------------------------------------------
+            // Blinker section
+            // ----------------------------------------------------------------
+            const Text(
+              'Blinker',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+
+            // Shape selector — three segments.
+            const Text('Shape'),
+            const SizedBox(height: 8),
+            SegmentedButton<BlinkerShape>(
+              segments: const <ButtonSegment<BlinkerShape>>[
+                ButtonSegment(
+                  value: BlinkerShape.dots,
+                  label: Text('Dots'),
+                  icon: Icon(Icons.circle_outlined),
+                ),
+                ButtonSegment(
+                  value: BlinkerShape.arrows,
+                  label: Text('Arrows'),
+                  icon: Icon(Icons.arrow_forward),
+                ),
+                ButtonSegment(
+                  value: BlinkerShape.smiley,
+                  label: Text('Smiley'),
+                  icon: Icon(Icons.sentiment_satisfied_alt),
+                ),
+              ],
+              selected: <BlinkerShape>{blinkerCfg.shape},
+              onSelectionChanged: (Set<BlinkerShape> sel) {
+                if (sel.isEmpty) return;
+                store.setConfig(
+                  store.value.copyWith(
+                    blinker: blinkerCfg.copyWith(shape: sel.first),
+                  ),
+                );
+              },
+            ),
+            // ValueKey hooks for agent-driven tap (one per segment).
+            Opacity(
+              opacity: 0,
+              child: Row(
+                children: <Widget>[
+                  GestureDetector(
+                    key: const ValueKey('blinker-shape-dots'),
+                    onTap: () => store.setConfig(
+                      store.value.copyWith(
+                        blinker: blinkerCfg.copyWith(shape: BlinkerShape.dots),
+                      ),
+                    ),
+                    child: const SizedBox(width: 1, height: 1),
+                  ),
+                  GestureDetector(
+                    key: const ValueKey('blinker-shape-arrows'),
+                    onTap: () => store.setConfig(
+                      store.value.copyWith(
+                        blinker: blinkerCfg.copyWith(shape: BlinkerShape.arrows),
+                      ),
+                    ),
+                    child: const SizedBox(width: 1, height: 1),
+                  ),
+                  GestureDetector(
+                    key: const ValueKey('blinker-shape-smiley'),
+                    onTap: () => store.setConfig(
+                      store.value.copyWith(
+                        blinker: blinkerCfg.copyWith(shape: BlinkerShape.smiley),
+                      ),
+                    ),
+                    child: const SizedBox(width: 1, height: 1),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Size slider.
+            const Text('Size'),
+            Row(
+              children: <Widget>[
+                const Text('0.5×'),
+                Expanded(
+                  child: Slider(
+                    key: const ValueKey('blinker-size'),
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 30,
+                    value: blinkerCfg.sizeScale.clamp(0.5, 2.0),
+                    label: '${blinkerCfg.sizeScale.toStringAsFixed(2)}×',
+                    onChanged: (v) {
+                      store.setConfig(
+                        store.value.copyWith(
+                          blinker: blinkerCfg.copyWith(sizeScale: v),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Text('2×'),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Vertical position slider.
+            const Text('Vertical position'),
+            Row(
+              children: <Widget>[
+                const Text('Top'),
+                Expanded(
+                  child: Slider(
+                    key: const ValueKey('blinker-vert'),
+                    min: 0.1,
+                    max: 0.9,
+                    divisions: 16,
+                    value: blinkerCfg.vertFrac.clamp(0.1, 0.9),
+                    label: '${(blinkerCfg.vertFrac * 100).toStringAsFixed(0)}%',
+                    onChanged: (v) {
+                      store.setConfig(
+                        store.value.copyWith(
+                          blinker: blinkerCfg.copyWith(vertFrac: v),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Text('Bottom'),
+              ],
+            ),
+
+            // Side padding slider.
+            const Text('Side padding (from edge)'),
+            Row(
+              children: <Widget>[
+                const Text('Edge'),
+                Expanded(
+                  child: Slider(
+                    key: const ValueKey('blinker-side-pad'),
+                    min: 0.0,
+                    max: 0.20,
+                    divisions: 20,
+                    value: blinkerCfg.sidePadFrac.clamp(0.0, 0.20),
+                    label: '${(blinkerCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
+                    onChanged: (v) {
+                      store.setConfig(
+                        store.value.copyWith(
+                          blinker: blinkerCfg.copyWith(sidePadFrac: v),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Text('20%'),
               ],
             ),
 

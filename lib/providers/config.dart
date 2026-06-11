@@ -31,3 +31,13 @@ final safeAreaProvider = Provider<HudSafeArea>((ref) {
     error: (e, _) => ref.watch(configStoreProvider).value.safeArea,
   );
 });
+
+/// Current blinker appearance config, updated whenever the config changes.
+final blinkerConfigProvider = Provider<BlinkerConfig>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.blinker,
+    loading: () => ref.watch(configStoreProvider).value.blinker,
+    error: (e, _) => ref.watch(configStoreProvider).value.blinker,
+  );
+});
