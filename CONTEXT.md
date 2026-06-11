@@ -19,7 +19,7 @@ The instrument-cluster display behind the steering wheel. A distinct surface fro
 _Avoid_: dashboard, gauge cluster
 
 **DHU**:
-The car's Digital Head Unit — the Aptiv Android computer the app runs on, with the central touchscreen as its primary display.
+The car's Digital Head Unit — the Android 12L computer the app runs on, with the central touchscreen as its primary display.
 _Avoid_: head unit, infotainment, IVI
 
 ### HUD content
