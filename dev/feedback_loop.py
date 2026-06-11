@@ -7,9 +7,11 @@
 
 One class (`FeedbackLoop`) fronts semantic ops and routes each to the right
 channel per tier.  T1 (Linux desktop) uses the VM-service channel for
-everything; the native channel is a clean stub that refuses with an explicit
-error — no fake success.  T2/T3 slot in by providing a real `NativeChannel`
-implementation; call sites do not change.
+everything including `inject` (Block 0003: VM-service routes to ext.zee.inject
+which calls FakeCarSignals on the DHU isolate; the DHU relay propagates to HUD).
+The native channel is a clean stub that refuses with an explicit error — no fake
+success.  T2/T3 slot in by providing a real `NativeChannel` implementation;
+call sites do not change.
 
 VM-service channel: reuses `zee_drive.VMClient` + `resolve_ws_uri`.
 Native channel:     `T1NativeStub` — raises on any call.
@@ -27,12 +29,14 @@ CLI subcommands (output is always JSON to stdout):
   set-config      --surface dhu|hud  key=value ...
   tap             --surface dhu|hud  --key <ValueKey>
   shot            --surface dhu|hud  [--out path/to/file.png]
-  inject          key=value ...       (prints stub error on T1)
+  inject          kind=speed|blinker|charge|battery  value=...  [--surface dhu]
 
 Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py whoami-all
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py tap --surface dhu --key dhu-toggle
-  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject foo=bar
+  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=speed value=80
+  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=blinker value=left
+  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=charge charging=true kw=50
 """
 
 from __future__ import annotations
@@ -81,7 +85,7 @@ class T1NativeStub(NativeChannel):
         raise NotImplementedError(
             "native channel not available on T1 — "
             "descends the stack on T2/T3 (see ADR 0004).  "
-            "Use set-config over the VM-service channel for T1 config writes."
+            "Use inject over the VM-service channel for T1 signal injection."
         )
 
 
@@ -180,15 +184,24 @@ class FeedbackLoop:
         return result
 
     # ------------------------------------------------------------------
-    # Native-channel op
+    # inject — T1: VM-service → ext.zee.inject on DHU; T2/T3: native channel
     # ------------------------------------------------------------------
 
-    async def inject(self, **kv: str) -> dict[str, Any]:
-        """Inject config via the native channel.
+    async def inject(self, surface: str = "dhu", **kv: str) -> dict[str, Any]:
+        """Inject a CarSignalEvent via ext.zee.inject on the target surface (T1).
 
-        Raises on T1 with a clear explanation; succeeds on T2/T3.
+        On T1 this calls ext.zee.inject on the DHU (or given) isolate, which
+        updates the FakeCarSignals and triggers the cross-isolate relay to HUD.
+        On T2/T3 the native channel handles injection instead.
         """
-        return await self._native.inject(kv)
+        try:
+            iso_id = await self._resolve(surface)
+            params: dict[str, Any] = {"isolateId": iso_id}
+            params.update(kv)
+            return await self._c.rpc("ext.zee.inject", params)
+        except NotImplementedError:
+            # T2/T3 native fallback
+            return await self._native.inject(kv)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -323,12 +336,18 @@ def build_parser() -> argparse.ArgumentParser:
     shot.add_argument("--surface", required=True, choices=["dhu", "hud"])
     shot.add_argument("--out", default=None, help="path to save the PNG (optional)")
 
-    # inject (native channel)
+    # inject — T1: VM-service ext.zee.inject on DHU; T2/T3: native channel
     inj = sub.add_parser(
         "inject",
-        help="inject config via the native channel (T2/T3 only; stub on T1)",
+        help="inject a CarSignalEvent (T1: VM-service ext.zee.inject; T2/T3: native channel)",
     )
-    inj.add_argument("kvs", nargs="+", help="key=value pairs")
+    inj.add_argument(
+        "--surface",
+        default="dhu",
+        choices=["dhu", "hud"],
+        help="target surface for inject (default: dhu)",
+    )
+    inj.add_argument("kvs", nargs="+", help="key=value pairs e.g. kind=speed value=80")
 
     return p
 
@@ -367,12 +386,8 @@ def main(argv: list[str] | None = None) -> int:
             result = await fl.shot(args.surface, out_path=args.out)
         elif args.cmd == "inject":
             kv = _parse_kvs(args.kvs)
-            try:
-                result = await fl.inject(**kv)
-            except NotImplementedError as e:
-                # Clean stub error — NOT a crash; exit 0 so callers can parse.
-                print(json.dumps({"error": str(e)}, indent=2))
-                return 0, None
+            surface = getattr(args, "surface", "dhu")
+            result = await fl.inject(surface, **kv)
         else:
             raise ValueError(f"unknown command {args.cmd!r}")
         return 0, result

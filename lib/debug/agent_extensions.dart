@@ -8,18 +8,24 @@ import 'package:flutter/material.dart' show InkResponse;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import '../services/car_signals.dart';
 import '../services/config_store.dart';
+import '../services/fakes/fake_car_signals.dart';
 
 /// Register ext.zee.* VM-service extensions for [surface] (either 'dhu' or 'hud').
 ///
 /// Both isolates register the same set so the Feedback Loop can drive and read
 /// each surface independently. [shotKey] must wrap the root RepaintBoundary.
+/// [carSignals] is the FakeCarSignals for this isolate — only the DHU one is
+/// the injectable source; the HUD one re-emits relayed events. Null on surfaces
+/// that don't support inject (future non-fake surfaces).
 /// [onSetConfig] is optional (DHU can pass null; the store.changes subscription
 /// already relays to HUD).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
   required GlobalKey shotKey,
+  FakeCarSignals? carSignals,
   Future<void> Function(AppConfig)? onSetConfig,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
@@ -39,13 +45,20 @@ void registerZeeExtensions({
     );
   });
 
-  // readViewModel returns the derived Riverpod view-state (ADR 0004).
-  // Today the shape matches dumpState; they will diverge as the view-model grows.
+  // readViewModel returns the full derived view-model (ADR 0004).
   developer.registerExtension('ext.zee.readViewModel', (method, params) async {
+    final snap = carSignals?.snapshot;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
         'hudBoxOn': store.value.hudBoxOn,
+        'speedKmh': snap?.speedKmh,
+        'blinker': snap?.blinker.name ?? BlinkerState.off.name,
+        'charging': snap?.charging,
+        'kw': snap?.chargeKw,
+        'batteryPct': snap?.batteryPct,
+        'batteryTempC': snap?.batteryTempC,
+        'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
       }),
     );
   });
@@ -58,6 +71,53 @@ void registerZeeExtensions({
     if (onSetConfig != null) await onSetConfig(next);
     return developer.ServiceExtensionResponse.result(
       _dumpStateJson(surface, store),
+    );
+  });
+
+  // inject — push a fake CarSignalEvent into THIS isolate's FakeCarSignals.
+  // On DHU the store.changes.listen in main.dart relays the event to HUD via hub.
+  // Params: kind=speed|blinker|charge|battery  + kind-specific values.
+  developer.registerExtension('ext.zee.inject', (method, params) async {
+    if (carSignals == null) {
+      return _extError('ext.zee.inject not available on this surface');
+    }
+    final kind = params['kind'];
+    try {
+      switch (kind) {
+        case 'speed':
+          final kmh = int.parse(params['value'] ?? '0');
+          carSignals.emitSpeed(kmh);
+        case 'blinker':
+          final state = BlinkerState.values.byName(params['value'] ?? 'off');
+          carSignals.emitBlinker(state);
+        case 'charge':
+          final charging = (params['charging'] ?? 'false') == 'true';
+          final kw = double.tryParse(params['kw'] ?? '');
+          final volts = double.tryParse(params['volts'] ?? '');
+          final amps = double.tryParse(params['amps'] ?? '');
+          carSignals.emitCharge(
+            charging: charging,
+            kw: kw,
+            volts: volts,
+            amps: amps,
+          );
+        case 'battery':
+          final levelPct = int.parse(params['levelPct'] ?? '0');
+          final tempC = double.parse(params['tempC'] ?? '0');
+          carSignals.emitBattery(levelPct: levelPct, tempC: tempC);
+        case 'powerFlow':
+          final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
+          carSignals.emitPowerFlow(flow);
+        default:
+          return _extError(
+            'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow',
+          );
+      }
+    } catch (e) {
+      return _extError('inject error: $e');
+    }
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode(carSignals.snapshot.toJson()..['surface'] = surface),
     );
   });
 

@@ -243,6 +243,8 @@ runApp(
 
 ### Derived state — stream → view model
 
+> **Correction (confirmed in Block 0003):** Riverpod **3.x** has no `AsyncValue.valueOrNull` — use `.value` (returns `null` while loading with no prior value). The two snippets below originally used the 2.x `valueOrNull`; read them as `.value`.
+
 ```dart
 // lib/providers/car_signals.dart
 final carSignalEventsProvider = StreamProvider<CarSignalEvent>((ref) {
