@@ -1,5 +1,5 @@
-- zee_hud_2 is symlinked research repo with abundance of info
- - zee_hud_2/phase0-diagnostics is the test app that implemented most of the integrations and got tested on the car
+- ../zee_hud_2 is research repo (sittig next to this one_ with abundance of info
+ - ./zee_hud_2/phase0-diagnostics is the test app that implemented most of the integrations and got tested on the car
  - Review all code, avoid carry over of unneccesary code
 - Only direct API calls, no reliance on Launcher proxy
 - Flutter UI for best in class UI framework, with hot reloads, fast iterations
@@ -22,13 +22,15 @@
       - Toggles for relevant cams (e.g. only those in my lane, cams controling the opposite lane are of lesses interest)
       - Some sort of radar with speed/direction, Visual/sound notificaiton of most dangerous cam
       - Bonus, Alien mode, visualization style to Marine radar from the movies with very specific sounds
-    - Copntrol (toggling on/off, configuring) various utility info in HUD
+    - Control (toggling on/off, configuring) of various utility info in HUD
       - When charging - allow to show stats in HUD (and hid when not charging)
       - Blinkers, battery level and temp
         - For blinkers allow to chose shape (yellow dots as now, actual arrows as in normal car, tyello smiless) and size, adjust position
+        - For battery among other options providfe batter looks in a similar fashion as Stemd Deck battery
    - UI preview for HUD, target accurate presentation in the mai UI of what might be expected in HID
      - I guess start with gray BG to have experience close to projecting on transprent glass
    - Simulate accurate scaling and bounds given safe area specifics for HUD
+  - One of guiding principles is cusrtomization and ability to choose YET fighting for simplicity and cleanless - the app must not turn into a bloated experience
   - Rest of the app 
     - Allow to download from GitHub and install
       - Modded Launcher with YNavi cnfigured as default navi
@@ -37,7 +39,6 @@
   - Dashboard to display system values (e.g. battery temp)
     - Cleanup and update the phase0 AP browser
   - Localizaed, EN and RU, picks system lang, allows to choose in the UI
-    - Investigae/decopmpile ZSettings and discover how it contreols ADB
-    - 
+    - Investigae/decopmpile zSupport-1.3.5-release.apk and discover how it controls ADB (enabling and disabling USB Host/Preipheral via UI that allows to use USB wire to connet to DHU via ADB)
   - Auto launching, working in the background, persistance of configs
 - Efficiency concerned, no power hungry code, no unneccesary wake locks
