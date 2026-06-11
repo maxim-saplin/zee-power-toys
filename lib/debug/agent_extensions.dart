@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
+import '../services/minimap_host.dart';
 
 /// Register ext.zee.* VM-service extensions for [surface] (either 'dhu' or 'hud').
 ///
@@ -21,12 +22,14 @@ import '../services/fakes/fake_car_signals.dart';
 /// ext.zee.inject extension is disabled (native injection uses ADB broadcasts).
 /// [onSetConfig] is optional (DHU can pass null; the store.changes subscription
 /// already relays to HUD).
+/// [minimapHost] is optional; when provided, ext.zee.minimap is registered.
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
   required GlobalKey shotKey,
   CarSignals? carSignals,
   Future<void> Function(AppConfig)? onSetConfig,
+  MinimapHost? minimapHost,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -309,6 +312,41 @@ void registerZeeExtensions({
       );
     }
   });
+
+  // ext.zee.minimap — drive the native MinimapView (Block 0009).
+  // Registered only when a MinimapHost is provided (DHU surface on Android).
+  // Params: on=true|false (enable/disable), x/y/w/h for bounds, key/value for params.
+  if (minimapHost != null) {
+    developer.registerExtension('ext.zee.minimap', (method, params) async {
+      try {
+        final onParam = params['on'];
+        if (onParam != null) {
+          await minimapHost.enable(onParam == 'true');
+        }
+        final x = double.tryParse(params['x'] ?? '');
+        final y = double.tryParse(params['y'] ?? '');
+        final w = double.tryParse(params['w'] ?? '');
+        final h = double.tryParse(params['h'] ?? '');
+        if (x != null && y != null && w != null && h != null) {
+          await minimapHost.setBounds(Rect.fromLTWH(x, y, w, h));
+        }
+        final pKey = params['key'];
+        final pVal = params['value'];
+        if (pKey != null && pVal != null) {
+          await minimapHost.setParams({pKey: double.tryParse(pVal) ?? pVal});
+        }
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode(<String, Object?>{
+            'surface': surface,
+            'minimap': 'ok',
+            'on': onParam,
+          }),
+        );
+      } catch (e) {
+        return _extError('ext.zee.minimap error: $e');
+      }
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

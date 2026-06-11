@@ -2,22 +2,35 @@ package com.zeepowertoys.zee_power_toys
 
 import android.app.Presentation
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
+import android.graphics.SurfaceTexture
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Display
+import android.view.TextureView
+import android.view.View
+import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.android.FlutterSurfaceView
+import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineGroup
 import io.flutter.embedding.engine.dart.DartExecutor
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import kotlin.math.sin
 
 // Two-engine host for T2 (Android).
 //
@@ -35,11 +48,18 @@ import io.flutter.plugin.common.MethodChannel
 //     MethodChannel "zee/car_signals"         — start() / snapshot()
 //     EventChannel  "zee/car_signals/events"  — streamed signal events
 //   The HUD engine receives signals via the existing relay (not the native bridge).
+//
+// Minimap under-layer (Block 0009, ADR 0001 exception):
+//   The HUD Presentation uses a FrameLayout with a native MinimapView (TextureView,
+//   green-yellow ColorMatrix filter) UNDER a transparent FlutterTextureView overlay.
+//   The zee/minimap MethodChannel is registered on the DHU engine (primary) so
+//   the DHU Dart isolate drives the native Minimap surface.
 class MainActivity : FlutterActivity() {
 
     companion object {
         private const val TAG = "ZEE"
         private const val HUB_CHANNEL = "zee/hub"
+        private const val MINIMAP_CHANNEL = "zee/minimap"
         // Delay (ms) before spawning the HUD engine; lets the primary view
         // finish its first layout pass so the FlutterView is fully attached.
         private const val HUD_SPAWN_DELAY_MS = 1500L
@@ -57,6 +77,9 @@ class MainActivity : FlutterActivity() {
 
     // CarSignals native bridge — DHU engine only.
     private var carSignalsController: CarSignalsController? = null
+
+    // Minimap native surface — created in setupHud; driven via zee/minimap channel.
+    private var minimapView: MinimapView? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -81,6 +104,12 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Register the zee/minimap MethodChannel on the DHU (primary) engine.
+        // The DHU Dart isolate drives the native Minimap surface via this channel
+        // (ADR 0001 exception: native map under transparent Flutter overlay).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_CHANNEL)
+            .setMethodCallHandler { call, result -> handleMinimap(call, result) }
+
         // Construct CarSignalsController on the DHU engine messenger.
         // selectSource() probes AdaptAPI availability and logs the chosen source.
         val ctrl = CarSignalsController(this, flutterEngine.dartExecutor.binaryMessenger)
@@ -94,7 +123,7 @@ class MainActivity : FlutterActivity() {
     }
 
     // -------------------------------------------------------------------------
-    // HUD engine setup
+    // HUD engine setup (Block 0009: Minimap under-layer)
     // -------------------------------------------------------------------------
 
     private fun setupHud() {
@@ -132,17 +161,102 @@ class MainActivity : FlutterActivity() {
             hudHub = hud
             // (HUD side only listens; no handler needed on the native side here.)
 
-            // Create the Presentation and attach a FlutterView to the HUD engine.
+            // Build the Presentation layer stack (EXP3 pattern from the PoC):
+            //   (1) MinimapView — native TextureView with green-yellow ColorMatrix
+            //       filter (ADR 0001 exception: native map under transparent Flutter).
+            //   (2) FlutterTextureView (isOpaque=false) — transparent HUD overlay
+            //       attached to the HUD engine; Flutter Scaffold must also use
+            //       backgroundColor: Colors.transparent so the native layer shows.
             val pres = Presentation(this, display)
-            val fv = FlutterView(pres.context, FlutterSurfaceView(pres.context))
-            pres.setContentView(fv)
+            val root = FrameLayout(pres.context)
+
+            // Layer 1 (bottom): native animated Minimap stand-in with HUD colour filter.
+            val mm = MinimapView(pres.context)
+            minimapView = mm
+            root.addView(mm, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+            ))
+
+            // Layer 2 (top): transparent Flutter overlay.
+            // isOpaque=false is what enables compositing over the MinimapView;
+            // without this the SurfaceTexture renders opaque black.
+            val ftv = FlutterTextureView(pres.context)
+            ftv.isOpaque = false
+            val fv = FlutterView(pres.context, ftv)
+            root.addView(fv, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+            ))
+
+            pres.setContentView(root)
             pres.show()
             hudPresentation = pres
             fv.attachToFlutterEngine(eng)
-            Log.i(TAG, "setupHud: FlutterView attached to HUD engine; " +
-                "isAttached=${fv.isAttachedToFlutterEngine}")
+            Log.i(TAG, "setupHud: transparent FlutterTextureView attached to HUD engine; " +
+                "ftv.isOpaque=${ftv.isOpaque} isAttached=${fv.isAttachedToFlutterEngine}")
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Minimap control — idempotent zee/minimap MethodChannel handler.
+    //
+    // Registered on the DHU (primary) engine so the DHU Dart isolate drives the
+    // native Minimap surface (ADR 0001 exception: native under transparent Flutter).
+    // All View mutations are posted to the main looper for thread-safety.
+    // -------------------------------------------------------------------------
+
+    private fun handleMinimap(call: MethodCall, result: MethodChannel.Result) {
+        handler.post {
+            val v = minimapView
+            if (v == null) {
+                // HUD not yet set up (e.g. no secondary display); safe to ignore.
+                Log.i(TAG, "minimap.${call.method}: no native minimap yet")
+                result.success("no-minimap")
+                return@post
+            }
+            when (call.method) {
+                "setMinimap" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: true
+                    val want = if (enabled) View.VISIBLE else View.INVISIBLE
+                    if (v.visibility == want) {
+                        // Idempotent: NOOP when already in the requested state.
+                        Log.i(TAG, "setMinimap($enabled): NOOP (already ${if (enabled) "shown" else "hidden"})")
+                        result.success("noop")
+                    } else {
+                        v.visibility = want
+                        Log.i(TAG, "setMinimap($enabled): APPLIED")
+                        result.success("applied:$enabled")
+                    }
+                }
+                "setMinimapBounds" -> {
+                    val x = call.argument<Int>("x") ?: 0
+                    val y = call.argument<Int>("y") ?: 0
+                    val w = call.argument<Int>("w") ?: FrameLayout.LayoutParams.MATCH_PARENT
+                    val h = call.argument<Int>("h") ?: FrameLayout.LayoutParams.MATCH_PARENT
+                    v.layoutParams = FrameLayout.LayoutParams(w, h).apply {
+                        leftMargin = x; topMargin = y
+                    }
+                    v.requestLayout()
+                    Log.i(TAG, "setMinimapBounds($x,$y,$w,$h): APPLIED")
+                    result.success("bounds:$x,$y,$w,$h")
+                }
+                "setMinimapParam" -> {
+                    val key = call.argument<String>("key") ?: ""
+                    if (key == "hue") {
+                        val value = (call.argument<Double>("value") ?: 0.0).toFloat()
+                        v.baseHue = ((value % 360f) + 360f) % 360f
+                        Log.i(TAG, "setMinimapParam(hue=${v.baseHue}): APPLIED")
+                        result.success("hue:${v.baseHue}")
+                    } else {
+                        Log.i(TAG, "setMinimapParam($key): ignored")
+                        result.success("ignored:$key")
+                    }
+                }
+                else -> result.notImplemented()
+            }
         }
     }
 
@@ -171,4 +285,101 @@ class MainActivity : FlutterActivity() {
         hudEngine?.destroy()
         super.onDestroy()
     }
+}
+
+// -----------------------------------------------------------------------------
+// MinimapView — native animated TextureView placeholder for the map under-layer.
+//
+// Draws a moving gradient + circle on a dedicated render thread (~60 fps).
+// The green-yellow HUD-readability ColorMatrix filter is applied via
+// setLayerType(LAYER_TYPE_HARDWARE, filterPaint) on the VIEW ITSELF here because
+// we control the drawing; the PoC applies it on a filterWrapper FrameLayout
+// parent only when using an external SurfaceTexture (e.g. YNavi) that bypasses
+// View invalidation.  For our own lockCanvas loop the direct approach works.
+//
+// Color-filter values (preset 1 "Green-yellow" from hud-presentation-host.md):
+//   filterPreset=0 → tR=0.7, tG=1.0, tB=0.1; contrast=3.0; threshold=-150;
+//   brightness=-20; saturation=0 (full monochrome-tint).
+// The compact matrix below encodes the preset-0 tint at those params
+// (computed offline from the CarAppHostService matrix formula).
+// -----------------------------------------------------------------------------
+class MinimapView(context: android.content.Context) :
+    TextureView(context), TextureView.SurfaceTextureListener {
+
+    @Volatile var baseHue: Float = 120f // green-yellow hue
+    @Volatile private var running = false
+    private var renderThread: Thread? = null
+
+    init {
+        // The native layer must be opaque so the FilterWrapper colour shows
+        // through clearly; the transparent Flutter overlay sits on top.
+        isOpaque = true
+        surfaceTextureListener = this
+
+        // Apply the HUD-readability green-yellow ColorMatrix filter as a
+        // hardware layer directly on this TextureView.  We own the drawing
+        // (lockCanvas loop), so View invalidation keeps the layer current.
+        //
+        // Compact green-yellow tint matrix (monochrome, contrast ×3, t=-150,
+        // brightness -20, tR=0.7 tG=1.0 tB=0.1) from hud-presentation-host.md:
+        //   L = 0.3R+0.6G+0.1B  (luminance)
+        //   out_R = 3*0.7*L - 150*0.7 - 20 = 2.1L - 125
+        //   out_G = 3*1.0*L - 150*1.0 - 20 = 3.0L - 170
+        //   out_B = 3*0.1*L - 150*0.1 - 20 = 0.3L -  35
+        val cm = ColorMatrix(floatArrayOf(
+            // R row:  rR,   rG,   rB,  rA,  rOffset
+            0.63f,  1.26f, 0.21f, 0f, -125f,
+            // G row:  gR,   gG,   gB,  gA,  gOffset
+            0.90f,  1.80f, 0.30f, 0f, -170f,
+            // B row:  bR,   bG,   bB,  bA,  bOffset
+            0.09f,  0.18f, 0.03f, 0f,  -35f,
+            // A row (pass-through)
+            0f,     0f,    0f,   1f,    0f,
+        ))
+        val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
+        setLayerType(LAYER_TYPE_HARDWARE, paint)
+    }
+
+    override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+        running = true
+        renderThread = Thread {
+            var phase = 0f
+            while (running) {
+                val canvas: Canvas = try { lockCanvas() } catch (_: Throwable) { null } ?: continue
+                try {
+                    phase = (phase + 3f) % 360f
+                    val w = canvas.width.toFloat()
+                    val h = canvas.height.toFloat()
+                    // Animated background gradient — base hue shifts with phase.
+                    val c1 = Color.HSVToColor(floatArrayOf((baseHue + phase) % 360f, 0.7f, 0.85f))
+                    val c2 = Color.HSVToColor(floatArrayOf((baseHue + phase + 120f) % 360f, 0.7f, 0.5f))
+                    val bg = Paint().apply {
+                        shader = LinearGradient(0f, 0f, w, h, c1, c2, Shader.TileMode.CLAMP)
+                    }
+                    canvas.drawRect(0f, 0f, w, h, bg)
+                    // Moving circle — represents a map marker.
+                    val cx = w * (0.5f + 0.4f * sin(Math.toRadians(phase.toDouble())).toFloat())
+                    canvas.drawCircle(cx, h * 0.5f, h * 0.14f,
+                        Paint().apply { color = Color.WHITE; isAntiAlias = true })
+                    // Label so the filter effect is visually obvious.
+                    canvas.drawText("MINIMAP (native)", 16f, h * 0.18f,
+                        Paint().apply { color = Color.BLACK; textSize = h * 0.12f; isAntiAlias = true })
+                } finally {
+                    unlockCanvasAndPost(canvas)
+                }
+                try { Thread.sleep(16) } catch (_: InterruptedException) { break }
+            }
+        }.also { it.start() }
+    }
+
+    override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
+    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+        running = false
+        renderThread?.interrupt()
+        renderThread = null
+        return true
+    }
+
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
 }

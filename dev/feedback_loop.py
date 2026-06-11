@@ -430,6 +430,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="(T2/T3) return native CarSignals snapshot JSON via DUMP broadcast",
     )
 
+    # minimap — drive ext.zee.minimap on the DHU surface (Block 0009)
+    mm = sub.add_parser(
+        "minimap",
+        help="drive native MinimapView via ext.zee.minimap on DHU (Block 0009)",
+    )
+    mm.add_argument("kvs", nargs="+", help="key=value pairs e.g. on=true x=0 y=0 w=640 h=360")
+
     return p
 
 
@@ -494,6 +501,12 @@ def main(argv: list[str] | None = None) -> int:
             kv = _parse_kvs(args.kvs)
             surface = getattr(args, "surface", "dhu")
             result = await fl.inject(surface, **kv)
+        elif args.cmd == "minimap":
+            kv = _parse_kvs(args.kvs)
+            iso_id = await fl._resolve("dhu")
+            params: dict[str, Any] = {"isolateId": iso_id}
+            params.update(kv)
+            result = await fl._c.rpc("ext.zee.minimap", params)
         else:
             raise ValueError(f"unknown command {args.cmd!r}")
         return 0, result

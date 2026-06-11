@@ -11,12 +11,14 @@ import 'debug/agent_extensions.dart';
 import 'providers/services.dart';
 import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
+import 'services/adapters/native_minimap_host.dart';
 import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
+import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,11 @@ Future<void> dhuMain(List<String> args) async {
   final CarSignals carSignalsRaw =
       (!kIsWeb && Platform.isAndroid) ? NativeCarSignals() : FakeCarSignals();
 
+  // On Android, the DHU drives the native MinimapView via NativeMinimapHost.
+  // On T1 desktop the in-process FakeMinimapHost is used (no native surface).
+  final MinimapHost minimapHostRaw =
+      (!kIsWeb && Platform.isAndroid) ? NativeMinimapHost() : FakeMinimapHost();
+
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
@@ -78,6 +85,7 @@ Future<void> dhuMain(List<String> args) async {
     store: store,
     shotKey: dhuShotKey,
     carSignals: carSignalsRaw,
+    minimapHost: minimapHostRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
   );
 
@@ -86,7 +94,7 @@ Future<void> dhuMain(List<String> args) async {
       overrides: [
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(carSignalsRaw),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
+        minimapHostProvider.overrideWithValue(minimapHostRaw),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
