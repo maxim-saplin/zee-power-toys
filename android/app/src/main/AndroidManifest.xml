@@ -1,4 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Boot auto-launch (Block 0010) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Foreground service (mandatory for startForegroundService) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Forward-compat: required by API 34+ for dataSync FGS type.
+         Harmless on API 32 (our emulator target). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:label="zee_power_toys"
         android:name="${applicationName}"
@@ -40,6 +50,37 @@
                 <action android:name="com.zeepowertoys.DUMP"/>
             </intent-filter>
         </receiver>
+
+        <!-- Boot receiver — fires after credential unlock (directBootAware=false).
+             Starts ZeeForegroundService which is the background keepalive.
+             Block 0010 / ADR 0003: BootReceiver reads config via ConfigShim
+             before any Flutter isolate exists. -->
+        <receiver
+            android:name=".boot.BootReceiver"
+            android:exported="true"
+            android:directBootAware="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- QUICKBOOT_POWERON: some OEM (HTC/Xiaomi) fast-boot variant -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+            <!-- TEST_BOOT: non-protected alias used in smoke tests / T2 emulator.
+                 Production-build emulators block BOOT_COMPLETED from adb shell;
+                 this action exercises the same code path without that restriction. -->
+            <intent-filter>
+                <action android:name="com.zeepowertoys.TEST_BOOT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Background keepalive foreground service (Block 0010).
+             foregroundServiceType="dataSync" declared for API 34+ forward compat.
+             On API 32 the type attribute is accepted but the type permission is
+             not enforced. No wake locks; no GPS/camera/mic — dataSync is the
+             appropriate catch-all for a background-keepalive-only service. -->
+        <service
+            android:name=".boot.ZeeForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

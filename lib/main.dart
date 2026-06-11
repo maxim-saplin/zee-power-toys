@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app/dhu_app.dart';
@@ -87,6 +88,9 @@ Future<void> dhuMain(List<String> args) async {
     carSignals: carSignalsRaw,
     minimapHost: minimapHostRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
+    // getBootState: on Android, query the native FGS singleton for boot status.
+    // On other platforms (T1 desktop) the callback is not provided.
+    getBootState: (!kIsWeb && Platform.isAndroid) ? getBootStateAsync : null,
   );
 
   runApp(
@@ -192,3 +196,23 @@ class _DhuRootState extends State<_DhuRoot> {
 bool get _isDesktop =>
     !kIsWeb &&
     (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
+
+// ---------------------------------------------------------------------------
+// Boot state query — Feedback Loop visibility (Block 0010).
+//
+// Queries the native zee/boot MethodChannel for FGS running state and config
+// read status.  Used as the getBootState callback in registerZeeExtensions.
+// On T1 desktop (no native channel) returns a minimal error map.
+// ---------------------------------------------------------------------------
+const _bootChannel = MethodChannel('zee/boot');
+
+/// Async boot state query: calls zee/boot.getBootState on the native side.
+/// Returns best-effort data; on channel failure returns an error map.
+Future<Map<String, Object?>> getBootStateAsync() async {
+  try {
+    final result = await _bootChannel.invokeMapMethod<String, Object?>('getBootState');
+    return result ?? <String, Object?>{'fgsRunning': false, 'configReadOk': false};
+  } catch (e) {
+    return <String, Object?>{'error': '$e', 'fgsRunning': false, 'configReadOk': false};
+  }
+}

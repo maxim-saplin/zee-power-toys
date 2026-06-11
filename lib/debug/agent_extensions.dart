@@ -23,6 +23,8 @@ import '../services/minimap_host.dart';
 /// [onSetConfig] is optional (DHU can pass null; the store.changes subscription
 /// already relays to HUD).
 /// [minimapHost] is optional; when provided, ext.zee.minimap is registered.
+/// [getBootState] is optional; when provided, ext.zee.bootState is registered
+/// (DHU surface passes a callback that queries the native FGS state).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
@@ -30,6 +32,7 @@ void registerZeeExtensions({
   CarSignals? carSignals,
   Future<void> Function(AppConfig)? onSetConfig,
   MinimapHost? minimapHost,
+  Future<Map<String, Object?>> Function()? getBootState,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -38,6 +41,7 @@ void registerZeeExtensions({
         'isolate': identityHashCode(store),
         'pid': pid,
         'hudBoxOn': store.value.hudBoxOn,
+        'hudEnabled': store.value.hudEnabled,
       }),
     );
   });
@@ -83,7 +87,7 @@ void registerZeeExtensions({
     );
   });
 
-  // setConfig — supports hudBoxOn and safeArea.
+    // setConfig — supports hudBoxOn, hudEnabled, safeArea, blinker, battery.
   // safeArea param: JSON-encoded object string e.g. '{"left":0.1,"top":0.3,...}'
   // or individual edge keys: safeLeft, safeTop, safeRight, safeBottom.
   developer.registerExtension('ext.zee.setConfig', (method, params) async {
@@ -92,6 +96,12 @@ void registerZeeExtensions({
     final rawHudBoxOn = params['hudBoxOn'];
     if (rawHudBoxOn != null) {
       next = next.copyWith(hudBoxOn: rawHudBoxOn == 'true');
+    }
+
+    // hudEnabled — gates native HUD-engine spawn (boot shim reads this, ADR 0003).
+    final rawHudEnabled = params['hudEnabled'];
+    if (rawHudEnabled != null) {
+      next = next.copyWith(hudEnabled: rawHudEnabled == 'true');
     }
 
     // Accept safeArea as a JSON object string.
@@ -347,6 +357,23 @@ void registerZeeExtensions({
       }
     });
   }
+
+  // ext.zee.bootState — Feedback Loop reads FGS/boot status (Block 0010).
+  // Registered on every surface; on DHU Android a [getBootState] callback
+  // queries the native ZeeForegroundService state.  On other surfaces (T1,
+  // HUD isolate) the response is best-effort from the config store alone.
+  developer.registerExtension('ext.zee.bootState', (method, params) async {
+    final Map<String, Object?> native =
+        getBootState != null ? await getBootState() : <String, Object?>{};
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode(<String, Object?>{
+        'surface': surface,
+        'hudEnabled': store.value.hudEnabled,
+        'configReadOk': true, // store is loaded by the time extensions are registered
+        ...native,
+      }),
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -357,6 +384,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
     jsonEncode(<String, Object?>{
       'surface': surface,
       'hudBoxOn': store.value.hudBoxOn,
+      'hudEnabled': store.value.hudEnabled,
       'safeArea': store.value.safeArea.toJson(),
       'blinker': store.value.blinker.toJson(),
       'battery': store.value.battery.toJson(),

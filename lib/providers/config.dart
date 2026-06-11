@@ -51,3 +51,17 @@ final batteryConfigProvider = Provider<BatteryConfig>((ref) {
     error: (e, _) => ref.watch(configStoreProvider).value.battery,
   );
 });
+
+/// Whether the HUD engine should be spawned.
+///
+/// Read by native MainActivity.setupHud() via ConfigShim (ADR 0003) before
+/// Flutter is up; this Dart-side provider keeps the Feedback Loop in sync.
+/// Default true — HUD on unless the user explicitly disables it.
+final hudEnabledProvider = Provider<bool>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.hudEnabled,
+    loading: () => ref.watch(configStoreProvider).value.hudEnabled,
+    error: (e, _) => ref.watch(configStoreProvider).value.hudEnabled,
+  );
+});

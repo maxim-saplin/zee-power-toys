@@ -19,6 +19,8 @@ import android.view.Display
 import android.view.TextureView
 import android.view.View
 import android.widget.FrameLayout
+import com.zeepowertoys.zee_power_toys.boot.ConfigShim
+import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import io.flutter.FlutterInjector
@@ -60,6 +62,7 @@ class MainActivity : FlutterActivity() {
         private const val TAG = "ZEE"
         private const val HUB_CHANNEL = "zee/hub"
         private const val MINIMAP_CHANNEL = "zee/minimap"
+        private const val BOOT_CHANNEL = "zee/boot"
         // Delay (ms) before spawning the HUD engine; lets the primary view
         // finish its first layout pass so the FlutterView is fully attached.
         private const val HUD_SPAWN_DELAY_MS = 1500L
@@ -110,6 +113,24 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_CHANNEL)
             .setMethodCallHandler { call, result -> handleMinimap(call, result) }
 
+        // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
+        // for ext.zee.bootState (Block 0010).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BOOT_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getBootState" -> {
+                        val hudEnabledCfg = ConfigShim.readHudEnabled(applicationContext)
+                        result.success(mapOf(
+                            "fgsRunning" to ZeeForegroundService.isRunning,
+                            "hudEnabled" to ZeeForegroundService.lastHudEnabled,
+                            "hudEnabledConfig" to hudEnabledCfg,
+                            "configReadOk" to true,
+                        ))
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         // Construct CarSignalsController on the DHU engine messenger.
         // selectSource() probes AdaptAPI availability and logs the chosen source.
         val ctrl = CarSignalsController(this, flutterEngine.dartExecutor.binaryMessenger)
@@ -127,6 +148,17 @@ class MainActivity : FlutterActivity() {
     // -------------------------------------------------------------------------
 
     private fun setupHud() {
+        // Gate: read hudEnabled from config before spawning the HUD engine.
+        // ConfigShim is the ADR 0003 privileged pre-Flutter read; here the
+        // Flutter isolate may already be running, but using the same source
+        // (SharedPreferences) avoids a Dart↔native round-trip at startup.
+        val hudEnabled = ConfigShim.readHudEnabled(applicationContext)
+        if (!hudEnabled) {
+            Log.i(TAG, "setupHud: hudEnabled=false — HUD engine NOT spawned (config gate)")
+            return
+        }
+        Log.i(TAG, "setupHud: hudEnabled=true — proceeding with HUD engine setup")
+
         val display = findSecondaryDisplay()
         if (display == null) {
             // Graceful degradation: DHU keeps running, HUD simply absent.

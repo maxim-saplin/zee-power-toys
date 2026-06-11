@@ -239,12 +239,20 @@ class HudSafeArea {
 class AppConfig {
   const AppConfig({
     this.hudBoxOn = false,
+    this.hudEnabled = true,
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
     this.battery = const BatteryConfig(),
   });
 
   final bool hudBoxOn;
+
+  /// Whether the HUD engine should be spawned at all.
+  ///
+  /// The native boot shim (ConfigShim.kt) reads this flag from the
+  /// `flutter.zee.config` SharedPreferences key before any Flutter isolate
+  /// starts (ADR 0003). Default true — key absent or parse failure → HUD on.
+  final bool hudEnabled;
 
   /// Safe Area rectangle for the HUD's backing display.
   final HudSafeArea safeArea;
@@ -257,11 +265,13 @@ class AppConfig {
 
   AppConfig copyWith({
     bool? hudBoxOn,
+    bool? hudEnabled,
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
     BatteryConfig? battery,
   }) => AppConfig(
     hudBoxOn: hudBoxOn ?? this.hudBoxOn,
+    hudEnabled: hudEnabled ?? this.hudEnabled,
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
     battery: battery ?? this.battery,
@@ -269,6 +279,7 @@ class AppConfig {
 
   Map<String, Object?> toJson() => <String, Object?>{
     'hudBoxOn': hudBoxOn,
+    'hudEnabled': hudEnabled,
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
     'battery': battery.toJson(),
@@ -276,6 +287,7 @@ class AppConfig {
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
     hudBoxOn: json['hudBoxOn'] as bool? ?? false,
+    hudEnabled: json['hudEnabled'] as bool? ?? true,
     safeArea: json['safeArea'] is Map<String, Object?>
         ? HudSafeArea.fromJson(json['safeArea']! as Map<String, Object?>)
         : const HudSafeArea(),
@@ -295,12 +307,13 @@ class AppConfig {
   bool operator ==(Object other) =>
       other is AppConfig &&
       other.hudBoxOn == hudBoxOn &&
+      other.hudEnabled == hudEnabled &&
       other.safeArea == safeArea &&
       other.blinker == blinker &&
       other.battery == battery;
 
   @override
-  int get hashCode => Object.hash(hudBoxOn, safeArea, blinker, battery);
+  int get hashCode => Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery);
 }
 
 /// Port for config persistence. Each isolate owns its own instance.
