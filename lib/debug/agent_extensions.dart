@@ -60,6 +60,15 @@ void registerZeeExtensions({
     final sa = store.value.safeArea;
     final bl = store.value.blinker;
     final bat = store.value.battery;
+    final mm = store.value.minimap;
+    // resolvedBrightness: we cannot call MediaQuery here (no BuildContext),
+    // so we report the configured preference.  'auto' means "follow system";
+    // UI consumers resolve the actual brightness at render time.
+    final resolvedBrightness = mm.themeFollow; // 'auto'|'dark'|'light'
+    // ynaviAvailable is queried from the minimapHost if present; otherwise null.
+    final bool? ynaviAvailable = minimapHost != null
+        ? await minimapHost.isYnaviAvailable()
+        : null;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -85,6 +94,17 @@ void registerZeeExtensions({
         // HUD layout state — safeArea fractions + which slots are active.
         'safeArea': sa.toJson(),
         'activeSlots': <String>['blinker', 'battery', 'guidance', 'minimap'],
+        // Minimap config + live YNavi availability for the Feedback Loop.
+        'minimap': <String, Object?>{
+          'enabled': mm.enabled,
+          'preset': mm.preset,
+          'advanced': mm.advanced,
+          if (mm.widthFrac != null) 'widthFrac': mm.widthFrac,
+          if (mm.heightFrac != null) 'heightFrac': mm.heightFrac,
+          'themeFollow': mm.themeFollow,
+          'ynaviAvailable': ynaviAvailable,
+          'resolvedBrightness': resolvedBrightness,
+        },
       }),
     );
   });
@@ -182,6 +202,26 @@ void registerZeeExtensions({
     if (rawLocale != null) {
       next = next.copyWith(
         locale: rawLocale == 'system' ? null : rawLocale,
+      );
+    }
+
+    // Minimap config: minimapEnabled=true|false, minimapPreset=compact|balanced|large,
+    // minimapTheme=auto|dark|light.
+    final rawMinimapEnabled = params['minimapEnabled'];
+    final rawMinimapPreset = params['minimapPreset'];
+    final rawMinimapTheme = params['minimapTheme'];
+    if (rawMinimapEnabled != null ||
+        rawMinimapPreset != null ||
+        rawMinimapTheme != null) {
+      final mm = next.minimap;
+      next = next.copyWith(
+        minimap: mm.copyWith(
+          enabled: rawMinimapEnabled != null
+              ? rawMinimapEnabled == 'true'
+              : null,
+          preset: rawMinimapPreset,
+          themeFollow: rawMinimapTheme,
+        ),
       );
     }
 
@@ -399,6 +439,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'safeArea': store.value.safeArea.toJson(),
       'blinker': store.value.blinker.toJson(),
       'battery': store.value.battery.toJson(),
+      'minimap': store.value.minimap.toJson(),
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>

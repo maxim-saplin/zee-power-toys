@@ -439,6 +439,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edge'**
   String get positionEdge;
+
+  /// Minimap settings section label
+  ///
+  /// In en, this message translates to:
+  /// **'Minimap'**
+  String get sectionMinimap;
+
+  /// Minimap settings section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi minimap, presets, dark/light'**
+  String get sectionMinimapSubtitle;
+
+  /// Minimap settings screen app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Minimap'**
+  String get minimapTitle;
+
+  /// Minimap section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Minimap'**
+  String get minimapSection;
+
+  /// Toggle: enable the YNavi minimap
+  ///
+  /// In en, this message translates to:
+  /// **'Enable minimap'**
+  String get minimapEnable;
+
+  /// Hint shown when YNavi mod is absent
+  ///
+  /// In en, this message translates to:
+  /// **'Install a compatible YNavi mod to enable the minimap'**
+  String get minimapYnaviUnavailableHint;
+
+  /// Minimap preset selector label
+  ///
+  /// In en, this message translates to:
+  /// **'Preset'**
+  String get minimapPreset;
+
+  /// Minimap preset: compact
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get minimapPresetCompact;
+
+  /// Minimap preset: balanced
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get minimapPresetBalanced;
+
+  /// Minimap preset: large
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get minimapPresetLarge;
+
+  /// Minimap advanced expansion tile title
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get minimapAdvanced;
+
+  /// Minimap manual width slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Width (fraction of safe area)'**
+  String get minimapWidth;
+
+  /// Minimap manual height slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Height (fraction of safe area)'**
+  String get minimapHeight;
+
+  /// Minimap theme section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get minimapThemeSection;
+
+  /// Minimap theme: follow system brightness
+  ///
+  /// In en, this message translates to:
+  /// **'System (auto)'**
+  String get minimapThemeAuto;
+
+  /// Minimap theme: force dark palette
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get minimapThemeDark;
+
+  /// Minimap theme: force light palette
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get minimapThemeLight;
 }
 
 class _AppLocalizationsDelegate

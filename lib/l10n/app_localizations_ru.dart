@@ -178,4 +178,57 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get positionEdge => 'Край';
+
+  @override
+  String get sectionMinimap => 'Миникарта';
+
+  @override
+  String get sectionMinimapSubtitle =>
+      'Миникарта YNavi, пресеты, темная/светлая';
+
+  @override
+  String get minimapTitle => 'Миникарта';
+
+  @override
+  String get minimapSection => 'Миникарта';
+
+  @override
+  String get minimapEnable => 'Включить миникарту';
+
+  @override
+  String get minimapYnaviUnavailableHint =>
+      'Установите совместимый мод YNavi, чтобы включить миникарту';
+
+  @override
+  String get minimapPreset => 'Пресет';
+
+  @override
+  String get minimapPresetCompact => 'Компактный';
+
+  @override
+  String get minimapPresetBalanced => 'Стандартный';
+
+  @override
+  String get minimapPresetLarge => 'Большой';
+
+  @override
+  String get minimapAdvanced => 'Расширенно';
+
+  @override
+  String get minimapWidth => 'Ширина (доля безопасной области)';
+
+  @override
+  String get minimapHeight => 'Высота (доля безопасной области)';
+
+  @override
+  String get minimapThemeSection => 'Тема';
+
+  @override
+  String get minimapThemeAuto => 'Системная (авто)';
+
+  @override
+  String get minimapThemeDark => 'Тёмная';
+
+  @override
+  String get minimapThemeLight => 'Светлая';
 }

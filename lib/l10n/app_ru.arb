@@ -170,5 +170,56 @@
   "@positionBottom": { "description": "Slider end label: bottom" },
 
   "positionEdge": "Край",
-  "@positionEdge": { "description": "Slider start label: edge" }
+  "@positionEdge": { "description": "Slider start label: edge" },
+
+  "sectionMinimap": "Миникарта",
+  "@sectionMinimap": { "description": "Minimap settings section label" },
+
+  "sectionMinimapSubtitle": "Миникарта YNavi, пресеты, темная/светлая",
+  "@sectionMinimapSubtitle": { "description": "Minimap settings section subtitle" },
+
+  "minimapTitle": "Миникарта",
+  "@minimapTitle": { "description": "Minimap settings screen app-bar title" },
+
+  "minimapSection": "Миникарта",
+  "@minimapSection": { "description": "Minimap section heading" },
+
+  "minimapEnable": "Включить миникарту",
+  "@minimapEnable": { "description": "Toggle: enable the YNavi minimap" },
+
+  "minimapYnaviUnavailableHint": "Установите совместимый мод YNavi, чтобы включить миникарту",
+  "@minimapYnaviUnavailableHint": { "description": "Hint shown when YNavi mod is absent" },
+
+  "minimapPreset": "Пресет",
+  "@minimapPreset": { "description": "Minimap preset selector label" },
+
+  "minimapPresetCompact": "Компактный",
+  "@minimapPresetCompact": { "description": "Minimap preset: compact" },
+
+  "minimapPresetBalanced": "Стандартный",
+  "@minimapPresetBalanced": { "description": "Minimap preset: balanced" },
+
+  "minimapPresetLarge": "Большой",
+  "@minimapPresetLarge": { "description": "Minimap preset: large" },
+
+  "minimapAdvanced": "Расширенно",
+  "@minimapAdvanced": { "description": "Minimap advanced expansion tile title" },
+
+  "minimapWidth": "Ширина (доля безопасной области)",
+  "@minimapWidth": { "description": "Minimap manual width slider label" },
+
+  "minimapHeight": "Высота (доля безопасной области)",
+  "@minimapHeight": { "description": "Minimap manual height slider label" },
+
+  "minimapThemeSection": "Тема",
+  "@minimapThemeSection": { "description": "Minimap theme section heading" },
+
+  "minimapThemeAuto": "Системная (авто)",
+  "@minimapThemeAuto": { "description": "Minimap theme: follow system brightness" },
+
+  "minimapThemeDark": "Тёмная",
+  "@minimapThemeDark": { "description": "Minimap theme: force dark palette" },
+
+  "minimapThemeLight": "Светлая",
+  "@minimapThemeLight": { "description": "Minimap theme: force light palette" }
 }

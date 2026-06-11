@@ -241,6 +241,11 @@ class MainActivity : FlutterActivity() {
     // -------------------------------------------------------------------------
 
     private fun handleMinimap(call: MethodCall, result: MethodChannel.Result) {
+        // isYnaviAvailable does not need the minimapView; handle it on the main thread directly.
+        if (call.method == "isYnaviAvailable") {
+            result.success(isYnaviAvailable())
+            return
+        }
         handler.post {
             val v = minimapView
             if (v == null) {
@@ -289,6 +294,50 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // YNavi mod detection — isYnaviAvailable (zee/minimap channel, no-HUD-needed).
+    //
+    // Implements detection Steps 1+2 from ynavi-bind-and-mod.md §7:
+    //   1. PackageManager.getPackageInfo("ru.yandex.yandexnavi", GET_SERVICES)
+    //   2. Services list contains NavigationCarAppService
+    //
+    // This is a static check (no bind attempt) — fast and safe to call from Dart
+    // on every screen open.  Returns false when the package is absent (emulator,
+    // stock device) or only the stock APK is installed (service present but the
+    // bind allowlist patch P1 is not applied — Step 3 bind probe would be needed
+    // to distinguish this, deferred to T3).
+    // -------------------------------------------------------------------------
+    private fun isYnaviAvailable(): Boolean {
+        return try {
+            val flags = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                android.content.pm.PackageManager.PackageInfoFlags.of(
+                    android.content.pm.PackageManager.GET_SERVICES.toLong()
+                )
+            } else {
+                null
+            }
+            val pkgInfo = if (flags != null) {
+                packageManager.getPackageInfo("ru.yandex.yandexnavi", flags)
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(
+                    "ru.yandex.yandexnavi",
+                    android.content.pm.PackageManager.GET_SERVICES,
+                )
+            }
+            // Service presence check: the mod must declare NavigationCarAppService.
+            val hasService = pkgInfo.services?.any { svc ->
+                svc.name == "ru.yandex.yandexnavi.projected.platformkit.presentation.service.NavigationCarAppService"
+                    || svc.name.endsWith(".NavigationCarAppService")
+            } == true
+            Log.i(TAG, "isYnaviAvailable: package found, hasService=$hasService")
+            hasService
+        } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
+            Log.i(TAG, "isYnaviAvailable: package not found → false")
+            false
         }
     }
 

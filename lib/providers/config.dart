@@ -52,6 +52,43 @@ final batteryConfigProvider = Provider<BatteryConfig>((ref) {
   );
 });
 
+/// Current minimap config, updated whenever the config changes.
+final minimapConfigProvider = Provider<MinimapConfig>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.minimap,
+    loading: () => ref.watch(configStoreProvider).value.minimap,
+    error: (e, _) => ref.watch(configStoreProvider).value.minimap,
+  );
+});
+
+/// Whether a compatible YNavi mod is installed and detectable.
+///
+/// Queries MinimapHost.isYnaviAvailable() once on first watch.
+/// On T1 the FakeMinimapHost returns its configurable field (default false).
+/// On T2 Android the native PackageManager check runs.
+final ynaviAvailableProvider = FutureProvider<bool>((ref) async {
+  final host = ref.watch(minimapHostProvider);
+  return host.isYnaviAvailable();
+});
+
+/// Resolved HUD brightness: when themeFollow='auto' this follows the system
+/// brightness at the time of the last config read (cannot watch
+/// MediaQuery from a plain Provider — UI consumers resolve it with
+/// MediaQuery.platformBrightnessOf(context) when they need the live value).
+///
+/// This provider exposes the configured preference string so widgets can
+/// quickly derive the effective brightness without re-reading the full config.
+/// Values: 'auto' | 'dark' | 'light'.
+final hudThemeFollowProvider = Provider<String>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.minimap.themeFollow,
+    loading: () => ref.watch(configStoreProvider).value.minimap.themeFollow,
+    error: (e, _) => ref.watch(configStoreProvider).value.minimap.themeFollow,
+  );
+});
+
 /// Whether the HUD engine should be spawned.
 ///
 /// Read by native MainActivity.setupHud() via ConfigShim (ADR 0003) before

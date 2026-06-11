@@ -178,4 +178,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get positionEdge => 'Edge';
+
+  @override
+  String get sectionMinimap => 'Minimap';
+
+  @override
+  String get sectionMinimapSubtitle => 'YNavi minimap, presets, dark/light';
+
+  @override
+  String get minimapTitle => 'Minimap';
+
+  @override
+  String get minimapSection => 'Minimap';
+
+  @override
+  String get minimapEnable => 'Enable minimap';
+
+  @override
+  String get minimapYnaviUnavailableHint =>
+      'Install a compatible YNavi mod to enable the minimap';
+
+  @override
+  String get minimapPreset => 'Preset';
+
+  @override
+  String get minimapPresetCompact => 'Compact';
+
+  @override
+  String get minimapPresetBalanced => 'Balanced';
+
+  @override
+  String get minimapPresetLarge => 'Large';
+
+  @override
+  String get minimapAdvanced => 'Advanced';
+
+  @override
+  String get minimapWidth => 'Width (fraction of safe area)';
+
+  @override
+  String get minimapHeight => 'Height (fraction of safe area)';
+
+  @override
+  String get minimapThemeSection => 'Theme';
+
+  @override
+  String get minimapThemeAuto => 'System (auto)';
+
+  @override
+  String get minimapThemeDark => 'Dark';
+
+  @override
+  String get minimapThemeLight => 'Light';
 }

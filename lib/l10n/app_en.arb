@@ -170,5 +170,56 @@
   "@positionBottom": { "description": "Slider end label: bottom" },
 
   "positionEdge": "Edge",
-  "@positionEdge": { "description": "Slider start label: edge" }
+  "@positionEdge": { "description": "Slider start label: edge" },
+
+  "sectionMinimap": "Minimap",
+  "@sectionMinimap": { "description": "Minimap settings section label" },
+
+  "sectionMinimapSubtitle": "YNavi minimap, presets, dark/light",
+  "@sectionMinimapSubtitle": { "description": "Minimap settings section subtitle" },
+
+  "minimapTitle": "Minimap",
+  "@minimapTitle": { "description": "Minimap settings screen app-bar title" },
+
+  "minimapSection": "Minimap",
+  "@minimapSection": { "description": "Minimap section heading" },
+
+  "minimapEnable": "Enable minimap",
+  "@minimapEnable": { "description": "Toggle: enable the YNavi minimap" },
+
+  "minimapYnaviUnavailableHint": "Install a compatible YNavi mod to enable the minimap",
+  "@minimapYnaviUnavailableHint": { "description": "Hint shown when YNavi mod is absent" },
+
+  "minimapPreset": "Preset",
+  "@minimapPreset": { "description": "Minimap preset selector label" },
+
+  "minimapPresetCompact": "Compact",
+  "@minimapPresetCompact": { "description": "Minimap preset: compact" },
+
+  "minimapPresetBalanced": "Balanced",
+  "@minimapPresetBalanced": { "description": "Minimap preset: balanced" },
+
+  "minimapPresetLarge": "Large",
+  "@minimapPresetLarge": { "description": "Minimap preset: large" },
+
+  "minimapAdvanced": "Advanced",
+  "@minimapAdvanced": { "description": "Minimap advanced expansion tile title" },
+
+  "minimapWidth": "Width (fraction of safe area)",
+  "@minimapWidth": { "description": "Minimap manual width slider label" },
+
+  "minimapHeight": "Height (fraction of safe area)",
+  "@minimapHeight": { "description": "Minimap manual height slider label" },
+
+  "minimapThemeSection": "Theme",
+  "@minimapThemeSection": { "description": "Minimap theme section heading" },
+
+  "minimapThemeAuto": "System (auto)",
+  "@minimapThemeAuto": { "description": "Minimap theme: follow system brightness" },
+
+  "minimapThemeDark": "Dark",
+  "@minimapThemeDark": { "description": "Minimap theme: force dark palette" },
+
+  "minimapThemeLight": "Light",
+  "@minimapThemeLight": { "description": "Minimap theme: force light palette" }
 }

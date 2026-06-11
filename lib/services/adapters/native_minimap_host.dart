@@ -49,5 +49,17 @@ class NativeMinimapHost implements MinimapHost {
   @override
   Stream<GuidanceEvent> get guidance => _guidanceCtrl.stream;
 
+  /// Delegates to the native PackageManager check over zee/minimap.
+  /// Returns false on any channel error (safe default: toggle stays disabled).
+  @override
+  Future<bool> isYnaviAvailable() async {
+    try {
+      final result = await _ch.invokeMethod<bool>('isYnaviAvailable');
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void dispose() => _guidanceCtrl.close();
 }

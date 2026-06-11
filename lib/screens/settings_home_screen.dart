@@ -6,6 +6,7 @@ import '../providers/config.dart';
 import '../providers/services.dart';
 import 'diagnostics_screen.dart';
 import 'hud_settings_screen.dart';
+import 'minimap_settings_screen.dart';
 
 /// DHU Settings hub — the root screen of the DHU navigation shell.
 ///
@@ -32,6 +33,18 @@ class SettingsHomeScreen extends ConsumerWidget {
               context,
               MaterialPageRoute<void>(
                 builder: (_) => const HudSettingsScreen(),
+              ),
+            ),
+          ),
+          _SectionTile(
+            key: const ValueKey('nav-minimap'),
+            icon: Icons.map_outlined,
+            title: l10n.sectionMinimap,
+            subtitle: l10n.sectionMinimapSubtitle,
+            onTap: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const MinimapSettingsScreen(),
               ),
             ),
           ),

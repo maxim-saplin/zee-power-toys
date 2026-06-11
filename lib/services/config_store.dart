@@ -1,5 +1,99 @@
 import 'dart:convert';
 
+// ---------------------------------------------------------------------------
+// MinimapConfig
+// ---------------------------------------------------------------------------
+
+/// HUD minimap (YNavi) configuration.
+///
+/// Defaults: enabled=false (safe until mod detected), preset='balanced',
+/// advanced=false, themeFollow='auto'.
+///
+/// themeFollow ∈ {'auto', 'dark', 'light'}:
+///   - 'auto'  → HUD palette follows MediaQuery.platformBrightness
+///   - 'dark'  → always dark palette
+///   - 'light' → always light palette
+class MinimapConfig {
+  const MinimapConfig({
+    this.enabled = false,
+    this.preset = 'balanced',
+    this.advanced = false,
+    this.widthFrac,
+    this.heightFrac,
+    this.themeFollow = 'auto',
+  });
+
+  /// Whether the minimap is enabled. Only meaningful when YNavi mod is present.
+  final bool enabled;
+
+  /// Preset name: 'compact', 'balanced', or 'large'.
+  final String preset;
+
+  /// When true, show manual dimension sliders instead of the preset selector.
+  final bool advanced;
+
+  /// Manual width as fraction of HUD safe area width (0..1); null = use preset.
+  final double? widthFrac;
+
+  /// Manual height as fraction of HUD safe area height (0..1); null = use preset.
+  final double? heightFrac;
+
+  /// Theme-follow mode: 'auto' | 'dark' | 'light'.
+  final String themeFollow;
+
+  MinimapConfig copyWith({
+    bool? enabled,
+    String? preset,
+    bool? advanced,
+    Object? widthFrac = _unset,
+    Object? heightFrac = _unset,
+    String? themeFollow,
+  }) => MinimapConfig(
+    enabled: enabled ?? this.enabled,
+    preset: preset ?? this.preset,
+    advanced: advanced ?? this.advanced,
+    widthFrac:
+        identical(widthFrac, _unset) ? this.widthFrac : widthFrac as double?,
+    heightFrac:
+        identical(heightFrac, _unset)
+            ? this.heightFrac
+            : heightFrac as double?,
+    themeFollow: themeFollow ?? this.themeFollow,
+  );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'enabled': enabled,
+    'preset': preset,
+    'advanced': advanced,
+    if (widthFrac != null) 'widthFrac': widthFrac,
+    if (heightFrac != null) 'heightFrac': heightFrac,
+    'themeFollow': themeFollow,
+  };
+
+  factory MinimapConfig.fromJson(Map<String, Object?> json) => MinimapConfig(
+    enabled: json['enabled'] as bool? ?? false,
+    preset: json['preset'] as String? ?? 'balanced',
+    advanced: json['advanced'] as bool? ?? false,
+    widthFrac: (json['widthFrac'] as num?)?.toDouble(),
+    heightFrac: (json['heightFrac'] as num?)?.toDouble(),
+    themeFollow: json['themeFollow'] as String? ?? 'auto',
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is MinimapConfig &&
+      other.enabled == enabled &&
+      other.preset == preset &&
+      other.advanced == advanced &&
+      other.widthFrac == widthFrac &&
+      other.heightFrac == heightFrac &&
+      other.themeFollow == themeFollow;
+
+  @override
+  int get hashCode =>
+      Object.hash(enabled, preset, advanced, widthFrac, heightFrac, themeFollow);
+}
+
 /// Battery widget appearance config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
@@ -243,6 +337,7 @@ class AppConfig {
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
     this.battery = const BatteryConfig(),
+    this.minimap = const MinimapConfig(),
     this.locale,
   });
 
@@ -264,6 +359,9 @@ class AppConfig {
   /// Battery widget appearance (show/hide elements, size).
   final BatteryConfig battery;
 
+  /// YNavi minimap configuration (enable, preset, theme-follow, advanced dims).
+  final MinimapConfig minimap;
+
   /// UI language override: null = follow system locale; 'en' or 'ru' = explicit
   /// override.  Stored as a plain string so the JSON round-trip is trivial and
   /// future locale codes need no schema change.
@@ -275,6 +373,7 @@ class AppConfig {
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
     BatteryConfig? battery,
+    MinimapConfig? minimap,
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
     Object? locale = _unset,
   }) => AppConfig(
@@ -283,6 +382,7 @@ class AppConfig {
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
     battery: battery ?? this.battery,
+    minimap: minimap ?? this.minimap,
     locale: identical(locale, _unset) ? this.locale : locale as String?,
   );
 
@@ -292,6 +392,7 @@ class AppConfig {
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
     'battery': battery.toJson(),
+    'minimap': minimap.toJson(),
     if (locale != null) 'locale': locale,
   };
 
@@ -307,6 +408,9 @@ class AppConfig {
     battery: json['battery'] is Map<String, Object?>
         ? BatteryConfig.fromJson(json['battery']! as Map<String, Object?>)
         : const BatteryConfig(),
+    minimap: json['minimap'] is Map<String, Object?>
+        ? MinimapConfig.fromJson(json['minimap']! as Map<String, Object?>)
+        : const MinimapConfig(),
     locale: json['locale'] as String?,
   );
 
@@ -322,11 +426,12 @@ class AppConfig {
       other.safeArea == safeArea &&
       other.blinker == blinker &&
       other.battery == battery &&
+      other.minimap == minimap &&
       other.locale == locale;
 
   @override
   int get hashCode =>
-      Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery, locale);
+      Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery, minimap, locale);
 }
 
 // Sentinel used by copyWith to distinguish "pass null" from "omit".
