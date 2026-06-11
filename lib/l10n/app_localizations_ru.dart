@@ -24,7 +24,76 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionDiagnostics => 'Диагностика';
 
   @override
-  String get sectionDiagnosticsSubtitle => 'Скоро будет доступно';
+  String get sectionDiagnosticsSubtitle => 'Текущие показатели автомобиля';
+
+  @override
+  String get diagnosticsTitle => 'Диагностика';
+
+  @override
+  String get diagSectionMotion => 'Движение';
+
+  @override
+  String get diagSectionLighting => 'Освещение';
+
+  @override
+  String get diagSectionEnergy => 'Энергия';
+
+  @override
+  String get diagSectionBattery => 'Аккумулятор';
+
+  @override
+  String get diagSpeed => 'Скорость';
+
+  @override
+  String get diagPowerFlow => 'Поток мощности';
+
+  @override
+  String get diagPowerFlowUnknown => 'неизвестно';
+
+  @override
+  String get diagPowerFlowDrive => 'тяга';
+
+  @override
+  String get diagPowerFlowRegen => 'рекуперация';
+
+  @override
+  String get diagPowerFlowStandstill => 'стоянка';
+
+  @override
+  String get diagBlinker => 'Поворотник';
+
+  @override
+  String get diagBlinkerOff => 'выкл';
+
+  @override
+  String get diagBlinkerLeft => 'левый';
+
+  @override
+  String get diagBlinkerRight => 'правый';
+
+  @override
+  String get diagBlinkerHazard => 'аварийная';
+
+  @override
+  String get diagCharging => 'Зарядка';
+
+  @override
+  String get diagChargePower => 'Мощность зарядки';
+
+  @override
+  String get diagYes => 'да';
+
+  @override
+  String get diagNo => 'нет';
+
+  @override
+  String get diagBatteryLevel => 'Уровень заряда';
+
+  @override
+  String get diagBatteryTemp => 'Температура батареи';
+
+  @override
+  String get diagRawSnapshot => 'Сырые данные';
 
   @override
   String get sectionLanguage => 'Язык';

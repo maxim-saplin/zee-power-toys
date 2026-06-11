@@ -17,21 +17,24 @@ class DhuApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(appLocaleProvider);
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      // Localization delegates — AppLocalizations + the three Flutter globals.
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      // null → follow the system locale (platform default).
-      locale: locale,
-      home: RepaintBoundary(
-        key: dhuShotKey,
-        child: const SettingsHomeScreen(),
+    // The RepaintBoundary wraps the entire MaterialApp so that ext.zee.shot
+    // captures whatever route is currently visible (Settings hub, pushed screens,
+    // etc.) rather than just the static home widget.
+    return RepaintBoundary(
+      key: dhuShotKey,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        // Localization delegates — AppLocalizations + the three Flutter globals.
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        // null → follow the system locale (platform default).
+        locale: locale,
+        home: const SettingsHomeScreen(),
       ),
     );
   }

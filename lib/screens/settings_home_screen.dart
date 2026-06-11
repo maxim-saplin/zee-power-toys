@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../providers/services.dart';
+import 'diagnostics_screen.dart';
 import 'hud_settings_screen.dart';
 
 /// DHU Settings hub — the root screen of the DHU navigation shell.
@@ -35,13 +36,14 @@ class SettingsHomeScreen extends ConsumerWidget {
             ),
           ),
           _SectionTile(
+            key: const ValueKey('nav-diagnostics'),
             icon: Icons.monitor_heart_outlined,
             title: l10n.sectionDiagnostics,
             subtitle: l10n.sectionDiagnosticsSubtitle,
             onTap: () => Navigator.push<void>(
               context,
               MaterialPageRoute<void>(
-                builder: (_) => _PlaceholderScreen(title: l10n.sectionDiagnostics),
+                builder: (_) => const DiagnosticsScreen(),
               ),
             ),
           ),
@@ -79,6 +81,7 @@ class SettingsHomeScreen extends ConsumerWidget {
 
 class _SectionTile extends StatelessWidget {
   const _SectionTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

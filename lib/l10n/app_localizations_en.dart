@@ -24,7 +24,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionDiagnostics => 'Diagnostics';
 
   @override
-  String get sectionDiagnosticsSubtitle => 'Coming soon';
+  String get sectionDiagnosticsSubtitle => 'Live car-signal values';
+
+  @override
+  String get diagnosticsTitle => 'Diagnostics';
+
+  @override
+  String get diagSectionMotion => 'Motion';
+
+  @override
+  String get diagSectionLighting => 'Lighting';
+
+  @override
+  String get diagSectionEnergy => 'Energy';
+
+  @override
+  String get diagSectionBattery => 'Battery';
+
+  @override
+  String get diagSpeed => 'Speed';
+
+  @override
+  String get diagPowerFlow => 'Power flow';
+
+  @override
+  String get diagPowerFlowUnknown => 'unknown';
+
+  @override
+  String get diagPowerFlowDrive => 'drive';
+
+  @override
+  String get diagPowerFlowRegen => 'regen';
+
+  @override
+  String get diagPowerFlowStandstill => 'standstill';
+
+  @override
+  String get diagBlinker => 'Blinker';
+
+  @override
+  String get diagBlinkerOff => 'off';
+
+  @override
+  String get diagBlinkerLeft => 'left';
+
+  @override
+  String get diagBlinkerRight => 'right';
+
+  @override
+  String get diagBlinkerHazard => 'hazard';
+
+  @override
+  String get diagCharging => 'Charging';
+
+  @override
+  String get diagChargePower => 'Charge power';
+
+  @override
+  String get diagYes => 'yes';
+
+  @override
+  String get diagNo => 'no';
+
+  @override
+  String get diagBatteryLevel => 'Battery level';
+
+  @override
+  String get diagBatteryTemp => 'Battery temperature';
+
+  @override
+  String get diagRawSnapshot => 'Raw snapshot';
 
   @override
   String get sectionLanguage => 'Language';

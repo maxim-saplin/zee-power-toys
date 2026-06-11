@@ -131,8 +131,146 @@ abstract class AppLocalizations {
   /// Diagnostics section subtitle
   ///
   /// In en, this message translates to:
-  /// **'Coming soon'**
+  /// **'Live car-signal values'**
   String get sectionDiagnosticsSubtitle;
+
+  /// Diagnostics screen app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get diagnosticsTitle;
+
+  /// Diagnostics: Motion section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Motion'**
+  String get diagSectionMotion;
+
+  /// Diagnostics: Lighting section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Lighting'**
+  String get diagSectionLighting;
+
+  /// Diagnostics: Energy section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Energy'**
+  String get diagSectionEnergy;
+
+  /// Diagnostics: Battery section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get diagSectionBattery;
+
+  /// Diagnostics: speed row label
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get diagSpeed;
+
+  /// Diagnostics: power-flow row label
+  ///
+  /// In en, this message translates to:
+  /// **'Power flow'**
+  String get diagPowerFlow;
+
+  /// Power-flow state: unknown
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get diagPowerFlowUnknown;
+
+  /// Power-flow state: drive
+  ///
+  /// In en, this message translates to:
+  /// **'drive'**
+  String get diagPowerFlowDrive;
+
+  /// Power-flow state: regen
+  ///
+  /// In en, this message translates to:
+  /// **'regen'**
+  String get diagPowerFlowRegen;
+
+  /// Power-flow state: standstill
+  ///
+  /// In en, this message translates to:
+  /// **'standstill'**
+  String get diagPowerFlowStandstill;
+
+  /// Diagnostics: blinker row label
+  ///
+  /// In en, this message translates to:
+  /// **'Blinker'**
+  String get diagBlinker;
+
+  /// Blinker state: off
+  ///
+  /// In en, this message translates to:
+  /// **'off'**
+  String get diagBlinkerOff;
+
+  /// Blinker state: left
+  ///
+  /// In en, this message translates to:
+  /// **'left'**
+  String get diagBlinkerLeft;
+
+  /// Blinker state: right
+  ///
+  /// In en, this message translates to:
+  /// **'right'**
+  String get diagBlinkerRight;
+
+  /// Blinker state: hazard
+  ///
+  /// In en, this message translates to:
+  /// **'hazard'**
+  String get diagBlinkerHazard;
+
+  /// Diagnostics: charging state row label
+  ///
+  /// In en, this message translates to:
+  /// **'Charging'**
+  String get diagCharging;
+
+  /// Diagnostics: charging power (kW) row label
+  ///
+  /// In en, this message translates to:
+  /// **'Charge power'**
+  String get diagChargePower;
+
+  /// Generic yes value
+  ///
+  /// In en, this message translates to:
+  /// **'yes'**
+  String get diagYes;
+
+  /// Generic no value
+  ///
+  /// In en, this message translates to:
+  /// **'no'**
+  String get diagNo;
+
+  /// Diagnostics: battery level row label
+  ///
+  /// In en, this message translates to:
+  /// **'Battery level'**
+  String get diagBatteryLevel;
+
+  /// Diagnostics: battery temperature row label
+  ///
+  /// In en, this message translates to:
+  /// **'Battery temperature'**
+  String get diagBatteryTemp;
+
+  /// Diagnostics: raw snapshot expansion tile title
+  ///
+  /// In en, this message translates to:
+  /// **'Raw snapshot'**
+  String get diagRawSnapshot;
 
   /// Language settings section label
   ///

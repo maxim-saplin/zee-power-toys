@@ -16,8 +16,77 @@
   "sectionDiagnostics": "Диагностика",
   "@sectionDiagnostics": { "description": "Diagnostics section label" },
 
-  "sectionDiagnosticsSubtitle": "Скоро будет доступно",
+  "sectionDiagnosticsSubtitle": "Текущие показатели автомобиля",
   "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
+
+  "diagnosticsTitle": "Диагностика",
+  "@diagnosticsTitle": { "description": "Diagnostics screen app-bar title" },
+
+  "diagSectionMotion": "Движение",
+  "@diagSectionMotion": { "description": "Diagnostics: Motion section heading" },
+
+  "diagSectionLighting": "Освещение",
+  "@diagSectionLighting": { "description": "Diagnostics: Lighting section heading" },
+
+  "diagSectionEnergy": "Энергия",
+  "@diagSectionEnergy": { "description": "Diagnostics: Energy section heading" },
+
+  "diagSectionBattery": "Аккумулятор",
+  "@diagSectionBattery": { "description": "Diagnostics: Battery section heading" },
+
+  "diagSpeed": "Скорость",
+  "@diagSpeed": { "description": "Diagnostics: speed row label" },
+
+  "diagPowerFlow": "Поток мощности",
+  "@diagPowerFlow": { "description": "Diagnostics: power-flow row label" },
+
+  "diagPowerFlowUnknown": "неизвестно",
+  "@diagPowerFlowUnknown": { "description": "Power-flow state: unknown" },
+
+  "diagPowerFlowDrive": "тяга",
+  "@diagPowerFlowDrive": { "description": "Power-flow state: drive" },
+
+  "diagPowerFlowRegen": "рекуперация",
+  "@diagPowerFlowRegen": { "description": "Power-flow state: regen" },
+
+  "diagPowerFlowStandstill": "стоянка",
+  "@diagPowerFlowStandstill": { "description": "Power-flow state: standstill" },
+
+  "diagBlinker": "Поворотник",
+  "@diagBlinker": { "description": "Diagnostics: blinker row label" },
+
+  "diagBlinkerOff": "выкл",
+  "@diagBlinkerOff": { "description": "Blinker state: off" },
+
+  "diagBlinkerLeft": "левый",
+  "@diagBlinkerLeft": { "description": "Blinker state: left" },
+
+  "diagBlinkerRight": "правый",
+  "@diagBlinkerRight": { "description": "Blinker state: right" },
+
+  "diagBlinkerHazard": "аварийная",
+  "@diagBlinkerHazard": { "description": "Blinker state: hazard" },
+
+  "diagCharging": "Зарядка",
+  "@diagCharging": { "description": "Diagnostics: charging state row label" },
+
+  "diagChargePower": "Мощность зарядки",
+  "@diagChargePower": { "description": "Diagnostics: charging power (kW) row label" },
+
+  "diagYes": "да",
+  "@diagYes": { "description": "Generic yes value" },
+
+  "diagNo": "нет",
+  "@diagNo": { "description": "Generic no value" },
+
+  "diagBatteryLevel": "Уровень заряда",
+  "@diagBatteryLevel": { "description": "Diagnostics: battery level row label" },
+
+  "diagBatteryTemp": "Температура батареи",
+  "@diagBatteryTemp": { "description": "Diagnostics: battery temperature row label" },
+
+  "diagRawSnapshot": "Сырые данные",
+  "@diagRawSnapshot": { "description": "Diagnostics: raw snapshot expansion tile title" },
 
   "sectionLanguage": "Язык",
   "@sectionLanguage": { "description": "Language settings section label" },

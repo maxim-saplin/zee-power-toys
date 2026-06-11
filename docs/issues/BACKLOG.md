@@ -61,7 +61,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | [0006](0006-hud-layout-safe-area-preview.md) | HUD preview + Safe-Area simulation in the main UI (grey BG) — HUD layout scaffold | HUD · preview | **done** |
 | — | Install modded Launcher + YNavi mod from GitHub | App-shell · install | backlog |
 | — | System + Cluster language change | App-shell · language | backlog |
-| — | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | backlog |
+| [0012](0012-diagnostics-dashboard.md) | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | **done** |
 | — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | _moved to [0011](0011-localization-nav-shell.md)_ → **done** (+ DHU nav shell) |
 | — | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | backlog |
 

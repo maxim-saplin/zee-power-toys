@@ -16,8 +16,77 @@
   "sectionDiagnostics": "Diagnostics",
   "@sectionDiagnostics": { "description": "Diagnostics section label" },
 
-  "sectionDiagnosticsSubtitle": "Coming soon",
+  "sectionDiagnosticsSubtitle": "Live car-signal values",
   "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
+
+  "diagnosticsTitle": "Diagnostics",
+  "@diagnosticsTitle": { "description": "Diagnostics screen app-bar title" },
+
+  "diagSectionMotion": "Motion",
+  "@diagSectionMotion": { "description": "Diagnostics: Motion section heading" },
+
+  "diagSectionLighting": "Lighting",
+  "@diagSectionLighting": { "description": "Diagnostics: Lighting section heading" },
+
+  "diagSectionEnergy": "Energy",
+  "@diagSectionEnergy": { "description": "Diagnostics: Energy section heading" },
+
+  "diagSectionBattery": "Battery",
+  "@diagSectionBattery": { "description": "Diagnostics: Battery section heading" },
+
+  "diagSpeed": "Speed",
+  "@diagSpeed": { "description": "Diagnostics: speed row label" },
+
+  "diagPowerFlow": "Power flow",
+  "@diagPowerFlow": { "description": "Diagnostics: power-flow row label" },
+
+  "diagPowerFlowUnknown": "unknown",
+  "@diagPowerFlowUnknown": { "description": "Power-flow state: unknown" },
+
+  "diagPowerFlowDrive": "drive",
+  "@diagPowerFlowDrive": { "description": "Power-flow state: drive" },
+
+  "diagPowerFlowRegen": "regen",
+  "@diagPowerFlowRegen": { "description": "Power-flow state: regen" },
+
+  "diagPowerFlowStandstill": "standstill",
+  "@diagPowerFlowStandstill": { "description": "Power-flow state: standstill" },
+
+  "diagBlinker": "Blinker",
+  "@diagBlinker": { "description": "Diagnostics: blinker row label" },
+
+  "diagBlinkerOff": "off",
+  "@diagBlinkerOff": { "description": "Blinker state: off" },
+
+  "diagBlinkerLeft": "left",
+  "@diagBlinkerLeft": { "description": "Blinker state: left" },
+
+  "diagBlinkerRight": "right",
+  "@diagBlinkerRight": { "description": "Blinker state: right" },
+
+  "diagBlinkerHazard": "hazard",
+  "@diagBlinkerHazard": { "description": "Blinker state: hazard" },
+
+  "diagCharging": "Charging",
+  "@diagCharging": { "description": "Diagnostics: charging state row label" },
+
+  "diagChargePower": "Charge power",
+  "@diagChargePower": { "description": "Diagnostics: charging power (kW) row label" },
+
+  "diagYes": "yes",
+  "@diagYes": { "description": "Generic yes value" },
+
+  "diagNo": "no",
+  "@diagNo": { "description": "Generic no value" },
+
+  "diagBatteryLevel": "Battery level",
+  "@diagBatteryLevel": { "description": "Diagnostics: battery level row label" },
+
+  "diagBatteryTemp": "Battery temperature",
+  "@diagBatteryTemp": { "description": "Diagnostics: battery temperature row label" },
+
+  "diagRawSnapshot": "Raw snapshot",
+  "@diagRawSnapshot": { "description": "Diagnostics: raw snapshot expansion tile title" },
 
   "sectionLanguage": "Language",
   "@sectionLanguage": { "description": "Language settings section label" },

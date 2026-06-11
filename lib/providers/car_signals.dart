@@ -50,3 +50,10 @@ final batteryTempCProvider = Provider<double?>((ref) {
   if (event is BatteryEvent) return event.tempC;
   return ref.watch(carSignalsProvider).snapshot.batteryTempC;
 });
+
+/// Current power-flow state (drive/regen/standstill/unknown); falls back to snapshot.
+final powerFlowProvider = Provider<PowerFlow>((ref) {
+  final event = ref.watch(carSignalEventsProvider).value;
+  if (event is PowerFlowEvent) return event.flow;
+  return ref.watch(carSignalsProvider).snapshot.powerFlow;
+});
