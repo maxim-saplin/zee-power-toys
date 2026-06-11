@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: done
 labels: [foundation, walking-skeleton]
 created: 2026-06-11
 satisfies: foundation          # implements ADR 0001 / 0002(T1) / 0003 / 0004 / 0006
@@ -41,14 +41,19 @@ This is the largest Block by nature (it includes project genesis). **Split seam*
 
 ## Definition of Done (runtime-confirmed on T1)
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). With `flutter run -d linux` up and the driver attached:
-- [ ] `getVM` shows **2 isolates**; `whoami` resolves `dhu` + `hud`. — artifact: whoami-all JSON.
-- [ ] Drive `ext.zee.setConfig {hudBoxOn:true}` on the **DHU** isolate → `ext.zee.dumpState` on the **HUD** isolate returns `hudBoxOn:true`; and the reverse for `false`. (cross-isolate relay proven) — artifact: before/after dumpState JSON from both isolates.
-- [ ] `ext.zee.shot` on the HUD isolate captures the box visible vs hidden, matching config. — artifact: `shots/hud-on.png`, `shots/hud-off.png`.
-- [ ] ConfigStore persists across a restart (write → restart → dumpState shows the value). — artifact: log/JSON.
-- [ ] Principles honored: no shared mutable Dart object across isolates; minimal UI; no stray always-on timers.
+- [x] `getVM` shows **2 isolates**; `whoami` resolves `dhu` + `hud`. — artifact: whoami-all JSON (same pid `183929`, distinct heaps `182113594`≠`713776238`).
+- [x] Drive `ext.zee.setConfig {hudBoxOn:true}` on the **DHU** isolate → `ext.zee.dumpState` on the **HUD** isolate returns `hudBoxOn:true`; and the reverse for `false`. (cross-isolate relay proven) — artifact: before/after dumpState JSON from both isolates.
+- [x] `ext.zee.shot` on the HUD isolate captures the box visible vs hidden, matching config. — artifact: [`shots/hud-on.png`](../../shots/hud-on.png) (yellow box on emissive black), [`shots/hud-off.png`](../../shots/hud-off.png) (black).
+- [x] ConfigStore persists across a restart (write → restart → dumpState shows the value). — artifact: on-disk plain JSON `{"flutter.zee.config":"{\"hudBoxOn\":true}"}` survived a full kill+relaunch; `dumpState dhu` returned `true`.
+- [x] Principles honored: no shared mutable Dart object across isolates (relay carries only the serialized event over `zee/hub`); minimal/ugly UI; no stray always-on timers.
 
 ## Reconciliation
-_(Filled while building. e.g. if `desktop_multi_window` proves unfit and the approach_b owned runner is adopted, note it and update ADR 0002 / 0005 here.)_
+Confirmed by the orchestrator (Opus) on T1 Linux desktop, 2026-06-11. Divergences fixed in this Block:
+
+1. **HUD entrypoint model (vs. this Block's own `@pragma('vm:entry-point') hudMain()` note).** `desktop_multi_window` 0.3.0 does **not** invoke a separate named Dart entrypoint on desktop — it re-runs `main()` with `args = ['multi_window', windowId, userArgs]`. The HUD path is therefore selected by **branching inside `main()`** → a plain `hudMain(args)` function (`lib/main.dart`). The `@pragma('vm:entry-point') hudMain` form is the **Android** `FlutterEngineGroup` / `DartEntrypoint("hudMain")` model and is deferred to the Android two-engine host Block (T2). The in-code comment at `lib/main.dart` records this. No ADR change needed — ADR 0002 already sanctions `desktop_multi_window` for T1.
+2. **ConfigStore on-disk key prefix (carry-forward for the boot-shim Block).** `shared_preferences` writes keys under a `flutter.` namespace, so the plain JSON the native boot shim must read (ADR 0003) is `{"flutter.zee.config":"{...}"}` — on Android this lands in `shared_prefs/<...>.xml` with the same `flutter.zee.config` key. The boot-shim Block must read **`flutter.zee.config`**, not `zee.config`. Recorded in [`docs/knowledge/flutter-conventions-riverpod-testing.md`](../knowledge/flutter-conventions-riverpod-testing.md) §11.
+3. **Dependency pins resolved cleanly** against Flutter 3.44.1 / Dart 3.12.1: `hooks_riverpod 3.3.2`, `flutter_hooks 0.21.3+1`, `shared_preferences 2.5.5` (patch bump), `desktop_multi_window 0.3.0`, `flutter_lints 6.0.0`. No fallback needed.
+4. **HUD store is currently a `SharedPrefsConfigStore`** (it re-persists relayed events). Benign on T1 (same value, converges per ADR 0003), but the services-skeleton Block should make the HUD-side store **in-memory** (DHU is the sole writer) to avoid a redundant double-write. Noted, not blocking.
 
 ## Notes
 Ugly is correct — no theming, no layout, no real car signals; those are later Blocks. The only goal is a breathing spine the Feedback Loop can drive and read on every later Block.
