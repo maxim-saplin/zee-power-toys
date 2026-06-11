@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider paths — Block 0014 install feature.
+
+  Exposes the app's internal cache directory so downloaded APK files can be
+  shared with the system PackageInstaller via a content:// URI.
+
+  cache-path maps to Context.getCacheDir() (internal, app-private storage).
+  The path="." exposes the entire cache root; APK files are written to the
+  root of getCacheDir() by InstallerController / Downloader.
+-->
+<paths>
+    <cache-path name="downloaded_apks" path="." />
+</paths>

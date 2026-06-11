@@ -105,7 +105,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionInstall => 'Install';
 
   @override
-  String get sectionInstallSubtitle => 'Coming soon';
+  String get sectionInstallSubtitle => 'Modded Launcher & YNavi mod';
+
+  @override
+  String get installTitle => 'Install';
+
+  @override
+  String get installLauncherName => 'Modded Launcher';
+
+  @override
+  String get installLauncherDesc =>
+      'Launcher with YNavi set as the default navigation app';
+
+  @override
+  String get installYnaviName => 'YNavi mod (HUD)';
+
+  @override
+  String get installYnaviDesc =>
+      'Yandex.Navi mod with HUD support and minimap broadcast';
+
+  @override
+  String get installButtonLabel => 'Install / Update';
+
+  @override
+  String get installPhaseDownloading => 'Downloading…';
+
+  @override
+  String get installPhaseInstalling => 'Installing…';
+
+  @override
+  String get installPhaseDone => 'Done';
+
+  @override
+  String get installPhaseFailed => 'Failed';
 
   @override
   String get languageTitle => 'Language';

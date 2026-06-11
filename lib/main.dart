@@ -12,6 +12,7 @@ import 'debug/agent_extensions.dart';
 import 'providers/services.dart';
 import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
+import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
@@ -19,6 +20,7 @@ import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
+import 'services/installer.dart';
 import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
 
@@ -73,6 +75,12 @@ Future<void> dhuMain(List<String> args) async {
   final MinimapHost minimapHostRaw =
       (!kIsWeb && Platform.isAndroid) ? NativeMinimapHost() : FakeMinimapHost();
 
+  // On Android, use the NativeInstaller which communicates via the
+  // zee/installer EventChannel/MethodChannel to download+install APKs.
+  // On T1 desktop, FakeInstaller simulates the progress sequence.
+  final Installer installerRaw =
+      (!kIsWeb && Platform.isAndroid) ? NativeInstaller() : FakeInstaller();
+
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
@@ -87,6 +95,7 @@ Future<void> dhuMain(List<String> args) async {
     shotKey: dhuShotKey,
     carSignals: carSignalsRaw,
     minimapHost: minimapHostRaw,
+    installer: installerRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
@@ -100,7 +109,7 @@ Future<void> dhuMain(List<String> args) async {
         carSignalsProvider.overrideWithValue(carSignalsRaw),
         minimapHostProvider.overrideWithValue(minimapHostRaw),
         hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(FakeInstaller()),
+        installerProvider.overrideWithValue(installerRaw),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
       ],
       child: const _DhuRoot(),

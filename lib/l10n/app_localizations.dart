@@ -293,8 +293,68 @@ abstract class AppLocalizations {
   /// Install section subtitle
   ///
   /// In en, this message translates to:
-  /// **'Coming soon'**
+  /// **'Modded Launcher & YNavi mod'**
   String get sectionInstallSubtitle;
+
+  /// Install screen app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get installTitle;
+
+  /// Install target: modded launcher name
+  ///
+  /// In en, this message translates to:
+  /// **'Modded Launcher'**
+  String get installLauncherName;
+
+  /// Install target: modded launcher description
+  ///
+  /// In en, this message translates to:
+  /// **'Launcher with YNavi set as the default navigation app'**
+  String get installLauncherDesc;
+
+  /// Install target: YNavi mod name
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi mod (HUD)'**
+  String get installYnaviName;
+
+  /// Install target: YNavi mod description
+  ///
+  /// In en, this message translates to:
+  /// **'Yandex.Navi mod with HUD support and minimap broadcast'**
+  String get installYnaviDesc;
+
+  /// Install button label (used for first install and updates)
+  ///
+  /// In en, this message translates to:
+  /// **'Install / Update'**
+  String get installButtonLabel;
+
+  /// Install progress phase: downloading
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get installPhaseDownloading;
+
+  /// Install progress phase: installing
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get installPhaseInstalling;
+
+  /// Install progress phase: done
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get installPhaseDone;
+
+  /// Install progress phase: failed
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get installPhaseFailed;
 
   /// Language picker screen title
   ///

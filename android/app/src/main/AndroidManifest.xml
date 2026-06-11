@@ -9,6 +9,16 @@
          Harmless on API 32 (our emulator target). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- Internet — required to download APKs from GitHub releases (Block 0014). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Allow installing APKs downloaded from GitHub (Block 0014).
+         On API 26+ the user must also grant "Install unknown apps" per-source
+         in Settings for the first install; subsequent installs from the same
+         source are remembered.  On emulators without this setting the system
+         will show the dialog; the download itself always completes. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:label="zee_power_toys"
         android:name="${applicationName}"
@@ -87,6 +97,20 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- FileProvider — exposes APK files from app cache to the system
+             installer via a content:// URI (used by the AppInstaller fallback
+             intent path in Block 0014).  authorities must match the string
+             used in FileProvider.getUriForFile() in AppInstaller.kt. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

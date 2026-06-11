@@ -23,6 +23,7 @@ import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
+import com.zeepowertoys.zee_power_toys.install.InstallerController
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterTextureView
@@ -81,6 +82,9 @@ class MainActivity : FlutterActivity() {
     // CarSignals native bridge — DHU engine only.
     private var carSignalsController: CarSignalsController? = null
 
+    // Installer native bridge — DHU engine only (Block 0014).
+    private var installerController: InstallerController? = null
+
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
 
@@ -138,6 +142,10 @@ class MainActivity : FlutterActivity() {
         carSignalsController = ctrl
         // Expose to SimulateReceiver so ADB broadcasts reach the live source.
         SimulateReceiver.controllerRef = ctrl
+
+        // Construct InstallerController on the DHU engine messenger (Block 0014).
+        // Registers zee/installer MethodChannel and zee/installer/events EventChannel.
+        installerController = InstallerController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Defer HUD setup: give the primary view time to attach and render.
         handler.postDelayed({ setupHud() }, HUD_SPAWN_DELAY_MS)
@@ -362,6 +370,8 @@ class MainActivity : FlutterActivity() {
         SimulateReceiver.controllerRef = null
         carSignalsController?.tearDown()
         carSignalsController = null
+        installerController?.tearDown()
+        installerController = null
         try { hudPresentation?.dismiss() } catch (_: Throwable) {}
         hudEngine?.destroy()
         super.onDestroy()

@@ -97,8 +97,38 @@
   "sectionInstall": "Установка",
   "@sectionInstall": { "description": "Install section label" },
 
-  "sectionInstallSubtitle": "Скоро будет доступно",
+  "sectionInstallSubtitle": "Модифицированный лаунчер и мод YNavi",
   "@sectionInstallSubtitle": { "description": "Install section subtitle" },
+
+  "installTitle": "Установка",
+  "@installTitle": { "description": "Install screen app-bar title" },
+
+  "installLauncherName": "Модифицированный лаунчер",
+  "@installLauncherName": { "description": "Install target: modded launcher name" },
+
+  "installLauncherDesc": "Лаунчер с YNavi в качестве навигации по умолчанию",
+  "@installLauncherDesc": { "description": "Install target: modded launcher description" },
+
+  "installYnaviName": "Мод YNavi (HUD)",
+  "@installYnaviName": { "description": "Install target: YNavi mod name" },
+
+  "installYnaviDesc": "Мод Яндекс.Навигатора с поддержкой HUD и трансляцией миникарты",
+  "@installYnaviDesc": { "description": "Install target: YNavi mod description" },
+
+  "installButtonLabel": "Установить / Обновить",
+  "@installButtonLabel": { "description": "Install button label (used for first install and updates)" },
+
+  "installPhaseDownloading": "Загрузка…",
+  "@installPhaseDownloading": { "description": "Install progress phase: downloading" },
+
+  "installPhaseInstalling": "Установка…",
+  "@installPhaseInstalling": { "description": "Install progress phase: installing" },
+
+  "installPhaseDone": "Готово",
+  "@installPhaseDone": { "description": "Install progress phase: done" },
+
+  "installPhaseFailed": "Ошибка",
+  "@installPhaseFailed": { "description": "Install progress phase: failed" },
 
   "languageTitle": "Язык",
   "@languageTitle": { "description": "Language picker screen title" },

@@ -6,6 +6,7 @@ import '../providers/config.dart';
 import '../providers/services.dart';
 import 'diagnostics_screen.dart';
 import 'hud_settings_screen.dart';
+import 'install_screen.dart';
 import 'minimap_settings_screen.dart';
 
 /// DHU Settings hub — the root screen of the DHU navigation shell.
@@ -72,13 +73,14 @@ class SettingsHomeScreen extends ConsumerWidget {
             ),
           ),
           _SectionTile(
+            key: const ValueKey('nav-install'),
             icon: Icons.download_outlined,
             title: l10n.sectionInstall,
             subtitle: l10n.sectionInstallSubtitle,
             onTap: () => Navigator.push<void>(
               context,
               MaterialPageRoute<void>(
-                builder: (_) => _PlaceholderScreen(title: l10n.sectionInstall),
+                builder: (_) => const InstallScreen(),
               ),
             ),
           ),
@@ -169,21 +171,3 @@ class _LanguageScreen extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Placeholder screen for Diagnostics / Install
-// ---------------------------------------------------------------------------
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(l10n.comingSoon)),
-    );
-  }
-}

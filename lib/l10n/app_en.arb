@@ -97,8 +97,38 @@
   "sectionInstall": "Install",
   "@sectionInstall": { "description": "Install section label" },
 
-  "sectionInstallSubtitle": "Coming soon",
+  "sectionInstallSubtitle": "Modded Launcher & YNavi mod",
   "@sectionInstallSubtitle": { "description": "Install section subtitle" },
+
+  "installTitle": "Install",
+  "@installTitle": { "description": "Install screen app-bar title" },
+
+  "installLauncherName": "Modded Launcher",
+  "@installLauncherName": { "description": "Install target: modded launcher name" },
+
+  "installLauncherDesc": "Launcher with YNavi set as the default navigation app",
+  "@installLauncherDesc": { "description": "Install target: modded launcher description" },
+
+  "installYnaviName": "YNavi mod (HUD)",
+  "@installYnaviName": { "description": "Install target: YNavi mod name" },
+
+  "installYnaviDesc": "Yandex.Navi mod with HUD support and minimap broadcast",
+  "@installYnaviDesc": { "description": "Install target: YNavi mod description" },
+
+  "installButtonLabel": "Install / Update",
+  "@installButtonLabel": { "description": "Install button label (used for first install and updates)" },
+
+  "installPhaseDownloading": "Downloading…",
+  "@installPhaseDownloading": { "description": "Install progress phase: downloading" },
+
+  "installPhaseInstalling": "Installing…",
+  "@installPhaseInstalling": { "description": "Install progress phase: installing" },
+
+  "installPhaseDone": "Done",
+  "@installPhaseDone": { "description": "Install progress phase: done" },
+
+  "installPhaseFailed": "Failed",
+  "@installPhaseFailed": { "description": "Install progress phase: failed" },
 
   "languageTitle": "Language",
   "@languageTitle": { "description": "Language picker screen title" },

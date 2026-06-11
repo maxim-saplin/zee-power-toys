@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
+import '../services/installer.dart';
 import '../services/minimap_host.dart';
 
 /// Register ext.zee.* VM-service extensions for [surface] (either 'dhu' or 'hud').
@@ -25,6 +26,8 @@ import '../services/minimap_host.dart';
 /// [minimapHost] is optional; when provided, ext.zee.minimap is registered.
 /// [getBootState] is optional; when provided, ext.zee.bootState is registered
 /// (DHU surface passes a callback that queries the native FGS state).
+/// [installer] is optional; when provided, ext.zee.install is registered so
+/// the Feedback Loop can trigger and observe install progress.
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
@@ -33,6 +36,7 @@ void registerZeeExtensions({
   Future<void> Function(AppConfig)? onSetConfig,
   MinimapHost? minimapHost,
   Future<Map<String, Object?>> Function()? getBootState,
+  Installer? installer,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -105,6 +109,11 @@ void registerZeeExtensions({
           'ynaviAvailable': ynaviAvailable,
           'resolvedBrightness': resolvedBrightness,
         },
+        // Install state — last/current install progress for the Feedback Loop.
+        // Populated once ext.zee.install is called; null until first install.
+        'install': Map<String, Object?>.from(
+          _installStateHolder[surface] ?? <String, Object?>{},
+        ),
       }),
     );
   });
@@ -408,6 +417,94 @@ void registerZeeExtensions({
     });
   }
 
+  // ext.zee.install — trigger an install and observe progress.
+  // Params (one of two forms):
+  //   target=launcher|ynavi  → uses the kLauncherAsset / kYnaviAsset constants.
+  //   repo=<owner/name> tag=<tag> asset=<filename>  → arbitrary GithubAsset.
+  // Response: the last install progress event (phase + fraction).
+  // On T1 FakeInstaller drives the sequence; on T2 NativeInstaller downloads real APKs.
+  if (installer != null) {
+    // _installStateHolder is a module-level map keyed by surface string.
+    // The install listener updates the inner map in-place so the readViewModel
+    // closure (registered above) sees live progress via the same reference.
+    _installStateHolder[surface] = <String, Object?>{};
+
+    developer.registerExtension('ext.zee.install', (method, params) async {
+      GithubAsset? asset;
+
+      final target = params['target'];
+      if (target == 'launcher') {
+        asset = const GithubAsset(
+          repo: 'zeepowertoys/modded-launcher',
+          tag: 'v1.0.0',
+          assetName: 'modded-launcher-release.apk',
+        );
+      } else if (target == 'ynavi') {
+        asset = const GithubAsset(
+          repo: 'zeepowertoys/ynavi-mod',
+          tag: 'v1.0.0',
+          assetName: 'ynavi-mod-release.apk',
+        );
+      } else {
+        // Arbitrary asset: repo/tag/asset params (T2 real-download testing).
+        final repo = params['repo'];
+        final tag = params['tag'];
+        final assetName = params['asset'];
+        if (repo != null && tag != null && assetName != null) {
+          asset = GithubAsset(repo: repo, tag: tag, assetName: assetName);
+        }
+      }
+
+      if (asset == null) {
+        return _extError(
+          'ext.zee.install: provide target=launcher|ynavi '
+          'OR repo=<r> tag=<t> asset=<a>',
+        );
+      }
+
+      final targetLabel = target ??
+          '${params['repo']}/${params['tag']}/${params['asset']}';
+
+      // Reset and update the holder's map in-place (not reassignment) so the
+      // readViewModel closure always reads through the same reference.
+      final state = _installStateHolder[surface]!;
+      state
+        ..clear()
+        ..addAll(<String, Object?>{'target': targetLabel, 'started': true});
+
+      // Subscribe to the install stream; update state on each event.
+      installer.install(asset).listen(
+        (InstallProgress p) {
+          state
+            ..clear()
+            ..addAll(<String, Object?>{
+              'target': targetLabel,
+              'phase': p.phase.name,
+              'fraction': p.fraction,
+              if (p.message != null) 'message': p.message,
+            });
+        },
+        onError: (Object err) {
+          state
+            ..clear()
+            ..addAll(<String, Object?>{
+              'target': targetLabel,
+              'phase': 'failed',
+              'fraction': 0.0,
+              'message': err.toString(),
+            });
+        },
+      );
+
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'surface': surface,
+          'install': Map<String, Object?>.from(state),
+        }),
+      );
+    });
+  }
+
   // ext.zee.bootState — Feedback Loop reads FGS/boot status (Block 0010).
   // Registered on every surface; on DHU Android a [getBootState] callback
   // queries the native ZeeForegroundService state.  On other surfaces (T1,
@@ -447,6 +544,20 @@ developer.ServiceExtensionResponse _extError(String message) =>
       developer.ServiceExtensionResponse.extensionError,
       message,
     );
+
+// ---------------------------------------------------------------------------
+// Install progress holder — module-level mutable map keyed by surface.
+//
+// Each surface that registers ext.zee.install gets a child Map stored here.
+// The install listener updates the child map in-place (clear+addAll) so that
+// readViewModel reads through the same reference and sees live progress without
+// needing to re-register the extension closure.
+// ---------------------------------------------------------------------------
+
+/// Live install state per surface ('dhu', 'hud').
+/// Set to an empty map on first ext.zee.install registration for that surface;
+/// updated in-place by the install stream listener.
+final Map<String, Map<String, Object?>> _installStateHolder = {};
 
 // ---------------------------------------------------------------------------
 // Widget-tree walking utilities (ported from nothingness AgentService).

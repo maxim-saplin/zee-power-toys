@@ -105,7 +105,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionInstall => 'Установка';
 
   @override
-  String get sectionInstallSubtitle => 'Скоро будет доступно';
+  String get sectionInstallSubtitle => 'Модифицированный лаунчер и мод YNavi';
+
+  @override
+  String get installTitle => 'Установка';
+
+  @override
+  String get installLauncherName => 'Модифицированный лаунчер';
+
+  @override
+  String get installLauncherDesc =>
+      'Лаунчер с YNavi в качестве навигации по умолчанию';
+
+  @override
+  String get installYnaviName => 'Мод YNavi (HUD)';
+
+  @override
+  String get installYnaviDesc =>
+      'Мод Яндекс.Навигатора с поддержкой HUD и трансляцией миникарты';
+
+  @override
+  String get installButtonLabel => 'Установить / Обновить';
+
+  @override
+  String get installPhaseDownloading => 'Загрузка…';
+
+  @override
+  String get installPhaseInstalling => 'Установка…';
+
+  @override
+  String get installPhaseDone => 'Готово';
+
+  @override
+  String get installPhaseFailed => 'Ошибка';
 
   @override
   String get languageTitle => 'Язык';
