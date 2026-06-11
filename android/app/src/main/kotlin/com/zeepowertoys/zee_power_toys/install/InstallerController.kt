@@ -7,6 +7,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * InstallerController — wires Dart ↔ Kotlin for the installer feature (Block 0014).
@@ -54,6 +55,11 @@ class InstallerController(
     // Active EventChannel sink — set when Flutter subscribes, cleared on cancel.
     @Volatile private var eventSink: EventChannel.EventSink? = null
 
+    // Dedup guard (Block 0014 reconciliation): both the "start" method call and
+    // the EventChannel onListen trigger startInstall on one Dart invocation; this
+    // is the asset key currently in flight, so the second trigger is a NOOP.
+    @Volatile private var inFlightKey: String? = null
+
     private val methodChannel = MethodChannel(messenger, METHOD_CHANNEL)
     private val eventChannel  = EventChannel(messenger, EVENT_CHANNEL)
 
@@ -100,6 +106,7 @@ class InstallerController(
             override fun onCancel(arguments: Any?) {
                 Log.d(TAG, "EventChannel: Dart unsubscribed")
                 eventSink = null
+                inFlightKey = null
             }
         })
     }
@@ -107,50 +114,86 @@ class InstallerController(
     /**
      * Kick off the download + install on the background executor.
      *
-     * Guard: if an install for the same asset is already running (eventSink is
-     * live and the executor queue is non-empty) this call is a no-op.  Two
-     * different assets can queue behind each other.
+     * Dedup: a 2nd startInstall call for the same repo/tag/asset key while one is
+     * already in flight is a NOOP — both the EventChannel onListen and the
+     * MethodChannel start() fire startInstall on one Dart invocation; the second
+     * trigger hits the key guard and returns immediately.  inFlightKey is cleared
+     * when the executor task reaches a terminal state (done or failed), so a later
+     * re-install of the same asset is allowed.  Two different assets queue on the
+     * single-thread executor.
+     *
+     * Invariant: inFlightKey is cleared BEFORE Dart is notified of any terminal
+     * state so that a re-tap from Dart cannot be wrongly NOOP'd.
      */
+    @Synchronized
     private fun startInstall(repo: String, tag: String, asset: String) {
+        val key = "$repo/$tag/$asset"
+        if (key == inFlightKey) {
+            Log.i(TAG, "startInstall: $key already in flight — NOOP (dedup)")
+            return
+        }
+        inFlightKey = key
         Log.i(TAG, "startInstall: repo=$repo tag=$tag asset=$asset")
-        executor.submit {
-            try {
-                val url = githubUrl(repo, tag, asset)
-                Log.i(TAG, "Resolved URL: $url")
-
-                val cacheDir = context.cacheDir
-                val apkFile = File(cacheDir, "${asset.removeSuffix(".apk")}_${tag}.apk")
-
-                // --- Download phase ---
-                sendProgress("downloading", 0.0)
-                Downloader.download(url, apkFile) { downloaded, total ->
-                    val fraction = if (total > 0) {
-                        downloaded.toDouble() / total.toDouble()
-                    } else {
-                        // Unknown Content-Length: pulse at 50 %
-                        0.5
-                    }
-                    sendProgress("downloading", fraction)
-                }
-                Log.i(TAG, "Download complete: ${apkFile.absolutePath} (${apkFile.length()} bytes)")
-
-                // --- Install phase ---
-                sendProgress("installing", 0.8)
+        try {
+            executor.submit {
+                var terminalPhase = "failed"
+                var terminalFraction = 0.0
+                var terminalMessage: String? = null
                 try {
-                    AppInstaller.installViaSession(context, apkFile)
-                    Log.i(TAG, "PackageInstaller session committed")
+                    val url = githubUrl(repo, tag, asset)
+                    Log.i(TAG, "Resolved URL: $url")
+
+                    val cacheDir = context.cacheDir
+                    val apkFile = File(cacheDir, "${asset.removeSuffix(".apk")}_${tag}.apk")
+
+                    // --- Download phase ---
+                    sendProgress("downloading", 0.0)
+                    Downloader.download(url, apkFile) { downloaded, total ->
+                        val fraction = if (total > 0) {
+                            downloaded.toDouble() / total.toDouble()
+                        } else {
+                            // Unknown Content-Length: pulse at 50 %
+                            0.5
+                        }
+                        sendProgress("downloading", fraction)
+                    }
+                    Log.i(TAG, "Download complete: ${apkFile.absolutePath} (${apkFile.length()} bytes)")
+
+                    // --- Install phase ---
+                    sendProgress("installing", 0.8)
+                    try {
+                        AppInstaller.installViaSession(context, apkFile)
+                        Log.i(TAG, "PackageInstaller session committed")
+                    } catch (e: Exception) {
+                        // PackageInstaller failed — try intent fallback.
+                        Log.w(TAG, "PackageInstaller session failed, trying intent fallback", e)
+                        AppInstaller.installViaIntent(context, apkFile)
+                    }
+
+                    terminalPhase = "done"
+                    terminalFraction = 1.0
+
                 } catch (e: Exception) {
-                    // PackageInstaller failed — try intent fallback.
-                    Log.w(TAG, "PackageInstaller session failed, trying intent fallback", e)
-                    AppInstaller.installViaIntent(context, apkFile)
+                    Log.e(TAG, "Install error: ${e.message}", e)
+                    terminalPhase = "failed"
+                    terminalFraction = 0.0
+                    terminalMessage = e.message ?: "Unknown error"
+                } finally {
+                    // Clear inFlightKey BEFORE notifying Dart so a fast re-tap
+                    // after 'done' is never wrongly NOOP'd by the dedup guard.
+                    inFlightKey = null
+                    if (terminalMessage != null) {
+                        sendProgress(terminalPhase, terminalFraction, terminalMessage)
+                    } else {
+                        sendProgress(terminalPhase, terminalFraction)
+                    }
                 }
-
-                sendProgress("done", 1.0)
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Install error: ${e.message}", e)
-                sendProgressFailed(e.message ?: "Unknown error")
             }
+        } catch (e: RejectedExecutionException) {
+            // Executor was shut down (tearDown called) — release the key so it
+            // isn't left permanently stuck.
+            Log.w(TAG, "startInstall: executor shut down, releasing key $key", e)
+            inFlightKey = null
         }
     }
 
@@ -168,14 +211,11 @@ class InstallerController(
         }
     }
 
-    private fun sendProgressFailed(message: String) {
-        sendProgress("failed", 0.0, message)
-    }
-
     /** Tear down channels and executor on Activity destroy. */
     fun tearDown() {
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
+        inFlightKey = null
         executor.shutdown()
     }
 }

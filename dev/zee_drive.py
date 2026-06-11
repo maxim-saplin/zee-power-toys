@@ -8,13 +8,13 @@
 Seed of the project's real VM-service channel. It talks to ONE Dart VM service
 and reaches EVERY Dart isolate of the two-engine multidisplay PoC (the primary
 "DHU" isolate + the secondary "HUD" isolate spawned by FlutterEngineGroup),
-calling the `ext.zee.*` extensions registered in `multidisplay_poc/lib/main.dart`.
+calling the `ext.zee.*` extensions registered in `lib/debug/agent_extensions.dart`.
 
-Discovery: scans `adb logcat` for the "Dart VM Service is listening on …" line
-that an `am start`-launched debug build prints, parses host:port + auth token,
-sets up an `adb forward`, and connects over WebSocket JSON-RPC. Override the URI
-with `--vm-uri` / `$ZEE_VM_URI` (handy under `flutter run`, which already
-forwards a host-local URI).
+Discovery (in precedence order):
+  1. explicit --vm-uri / $ZEE_VM_URI override
+  2. canonical session file /tmp/zee_vm_uri.txt (written by zee_run.py up)
+  3. flutter-run log file ($ZEE_RUN_LOG, default /tmp/zee_run_t1.log)
+  4. adb logcat scan + adb forward  [Android only]
 
 Subcommands:
   isolates                 list every isolate (id, name, number, ext.zee.* RPCs)
@@ -50,6 +50,12 @@ import websockets
 DEFAULT_SERIAL = os.environ.get("ADB_SERIAL", "emulator-5554")
 LOCAL_FORWARD_PORT = int(os.environ.get("ZEE_LOCAL_PORT", "8181"))
 RPC_TIMEOUT_S = float(os.environ.get("ZEE_RPC_TIMEOUT", "30"))
+# Default log path for `flutter run -d linux` output (T1 desktop).
+# Set $ZEE_RUN_LOG to override (useful for parallel sessions).
+DEFAULT_RUN_LOG = os.environ.get("ZEE_RUN_LOG", "/tmp/zee_run_t1.log")
+# Canonical current-session URI written by `zee_run.py up` (any tier).
+# Precedence: explicit override > this file > run-log scan > logcat scan.
+_VM_URI_FILE = "/tmp/zee_vm_uri.txt"
 
 # Lines Flutter/Dart emit when the VM service starts. Cover modern + legacy.
 VM_PATTERNS = [
@@ -95,6 +101,26 @@ def _scan_logcat_for_vm_uri(serial: str, max_lines: int = 6000) -> str | None:
     return found
 
 
+def _scan_flutter_run_log_for_vm_uri(log_path: str = DEFAULT_RUN_LOG) -> str | None:
+    """Return the most recent VM service http URI from a flutter-run log file, or None.
+
+    flutter run -d linux writes its stdout to the file at [log_path] (or
+    $ZEE_RUN_LOG).  This is the only reliable URI source on T1 desktop — there
+    is no logcat on Linux.  The same patterns work for Android flutter run logs.
+    """
+    try:
+        with open(log_path, "r", errors="replace") as fh:
+            found = None
+            for line in fh:
+                for pat in VM_PATTERNS:
+                    m = pat.search(line)
+                    if m:
+                        found = m.group(1)
+            return found
+    except OSError:
+        return None
+
+
 def _parse_vm_uri(uri: str) -> tuple[int, str]:
     """Return (remote_port, auth_token) from a Dart VM service http URI."""
     m = re.match(r"https?://[^:]+:(\d+)/([^/]*)/?", uri)
@@ -108,20 +134,49 @@ def _forward_port(remote_port: int, serial: str, local_port: int = LOCAL_FORWARD
     return local_port
 
 
-def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None) -> str:
+def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
+                   run_log: str = DEFAULT_RUN_LOG) -> str:
     """Discover (or accept an override of) the host-reachable WebSocket URI.
 
-    Precedence: explicit override (arg) -> $ZEE_VM_URI -> logcat scan + adb
-    forward. The token is preserved across the forward so auth still matches.
+    Precedence:
+      1. explicit override (arg or $ZEE_VM_URI)
+      2. canonical session file /tmp/zee_vm_uri.txt  (written by `zee_run.py up`,
+         deleted by `zee_run.py down`; always reflects the most-recently-started
+         session regardless of tier — fixes T1/T2 cross-contamination)
+      3. flutter-run log file ($ZEE_RUN_LOG, default /tmp/zee_run_t1.log)
+         — legacy fallback for sessions started without zee_run.py
+      4. adb logcat scan + adb forward  [Android/T2/T3 fallback]
     """
     override = override or os.environ.get("ZEE_VM_URI")
     if override:
         return _normalize_ws_uri(override)
+
+    # Canonical session file — written by `zee_run.py up` for both tiers.
+    # This is the authoritative source when the session was started via zee_run.py.
+    try:
+        with open(_VM_URI_FILE, "r") as fh:
+            uri = fh.read().strip()
+        if uri:
+            return _normalize_ws_uri(uri)
+    except OSError:
+        pass
+
+    # Legacy fallback: flutter-run log (T1 desktop + flutter-run Android sessions
+    # started outside zee_run.py).
+    uri = _scan_flutter_run_log_for_vm_uri(run_log)
+    if uri:
+        # T1 desktop: the VM service is host-local; no adb forward needed.
+        # T2 with flutter run: flutter run already set up the forward — use as-is.
+        return _normalize_ws_uri(uri)
+
+    # Fallback: logcat scan for adb-started builds (T2/T3, am start workflow).
     uri = _scan_logcat_for_vm_uri(serial)
     if not uri:
         raise RuntimeError(
-            "could not find a 'Dart VM Service is listening on …' line in logcat. "
-            "Is a DEBUG build running? Try: adb logcat -d | grep -i 'vm service'")
+            "could not find a 'Dart VM Service is listening on …' line in "
+            f"session file ({_VM_URI_FILE}), run log ({run_log}), or logcat. "
+            "Is a DEBUG build running? "
+            "Run `dev/zee_run.py up` to launch, or set $ZEE_VM_URI.")
     remote_port, token = _parse_vm_uri(uri)
     local_port = _forward_port(remote_port, serial=serial)
     return _normalize_ws_uri(f"ws://127.0.0.1:{local_port}/{token}/")

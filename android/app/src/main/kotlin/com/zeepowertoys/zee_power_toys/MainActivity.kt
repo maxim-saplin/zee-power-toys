@@ -287,6 +287,7 @@ class MainActivity : FlutterActivity() {
                         result.success("noop")
                     } else {
                         v.visibility = want
+                        if (enabled) v.resumeRendering() else v.pauseRendering()
                         Log.i(TAG, "setMinimap($enabled): APPLIED")
                         result.success("applied:$enabled")
                     }
@@ -420,6 +421,23 @@ class MinimapView(context: android.content.Context) :
     @Volatile private var running = false
     private var renderThread: Thread? = null
 
+    // Pause/resume lock — the render loop waits here while paused.
+    private val pauseLock = Object()
+    @Volatile private var paused = false
+
+    /** Pause the render loop (called when the minimap is hidden). */
+    fun pauseRendering() {
+        paused = true
+        Log.i("ZEE", "MinimapView: render loop PAUSED")
+    }
+
+    /** Resume the render loop (called when the minimap is shown). */
+    fun resumeRendering() {
+        paused = false
+        synchronized(pauseLock) { pauseLock.notifyAll() }
+        Log.i("ZEE", "MinimapView: render loop RESUMED")
+    }
+
     init {
         // The native layer must be opaque so the FilterWrapper colour shows
         // through clearly; the transparent Flutter overlay sits on top.
@@ -455,6 +473,15 @@ class MinimapView(context: android.content.Context) :
         renderThread = Thread {
             var phase = 0f
             while (running) {
+                // Pause gate: park here while the minimap is hidden.
+                if (paused) {
+                    synchronized(pauseLock) {
+                        while (paused && running) {
+                            try { pauseLock.wait() } catch (_: InterruptedException) { break }
+                        }
+                    }
+                    if (!running) break
+                }
                 val canvas: Canvas = try { lockCanvas() } catch (_: Throwable) { null } ?: continue
                 try {
                     phase = (phase + 3f) % 360f
@@ -486,6 +513,7 @@ class MinimapView(context: android.content.Context) :
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
         running = false
+        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if paused
         renderThread?.interrupt()
         renderThread = null
         return true

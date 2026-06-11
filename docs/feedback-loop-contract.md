@@ -9,14 +9,26 @@ named `main`, per ADR 0004).
 
 ## Required extensions
 
-| Extension | Params | Returns | Notes |
-|---|---|---|---|
-| `ext.zee.whoami` | _(none)_ | `{surface, isolate, pid, …}` | Stable identity probe; driver uses this to build the surface→isolateId map |
-| `ext.zee.dumpState` | _(none)_ | `{surface, hudBoxOn, …}` | Raw internal state; grows with the app |
-| `ext.zee.readViewModel` | _(none)_ | `{surface, hudBoxOn, …}` | Derived Riverpod view-state (ADR 0003); same shape as dumpState today, will diverge as the view-model grows |
-| `ext.zee.setConfig` | `hudBoxOn=true\|false` + future keys | `{surface, hudBoxOn, …}` | Write config; params arrive as `Map<String, String>` |
-| `ext.zee.tapByKey` | `key=<ValueKey string>` | `{tapped:true, key, x, y}` or `{tapped:false, error}` | Synthetic tap via three-tier fallback (callback walk → pointer events → ancestor walk) |
-| `ext.zee.shot` | _(none)_ | `{surface, w, h, png_b64}` | Per-isolate `RenderRepaintBoundary.toImage()` → PNG → base64 |
+The app registers **12** `ext.zee.*` extensions (`lib/debug/agent_extensions.dart`).
+Eight are present on **every** surface; four are DHU-only and registered only when
+their backing port is injected (so the surface map degrades cleanly when a port is absent).
+The `drive-zee-app` skill (`.agents/skills/drive-zee-app/SKILL.md`) is the operational
+cheatsheet; this table is the contract.
+
+| Extension | Surface | Params | Returns | Notes |
+|---|---|---|---|---|
+| `ext.zee.whoami` | both | _(none)_ | `{surface, isolate, pid, hudBoxOn, hudEnabled}` | Stable identity probe; driver builds the surface→isolateId map from this |
+| `ext.zee.dumpState` | both | _(none)_ | `{surface, hudBoxOn, …}` | Raw internal state; grows with the app |
+| `ext.zee.readViewModel` | both | _(none)_ | derived view-state incl. `activeSlots`, `plannedSlots`, CarSignals, `systemLocale`, `usbMode`, `install` | Derived Riverpod view-state (ADR 0003) |
+| `ext.zee.setConfig` | both | `hudBoxOn`, `hudEnabled`, `blinkerShape\|Size`, `battery\|temp\|chargingShow`, `locale`, `minimap*`, safe-area keys | `dumpState` snapshot | Write config; params arrive as `Map<String, String>`; DHU→HUD relay fires |
+| `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped:true, key, x, y\|mode}` or `{tapped:false, error}` | Synthetic tap via three-tier fallback (callback walk → pointer events → ancestor walk) |
+| `ext.zee.shot` | both | _(none)_ | `{surface, w, h, png_b64}` | Per-isolate `RenderRepaintBoundary.toImage()` → PNG → base64 |
+| `ext.zee.inject` | both | `kind=speed\|blinker\|charge\|battery\|powerFlow value=…` | CarSignals snapshot | T1 only — VM-service path into `FakeCarSignals`; errors on a real source (use the ADB broadcast on T2/T3) |
+| `ext.zee.bootState` | both | _(none)_ | `{surface, hudEnabled, configReadOk, …native FGS fields}` | DHU/Android adds native foreground-service status; T1/HUD is config-store only |
+| `ext.zee.minimap` | dhu | `on=true\|false`, `x y w h`, `key value` | `{surface, minimap, on}` | Registered only when `MinimapHost` is injected |
+| `ext.zee.install` | dhu | `target=launcher\|ynavi` or `repo tag asset` | `{surface, install:{target, started}}` | Registered only when `Installer` is injected; poll `readViewModel.install.phase` for progress |
+| `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, scope, value, systemLocale?}` | Registered only when `SystemConfig` is injected; `system\|cluster` is T3-only |
+| `ext.zee.setUsbMode` | dhu | `value=peripheral\|host\|auto` | `{ok, reason?, usbMode, usbWritable}` | Registered only when `UsbModePort` is injected; T2 needs platform signing |
 
 All extensions must be registered in the isolate's entrypoint **after**
 `WidgetsFlutterBinding.ensureInitialized()`.  Extensions are stripped from
@@ -67,7 +79,8 @@ Both isolates are named `main` and share a `rootLib` URI.  Surfaces are
   "surface": "dhu",
   "isolate": 1234567890,
   "pid": 98765,
-  "hudBoxOn": false
+  "hudBoxOn": false,
+  "hudEnabled": false
 }
 ```
 

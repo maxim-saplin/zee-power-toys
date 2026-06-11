@@ -39,7 +39,10 @@ class HudPreview extends ConsumerWidget {
               const ColoredBox(color: Color(0xFF888888), child: SizedBox.expand()),
 
               // The real HudRoot — same widget, so it cannot drift from the HUD surface.
-              const HudRoot(),
+              // showSafeAreaBorder=true enables the GUIDANCE/MINIMAP slot stubs so
+              // they are visible in the preview; they are suppressed in production
+              // (showSafeAreaBorder=false, the default) to keep the windshield clean.
+              const HudRoot(showSafeAreaBorder: true),
 
               // Safe Area outline drawn over the HudRoot so it is always visible even
               // when HudRoot's internal border is transparent-enough to miss at a glance.

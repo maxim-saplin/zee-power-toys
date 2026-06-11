@@ -110,8 +110,11 @@ void registerZeeExtensions({
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
+        // activeSlots: only slots with real rendered content on the production HUD.
+        // plannedSlots: slots reserved for future Blocks (stubs shown in preview only).
         'safeArea': sa.toJson(),
-        'activeSlots': <String>['blinker', 'battery', 'guidance', 'minimap'],
+        'activeSlots': <String>['blinker', 'battery'],
+        'plannedSlots': <String>['guidance', 'minimap'],
         // Minimap config + live YNavi availability for the Feedback Loop.
         'minimap': <String, Object?>{
           'enabled': mm.enabled,

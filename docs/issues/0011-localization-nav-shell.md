@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 labels: [app-shell, localization, l10n]
 created: 2026-06-11
 satisfies: Cross-cutting · Localization EN/RU (picks system lang, choosable in UI) + DHU navigation shell

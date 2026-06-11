@@ -33,13 +33,13 @@ Everything is built and verified through a **dual-channel Feedback Loop** across
 ## Running (T1 Desktop)
 
 ```bash
-flutter run -d linux            # brings up DHU + HUD windows (two engines)
-# drive it headlessly:
-ZEE_VM_URI=<vm-service-uri> uv run dev/zee_drive.py whoami-all
+uv run dev/zee_run.py up        # brings up DHU + HUD (two engines), waits until drivable
+# then drive it headlessly (see the drive-zee-app skill):
+uv run dev/feedback_loop.py whoami-all
 ```
 
 ## Status
 
-Foundation Wave 0 in progress — **walking skeleton (Block 0001) is runtime-confirmed on T1**
-(cross-isolate `gesture → ConfigStore → relay → HUD pixels`, driven + read through the
-Feedback Loop). See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.
+**MVP complete** — all 16 foundation + feature Blocks are runtime-confirmed (T1, and T2 where
+the native edge is involved), driven + read through the Feedback Loop. Finalizing for on-car
+(T3) testing. See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.

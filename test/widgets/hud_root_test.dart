@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:zee_power_toys/hud/battery_widget.dart';
 import 'package:zee_power_toys/hud/blinker_widget.dart';
 import 'package:zee_power_toys/hud/hud_root.dart';
 import 'package:zee_power_toys/providers/services.dart';
@@ -80,12 +81,13 @@ void main() {
       expect(find.byType(ClipRect), findsOneWidget);
     });
 
-    testWidgets('shows slot stubs — GUIDANCE, MINIMAP (BATTERY is now real widget)', (tester) async {
-      // BLINKER and BATTERY are now real widgets; GUIDANCE and MINIMAP remain stubs.
+    testWidgets('shows slot stubs — GUIDANCE, MINIMAP only in preview mode', (tester) async {
+      // BLINKER and BATTERY are real widgets; GUIDANCE and MINIMAP are preview-only stubs.
       await tester.binding.setSurfaceSize(const Size(1024, 576));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(wrapWithProviders(const HudRoot()));
+      // Preview mode (showSafeAreaBorder=true): stubs are visible.
+      await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
       await tester.pump();
 
       expect(find.text('GUIDANCE'), findsOneWidget);
@@ -94,6 +96,42 @@ void main() {
       expect(find.byType(BlinkerWidget), findsOneWidget);
       // BatteryWidget replaced the BATTERY stub (text 'BATTERY' is gone).
       expect(find.text('BATTERY'), findsNothing);
+    });
+
+    testWidgets('production HUD has no ghost stubs; preview has stubs; BLINKER+BATTERY always render', (tester) async {
+      // This test guards the core emissive-projector invariant:
+      // the production HUD must not emit GUIDANCE/MINIMAP rectangles onto the windshield,
+      // while the DHU preview shows them as layout aids.
+      await tester.binding.setSurfaceSize(const Size(1024, 576));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // --- Production HUD (showSafeAreaBorder=false, the default) ---
+      await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: false)));
+      await tester.pump();
+
+      expect(find.text('GUIDANCE'), findsNothing,
+          reason: 'Production HUD must not emit a GUIDANCE ghost rectangle');
+      expect(find.text('MINIMAP'), findsNothing,
+          reason: 'Production HUD must not emit a MINIMAP ghost rectangle');
+      // Real content always present.
+      expect(find.byType(BlinkerWidget), findsOneWidget,
+          reason: 'BLINKER must always render');
+      expect(find.byType(BatteryWidget), findsOneWidget,
+          reason: 'BATTERY must always render');
+
+      // --- DHU preview (showSafeAreaBorder=true) ---
+      await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
+      await tester.pump();
+
+      expect(find.text('GUIDANCE'), findsOneWidget,
+          reason: 'Preview shows GUIDANCE stub as a layout aid');
+      expect(find.text('MINIMAP'), findsOneWidget,
+          reason: 'Preview shows MINIMAP stub as a layout aid');
+      // Real content still present in preview too.
+      expect(find.byType(BlinkerWidget), findsOneWidget,
+          reason: 'BLINKER must always render');
+      expect(find.byType(BatteryWidget), findsOneWidget,
+          reason: 'BATTERY must always render');
     });
 
     testWidgets('Safe Area border absent when showSafeAreaBorder=false', (tester) async {
@@ -154,8 +192,9 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(const HudPreview()));
       await tester.pump();
 
-      // The preview draws its OWN cyan Safe-Area outline; the embedded HudRoot
-      // stays borderless (it is the same widget shown on the real HUD surface).
+      // The preview draws a bright cyan Safe-Area outline (alpha 0.6) over the HudRoot.
+      // HudRoot inside HudPreview also draws its own dimmer internal border (alpha 0.35),
+      // but this test checks for the preview's own prominent outline.
       final cyan = const Color(0xFF00FFFF).withValues(alpha: 0.6);
       final hasCyanBorder = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).any((d) {
         final dec = d.decoration;

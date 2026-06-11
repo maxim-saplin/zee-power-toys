@@ -20,12 +20,16 @@ import 'blinker_widget.dart';
 /// The Safe Area is the sub-rectangle of the backing display actually visible
 /// through the projector optics.
 ///
-/// Slots: [blinker] (real content), [battery] (real content), [guidance], [minimap] (stubs).
+/// Slots: [blinker] (real content), [battery] (real content).
+/// GUIDANCE and MINIMAP are not yet implemented; their placeholder stubs are
+/// shown only in preview/debug context (when [showSafeAreaBorder] is true) so
+/// they do not emit ghost rectangles on the real windshield.
 /// The BLINKER layer spans the full Safe Area so hazard can render both sides;
 /// marks are positioned at the edges by [BlinkerWidget] via its own layout.
 ///
-/// [showSafeAreaBorder] draws a faint outline of the Safe Area (debug aid;
-/// disabled in production by default, enabled in the DHU preview).
+/// [showSafeAreaBorder] gates both the faint Safe Area outline AND the
+/// GUIDANCE/MINIMAP slot stubs (debug aids; disabled in production, enabled in
+/// the DHU preview).
 class HudRoot extends ConsumerWidget {
   const HudRoot({super.key, this.showSafeAreaBorder = false});
 
@@ -57,7 +61,11 @@ class HudRoot extends ConsumerWidget {
                 width: saWidth,
                 height: saHeight,
                 child: ClipRect(
-                  child: _HudSlots(saWidth: saWidth, saHeight: saHeight),
+                  child: _HudSlots(
+                    saWidth: saWidth,
+                    saHeight: saHeight,
+                    showStubs: showSafeAreaBorder,
+                  ),
                 ),
               ),
 
@@ -95,12 +103,19 @@ class HudRoot extends ConsumerWidget {
 /// can place the left mark at the left edge and the right mark at the right
 /// edge, including hazard (both sides simultaneously).  BATTERY is now a real
 /// widget ([BatteryWidget]: Steam-Deck battery + temp + charging stats).
-/// GUIDANCE and MINIMAP remain labelled stubs pending their Blocks.
+/// GUIDANCE and MINIMAP are not yet implemented; their placeholder stubs are
+/// rendered only when [showStubs] is true (preview/debug context) so the
+/// production HUD stays black except for real content.
 class _HudSlots extends StatelessWidget {
-  const _HudSlots({required this.saWidth, required this.saHeight});
+  const _HudSlots({
+    required this.saWidth,
+    required this.saHeight,
+    required this.showStubs,
+  });
 
   final double saWidth;
   final double saHeight;
+  final bool showStubs;
 
   @override
   Widget build(BuildContext context) {
@@ -136,22 +151,24 @@ class _HudSlots extends StatelessWidget {
         ),
 
         // GUIDANCE — centered horizontally, upper area
-        Positioned(
-          left: guidanceX,
-          top: 0,
-          width: guidanceW,
-          height: upperH * 0.9,
-          child: const _SlotStub(label: 'GUIDANCE'),
-        ),
+        if (showStubs)
+          Positioned(
+            left: guidanceX,
+            top: 0,
+            width: guidanceW,
+            height: upperH * 0.9,
+            child: const _SlotStub(label: 'GUIDANCE'),
+          ),
 
         // MINIMAP — lower-left, square
-        Positioned(
-          left: 0,
-          top: lowerY,
-          width: minimapSide,
-          height: lowerH,
-          child: const _SlotStub(label: 'MINIMAP'),
-        ),
+        if (showStubs)
+          Positioned(
+            left: 0,
+            top: lowerY,
+            width: minimapSide,
+            height: lowerH,
+            child: const _SlotStub(label: 'MINIMAP'),
+          ),
       ],
     );
   }
