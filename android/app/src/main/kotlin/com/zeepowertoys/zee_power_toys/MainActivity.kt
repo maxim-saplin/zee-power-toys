@@ -8,6 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Display
+import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
+import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterSurfaceView
@@ -26,6 +28,13 @@ import io.flutter.plugin.common.MethodChannel
 // Cross-engine relay bridge (ADR 0003):
 //   DHU-side "zee/hub" handler forwards every "relay" call to the HUD-side
 //   "zee/hub" channel.  Unidirectional DHU→HUD, mirroring the desktop hub.
+//
+// CarSignals bridge (ADR 0002/Block 0005):
+//   CarSignalsController registers on the DHU engine messenger only.
+//   It auto-selects AdaptAPI or Simulator and exposes:
+//     MethodChannel "zee/car_signals"         — start() / snapshot()
+//     EventChannel  "zee/car_signals/events"  — streamed signal events
+//   The HUD engine receives signals via the existing relay (not the native bridge).
 class MainActivity : FlutterActivity() {
 
     companion object {
@@ -45,6 +54,9 @@ class MainActivity : FlutterActivity() {
     // Native relay channels — held so the DHU handler can forward to HUD.
     private var dhuHub: MethodChannel? = null
     private var hudHub: MethodChannel? = null
+
+    // CarSignals native bridge — DHU engine only.
+    private var carSignalsController: CarSignalsController? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -68,6 +80,14 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+
+        // Construct CarSignalsController on the DHU engine messenger.
+        // selectSource() probes AdaptAPI availability and logs the chosen source.
+        val ctrl = CarSignalsController(this, flutterEngine.dartExecutor.binaryMessenger)
+        ctrl.selectSource()
+        carSignalsController = ctrl
+        // Expose to SimulateReceiver so ADB broadcasts reach the live source.
+        SimulateReceiver.controllerRef = ctrl
 
         // Defer HUD setup: give the primary view time to attach and render.
         handler.postDelayed({ setupHud() }, HUD_SPAWN_DELAY_MS)
@@ -144,6 +164,9 @@ class MainActivity : FlutterActivity() {
     // -------------------------------------------------------------------------
 
     override fun onDestroy() {
+        SimulateReceiver.controllerRef = null
+        carSignalsController?.tearDown()
+        carSignalsController = null
         try { hudPresentation?.dismiss() } catch (_: Throwable) {}
         hudEngine?.destroy()
         super.onDestroy()

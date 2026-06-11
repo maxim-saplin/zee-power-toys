@@ -45,9 +45,10 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | — | Environment-selected adapters: single APK, AdaptAPI-or-simulator auto-select, ADB override + native CarSignals + broadcast feedback channel | ADR 0002/0004 | **ready-for-agent** |
 | — | Services/ports skeleton (CarSignals, ConfigStore, MinimapHost, HudHost, Installer, SystemConfig) + Riverpod injection | ADR 0003/0006 | _moved to [0003](0003-services-ports-skeleton.md)_ → **done** |
 | [0002](0002-feedback-loop-client.md) | Feedback Loop client: dual-channel (VM-service `ext.zee.*` + native ADB/broadcast dump), tier-agnostic | ADR 0004 | **done** |
-| — | Minimap under-layer: native `TextureView` + green-yellow `ColorMatrix` filter + idempotent `setMinimap` command | ADR 0001/0005 | backlog |
+| — | Environment-selected adapters: single APK, AdaptAPI-or-simulator auto-select, ADB override + native CarSignals + broadcast feedback channel | ADR 0002/0004 | _moved to [0005](0005-environment-selected-carsignals.md)_ → **done** |
+| — | Minimap under-layer: native `TextureView` + green-yellow `ColorMatrix` filter + idempotent `setMinimap` command | ADR 0001/0005 | _delivered with the Minimap-config feature Block_ |
 | — | Boot shim + ConfigStore plain native-readable format + foreground service + auto-launch | ADR 0003/0002 | backlog |
-| — | Safe Area: hand-calibrated rectangle applied to the HUD surface, with preview parity | ADR 0001 | backlog |
+| — | Safe Area: hand-calibrated rectangle applied to the HUD surface, with preview parity | ADR 0001 | _delivered with the HUD-preview feature Block_ |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.

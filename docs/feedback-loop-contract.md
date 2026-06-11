@@ -86,6 +86,43 @@ lifetime of the isolate.  `hudBoxOn` is included for convenience (same as
 
 ---
 
+## Native channel — CarSignals injection & dump (T2/T3)
+
+The native ADB/broadcast channel (ADR 0004). On **T1** signal injection goes over
+the VM-service `ext.zee.inject` into the Dart `FakeCarSignals`; on **T2/T3** it
+descends to the real native source via ordered ADB broadcasts.
+
+**Inject** — `com.zeepowertoys.SIMULATE` (must target the component explicitly;
+Android 8+ drops implicit background broadcasts):
+
+```bash
+adb shell am broadcast \
+  -n com.zeepowertoys.zee_power_toys/.carsignals.SimulateReceiver \
+  -a com.zeepowertoys.SIMULATE --es kind <kind> --es value <value>
+```
+
+| `kind` | `value` | example |
+|---|---|---|
+| `speed` | int km/h | `80` |
+| `blinker` | `left\|right\|hazard\|off` | `left` |
+| `charge` | `<bool>:<volts>:<amps>:<kw>` | `true:760.0:55.0:42.0` |
+| `battery` | `<pct>:<tempC>` | `80:27.5` |
+| `powerFlow` | `drive\|regen\|standstill\|unknown` | `drive` |
+
+**Dump** — `com.zeepowertoys.DUMP` (ordered broadcast; JSON returned in the result data):
+
+```bash
+adb shell am broadcast -n com.zeepowertoys.zee_power_toys/.carsignals.SimulateReceiver \
+  -a com.zeepowertoys.DUMP
+# → result=0, data="{"speedKmh":80,"blinker":"left","charging":true,...}"
+```
+
+**Source override** — `setprop persist.zee.carsignals sim|adapt` (empty = auto-detect:
+real AdaptAPI on the car, simulator on the emulator). `dev/feedback_loop.py --tier t2`
+uses this channel for `inject`; whoami/dumpState/readViewModel/tap/shot stay on VM-service.
+
+---
+
 ## References
 
 - ADR 0004: `docs/adr/0004-dual-channel-feedback-loop.md`

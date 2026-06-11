@@ -46,6 +46,8 @@ import asyncio
 import base64
 import json
 import os
+import re
+import subprocess
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -87,6 +89,74 @@ class T1NativeStub(NativeChannel):
             "descends the stack on T2/T3 (see ADR 0004).  "
             "Use inject over the VM-service channel for T1 signal injection."
         )
+
+
+class T2NativeChannel(NativeChannel):
+    """T2 native channel: ADB broadcast → com.zeepowertoys.SIMULATE.
+
+    inject(kv) maps the feedback-loop kv dict to the native broadcast extras:
+      kind=speed value=80          → --es kind speed --es value 80
+      kind=blinker value=left      → --es kind blinker --es value left
+      kind=charge value=true:400:20:8  → --es kind charge --es value true:400:20:8
+      kind=battery value=80:27.5   → --es kind battery --es value 80:27.5
+      kind=powerFlow value=drive   → --es kind powerFlow --es value drive
+
+    The "value" extra for charge must be pre-formatted as "<bool>:<volts>:<amps>:<kw>"
+    by the caller (e.g. value=true:400.0:20.5:8.2).
+
+    IMPORTANT: use -n <component> in the adb am broadcast command so the
+    broadcast reaches the receiver even when the app is in background
+    (Android 8+ blocks implicit broadcasts in background without the component flag).
+
+    dump() sends a DUMP broadcast and parses the result from the adb output.
+    The DUMP broadcast uses setResultData(json) — the result data appears as:
+      "Broadcast completed: result=0, data=<json>"
+    """
+
+    def __init__(self, serial: str = _z.DEFAULT_SERIAL) -> None:
+        self._serial = serial
+
+    def _adb(self, *args: str) -> subprocess.CompletedProcess:
+        return _z.adb(*args, serial=self._serial)
+
+    async def inject(self, kv: dict[str, str]) -> dict[str, Any]:
+        kind  = kv.get("kind", "")
+        value = kv.get("value", "")
+        if not kind:
+            raise ValueError("inject kv must contain 'kind'")
+        # -n specifies the explicit component so the broadcast is delivered even
+        # when the app is in the background (Android 8+ background broadcast restriction).
+        proc = self._adb("shell", "am", "broadcast",
+                         "-n", "com.zeepowertoys.zee_power_toys/.carsignals.SimulateReceiver",
+                         "-a", "com.zeepowertoys.SIMULATE",
+                         "--es", "kind", kind,
+                         "--es", "value", value)
+        return {"adb_stdout": proc.stdout.strip(), "kind": kind, "value": value}
+
+    async def dump(self) -> dict[str, Any]:
+        """Send DUMP broadcast and parse the native snapshot JSON from result data."""
+        # -n specifies the explicit component (same background restriction workaround).
+        proc = self._adb("shell", "am", "broadcast",
+                         "-n", "com.zeepowertoys.zee_power_toys/.carsignals.SimulateReceiver",
+                         "-a", "com.zeepowertoys.DUMP")
+        output = proc.stdout.strip()
+        # The adb am broadcast output for a receiver that called setResultData() contains:
+        #   Broadcast completed: result=0, data="<json>"
+        # Parse the data= field.
+        m = re.search(r'data="(.+?)"(?:\s|$)', output)
+        if m:
+            try:
+                return json.loads(m.group(1))
+            except json.JSONDecodeError:
+                return {"raw": m.group(1)}
+        # Also try without quotes (some Android versions omit them)
+        m2 = re.search(r'data=(\{.+\})', output)
+        if m2:
+            try:
+                return json.loads(m2.group(1))
+            except json.JSONDecodeError:
+                pass
+        return {"raw_output": output, "error": "could not parse JSON from DUMP result"}
 
 
 # ---------------------------------------------------------------------------
@@ -188,19 +258,22 @@ class FeedbackLoop:
     # ------------------------------------------------------------------
 
     async def inject(self, surface: str = "dhu", **kv: str) -> dict[str, Any]:
-        """Inject a CarSignalEvent via ext.zee.inject on the target surface (T1).
+        """Inject a CarSignalEvent.
 
-        On T1 this calls ext.zee.inject on the DHU (or given) isolate, which
-        updates the FakeCarSignals and triggers the cross-isolate relay to HUD.
-        On T2/T3 the native channel handles injection instead.
+        On T1 (T1NativeStub): calls ext.zee.inject on the DHU VM isolate.
+        On T2/T3 (T2NativeChannel): ADB broadcast → com.zeepowertoys.SIMULATE;
+          the native simulator emits the event → bridge → Dart → relay → HUD.
         """
+        if isinstance(self._native, T2NativeChannel):
+            return await self._native.inject(kv)
+        # T1: VM-service inject
         try:
             iso_id = await self._resolve(surface)
             params: dict[str, Any] = {"isolateId": iso_id}
             params.update(kv)
             return await self._c.rpc("ext.zee.inject", params)
         except NotImplementedError:
-            # T2/T3 native fallback
+            # Explicit native fallback (should not happen on T1 with T1NativeStub)
             return await self._native.inject(kv)
 
     # ------------------------------------------------------------------
@@ -256,11 +329,13 @@ async def _build_surface_map(
 
 
 async def _open_feedback_loop(
-    ws_uri: str,
+    ws_uri: str | None,
     native: NativeChannel | None,
     fn,
 ) -> Any:
     """Open a VMClient connection, build the surface map, call fn(FeedbackLoop)."""
+    if ws_uri is None:
+        raise RuntimeError("ws_uri is required for VM-service operations")
 
     async def _inner(client: _z.VMClient) -> Any:
         surface_map = await _build_surface_map(client)
@@ -349,6 +424,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inj.add_argument("kvs", nargs="+", help="key=value pairs e.g. kind=speed value=80")
 
+    # native-dump — T2/T3: ADB broadcast to DUMP; returns native snapshot JSON
+    sub.add_parser(
+        "native-dump",
+        help="(T2/T3) return native CarSignals snapshot JSON via DUMP broadcast",
+    )
+
     return p
 
 
@@ -357,18 +438,43 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     # Resolve VM URI (logcat/env/flag).
-    try:
-        ws_uri = _z.resolve_ws_uri(serial=args.serial, override=args.vm_uri)
-    except Exception as e:
-        print(
-            json.dumps({"error": f"VM discovery failed: {e}"}, indent=2),
-            file=sys.stderr,
-        )
-        return 3
+    # For native-dump on T2 we don't need the VM URI — but we still try to
+    # resolve it (gracefully) so other commands work in the same session.
+    ws_uri: str | None = None
+    if args.cmd != "native-dump":
+        try:
+            ws_uri = _z.resolve_ws_uri(serial=args.serial, override=args.vm_uri)
+        except Exception as e:
+            print(
+                json.dumps({"error": f"VM discovery failed: {e}"}, indent=2),
+                file=sys.stderr,
+            )
+            return 3
 
-    # The native channel is a stub on T1; future tiers supply a real impl.
-    native: NativeChannel = T1NativeStub()
-    # (T2/T3: replace with T2NativeChannel(serial=args.serial) etc.)
+    # Select native channel based on tier.
+    # T2 (--tier t2) uses T2NativeChannel with the given --serial.
+    # T1 uses the stub that raises on any native call.
+    native: NativeChannel
+    if args.tier in ("t2", "t3"):
+        native = T2NativeChannel(serial=args.serial)
+    else:
+        native = T1NativeStub()
+
+    # native-dump is a pure native-channel command — no VM session needed.
+    if args.cmd == "native-dump":
+        if not isinstance(native, T2NativeChannel):
+            print(
+                json.dumps({"error": "native-dump requires --tier t2 or t3"}, indent=2),
+                file=sys.stderr,
+            )
+            return 3
+        try:
+            result = asyncio.run(native.dump())
+            print(json.dumps(result, indent=2))
+            return 0
+        except Exception as e:
+            print(json.dumps({"error": str(e)}, indent=2), file=sys.stderr)
+            return 1
 
     async def run(fl: FeedbackLoop) -> tuple[int, Any]:
         if args.cmd == "whoami-all":

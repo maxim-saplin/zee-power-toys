@@ -25,6 +25,22 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Native CarSignals broadcast receivers (ADR 0004 native channel).
+             SIMULATE: inject simulated car signals via ADB broadcast.
+             DUMP:     return current signal state as JSON in result data (ordered broadcast).
+             Both exported=true so ADB (shell uid) can broadcast to them. -->
+        <receiver
+            android:name=".carsignals.SimulateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.zeepowertoys.SIMULATE"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.zeepowertoys.DUMP"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

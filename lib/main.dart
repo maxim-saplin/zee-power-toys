@@ -10,6 +10,8 @@ import 'app/hud_app.dart';
 import 'debug/agent_extensions.dart';
 import 'providers/services.dart';
 import 'relay/hub.dart';
+import 'services/adapters/native_car_signals.dart';
+import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
@@ -57,20 +59,25 @@ Future<void> dhuMain(List<String> args) async {
   final store = SharedPrefsConfigStore();
   await store.load();
 
-  final carSignals = FakeCarSignals();
+  // On Android, the DHU engine hosts the native CarSignalsController.
+  // NativeCarSignals subscribes to the EventChannel and calls start() on init.
+  // On T1 desktop, the in-process FakeCarSignals is used as before.
+  final CarSignals carSignalsRaw =
+      (!kIsWeb && Platform.isAndroid) ? NativeCarSignals() : FakeCarSignals();
 
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
 
   // Relay every car-signal event to the HUD isolate.
-  carSignals.events.listen(pushCarSignalToHud);
+  // Subscribes to whatever CarSignals was injected — works for both fake and native.
+  carSignalsRaw.events.listen(pushCarSignalToHud);
 
   registerZeeExtensions(
     surface: 'dhu',
     store: store,
     shotKey: dhuShotKey,
-    carSignals: carSignals,
+    carSignals: carSignalsRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
   );
 
@@ -78,7 +85,7 @@ Future<void> dhuMain(List<String> args) async {
     ProviderScope(
       overrides: [
         configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(carSignals),
+        carSignalsProvider.overrideWithValue(carSignalsRaw),
         minimapHostProvider.overrideWithValue(FakeMinimapHost()),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),

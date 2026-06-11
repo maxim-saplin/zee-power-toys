@@ -1,0 +1,281 @@
+package com.zeepowertoys.zee_power_toys.carsignals
+
+import android.content.Context
+import android.util.Log
+import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Proxy
+
+// AdaptAPI CarSignalSource — live car signals via Ecarx AdaptAPI reflection.
+// The AdaptAPI SDK is a system framework class (boot classpath only) — every
+// call goes through ReflectionUtils, not compile-time types. This means:
+//   • No import of com.ecarx.* at compile time.
+//   • All reflective calls are guarded; any failure falls through to the caller.
+//
+// ADR 0002: this class is code-complete but its live path is only exercised
+// on T3 (real Zeekr 001). On T2 (emulator) AdaptAPI is absent — the caller
+// catches the probe failure and falls back to SimulatedCarSignals.
+//
+// Signal IDs are ported verbatim from car-signals-adaptapi.md:
+//   SPEED=0x00100100  BLINKER_L=0x21051100  BLINKER_R=0x21051200
+//   CHARGE_STATE=0x00201500  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
+//   CHARGE_V=0x24140100  CHARGE_A=0x24140200  CHARGE_KW=0x2420C000
+//   POWER_FLOW=0x24010100  ZONE_GLOBAL=0x80000000
+class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
+
+    private val TAG = "ZEE"
+
+    // Signal IDs — AdaptAPI canonical IDs from knowledge/car-signals-adaptapi.md
+    private val SPEED         = 0x00100100
+    private val BLINKER_LEFT  = 0x21051100
+    private val BLINKER_RIGHT = 0x21051200
+    private val CHARGE_STATE  = 0x00201500  // getSensorEvent; 0=idle,1=charging,...
+    private val BATTERY_LEVEL = 0x00100A00  // % float
+    private val BATTERY_TEMP  = 0x00102A00  // °C float
+    private val CHARGE_VOLTS  = 0x24140100
+    private val CHARGE_AMPS   = 0x24140200
+    private val CHARGE_KW     = 0x2420C000
+    private val POWER_FLOW    = 0x24010100
+    private val ZONE_GLOBAL   = 0x80000000.toInt()
+
+    // Power-flow enum constants (raw int values from CAR_API.md:114-128)
+    private val PF_ELEC         = 604045574 + 6     // 604045580 ELEC / drive
+    private val PF_STANDSTILL   = 604045574 + 20    // 604045594 ... but doc says +20=604045588
+    private val PF_REGEN_BASE   = 604045574 + 21    // 604045595 regen group starts +21
+
+    private val POWER_FLOW_DRIVE = setOf(
+        604045574 + 6,   // ELEC
+        604045574 + 17,  // PURE_ELE_AWD
+        604045574 + 18,  // FRONT_ELE_DRIVE
+        604045574 + 19,  // REAR_ELE_DRIVE
+    )
+    private val POWER_FLOW_STANDSTILL = setOf(604045574 + 20)
+    private val POWER_FLOW_REGEN = setOf(
+        604045574 + 21,  // REGEN
+        604045574 + 22,  // REGEN_FRONT
+        604045574 + 23,  // REGEN_AWD
+    )
+
+    private var iCar: Any? = null
+    private var sensorMgr: Any? = null
+    private var functionMgr: Any? = null
+    private var sensorListenerProxy: Any? = null
+    private var functionWatcherProxy: Any? = null
+    private var emitter: ((SignalEvent) -> Unit)? = null
+
+    // Current in-memory state (updated by callbacks for snapshot())
+    @Volatile private var lastSnapshot = CarSignalSnapshot()
+
+    // Try to connect to AdaptAPI — throws if Car.create() fails.
+    // Used by CarSignalsController to probe availability.
+    fun probe(): Boolean {
+        val carClass = ReflectionUtils.classForName("com.ecarx.xui.adaptapi.car.Car")
+            ?: return false
+        val car = ReflectionUtils.callStatic(carClass, "create", ctx) ?: return false
+        val sm = ReflectionUtils.callInstance(car, "getSensorManager") ?: return false
+        // Sentinel read: getSensorLatestValue(SPEED) — only to confirm it's wired up.
+        // On emulator this class is absent, so we never reach here.
+        iCar = car
+        sensorMgr = sm
+        functionMgr = ReflectionUtils.callInstance(car, "getICarFunction")
+        return true
+    }
+
+    override fun start(emit: (SignalEvent) -> Unit) {
+        emitter = emit
+        if (iCar == null) {
+            if (!probe()) {
+                Log.e(TAG, "AdaptApiCarSignals.start: Car.create failed — cannot start")
+                return
+            }
+        }
+        registerListeners()
+        Log.i(TAG, "AdaptApiCarSignals started — listeners registered")
+    }
+
+    override fun snapshot(): CarSignalSnapshot = lastSnapshot
+
+    override fun stop() {
+        try {
+            unregisterListeners()
+            ReflectionUtils.callInstance(iCar ?: return, "disconnect")
+        } catch (t: Throwable) {
+            Log.w(TAG, "AdaptApiCarSignals.stop: cleanup error", t)
+        }
+        iCar = null
+        sensorMgr = null
+        functionMgr = null
+        sensorListenerProxy = null
+        functionWatcherProxy = null
+        emitter = null
+        Log.i(TAG, "AdaptApiCarSignals stopped")
+    }
+
+    // ---------------------------------------------------------------------------
+    // Listener registration via dynamic proxy
+    // ---------------------------------------------------------------------------
+
+    private fun registerListeners() {
+        val sm = sensorMgr ?: return
+        val fm = functionMgr ?: return
+
+        // ISensor listener — handles speed, battery, battery state
+        val sensorListenerClass = ReflectionUtils.classForName(
+            "com.ecarx.xui.adaptapi.car.sensor.ISensor\$ISensorListener"
+        ) ?: run {
+            Log.w(TAG, "ISensorListener class not found — skipping sensor callbacks")
+            return
+        }
+        val sensorHandler = InvocationHandler { _, method, args ->
+            when (method.name) {
+                "onSensorValueChanged" -> {
+                    val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
+                    val value = (args.get(1) as? Float) ?: return@InvocationHandler null
+                    if (!ReflectionUtils.nonSentinelFloat(value)) return@InvocationHandler null
+                    when (id) {
+                        SPEED -> {
+                            val kmh = (value * 3.6f).toInt()
+                            lastSnapshot = lastSnapshot.copy(speedKmh = kmh)
+                            emitter?.invoke(SignalEvent.Speed(kmh))
+                        }
+                        BATTERY_LEVEL -> {
+                            val pct = value.toInt().coerceIn(0, 100)
+                            val tempC = lastSnapshot.batteryTempC ?: 25.0
+                            lastSnapshot = lastSnapshot.copy(batteryPct = pct)
+                            emitter?.invoke(SignalEvent.Battery(pct, tempC))
+                        }
+                        BATTERY_TEMP -> {
+                            val pct = lastSnapshot.batteryPct ?: 0
+                            val tempC = value.toDouble()
+                            lastSnapshot = lastSnapshot.copy(batteryTempC = tempC)
+                            emitter?.invoke(SignalEvent.Battery(pct, tempC))
+                        }
+                    }
+                }
+                "onSensorEventChanged" -> {
+                    val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
+                    val event = (args.get(1) as? Int) ?: return@InvocationHandler null
+                    if (id == CHARGE_STATE) {
+                        val charging = event == 1  // 1=charging by convention
+                        lastSnapshot = lastSnapshot.copy(charging = charging)
+                        emitter?.invoke(SignalEvent.Charge(
+                            charging, lastSnapshot.chargeVolts,
+                            lastSnapshot.chargeAmps, lastSnapshot.chargeKw,
+                        ))
+                    }
+                }
+                "onSensorSupportChanged" -> { /* ignore */ }
+                else -> { /* ignore */ }
+            }
+            null
+        }
+        sensorListenerProxy = Proxy.newProxyInstance(
+            sensorListenerClass.classLoader,
+            arrayOf(sensorListenerClass),
+            sensorHandler,
+        )
+        // Try 3-arg form (with rate) first; fall back to 2-arg
+        val sensorIds = intArrayOf(SPEED, BATTERY_LEVEL, BATTERY_TEMP)
+        for (sid in sensorIds) {
+            val r3 = ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid, 0)
+            if (!r3.invoked || r3.error != null) {
+                ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid)
+            }
+        }
+
+        // ICarFunction watcher — handles blinker, power-flow, charging V/A/kW
+        val watcherClass = ReflectionUtils.classForName(
+            "com.ecarx.xui.adaptapi.car.base.ICarFunction\$IFunctionValueWatcher"
+        ) ?: run {
+            Log.w(TAG, "IFunctionValueWatcher class not found — skipping function callbacks")
+            return
+        }
+        val watcherHandler = InvocationHandler { _, method, args ->
+            when (method.name) {
+                "onFunctionValueChanged" -> {
+                    val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
+                    val value = (args.get(2) as? Int) ?: return@InvocationHandler null
+                    if (!ReflectionUtils.nonSentinelInt(value)) return@InvocationHandler null
+                    when (id) {
+                        BLINKER_LEFT, BLINKER_RIGHT -> {
+                            // Read both sides to determine full state
+                            val left = if (id == BLINKER_LEFT) value else
+                                (ReflectionUtils.callInstance(fm, "getFunctionValue", BLINKER_LEFT) as? Int) ?: 0
+                            val right = if (id == BLINKER_RIGHT) value else
+                                (ReflectionUtils.callInstance(fm, "getFunctionValue", BLINKER_RIGHT) as? Int) ?: 0
+                            // Hazard = both left and right on (hazard ID 0x21050F00 is dead)
+                            val state = when {
+                                left == 1 && right == 1 -> "hazard"
+                                left == 1 -> "left"
+                                right == 1 -> "right"
+                                else -> "off"
+                            }
+                            lastSnapshot = lastSnapshot.copy(blinker = state)
+                            emitter?.invoke(SignalEvent.Blinker(state))
+                        }
+                        POWER_FLOW -> {
+                            val flow = when (value) {
+                                in POWER_FLOW_DRIVE -> "drive"
+                                in POWER_FLOW_STANDSTILL -> "standstill"
+                                in POWER_FLOW_REGEN -> "regen"
+                                else -> "unknown"
+                            }
+                            lastSnapshot = lastSnapshot.copy(powerFlow = flow)
+                            emitter?.invoke(SignalEvent.PowerFlow(flow))
+                        }
+                    }
+                }
+                "onCustomizeFunctionValueChanged" -> {
+                    val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
+                    val value = (args.get(2) as? Float) ?: return@InvocationHandler null
+                    if (!ReflectionUtils.nonSentinelFloat(value)) return@InvocationHandler null
+                    when (id) {
+                        CHARGE_VOLTS -> {
+                            lastSnapshot = lastSnapshot.copy(chargeVolts = value.toDouble())
+                            emitter?.invoke(SignalEvent.Charge(
+                                lastSnapshot.charging ?: false,
+                                value.toDouble(), lastSnapshot.chargeAmps, lastSnapshot.chargeKw,
+                            ))
+                        }
+                        CHARGE_AMPS -> {
+                            lastSnapshot = lastSnapshot.copy(chargeAmps = value.toDouble())
+                            emitter?.invoke(SignalEvent.Charge(
+                                lastSnapshot.charging ?: false,
+                                lastSnapshot.chargeVolts, value.toDouble(), lastSnapshot.chargeKw,
+                            ))
+                        }
+                        CHARGE_KW -> {
+                            lastSnapshot = lastSnapshot.copy(chargeKw = value.toDouble())
+                            emitter?.invoke(SignalEvent.Charge(
+                                lastSnapshot.charging ?: false,
+                                lastSnapshot.chargeVolts, lastSnapshot.chargeAmps, value.toDouble(),
+                            ))
+                        }
+                    }
+                }
+                else -> { /* ignore */ }
+            }
+            null
+        }
+        functionWatcherProxy = Proxy.newProxyInstance(
+            watcherClass.classLoader,
+            arrayOf(watcherClass),
+            watcherHandler,
+        )
+        val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
+        ReflectionUtils.callInstanceResult(fm, "registerFunctionValueWatcher", funcIds, functionWatcherProxy)
+    }
+
+    private fun unregisterListeners() {
+        val sm = sensorMgr
+        val fm = functionMgr
+        val sl = sensorListenerProxy
+        val fw = functionWatcherProxy
+        if (sm != null && sl != null) {
+            ReflectionUtils.callInstanceResult(sm, "unregisterListener", sl)
+        }
+        if (fm != null && fw != null) {
+            val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
+            ReflectionUtils.callInstanceResult(fm, "unregisterFunctionValueWatcher", funcIds, fw)
+        }
+    }
+}

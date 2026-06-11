@@ -16,16 +16,16 @@ import '../services/fakes/fake_car_signals.dart';
 ///
 /// Both isolates register the same set so the Feedback Loop can drive and read
 /// each surface independently. [shotKey] must wrap the root RepaintBoundary.
-/// [carSignals] is the FakeCarSignals for this isolate — only the DHU one is
-/// the injectable source; the HUD one re-emits relayed events. Null on surfaces
-/// that don't support inject (future non-fake surfaces).
+/// [carSignals] is the CarSignals instance for this isolate — may be a
+/// [FakeCarSignals] (T1/HUD) or a NativeCarSignals (T2 DHU). On T2 DHU the
+/// ext.zee.inject extension is disabled (native injection uses ADB broadcasts).
 /// [onSetConfig] is optional (DHU can pass null; the store.changes subscription
 /// already relays to HUD).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
   required GlobalKey shotKey,
-  FakeCarSignals? carSignals,
+  CarSignals? carSignals,
   Future<void> Function(AppConfig)? onSetConfig,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
@@ -76,26 +76,31 @@ void registerZeeExtensions({
 
   // inject — push a fake CarSignalEvent into THIS isolate's FakeCarSignals.
   // On DHU the store.changes.listen in main.dart relays the event to HUD via hub.
+  // On T2 DHU (Android NativeCarSignals) injection must use ADB broadcasts instead.
   // Params: kind=speed|blinker|charge|battery  + kind-specific values.
   developer.registerExtension('ext.zee.inject', (method, params) async {
-    if (carSignals == null) {
-      return _extError('ext.zee.inject not available on this surface');
+    final fake = carSignals is FakeCarSignals ? carSignals : null;
+    if (fake == null) {
+      return _extError(
+        'ext.zee.inject not available on this surface '
+        '(use ADB broadcast on T2: adb shell am broadcast -a com.zeepowertoys.SIMULATE)',
+      );
     }
     final kind = params['kind'];
     try {
       switch (kind) {
         case 'speed':
           final kmh = int.parse(params['value'] ?? '0');
-          carSignals.emitSpeed(kmh);
+          fake.emitSpeed(kmh);
         case 'blinker':
           final state = BlinkerState.values.byName(params['value'] ?? 'off');
-          carSignals.emitBlinker(state);
+          fake.emitBlinker(state);
         case 'charge':
           final charging = (params['charging'] ?? 'false') == 'true';
           final kw = double.tryParse(params['kw'] ?? '');
           final volts = double.tryParse(params['volts'] ?? '');
           final amps = double.tryParse(params['amps'] ?? '');
-          carSignals.emitCharge(
+          fake.emitCharge(
             charging: charging,
             kw: kw,
             volts: volts,
@@ -104,10 +109,10 @@ void registerZeeExtensions({
         case 'battery':
           final levelPct = int.parse(params['levelPct'] ?? '0');
           final tempC = double.parse(params['tempC'] ?? '0');
-          carSignals.emitBattery(levelPct: levelPct, tempC: tempC);
+          fake.emitBattery(levelPct: levelPct, tempC: tempC);
         case 'powerFlow':
           final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
-          carSignals.emitPowerFlow(flow);
+          fake.emitPowerFlow(flow);
         default:
           return _extError(
             'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow',
@@ -117,7 +122,7 @@ void registerZeeExtensions({
       return _extError('inject error: $e');
     }
     return developer.ServiceExtensionResponse.result(
-      jsonEncode(carSignals.snapshot.toJson()..['surface'] = surface),
+      jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
     );
   });
 
