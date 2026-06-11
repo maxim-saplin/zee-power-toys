@@ -1,5 +1,5 @@
 ---
-status: backlog
+status: done
 labels: [foundation, feedback-loop]
 created: 2026-06-11
 satisfies: foundation          # implements ADR 0004
@@ -27,13 +27,16 @@ On **T1**, every op goes over the VM-service channel; the native ADB/broadcast c
 
 ## Definition of Done (runtime-confirmed on T1)
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). Against the running Block-0001 skeleton:
-- [ ] The client enumerates both isolates, `dumpState` on each surface, drives `setConfig`, and captures a `shot` — exposed as a clean CLI **and** a reusable lib the `verify` skill calls. — artifact: a driver transcript + captured shots.
-- [ ] Surface resolution is robust (both isolates named `main`; resolve by `whoami.surface`, per ADR 0004). — artifact: whoami-all JSON.
-- [ ] `ext.zee.*` contract documented (the required probes any new surface must expose).
-- [ ] Native-channel ops present in the API surface but cleanly stubbed on T1 (no fake "success").
+- [x] The client enumerates both isolates, `dumpState` on each surface, drives `setConfig`, and captures a `shot` — exposed as a clean CLI **and** a reusable lib (`dev/feedback_loop.py`: `FeedbackLoop` class). — artifact: driver transcript + [`shots/fl-after-tap1.png`](../../shots/fl-after-tap1.png)/[`fl-after-tap2.png`](../../shots/fl-after-tap2.png).
+- [x] Surface resolution is robust (both isolates named `main`; resolve by `whoami.surface`). — artifact: whoami-all JSON resolving dhu+hud.
+- [x] `ext.zee.*` contract documented — [`docs/feedback-loop-contract.md`](../feedback-loop-contract.md).
+- [x] Native-channel ops present in the API surface but cleanly stubbed on T1 (`inject` raises an explicit "native channel not available on T1" error — **no fake success**).
+- [x] **Bonus, beyond DoD:** `tap` is a *real* UI driver — added `ext.zee.tapByKey` (3-tier: callback-walk → synthetic pointer → ancestor-walk) + a `ValueKey('dhu-toggle')`. Confirmed end-to-end: `tap dhu-toggle` → cross-isolate relay → **HUD box appears/disappears** (gesture→pixels), captured in the shots above. Also added `ext.zee.readViewModel`.
 
 ## Reconciliation
-_(Filled while building.)_
+Confirmed by the orchestrator (Opus) on T1, 2026-06-11.
+1. **`inject` routing (carry-forward to the services-skeleton Block).** ADR 0004 says the injection point *descends the stack* — on **T1 the target is the Dart fake**, reachable over the **VM-service** channel, not the native channel. There is no `CarSignals`/fake yet (it lands in the services-skeleton Block), so `inject` correctly stubs today. When `FakeCarSignals` exists, add `ext.zee.inject` (VM-service) into it and route T1 `inject` over the VM channel (T2/T3 keep the ADB-broadcast native channel). The seam in `feedback_loop.py` (`NativeChannel` ABC) is built for this.
+2. **`tap` faithfulness.** The Material `Switch`'s toggle is reached via the descendant-callback tier of `tapByKey`. The convention for later Blocks: put the `ValueKey` directly on the tappable (button/`InkWell`/`GestureDetector`) so the first callback found is the intended one.
 
 ## Notes
 Keep the client tier-agnostic at its seams — adding T2/T3 must not change call sites in later Blocks' verification steps.

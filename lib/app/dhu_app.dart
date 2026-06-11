@@ -41,6 +41,7 @@ class _DhuScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Switch(
+              key: const ValueKey('dhu-toggle'),
               value: hudBoxOn,
               onChanged: (_) => store.setConfig(
                 store.value.copyWith(hudBoxOn: !hudBoxOn),

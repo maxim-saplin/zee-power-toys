@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 import 'dart:io' show pid;
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' show InkResponse;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -37,6 +39,17 @@ void registerZeeExtensions({
     );
   });
 
+  // readViewModel returns the derived Riverpod view-state (ADR 0004).
+  // Today the shape matches dumpState; they will diverge as the view-model grows.
+  developer.registerExtension('ext.zee.readViewModel', (method, params) async {
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode(<String, Object?>{
+        'surface': surface,
+        'hudBoxOn': store.value.hudBoxOn,
+      }),
+    );
+  });
+
   developer.registerExtension('ext.zee.setConfig', (method, params) async {
     final raw = params['hudBoxOn'];
     final parsed = raw == 'true';
@@ -45,6 +58,70 @@ void registerZeeExtensions({
     if (onSetConfig != null) await onSetConfig(next);
     return developer.ServiceExtensionResponse.result(
       _dumpStateJson(surface, store),
+    );
+  });
+
+  // tapByKey — synthetic-tap a widget identified by ValueKey<String>.
+  // Ported from the flutter-debug skill's nothingness AgentService pattern.
+  // Three-tier fallback: descendant-callback → synthetic-pointer → ancestor-callback.
+  developer.registerExtension('ext.zee.tapByKey', (method, params) async {
+    final keyValue = params['key'];
+    if (keyValue == null || keyValue.isEmpty) {
+      return _extError('key parameter required');
+    }
+    final element = _findElementByKey(keyValue);
+    if (element == null) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'tapped': false,
+          'error': 'no widget found with key "$keyValue"',
+        }),
+      );
+    }
+
+    // Prefer a descendant callback walk (catches GestureDetector/InkResponse
+    // nested below the keyed wrapper without touching the live pointer pipeline).
+    if (_invokeOnTapInSubtree(element)) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'tapped': true,
+          'key': keyValue,
+          'mode': 'descendant-callback',
+        }),
+      );
+    }
+
+    // Fallback: dispatch synthetic PointerAdded/Down/Up/Removed at the
+    // RenderBox centre (handles Listener, MouseRegion, Switch, etc.).
+    final at = _dispatchSyntheticTap(element);
+    if (at != null) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'tapped': true,
+          'key': keyValue,
+          'x': at.dx,
+          'y': at.dy,
+        }),
+      );
+    }
+
+    // Last resort: ancestor callback walk.
+    if (_invokeOnTapAncestor(element)) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'tapped': true,
+          'key': keyValue,
+          'mode': 'ancestor-callback',
+        }),
+      );
+    }
+
+    return developer.ServiceExtensionResponse.result(
+      jsonEncode(<String, Object?>{
+        'tapped': false,
+        'error':
+            'widget with key "$keyValue" found but has no callback and no RenderBox',
+      }),
     );
   });
 
@@ -77,8 +154,138 @@ void registerZeeExtensions({
   });
 }
 
+// ---------------------------------------------------------------------------
+// Helpers — shared by whoami/dumpState/tapByKey.
+// ---------------------------------------------------------------------------
+
 String _dumpStateJson(String surface, ConfigStore store) =>
     jsonEncode(<String, Object?>{
       'surface': surface,
       'hudBoxOn': store.value.hudBoxOn,
     });
+
+developer.ServiceExtensionResponse _extError(String message) =>
+    developer.ServiceExtensionResponse.error(
+      developer.ServiceExtensionResponse.extensionError,
+      message,
+    );
+
+// ---------------------------------------------------------------------------
+// Widget-tree walking utilities (ported from nothingness AgentService).
+// ---------------------------------------------------------------------------
+
+/// Depth-first pre-order walk of [root]'s subtree; stops when [visit] returns
+/// true. Offers root itself first when [includeSelf] is set.
+bool _walkSubtree(
+  Element root,
+  bool Function(Element) visit, {
+  bool includeSelf = false,
+}) {
+  var matched = false;
+  void recurse(Element el, bool offerSelf) {
+    if (matched) return;
+    if (offerSelf && visit(el)) {
+      matched = true;
+      return;
+    }
+    el.visitChildren((child) => recurse(child, true));
+  }
+
+  recurse(root, includeSelf);
+  return matched;
+}
+
+/// Find the first [Element] whose widget has a [ValueKey<String>] equal to [key].
+Element? _findElementByKey(String key) {
+  final targetKey = ValueKey<String>(key);
+  Element? found;
+  final root = WidgetsBinding.instance.rootElement;
+  if (root == null) return null;
+  _walkSubtree(root, (el) {
+    if (el.widget.key == targetKey) {
+      found = el;
+      return true;
+    }
+    return false;
+  }, includeSelf: true);
+  return found;
+}
+
+/// Return the `onTap` callback of [el]'s widget if it is a GestureDetector or
+/// InkResponse, else null.
+VoidCallback? _onTapOf(Element el) {
+  final w = el.widget;
+  if (w is GestureDetector) return w.onTap;
+  if (w is InkResponse) return w.onTap;
+  return null;
+}
+
+/// Invoke the first `onTap` found in [root]'s subtree; returns true if one fired.
+bool _invokeOnTapInSubtree(Element root) => _walkSubtree(root, (el) {
+      final onTap = _onTapOf(el);
+      if (onTap != null) {
+        onTap();
+        return true;
+      }
+      return false;
+    });
+
+/// Invoke the first `onTap` on [element] itself, then its ancestors, then its
+/// subtree; returns true if one fired.
+bool _invokeOnTapAncestor(Element element) {
+  final self = _onTapOf(element);
+  if (self != null) {
+    self();
+    return true;
+  }
+  var fired = false;
+  element.visitAncestorElements((ancestor) {
+    final onTap = _onTapOf(ancestor);
+    if (onTap != null) {
+      onTap();
+      fired = true;
+      return false;
+    }
+    return true;
+  });
+  if (!fired) fired = _invokeOnTapInSubtree(element);
+  return fired;
+}
+
+/// Monotonically-increasing sequence to avoid gesture-arena collisions between
+/// consecutive synthetic taps.
+int _syntheticPointerSeq = 0;
+
+/// Dispatch synthetic PointerAdded → Down → Up → Removed at [element]'s
+/// RenderBox centre; returns the global centre offset, or null when there is no
+/// usable box. The full Added/Removed envelope is required — Down/Up alone is
+/// unreliable on the live gesture binding.
+Offset? _dispatchSyntheticTap(Element element) {
+  final ro = element.findRenderObject();
+  if (ro is! RenderBox || !ro.attached || !ro.hasSize) return null;
+  final size = ro.size;
+  if (size.isEmpty) return null;
+  final center = ro.localToGlobal(size.center(Offset.zero));
+
+  _syntheticPointerSeq++;
+  // High bit keeps synthetic pointers separate from real device pointer ids.
+  final pointer = 0x70000 | (_syntheticPointerSeq & 0xFFFF);
+  final t0 = Duration(milliseconds: DateTime.now().millisecondsSinceEpoch);
+  final t1 = t0 + const Duration(milliseconds: 16);
+
+  GestureBinding.instance
+    ..handlePointerEvent(
+      PointerAddedEvent(pointer: pointer, position: center, timeStamp: t0),
+    )
+    ..handlePointerEvent(
+      PointerDownEvent(pointer: pointer, position: center, timeStamp: t0),
+    )
+    ..handlePointerEvent(
+      PointerUpEvent(pointer: pointer, position: center, timeStamp: t1),
+    )
+    ..handlePointerEvent(
+      PointerRemovedEvent(pointer: pointer, position: center, timeStamp: t1),
+    );
+
+  return center;
+}

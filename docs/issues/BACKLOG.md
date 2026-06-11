@@ -43,8 +43,8 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | [0001](0001-walking-skeleton.md) | **Walking skeleton** — T1 end-to-end loop: gesture → ConfigStore write → event → both isolates re-derive → pixel change, driven + read via the Feedback Loop | ADR 0001/0003/0004/0006 | **done** |
 | — | Android two-engine host: `FlutterEngineGroup` + secondary `Presentation` + `FlutterView` on Display-2 | ADR 0001/0005 | backlog |
 | — | Environment-selected adapters: single APK, AdaptAPI-or-simulator auto-select, ADB override | ADR 0002 | backlog |
-| — | Services/ports skeleton (CarSignals, ConfigStore, MinimapHost, HudHost, Installer, SystemConfig) + Riverpod injection | ADR 0003/0006 | backlog |
-| [0002](0002-feedback-loop-client.md) | Feedback Loop client: dual-channel (VM-service `ext.zee.*` + native ADB/broadcast dump), tier-agnostic | ADR 0004 | **ready-for-agent** |
+| — | Services/ports skeleton (CarSignals, ConfigStore, MinimapHost, HudHost, Installer, SystemConfig) + Riverpod injection | ADR 0003/0006 | **ready-for-agent** |
+| [0002](0002-feedback-loop-client.md) | Feedback Loop client: dual-channel (VM-service `ext.zee.*` + native ADB/broadcast dump), tier-agnostic | ADR 0004 | **done** |
 | — | Minimap under-layer: native `TextureView` + green-yellow `ColorMatrix` filter + idempotent `setMinimap` command | ADR 0001/0005 | backlog |
 | — | Boot shim + ConfigStore plain native-readable format + foreground service + auto-launch | ADR 0003/0002 | backlog |
 | — | Safe Area: hand-calibrated rectangle applied to the HUD surface, with preview parity | ADR 0001 | backlog |
