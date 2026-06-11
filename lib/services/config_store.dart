@@ -1,5 +1,73 @@
 import 'dart:convert';
 
+/// Battery widget appearance config.
+///
+/// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
+/// sizeScale = 1.0.  The charging stats panel is show-while-charging — it
+/// appears automatically when the car reports charging and is hidden otherwise
+/// (app policy per ADR 0003); showChargingStats merely lets the user suppress
+/// the panel entirely if they prefer.
+class BatteryConfig {
+  const BatteryConfig({
+    this.showBattery = true,
+    this.showTemp = true,
+    this.showChargingStats = true,
+    this.sizeScale = 1.0,
+  });
+
+  /// Whether to render the battery icon and percentage at all.
+  final bool showBattery;
+
+  /// Whether to show the battery temperature readout next to the icon.
+  final bool showTemp;
+
+  /// Whether to show the charging-stats panel (kW prominent, V/A secondary)
+  /// while the car reports charging=true.  When false the panel is always
+  /// hidden; when true it auto-shows/hides with the charging flag.
+  final bool showChargingStats;
+
+  /// Multiplier applied to the base widget size (1.0 = default).
+  final double sizeScale;
+
+  BatteryConfig copyWith({
+    bool? showBattery,
+    bool? showTemp,
+    bool? showChargingStats,
+    double? sizeScale,
+  }) => BatteryConfig(
+    showBattery: showBattery ?? this.showBattery,
+    showTemp: showTemp ?? this.showTemp,
+    showChargingStats: showChargingStats ?? this.showChargingStats,
+    sizeScale: sizeScale ?? this.sizeScale,
+  );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'showBattery': showBattery,
+    'showTemp': showTemp,
+    'showChargingStats': showChargingStats,
+    'sizeScale': sizeScale,
+  };
+
+  factory BatteryConfig.fromJson(Map<String, Object?> json) => BatteryConfig(
+    showBattery: json['showBattery'] as bool? ?? true,
+    showTemp: json['showTemp'] as bool? ?? true,
+    showChargingStats: json['showChargingStats'] as bool? ?? true,
+    sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is BatteryConfig &&
+      other.showBattery == showBattery &&
+      other.showTemp == showTemp &&
+      other.showChargingStats == showChargingStats &&
+      other.sizeScale == sizeScale;
+
+  @override
+  int get hashCode =>
+      Object.hash(showBattery, showTemp, showChargingStats, sizeScale);
+}
+
 /// Shape of the blinker indicator rendered in the HUD BLINKER slot.
 ///
 /// `dots`   — phase0 amber dot cluster (default; faithful to BlinkerOverlayView).
@@ -173,6 +241,7 @@ class AppConfig {
     this.hudBoxOn = false,
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
+    this.battery = const BatteryConfig(),
   });
 
   final bool hudBoxOn;
@@ -183,20 +252,26 @@ class AppConfig {
   /// Blinker appearance (shape, size, position).
   final BlinkerConfig blinker;
 
+  /// Battery widget appearance (show/hide elements, size).
+  final BatteryConfig battery;
+
   AppConfig copyWith({
     bool? hudBoxOn,
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
+    BatteryConfig? battery,
   }) => AppConfig(
     hudBoxOn: hudBoxOn ?? this.hudBoxOn,
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
+    battery: battery ?? this.battery,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'hudBoxOn': hudBoxOn,
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
+    'battery': battery.toJson(),
   };
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
@@ -207,6 +282,9 @@ class AppConfig {
     blinker: json['blinker'] is Map<String, Object?>
         ? BlinkerConfig.fromJson(json['blinker']! as Map<String, Object?>)
         : const BlinkerConfig(),
+    battery: json['battery'] is Map<String, Object?>
+        ? BatteryConfig.fromJson(json['battery']! as Map<String, Object?>)
+        : const BatteryConfig(),
   );
 
   /// Convenience: round-trip through JSON string (used by SharedPrefsConfigStore).
@@ -218,10 +296,11 @@ class AppConfig {
       other is AppConfig &&
       other.hudBoxOn == hudBoxOn &&
       other.safeArea == safeArea &&
-      other.blinker == blinker;
+      other.blinker == blinker &&
+      other.battery == battery;
 
   @override
-  int get hashCode => Object.hash(hudBoxOn, safeArea, blinker);
+  int get hashCode => Object.hash(hudBoxOn, safeArea, blinker, battery);
 }
 
 /// Port for config persistence. Each isolate owns its own instance.

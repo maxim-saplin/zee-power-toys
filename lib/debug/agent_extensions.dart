@@ -52,6 +52,7 @@ void registerZeeExtensions({
     final snap = carSignals?.snapshot;
     final sa = store.value.safeArea;
     final bl = store.value.blinker;
+    final bat = store.value.battery;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -62,10 +63,15 @@ void registerZeeExtensions({
           'shape': bl.shape.name,
           'sizeScale': bl.sizeScale,
         },
-        'charging': snap?.charging,
-        'kw': snap?.chargeKw,
-        'batteryPct': snap?.batteryPct,
-        'batteryTempC': snap?.batteryTempC,
+        'battery': <String, Object?>{
+          'pct': snap?.batteryPct,
+          'tempC': snap?.batteryTempC,
+          'charging': snap?.charging,
+          'kw': snap?.chargeKw,
+          'showBattery': bat.showBattery,
+          'showTemp': bat.showTemp,
+          'showChargingStats': bat.showChargingStats,
+        },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
         'safeArea': sa.toJson(),
@@ -128,6 +134,31 @@ void registerZeeExtensions({
       final size = double.tryParse(rawBlinkerSize ?? '');
       next = next.copyWith(
         blinker: bl.copyWith(shape: shape, sizeScale: size),
+      );
+    }
+
+    // Battery config: batteryShow=true|false, tempShow=..., chargingShow=...,
+    // batterySize=<double>.
+    final rawBatteryShow = params['batteryShow'];
+    final rawTempShow = params['tempShow'];
+    final rawChargingShow = params['chargingShow'];
+    final rawBatterySize = params['batterySize'];
+    if (rawBatteryShow != null ||
+        rawTempShow != null ||
+        rawChargingShow != null ||
+        rawBatterySize != null) {
+      final bat = next.battery;
+      next = next.copyWith(
+        battery: bat.copyWith(
+          showBattery: rawBatteryShow != null
+              ? rawBatteryShow == 'true'
+              : null,
+          showTemp: rawTempShow != null ? rawTempShow == 'true' : null,
+          showChargingStats: rawChargingShow != null
+              ? rawChargingShow == 'true'
+              : null,
+          sizeScale: double.tryParse(rawBatterySize ?? ''),
+        ),
       );
     }
 
@@ -290,6 +321,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'hudBoxOn': store.value.hudBoxOn,
       'safeArea': store.value.safeArea.toJson(),
       'blinker': store.value.blinker.toJson(),
+      'battery': store.value.battery.toJson(),
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>

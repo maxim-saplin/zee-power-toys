@@ -41,3 +41,13 @@ final blinkerConfigProvider = Provider<BlinkerConfig>((ref) {
     error: (e, _) => ref.watch(configStoreProvider).value.blinker,
   );
 });
+
+/// Current battery widget config, updated whenever the config changes.
+final batteryConfigProvider = Provider<BatteryConfig>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.battery,
+    loading: () => ref.watch(configStoreProvider).value.battery,
+    error: (e, _) => ref.watch(configStoreProvider).value.battery,
+  );
+});

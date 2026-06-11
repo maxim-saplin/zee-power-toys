@@ -80,20 +80,20 @@ void main() {
       expect(find.byType(ClipRect), findsOneWidget);
     });
 
-    testWidgets('shows slot stubs — BATTERY, GUIDANCE, MINIMAP', (tester) async {
-      // BLINKER is now a real widget (BlinkerWidget), not a stub.
-      // The other three remain stubs until their Blocks are implemented.
+    testWidgets('shows slot stubs — GUIDANCE, MINIMAP (BATTERY is now real widget)', (tester) async {
+      // BLINKER and BATTERY are now real widgets; GUIDANCE and MINIMAP remain stubs.
       await tester.binding.setSurfaceSize(const Size(1024, 576));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(wrapWithProviders(const HudRoot()));
       await tester.pump();
 
-      expect(find.text('BATTERY'), findsOneWidget);
       expect(find.text('GUIDANCE'), findsOneWidget);
       expect(find.text('MINIMAP'), findsOneWidget);
       // BlinkerWidget replaced the BLINKER stub.
       expect(find.byType(BlinkerWidget), findsOneWidget);
+      // BatteryWidget replaced the BATTERY stub (text 'BATTERY' is gone).
+      expect(find.text('BATTERY'), findsNothing);
     });
 
     testWidgets('Safe Area border absent when showSafeAreaBorder=false', (tester) async {

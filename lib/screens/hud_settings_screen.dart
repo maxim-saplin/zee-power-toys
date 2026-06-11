@@ -10,8 +10,9 @@ import '../widgets/hud_preview.dart';
 ///
 /// Shows the [HudPreview] (same widget tree as the real HUD) over a grey
 /// background so any Safe-Area or layout change is immediately visible.
-/// Provides a Safe-Area inset slider, the debug hudBox toggle, and a
-/// Blinker section (shape selector + size slider + position controls).
+/// Provides a Safe-Area inset slider, the debug hudBox toggle, a
+/// Blinker section (shape selector + size slider + position controls),
+/// and a Battery section (show/hide toggles + size slider).
 class HudSettingsScreen extends ConsumerWidget {
   const HudSettingsScreen({super.key});
 
@@ -20,6 +21,7 @@ class HudSettingsScreen extends ConsumerWidget {
     final safeArea = ref.watch(safeAreaProvider);
     final hudBoxOn = ref.watch(hudBoxOnProvider);
     final blinkerCfg = ref.watch(blinkerConfigProvider);
+    final batteryCfg = ref.watch(batteryConfigProvider);
     final store = ref.read(configStoreProvider);
 
     // Uniform inset: use the average of left/top insets as the slider value.
@@ -253,6 +255,95 @@ class HudSettingsScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
+            // ----------------------------------------------------------------
+            // Battery section
+            // ----------------------------------------------------------------
+            const Text(
+              'Battery',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+
+            // Show battery toggle.
+            Row(
+              children: <Widget>[
+                const Expanded(child: Text('Show battery indicator')),
+                Switch(
+                  key: const ValueKey('battery-show-battery'),
+                  value: batteryCfg.showBattery,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(showBattery: v),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Show temperature toggle.
+            Row(
+              children: <Widget>[
+                const Expanded(child: Text('Show temperature')),
+                Switch(
+                  key: const ValueKey('battery-show-temp'),
+                  value: batteryCfg.showTemp,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(showTemp: v),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Show charging stats toggle.
+            Row(
+              children: <Widget>[
+                const Expanded(
+                  child: Text('Show charging stats (while charging)'),
+                ),
+                Switch(
+                  key: const ValueKey('battery-show-charging'),
+                  value: batteryCfg.showChargingStats,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(showChargingStats: v),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Battery size slider.
+            const Text('Size'),
+            Row(
+              children: <Widget>[
+                const Text('0.5×'),
+                Expanded(
+                  child: Slider(
+                    key: const ValueKey('battery-size'),
+                    min: 0.5,
+                    max: 2.5,
+                    divisions: 40,
+                    value: batteryCfg.sizeScale.clamp(0.5, 2.5),
+                    label: '${batteryCfg.sizeScale.toStringAsFixed(2)}×',
+                    onChanged: (v) {
+                      store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(sizeScale: v),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Text('2.5×'),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
             // Current Safe Area values — useful during T3 calibration.
             _SafeAreaReadout(safeArea: safeArea),
           ],
@@ -287,3 +378,4 @@ class _SafeAreaReadout extends StatelessWidget {
     );
   }
 }
+

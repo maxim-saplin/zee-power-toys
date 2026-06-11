@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/config.dart';
 import '../services/config_store.dart';
+import 'battery_widget.dart';
 import 'blinker_widget.dart';
 
 /// The root of the HUD widget subtree.
@@ -19,7 +20,7 @@ import 'blinker_widget.dart';
 /// The Safe Area is the sub-rectangle of the backing display actually visible
 /// through the projector optics.
 ///
-/// Slots: [blinker] (real content), [battery], [guidance], [minimap] (stubs).
+/// Slots: [blinker] (real content), [battery] (real content), [guidance], [minimap] (stubs).
 /// The BLINKER layer spans the full Safe Area so hazard can render both sides;
 /// marks are positioned at the edges by [BlinkerWidget] via its own layout.
 ///
@@ -92,8 +93,9 @@ class HudRoot extends ConsumerWidget {
 ///
 /// BLINKER is now a full-Safe-Area layer at z-order bottom so [BlinkerWidget]
 /// can place the left mark at the left edge and the right mark at the right
-/// edge, including hazard (both sides simultaneously).  The other slots are
-/// still labelled stubs pending their implementation Blocks.
+/// edge, including hazard (both sides simultaneously).  BATTERY is now a real
+/// widget ([BatteryWidget]: Steam-Deck battery + temp + charging stats).
+/// GUIDANCE and MINIMAP remain labelled stubs pending their Blocks.
 class _HudSlots extends StatelessWidget {
   const _HudSlots({required this.saWidth, required this.saHeight});
 
@@ -124,13 +126,13 @@ class _HudSlots extends StatelessWidget {
           child: BlinkerWidget(),
         ),
 
-        // BATTERY — top-right corner
+        // BATTERY — top-right corner (Steam-Deck-style battery + temp + charging stats).
         Positioned(
           right: 0,
           top: 0,
           width: batteryW,
           height: upperH,
-          child: const _SlotStub(label: 'BATTERY'),
+          child: const BatteryWidget(),
         ),
 
         // GUIDANCE — centered horizontally, upper area
