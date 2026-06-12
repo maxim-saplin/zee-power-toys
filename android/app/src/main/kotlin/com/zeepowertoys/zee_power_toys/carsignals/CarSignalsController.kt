@@ -1,6 +1,8 @@
 package com.zeepowertoys.zee_power_toys.carsignals
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
@@ -29,6 +31,9 @@ class CarSignalsController(
     private val TAG = "ZEE"
     private val METHOD_CH = "zee/car_signals"
     private val EVENT_CH  = "zee/car_signals/events"
+
+    // Hoisted main-thread handler — reused across all emitEvent() calls (QA4-3).
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val methodChannel = MethodChannel(messenger, METHOD_CH)
     private val eventChannel  = EventChannel(messenger, EVENT_CH)
@@ -130,7 +135,7 @@ class CarSignalsController(
             is SignalEvent.PowerFlow -> mapOf("type" to "powerFlow", "flow" to event.flow)
         }
         // EventSink.success must be called on the main thread.
-        android.os.Handler(android.os.Looper.getMainLooper()).post {
+        mainHandler.post {
             sink.success(map)
         }
     }

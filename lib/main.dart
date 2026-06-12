@@ -13,6 +13,7 @@ import 'providers/services.dart';
 import 'providers/usb_mode.dart';
 import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
+import 'services/adapters/native_hud_host.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/adapters/native_system_config.dart';
@@ -25,6 +26,7 @@ import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
 import 'services/config_store.dart';
+import 'services/hud_host.dart';
 import 'services/installer.dart';
 import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
@@ -105,6 +107,12 @@ Future<void> dhuMain(List<String> args) async {
   final UsbModePort usbModeRaw =
       (!kIsWeb && Platform.isAndroid) ? NativeUsbMode() : FakeUsbMode();
 
+  // On Android, NativeHudHost wraps the zee/hud_lifecycle channel so toggling
+  // hudEnabled tears down / re-spawns the HUD FlutterEngine (QA4-1, ADR 0001).
+  // On T1 desktop FakeHudHost manages the desktop_multi_window second window.
+  final HudHost hudHostRaw =
+      (!kIsWeb && Platform.isAndroid) ? NativeHudHost() : FakeHudHost();
+
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
@@ -114,7 +122,34 @@ Future<void> dhuMain(List<String> args) async {
   // Idempotent on the native side (setMinimap is a NOOP when already in state).
   // Fires once on startup (persisted config) and on every subsequent change.
   _applyMinimapConfig(minimapHostRaw, store.value);
-  store.changes.listen((cfg) => _applyMinimapConfig(minimapHostRaw, cfg));
+
+  // Listen for dynamic hudEnabled toggles: show()/hide() the HUD engine.
+  // store.changes only fires on explicit setConfig; the initial state at boot
+  // is handled natively (ConfigShim.readHudEnabled in setupHud). We track the
+  // last value so we only act on actual transitions (QA4-1).
+  bool lastHudEnabled = store.value.hudEnabled;
+  store.changes.listen((cfg) {
+    if (cfg.hudEnabled != lastHudEnabled) {
+      lastHudEnabled = cfg.hudEnabled;
+      if (cfg.hudEnabled) {
+        hudHostRaw.show().catchError((_) {});
+      } else {
+        hudHostRaw.hide().catchError((_) {});
+      }
+    }
+    _applyMinimapConfig(minimapHostRaw, cfg);
+  });
+
+  // After setupHud() completes, native fires hudReady with the actual HUD
+  // display dimensions (e.g. 1280×720 on the emulator).  Update _hudW/_hudH
+  // and re-apply minimap config so bounds use the real display (QA1-2, QA1-4).
+  if (minimapHostRaw is NativeMinimapHost) {
+    minimapHostRaw.onHudReady.listen((size) {
+      _hudW = size.$1;
+      _hudH = size.$2;
+      _applyMinimapConfig(minimapHostRaw, store.value);
+    });
+  }
 
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
@@ -141,7 +176,7 @@ Future<void> dhuMain(List<String> args) async {
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(carSignalsRaw),
         minimapHostProvider.overrideWithValue(minimapHostRaw),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
+        hudHostProvider.overrideWithValue(hudHostRaw),
         installerProvider.overrideWithValue(installerRaw),
         systemConfigProvider.overrideWithValue(systemConfigRaw),
         usbModeProvider.overrideWithValue(usbModeRaw),
@@ -244,12 +279,15 @@ bool get _isDesktop =>
 // ---------------------------------------------------------------------------
 // MinimapHost config wiring — preset→geometry applied on config changes.
 //
-// Calibrated HUD backing-display dimensions (Zeekr S2, 1024×576 @ 213 dpi).
-// Used to convert Safe-Area fractions to physical-pixel MinimapView bounds.
-// Adjust if a different HUD display is used (T3 field calibration required).
+// Default HUD backing-display dimensions (Zeekr S2 nominal 1024×576 @ 213 dpi).
+// Overwritten at runtime when native reports the actual display via hudReady
+// (see NativeMinimapHost.onHudReady in dhuMain — QA1-2).  On T1 desktop the
+// FakeMinimapHost ignores physical pixel bounds, so the default values are fine.
 // ---------------------------------------------------------------------------
-const double _kHudW = 1024.0;
-const double _kHudH = 576.0;
+// ignore: prefer_final_fields — intentionally mutable; updated by onHudReady.
+double _hudW = 1024.0;
+// ignore: prefer_final_fields
+double _hudH = 576.0;
 
 /// Apply [cfg.minimap] to [host]: enable/disable the MinimapView and update
 /// its Safe-Area-relative bounds from the active preset (or manual fractions
@@ -265,10 +303,10 @@ void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   if (!mm.enabled) return;
 
   final sa = cfg.safeArea;
-  final saLeft = sa.left * _kHudW;
-  final saTop = sa.top * _kHudH;
-  final saW = (sa.right - sa.left) * _kHudW;
-  final saH = (sa.bottom - sa.top) * _kHudH;
+  final saLeft = sa.left * _hudW;
+  final saTop = sa.top * _hudH;
+  final saW = (sa.right - sa.left) * _hudW;
+  final saH = (sa.bottom - sa.top) * _hudH;
 
   final fracs = mm.resolvedFracs;
   final bounds = Rect.fromLTWH(saLeft, saTop, saW * fracs.$1, saH * fracs.$2);

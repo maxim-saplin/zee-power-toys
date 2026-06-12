@@ -71,7 +71,7 @@ class YNaviCarAppHost(
     // Internal state
     // -------------------------------------------------------------------------
 
-    private val worker = Executors.newSingleThreadExecutor()
+    private var worker = Executors.newSingleThreadExecutor()
     private val appHostStub = IAppHostStub(mainHandler, TAG)
     private val carHostStub = ICarHostStub(
         appHostStub = appHostStub,
@@ -157,6 +157,11 @@ class YNaviCarAppHost(
     fun start(surface: Surface, width: Int, height: Int, dpi: Int) {
         Log.i(TAG, "start w=$width h=$height dpi=$dpi surface.isValid=${surface.isValid}")
         active = true
+        // Recreate worker executor if stop() previously shut it down (QA4-2).
+        if (worker.isShutdown) {
+            worker = Executors.newSingleThreadExecutor()
+            Log.i(TAG, "start: recreated worker executor (was shut down by stop())")
+        }
         // Open a new session epoch. Any delayed unbind still pending from a recent
         // stop() now sees a stale epoch and abandons its teardown, so it cannot tear
         // down this fresh binding (the stop→start race). See performStop().
@@ -193,6 +198,9 @@ class YNaviCarAppHost(
         // epoch is unchanged when the REBIND_DELAY_MS wait elapses; a start() in that
         // window bumps the epoch and the unbind is abandoned, preserving the new binding.
         performStop(epoch = sessionEpoch.get(), onComplete = null)
+        // Shut down the worker so no pending tasks survive after stop (QA4-2 ADR 0001 efficiency).
+        // start() will recreate it if called again.
+        worker.shutdown()
     }
 
     /**
@@ -392,6 +400,12 @@ class YNaviCarAppHost(
             if (target != null) {
                 callWithTimeout("onAppPause") { cb -> target.onAppPause(cb) }
                 callWithTimeout("onAppStop") { cb -> target.onAppStop(cb) }
+            }
+
+            // Stop location updates before unbind for API symmetry (QA4-5).
+            val mgr = appManager
+            if (mgr != null) {
+                callWithTimeout("stopLocationUpdates") { cb -> mgr.stopLocationUpdates(cb) }
             }
 
             // Wait for YNavi's onDestroyLifecycle to complete before unbinding.

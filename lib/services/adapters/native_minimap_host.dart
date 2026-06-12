@@ -20,11 +20,23 @@ import '../minimap_host.dart';
 ///   distanceM  : int?   — metres to next maneuver
 ///   roadName   : String? — next road / cue text
 ///   etaMin     : int?   — minutes to destination
+///
+/// Native also calls `hudReady({w, h, dpi})` on this channel after [setupHud()]
+/// completes.  Subscribers listen via [onHudReady] to re-apply minimap config
+/// with the actual HUD display dimensions (QA1-2, QA1-4).
 class NativeMinimapHost implements MinimapHost {
   static const MethodChannel _ch = MethodChannel('zee/minimap');
   static const EventChannel _guidanceCh = EventChannel('zee/minimap/guidance');
 
   late final Stream<GuidanceEvent> _guidanceStream;
+
+  // Non-broadcast: buffers events so hudReady is not lost if Dart startup is
+  // slower than the native 1500ms HUD_SPAWN_DELAY (QA1-2).
+  final _hudReadyController = StreamController<(double, double)>();
+
+  /// Fires once (or again on re-enable) with the actual HUD display (width, height)
+  /// in physical pixels, reported by native after [setupHud()] completes.
+  Stream<(double, double)> get onHudReady => _hudReadyController.stream;
 
   NativeMinimapHost() {
     _guidanceStream = _guidanceCh
@@ -39,6 +51,18 @@ class NativeMinimapHost implements MinimapHost {
           );
         })
         .asBroadcastStream();
+
+    // Handle native→Dart calls on zee/minimap (e.g. hudReady after setupHud).
+    _ch.setMethodCallHandler(_handleNativeCall);
+  }
+
+  Future<dynamic> _handleNativeCall(MethodCall call) async {
+    if (call.method == 'hudReady') {
+      final args = call.arguments as Map?;
+      final w = (args?['w'] as num?)?.toDouble() ?? 1024.0;
+      final h = (args?['h'] as num?)?.toDouble() ?? 576.0;
+      _hudReadyController.add((w, h));
+    }
   }
 
   @override

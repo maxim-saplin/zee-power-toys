@@ -4,6 +4,7 @@ import android.app.Presentation
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.LinearGradient
@@ -71,6 +72,8 @@ class MainActivity : FlutterActivity() {
         private const val MINIMAP_CHANNEL = "zee/minimap"
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
         private const val BOOT_CHANNEL = "zee/boot"
+        // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
+        private const val HUD_LIFECYCLE_CHANNEL = "zee/hud_lifecycle"
         // Delay (ms) before spawning the HUD engine; lets the primary view
         // finish its first layout pass so the FlutterView is fully attached.
         private const val HUD_SPAWN_DELAY_MS = 1500L
@@ -114,6 +117,9 @@ class MainActivity : FlutterActivity() {
     // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
     @Volatile private var guidanceSink: EventChannel.EventSink? = null
 
+    // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
+    private var dhuMinimapChannel: MethodChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         Log.i(TAG, "configureFlutterEngine: primary DHU engine = $flutterEngine")
@@ -140,8 +146,27 @@ class MainActivity : FlutterActivity() {
         // Register the zee/minimap MethodChannel on the DHU (primary) engine.
         // The DHU Dart isolate drives the native Minimap surface via this channel
         // (ADR 0001 exception: native map under transparent Flutter overlay).
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_CHANNEL)
-            .setMethodCallHandler { call, result -> handleMinimap(call, result) }
+        // Store the channel so setupHud() can send native→Dart hudReady notifications (QA1-2/QA1-4).
+        val minimapCh = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_CHANNEL)
+        minimapCh.setMethodCallHandler { call, result -> handleMinimap(call, result) }
+        dhuMinimapChannel = minimapCh
+
+        // Register zee/hud_lifecycle MethodChannel for dynamic HUD engine show/hide (QA4-1).
+        // show() → (re-)spawns HUD engine via setupHud(); hide() → tears down engine + Presentation.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HUD_LIFECYCLE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "show" -> handler.post {
+                        if (hudEngine == null) setupHud()
+                        result.success(null)
+                    }
+                    "hide" -> handler.post {
+                        tearDownHud()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
 
         // Register the zee/minimap/guidance EventChannel for trip data from YNavi.
         // When YNavi sends a trip update, the ICarHostStub fires onTripUpdated →
@@ -258,7 +283,11 @@ class MainActivity : FlutterActivity() {
             //       attached to the HUD engine; Flutter Scaffold must also use
             //       backgroundColor: Colors.transparent so the native layer shows.
             val pres = Presentation(this, display)
+            // Emissive-black rule (QA1-1): black window + root prevents near-white backing
+            // from showing through wherever the minimap / Flutter overlay does not cover.
+            pres.window?.setBackgroundDrawable(ColorDrawable(Color.BLACK))
             val root = FrameLayout(pres.context)
+            root.setBackgroundColor(Color.BLACK)
 
             // Layer 1 (bottom): native Minimap / YNavi surface with HUD colour filter.
             // The TextureView is wrapped in a FrameLayout (filterWrapper) so the hardware-
@@ -317,9 +346,45 @@ class MainActivity : FlutterActivity() {
             fv.attachToFlutterEngine(eng)
             Log.i(TAG, "setupHud: transparent FlutterTextureView attached to HUD engine; " +
                 "ftv.isOpaque=${ftv.isOpaque} isAttached=${fv.isAttachedToFlutterEngine}")
+
+            // Notify DHU Dart of the actual HUD display dimensions (QA1-2, QA1-4).
+            // This fires hudReady in NativeMinimapHost which re-applies minimap config
+            // with the real 1280×720 metrics (not the hardcoded 1024×576 fallback).
+            val hudDm = DisplayMetrics().also { display.getMetrics(it) }
+            dhuMinimapChannel?.invokeMethod(
+                "hudReady",
+                mapOf("w" to hudDm.widthPixels, "h" to hudDm.heightPixels, "dpi" to hudDm.densityDpi)
+            )
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // HUD engine teardown — invoked from zee/hud_lifecycle hide() (QA4-1).
+    // Idempotent: safe to call when the engine is already gone.
+    // -------------------------------------------------------------------------
+
+    private fun tearDownHud() {
+        Log.i(TAG, "tearDownHud: stopping HUD engine + Presentation")
+        val v = minimapView
+        if (v != null) {
+            val host = yNaviCarAppHost
+            if (host != null && host.isActive) host.stop()
+            v.pendingYNaviStart = false
+            v.pauseRendering()   // now also stops the render thread (QA4-4)
+            minimapView = null
+        }
+        yNaviCarAppHost = null
+        guidanceSink = null
+        hudDisplay = null
+        hudHub = null
+        try { hudPresentation?.dismiss() } catch (_: Throwable) {}
+        hudPresentation = null
+        hudEngine?.destroy()
+        hudEngine = null
+        engineGroup = null
+        Log.i(TAG, "tearDownHud: done — engine + Presentation destroyed")
     }
 
     // -------------------------------------------------------------------------
@@ -611,12 +676,8 @@ class MainActivity : FlutterActivity() {
         systemConfigController = null
         usbModeController?.tearDown()
         usbModeController = null
-        yNaviCarAppHost?.stop()
-        yNaviCarAppHost = null
-        hudDisplay = null
-        guidanceSink = null
-        try { hudPresentation?.dismiss() } catch (_: Throwable) {}
-        hudEngine?.destroy()
+        dhuMinimapChannel = null
+        tearDownHud()
         super.onDestroy()
     }
 }
@@ -671,10 +732,20 @@ class MinimapView(context: android.content.Context) :
      */
     @Volatile var pendingYNaviStart: Boolean = false
 
-    /** Pause the render loop (called when the minimap is hidden). */
+    /** Stop the render loop (called when the minimap is hidden or the HUD engine is torn down).
+     *
+     * QA4-4: terminates the thread instead of just parking it, so no thread
+     * stays alive when the minimap is disabled (ADR 0001 efficiency).
+     * resumeRendering() detects renderThread==null and calls startRenderLoop() to restart.
+     */
     fun pauseRendering() {
-        paused = true
-        Log.i("ZEE", "MinimapView: render loop PAUSED")
+        running = false
+        paused  = true
+        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if waiting
+        renderThread?.interrupt()
+        try { renderThread?.join(500) } catch (_: InterruptedException) {}
+        renderThread = null
+        Log.i("ZEE", "MinimapView: render loop STOPPED (pauseRendering)")
     }
 
     /** Resume the render loop (called when the minimap is shown). */
@@ -814,7 +885,7 @@ class MinimapView(context: android.content.Context) :
                     // LAYER_TYPE_HARDWARE parent (same staleness reason as onSurfaceTextureUpdated).
                     filterWrapper?.postInvalidate()
                 }
-                try { Thread.sleep(16) } catch (_: InterruptedException) { break }
+                try { Thread.sleep(33) } catch (_: InterruptedException) { break }  // ~30fps placeholder (QA4-6)
             }
         }.also { it.start() }
     }
