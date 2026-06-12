@@ -40,6 +40,7 @@ uv run dev/feedback_loop.py whoami-all
 
 ## Status
 
-**MVP complete** — all 16 foundation + feature Blocks are runtime-confirmed (T1, and T2 where
-the native edge is involved), driven + read through the Feedback Loop. Finalizing for on-car
-(T3) testing. See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.
+**MVP complete + QA-hardened** — all 23 Blocks (foundation + features + the QA-hardening sweep
+0018–0023) are runtime-confirmed (T1, and T2 where the native edge is involved), driven + read
+through the Feedback Loop. Finalizing for on-car (T3) testing. See
+[`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.

@@ -90,7 +90,7 @@ Run with `uv run dev/feedback_loop.py <cmd>`.
 | Screenshot DHU | `uv run dev/feedback_loop.py shot --surface dhu --out /tmp/dhu.png` |
 | Screenshot HUD | `uv run dev/feedback_loop.py shot --surface hud --out /tmp/hud.png` |
 | Inject CarSignal (T1 only — VM-service path) | `uv run dev/feedback_loop.py inject kind=blinker value=left` |
-| Drive minimap (T2 DHU) | `uv run dev/feedback_loop.py minimap on=true x=0 y=0 w=640 h=360` |
+| Drive minimap (T2/T3) | `uv run dev/feedback_loop.py minimap on=true x=0 y=0 w=640 h=360` |
 
 ### Full ext.zee.* surface (12 extensions)
 
@@ -110,7 +110,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped, key, mode\|x,y}` | Three-tier fallback: callback→pointer→ancestor |
 | `ext.zee.shot` | both | — | `{surface, w, h, png_b64}` | RepaintBoundary→PNG→base64 |
 | `ext.zee.inject` | dhu | `kind=speed value=<kmh>`, `kind=blinker value=left\|right\|hazard\|off`, `kind=charge charging=true\|false kw=<f> volts=<f> amps=<f>`, `kind=battery levelPct=<i> tempC=<f>`, `kind=powerFlow value=drive\|regen\|standstill\|unknown` | CarSignals snapshot | DHU only (FakeCarSignals); HUD CarSignals are relay-driven — always inject on dhu so both surfaces update. T2/T3 use ADB broadcast |
-| `ext.zee.minimap` | dhu | `on=true\|false`, `x=<f> y=<f> w=<f> h=<f>`, `key=<k> value=<v>` | `{surface, minimap, on}` | Registered only when MinimapHost present (T2 DHU) |
+| `ext.zee.minimap` | dhu | `on=true\|false`, `x=<f> y=<f> w=<f> h=<f>`, `key=<k> value=<v>` | `{surface, minimap, on}` | Registered whenever a MinimapHost is present — `FakeMinimapHost` on T1, `NativeMinimapHost` on T2/T3 |
 | `ext.zee.install` | dhu | `target=launcher\|ynavi` OR `repo=<r> branch=<b> path=<p>` | `{surface, install:{target, started}}` | Triggers install; poll `read-view-model` for live progress |
 | `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, surface, scope, value, systemLocale?}` | `scope=system\|cluster` is T3-only; T1/T2 returns `{ok:false, reason:"unsupported-on-device"}` |
 | `ext.zee.setUsbMode` | dhu | `value=peripheral\|host\|auto` | `{ok, reason?, usbMode, usbWritable}` | T1 FakeUsbMode always writable; T2 needs platform signing |

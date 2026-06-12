@@ -68,6 +68,18 @@ _Avoid_: map service, ynavi bridge
 The service owning the HUD surface lifecycle — creating the Presentation/window and applying the Safe Area.
 _Avoid_: presentation manager, display host
 
+**Installer**:
+The service that downloads an APK from its published GitHub coordinates and installs it (modded Launcher, YNavi mod). A Dart fake off-car; the native package-installer on the DHU.
+_Avoid_: downloader, updater, apk manager
+
+**SystemConfig**:
+The service owning device-level configuration only the car can truly apply — System and Cluster display language. Reports unsupported off-car; real only on T3.
+_Avoid_: settings, locale manager
+
+**UsbMode**:
+The service exposing and switching the DHU's USB role (peripheral / host / auto) so a wire can reach ADB. Writable only with platform privilege (the car); a writable Dart fake off-car.
+_Avoid_: adb toggle, usb switch
+
 ### Feedback Loop
 
 **Feedback Loop**:

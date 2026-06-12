@@ -55,6 +55,7 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | [0021](0021-hud-minimap-readability-phase0-filter.md) | **HUD minimap readability** — phase0 `filterWrapper` pattern + parametric `createHudFilterPaint` + night mode + 2× zoom-out; fixes the yellow-wash from 0019 | ADR 0001/0005 | **done** |
 | [0022](0022-hud-optics-lifecycle-hardening.md) | **HUD optics + lifecycle hardening** — black bg + real-display minimap bounds + battery Safe-Area inset + HUD-engine runtime teardown + native thread/alloc lifecycle (QA1-1/2/4/7, QA4-1–6) | ADR 0001/0003 | **done** |
 | [0023](0023-drivability-dhu-ux-localization.md) | **Drivability fix + DHU UX + localization** — `tapByKey` callback fix + dhu-only inject + HUD-settings split + USB hub tile + minimap presets + `setLanguage` unsupported off-car + EN/RU slot labels (QA3-1/2/3, QA2-1/2/4/5/6/7/8) | ADR 0003/0004 | **done** |
+| [0024](0024-repo-hygiene-docs-scale-test.md) | **Repo hygiene + docs + scale test** — untrack dead-weight binaries + gitignore, `dhuSmartScale` test (+10 → 209), `debugPrint`, README/CONTEXT/contract/SKILL reconcile, tracked-deferral list (QA5-1/2/3/9/14, QA3-4/6/7) | ADR 0007 | **done** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.
@@ -76,3 +77,11 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 
 See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-testing.md) — how to compare phase0 reference vs our app on one emulator or on-car, without conflict.
 - **Speedcam** (+ Alien mode) — slots in as a future `SpeedcamService` + a location signal; no design effort now. ADR 0003's service-port model makes it additive (events out: nearest cam, danger level; commands in: lane toggles), with radar / alien visuals being more Flutter HUD content (ADR 0001).
+
+### Deferred hardening (tracked, low-priority — surfaced by the QA sweep)
+Non-blocking polish noted so it is never invisible. None gate on-car (T3) testing.
+- **Installer dedup automated test** (QA5-9 / 0017 §3) — Robolectric double-trigger guard for the native installer; logic is in place, the regression test is not.
+- **Per-tier VM-URI files** (QA3-5) — `dev/zee_run.py` writes a single `/tmp/zee_vm_uri.txt`, so a T2 launch shadows a live T1 session; split into `/tmp/zee_vm_uri_{t1,t2}.txt` for parallel sessions (today: run one tier at a time, or set `ZEE_VM_URI` explicitly).
+- **FGS auto-start in dev** (QA4-7) — the foreground service starts only via `BootReceiver`, so `bootState.fgsRunning` is always `false` under `flutter run`; a `TEST_BOOT` hook in `zee_run.py up` would exercise it.
+- **Behaviour-boundary test cleanups** (QA5-12/13) — `native_car_signals_test` asserts `snapshot.*` internals and `hud_root_test` pins `AspectRatio` type; prefer the event stream / rendered bounds.
+- **Conventions-doc dep snapshot** (QA5-11) — `docs/knowledge/flutter-conventions-riverpod-testing.md` lists illustrative deps (`go_router`, `logging`, `mockito`, `build_runner`) the app deliberately does not use.

@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
 
 import '../car_signals.dart';
 
@@ -117,8 +117,8 @@ class NativeCarSignals implements CarSignals {
   }
 }
 
-// Print helper — avoids importing dart:developer in a service.
+// Debug log helper — uses debugPrint (overridable, throttled) per project
+// convention; avoids raw print() firing in release builds.
 void debugPrintNativeEvent(String msg) {
-  // ignore: avoid_print
-  print(msg);
+  debugPrint(msg);
 }

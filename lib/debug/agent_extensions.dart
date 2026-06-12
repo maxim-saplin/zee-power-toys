@@ -139,7 +139,8 @@ void registerZeeExtensions({
         'clusterSupported': clusterSupported,
         // Block 0016: USB mode + writability.
         // usbMode: "peripheral"|"host"|"auto" (null when UsbModePort absent).
-        // usbWritable: false on emulator (requires platform signing), true on car (T3).
+        // usbWritable: optimistic true until a write fails off-car (no platform
+        // signing) flips it false; genuinely writable on the car (T3).
         'usbMode': usbMode?.currentMode.name,
         'usbWritable': usbMode?.writable,
       }),

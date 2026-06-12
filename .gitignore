@@ -47,3 +47,7 @@ doc/api/
 # Python driver caches
 **/__pycache__/
 *.pyc
+
+# Flutter run logs & research APK artifacts — never tracked
+flutter_*.log
+*.apk

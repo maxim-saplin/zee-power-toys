@@ -93,7 +93,7 @@ lifetime of the isolate.  `hudBoxOn` is included for convenience (same as
 ## `ext.zee.tapByKey` notes
 
 - The widget must carry a `ValueKey<String>` exactly matching the `key` param.
-- The toggle in `lib/app/dhu_app.dart` carries `ValueKey('dhu-toggle')`.
+- The toggle in `lib/screens/hud_settings_screen.dart` carries `ValueKey('dhu-toggle')`.
 - Tap verification: call `dump_state(surface='hud')` after the tap and confirm
   `hudBoxOn` has flipped (the DHU→HUD relay path, ADR 0003).
 
