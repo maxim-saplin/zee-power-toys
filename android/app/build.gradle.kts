@@ -32,6 +32,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    lint {
+        // androidx.car.app host-side AIDL types are @RestrictTo(LIBRARY) but compile
+        // cleanly — the restriction is advisory (internal AAR API), not an error.
+        // Phase0 uses the same suppression to build with androidx.car.app:app:1.4.0.
+        disable += "RestrictedApi"
+    }
 }
 
 kotlin {
@@ -42,4 +49,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // AndroidX Car App library — provides ICarApp, IAppHost, ISurfaceCallback, SurfaceContainer,
+    // HandshakeInfo, SessionInfo, CarAppApiLevels, and all AIDL types used by YNaviCarAppHost.
+    // Host-side types are @RestrictTo(LIBRARY) but publicly available in the AAR.
+    implementation("androidx.car.app:app:1.4.0")
 }

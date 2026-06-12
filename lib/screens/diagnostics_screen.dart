@@ -6,6 +6,7 @@ import '../providers/car_signals.dart';
 import '../providers/usb_mode.dart';
 import '../services/car_signals.dart';
 import '../services/usb_mode.dart';
+import '../theme/app_theme.dart';
 
 /// Live DHU diagnostics dashboard — shows current car-signal values grouped by
 /// domain.  Updates via [ref.watch] on the CarSignals providers; no polling
@@ -62,7 +63,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.diagnosticsTitle)),
       body: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(Insets.lg),
         children: <Widget>[
           // ---- Motion -------------------------------------------------------
           _SectionCard(
@@ -80,7 +81,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Insets.md),
 
           // ---- Lighting -----------------------------------------------------
           _SectionCard(
@@ -93,7 +94,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Insets.md),
 
           // ---- Energy -------------------------------------------------------
           _SectionCard(
@@ -117,7 +118,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Insets.md),
 
           // ---- Battery ------------------------------------------------------
           _SectionCard(
@@ -135,7 +136,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Insets.md),
 
           // ---- USB / ADB (Block 0016) ----------------------------------------
           // 3-state segmented button: Peripheral / Host / Auto.
@@ -147,7 +148,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
             errorText: _usbResult,
             l10n: l10n,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: Insets.md),
 
           // ---- Raw snapshot (debug) -----------------------------------------
           // Collapsible dump of CarSnapshot JSON fields — handy on-car without
@@ -225,7 +226,12 @@ class _UsbAdbSection extends StatelessWidget {
       title: l10n.usbAdbTitle,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsets.fromLTRB(
+            Insets.lg,
+            Insets.sm,
+            Insets.lg,
+            Insets.xs,
+          ),
           child: Text(
             '${l10n.usbCurrentMode}: $currentLabel',
             style: theme.textTheme.bodySmall,
@@ -233,7 +239,12 @@ class _UsbAdbSection extends StatelessWidget {
         ),
         if (!writable)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              Insets.lg,
+              0,
+              Insets.lg,
+              Insets.sm,
+            ),
             child: Text(
               l10n.usbPlatformSigningRequired,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -242,7 +253,12 @@ class _UsbAdbSection extends StatelessWidget {
             ),
           ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(
+            Insets.lg,
+            Insets.xs,
+            Insets.lg,
+            Insets.sm,
+          ),
           child: SegmentedButton<UsbMode>(
             key: const ValueKey('usb-mode-selector'),
             segments: <ButtonSegment<UsbMode>>[
@@ -255,17 +271,11 @@ class _UsbAdbSection extends StatelessWidget {
               ),
               ButtonSegment<UsbMode>(
                 value: UsbMode.host,
-                label: Text(
-                  l10n.usbModeHost,
-                  key: const ValueKey('usb-host'),
-                ),
+                label: Text(l10n.usbModeHost, key: const ValueKey('usb-host')),
               ),
               ButtonSegment<UsbMode>(
                 value: UsbMode.auto,
-                label: Text(
-                  l10n.usbModeAuto,
-                  key: const ValueKey('usb-auto'),
-                ),
+                label: Text(l10n.usbModeAuto, key: const ValueKey('usb-auto')),
               ),
             ],
             selected: {currentMode},
@@ -282,12 +292,16 @@ class _UsbAdbSection extends StatelessWidget {
         ),
         if (errorText != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              Insets.lg,
+              0,
+              Insets.lg,
+              Insets.sm,
+            ),
             child: Text(
               errorText!,
-              style: TextStyle(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
-                fontSize: 12,
               ),
             ),
           ),
@@ -318,16 +332,22 @@ class _SectionCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: Insets.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                Insets.sm,
+                Insets.lg,
+                Insets.sm,
+              ),
               child: Text(
                 title,
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
+                  letterSpacing: 0.6,
                 ),
               ),
             ),
@@ -360,10 +380,10 @@ class _SignalRow extends StatelessWidget {
     final theme = Theme.of(context);
     return ListTile(
       dense: true,
-      title: Text(label),
+      title: Text(label, style: theme.textTheme.bodyMedium),
       trailing: Text(
         unit.isEmpty ? value : '$value $unit',
-        style: theme.textTheme.bodyLarge?.copyWith(
+        style: theme.textTheme.titleSmall?.copyWith(
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -410,22 +430,29 @@ class _RawSnapshotTile extends StatelessWidget {
       'powerFlow: ${powerFlow.name}',
     ];
     return Card(
-      child: ExpansionTile(
-        title: Text(
-          l10n.diagRawSnapshot,
-          style: theme.textTheme.labelLarge,
-        ),
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: SelectableText(
-              lines.join('\n'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
+      child: Theme(
+        // The card already groups this row; suppress the ExpansionTile's own
+        // top/bottom divider lines for a cleaner expand.
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          title: Text(l10n.diagRawSnapshot, style: theme.textTheme.titleSmall),
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.lg,
+                0,
+                Insets.lg,
+                Insets.md,
+              ),
+              child: SelectableText(
+                lines.join('\n'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -14,13 +14,16 @@ import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
+import android.view.Surface
 import android.view.TextureView
 import android.view.View
 import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
+import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
@@ -32,6 +35,7 @@ import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineGroup
 import io.flutter.embedding.engine.dart.DartExecutor
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlin.math.sin
@@ -64,6 +68,7 @@ class MainActivity : FlutterActivity() {
         private const val TAG = "ZEE"
         private const val HUB_CHANNEL = "zee/hub"
         private const val MINIMAP_CHANNEL = "zee/minimap"
+        private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
         private const val BOOT_CHANNEL = "zee/boot"
         // Delay (ms) before spawning the HUD engine; lets the primary view
         // finish its first layout pass so the FlutterView is fully attached.
@@ -80,6 +85,11 @@ class MainActivity : FlutterActivity() {
     private var dhuHub: MethodChannel? = null
     private var hudHub: MethodChannel? = null
 
+    // HUD presentation display — the secondary display the MinimapView lives on.
+    // Held so the YNavi SurfaceContainer is built from the HUD surface metrics
+    // (density / size), not the DHU/primary density (resources.displayMetrics).
+    private var hudDisplay: Display? = null
+
     // CarSignals native bridge — DHU engine only.
     private var carSignalsController: CarSignalsController? = null
 
@@ -94,6 +104,13 @@ class MainActivity : FlutterActivity() {
 
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
+
+    // YNavi CarApp host — binds to YNavi and feeds the MinimapView surface.
+    // Null when YNavi is unavailable or the minimap is disabled.
+    private var yNaviCarAppHost: YNaviCarAppHost? = null
+
+    // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
+    @Volatile private var guidanceSink: EventChannel.EventSink? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -123,6 +140,21 @@ class MainActivity : FlutterActivity() {
         // (ADR 0001 exception: native map under transparent Flutter overlay).
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_CHANNEL)
             .setMethodCallHandler { call, result -> handleMinimap(call, result) }
+
+        // Register the zee/minimap/guidance EventChannel for trip data from YNavi.
+        // When YNavi sends a trip update, the ICarHostStub fires onTripUpdated →
+        // YNaviCarAppHost.onTrip → this sink → Dart GuidanceEvent.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, MINIMAP_GUIDANCE_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    guidanceSink = sink
+                    Log.i(TAG, "guidance EventChannel: Dart subscribed")
+                }
+                override fun onCancel(arguments: Any?) {
+                    guidanceSink = null
+                    Log.i(TAG, "guidance EventChannel: Dart unsubscribed")
+                }
+            })
 
         // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
         // for ext.zee.bootState (Block 0010).
@@ -190,6 +222,7 @@ class MainActivity : FlutterActivity() {
             return
         }
         Log.i(TAG, "setupHud: secondary display id=${display.displayId} name=${display.name}")
+        hudDisplay = display
 
         try {
             // Spawn the HUD engine from a FlutterEngineGroup so VM snapshot /
@@ -232,6 +265,28 @@ class MainActivity : FlutterActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ))
+
+            // Construct the YNavi CarApp host controller.
+            // It is started (bound) when the Dart side calls setMinimap(enabled=true)
+            // and YNavi is available; the MinimapView's SurfaceTexture is the surface.
+            yNaviCarAppHost = YNaviCarAppHost(this).also { host ->
+                // Trip updates → guidance EventChannel → Dart GuidanceEvent.
+                host.onTrip = { trip ->
+                    val step = trip.steps.firstOrNull()
+                    val stepEst = trip.stepTravelEstimates.firstOrNull()
+                    val destEst = trip.destinationTravelEstimates.firstOrNull()
+                    val event = mapOf(
+                        "turnIcon" to (step?.maneuver?.type?.toString()),
+                        "distanceM" to (stepEst?.remainingDistance?.displayDistance?.toInt()),
+                        "roadName" to (step?.cue?.toString() ?: trip.currentRoad?.toString()),
+                        "etaMin" to (destEst?.remainingTimeSeconds?.let { (it / 60).toInt() }),
+                    )
+                    guidanceSink?.success(event)
+                }
+                host.onNavState = { active ->
+                    Log.i(TAG, "YNavi navigation active=$active")
+                }
+            }
 
             // Layer 2 (top): transparent Flutter overlay.
             // isOpaque=false is what enables compositing over the MinimapView;
@@ -280,17 +335,66 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "setMinimap" -> {
                     val enabled = call.argument<Boolean>("enabled") ?: true
+                    // Visibility is managed idempotently, but the YNavi host lifecycle
+                    // is driven by the enabled + host-active state, INDEPENDENT of whether
+                    // the View visibility happened to change. On startup the MinimapView
+                    // defaults to VISIBLE, so gating host.start() behind a visibility
+                    // transition would NOOP setMinimap(true) and never bind YNavi.
                     val want = if (enabled) View.VISIBLE else View.INVISIBLE
-                    if (v.visibility == want) {
-                        // Idempotent: NOOP when already in the requested state.
-                        Log.i(TAG, "setMinimap($enabled): NOOP (already ${if (enabled) "shown" else "hidden"})")
-                        result.success("noop")
+                    if (v.visibility != want) v.visibility = want
+
+                    if (enabled) {
+                        val host = yNaviCarAppHost
+                        if (host != null && isYnaviAvailable()) {
+                            if (host.isActive) {
+                                // YNavi already hosting — nothing to (re)start.
+                                Log.i(TAG, "setMinimap(true): YNavi host already active — NOOP")
+                            } else {
+                                // Hand the MinimapView surface over to YNavi.
+                                // If the surface is already available, start immediately;
+                                // otherwise onSurfaceTextureAvailable starts on availability.
+                                val st = v.surfaceTexture
+                                if (st != null) {
+                                    // Park the placeholder render loop — YNavi owns the surface.
+                                    // setLayerType(LAYER_TYPE_NONE) schedules the hardware layer
+                                    // removal but the GPU's RenderThread releases the api=2
+                                    // (CPU) EGL producer hold asynchronously on the next frame.
+                                    // We must delay host.start() until after that release or
+                                    // YNavi's eglCreateWindowSurface fails with
+                                    // "already connected (cur=2 req=1)".
+                                    // 200 ms is enough for one RenderThread frame + vsync margin.
+                                    v.parkForYNavi()
+                                    val w = v.width.takeIf { it > 0 } ?: FrameLayout.LayoutParams.MATCH_PARENT
+                                    val h = v.height.takeIf { it > 0 } ?: FrameLayout.LayoutParams.MATCH_PARENT
+                                    val dpi = hudDensityDpi()
+                                    handler.postDelayed({
+                                        host.start(Surface(st), w, h, dpi)
+                                        Log.i(TAG, "setMinimap(true): YNavi host started (after layer-release delay) w=$w h=$h dpi=$dpi")
+                                    }, 200L)
+                                } else {
+                                    // Surface not ready yet; MinimapView.onSurfaceTextureAvailable
+                                    // will call startYNaviOnSurfaceReady() when it fires.
+                                    v.pendingYNaviStart = true
+                                    Log.i(TAG, "setMinimap(true): surface not ready — deferred to onSurfaceTextureAvailable")
+                                }
+                            }
+                        } else {
+                            // YNavi unavailable — fall back to placeholder render loop.
+                            v.resumeRendering()
+                            Log.i(TAG, "setMinimap(true): YNavi unavailable — placeholder resumed")
+                        }
                     } else {
-                        v.visibility = want
-                        if (enabled) v.resumeRendering() else v.pauseRendering()
-                        Log.i(TAG, "setMinimap($enabled): APPLIED")
-                        result.success("applied:$enabled")
+                        // Disable: stop YNavi host (if running) and park placeholder.
+                        val host = yNaviCarAppHost
+                        if (host != null && host.isActive) {
+                            host.stop()
+                            Log.i(TAG, "setMinimap(false): YNavi host stopped")
+                        }
+                        v.pendingYNaviStart = false
+                        v.pauseRendering()  // view is INVISIBLE; keep loop parked
                     }
+                    Log.i(TAG, "setMinimap($enabled): APPLIED")
+                    result.success("applied:$enabled")
                 }
                 "setMinimapBounds" -> {
                     val x = call.argument<Int>("x") ?: 0
@@ -318,6 +422,43 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // YNavi host helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Density (dpi) of the HUD presentation display the MinimapView lives on.
+     *
+     * The SurfaceContainer handed to YNavi must describe the HUD surface, NOT the
+     * DHU/primary density (resources.displayMetrics) — the MinimapView renders on
+     * the secondary display, whose density drives YNavi's dp→px scaling.
+     * Falls back to the activity density if the display metrics are unavailable
+     * (clamped to a sane range so a bogus value never reaches YNavi).
+     */
+    private fun hudDensityDpi(): Int {
+        val dpi = hudDisplay?.let { d ->
+            DisplayMetrics().also { d.getMetrics(it) }.densityDpi
+        } ?: resources.displayMetrics.densityDpi
+        return if (dpi in 120..960) dpi else resources.displayMetrics.densityDpi
+    }
+
+    /**
+     * Called by MinimapView when its SurfaceTexture becomes available and
+     * [MinimapView.pendingYNaviStart] is set.  Starts the YNavi host if YNavi
+     * is available; otherwise falls through to placeholder rendering.
+     */
+    internal fun startYNaviOnSurfaceReady(surface: SurfaceTexture, width: Int, height: Int) {
+        val host = yNaviCarAppHost ?: return
+        if (isYnaviAvailable()) {
+            val dpi = hudDensityDpi()
+            host.start(Surface(surface), width, height, dpi)
+            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height dpi=$dpi")
+        } else {
+            minimapView?.resumeRendering()
+            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi unavailable — placeholder resumed")
         }
     }
 
@@ -392,6 +533,10 @@ class MainActivity : FlutterActivity() {
         systemConfigController = null
         usbModeController?.tearDown()
         usbModeController = null
+        yNaviCarAppHost?.stop()
+        yNaviCarAppHost = null
+        hudDisplay = null
+        guidanceSink = null
         try { hudPresentation?.dismiss() } catch (_: Throwable) {}
         hudEngine?.destroy()
         super.onDestroy()
@@ -408,11 +553,17 @@ class MainActivity : FlutterActivity() {
 // parent only when using an external SurfaceTexture (e.g. YNavi) that bypasses
 // View invalidation.  For our own lockCanvas loop the direct approach works.
 //
+// When YNavi is available:
+//   - parkForYNavi()  : stops the placeholder render loop; YNavi owns the surface.
+//   - pendingYNaviStart: set true when setMinimap(true) is called before the
+//     SurfaceTexture is ready; onSurfaceTextureAvailable calls back to MainActivity
+//     to start the YNavi host when the surface finally exists.
+//   - On YNavi disconnect / minimap disable: resumeRendering() restores the
+//     placeholder so devices without the mod still show something.
+//
 // Color-filter values (preset 1 "Green-yellow" from hud-presentation-host.md):
 //   filterPreset=0 → tR=0.7, tG=1.0, tB=0.1; contrast=3.0; threshold=-150;
 //   brightness=-20; saturation=0 (full monochrome-tint).
-// The compact matrix below encodes the preset-0 tint at those params
-// (computed offline from the CarAppHostService matrix formula).
 // -----------------------------------------------------------------------------
 class MinimapView(context: android.content.Context) :
     TextureView(context), TextureView.SurfaceTextureListener {
@@ -425,6 +576,12 @@ class MinimapView(context: android.content.Context) :
     private val pauseLock = Object()
     @Volatile private var paused = false
 
+    /**
+     * Set to true when setMinimap(enabled=true) is received but the SurfaceTexture
+     * is not yet available. onSurfaceTextureAvailable will call back to start YNavi.
+     */
+    @Volatile var pendingYNaviStart: Boolean = false
+
     /** Pause the render loop (called when the minimap is hidden). */
     fun pauseRendering() {
         paused = true
@@ -433,9 +590,51 @@ class MinimapView(context: android.content.Context) :
 
     /** Resume the render loop (called when the minimap is shown). */
     fun resumeRendering() {
+        // Re-apply the hardware layer before the render loop resumes drawing.
+        applyHardwareLayerFilter()
         paused = false
-        synchronized(pauseLock) { pauseLock.notifyAll() }
-        Log.i("ZEE", "MinimapView: render loop RESUMED")
+        if (!running || renderThread == null) {
+            // Thread was stopped by parkForYNavi(); restart it.
+            startRenderLoop()
+            Log.i("ZEE", "MinimapView: render loop RESUMED (restarted)")
+        } else {
+            synchronized(pauseLock) { pauseLock.notifyAll() }
+            Log.i("ZEE", "MinimapView: render loop RESUMED")
+        }
+    }
+
+    /**
+     * Park the render loop for YNavi surface ownership.
+     * Unlike pauseRendering(), this does NOT resume later unless YNavi disconnects.
+     *
+     * Stops the render thread entirely and removes the LAYER_TYPE_HARDWARE before
+     * yielding the surface.  The canvas render loop holds the SurfaceTexture's
+     * producer slot with api=2 (CPU), which prevents YNavi from connecting its EGL
+     * renderer (api=1).  Without stopping the thread first, YNavi receives the
+     * surface but eglCreateWindowSurface fails with "already connected (cur=2 req=1)".
+     */
+    fun parkForYNavi() {
+        // Stop the render thread so it releases any api=2 (Canvas) producer hold.
+        running = false
+        paused = true  // belt-and-suspenders: prevent re-entry if loop re-checks
+        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if waiting
+        renderThread?.interrupt()
+        renderThread = null
+        // Remove the hardware layer so the hardware compositor releases its hold too.
+        setLayerType(LAYER_TYPE_NONE, null)
+        Log.i("ZEE", "MinimapView: render loop PARKED for YNavi surface ownership")
+    }
+
+    /** Apply (or re-apply) the green-yellow hardware layer ColorMatrix filter. */
+    private fun applyHardwareLayerFilter() {
+        val cm = ColorMatrix(floatArrayOf(
+            0.63f,  1.26f, 0.21f, 0f, -125f,
+            0.90f,  1.80f, 0.30f, 0f, -170f,
+            0.09f,  0.18f, 0.03f, 0f,  -35f,
+            0f,     0f,    0f,   1f,    0f,
+        ))
+        val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
+        setLayerType(LAYER_TYPE_HARDWARE, paint)
     }
 
     init {
@@ -447,33 +646,32 @@ class MinimapView(context: android.content.Context) :
         // Apply the HUD-readability green-yellow ColorMatrix filter as a
         // hardware layer directly on this TextureView.  We own the drawing
         // (lockCanvas loop), so View invalidation keeps the layer current.
-        //
-        // Compact green-yellow tint matrix (monochrome, contrast ×3, t=-150,
-        // brightness -20, tR=0.7 tG=1.0 tB=0.1) from hud-presentation-host.md:
-        //   L = 0.3R+0.6G+0.1B  (luminance)
-        //   out_R = 3*0.7*L - 150*0.7 - 20 = 2.1L - 125
-        //   out_G = 3*1.0*L - 150*1.0 - 20 = 3.0L - 170
-        //   out_B = 3*0.1*L - 150*0.1 - 20 = 0.3L -  35
-        val cm = ColorMatrix(floatArrayOf(
-            // R row:  rR,   rG,   rB,  rA,  rOffset
-            0.63f,  1.26f, 0.21f, 0f, -125f,
-            // G row:  gR,   gG,   gB,  gA,  gOffset
-            0.90f,  1.80f, 0.30f, 0f, -170f,
-            // B row:  bR,   bG,   bB,  bA,  bOffset
-            0.09f,  0.18f, 0.03f, 0f,  -35f,
-            // A row (pass-through)
-            0f,     0f,    0f,   1f,    0f,
-        ))
-        val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
-        setLayerType(LAYER_TYPE_HARDWARE, paint)
+        // NOTE: parkForYNavi() removes this layer to free the SurfaceTexture
+        // producer slot (api=2) before handing the surface to YNavi's EGL renderer.
+        applyHardwareLayerFilter()
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+        if (pendingYNaviStart) {
+            pendingYNaviStart = false
+            // Delegate to MainActivity to start the YNavi host on the main thread.
+            (context as? MainActivity)?.startYNaviOnSurfaceReady(surface, width, height)
+                ?: run {
+                    // Fallback: context is not MainActivity (e.g. Presentation context);
+                    // start the placeholder instead.
+                    startRenderLoop()
+                }
+        } else {
+            startRenderLoop()
+        }
+    }
+
+    private fun startRenderLoop() {
         running = true
         renderThread = Thread {
             var phase = 0f
             while (running) {
-                // Pause gate: park here while the minimap is hidden.
+                // Pause gate: park here while the minimap is hidden or YNavi owns the surface.
                 if (paused) {
                     synchronized(pauseLock) {
                         while (paused && running) {

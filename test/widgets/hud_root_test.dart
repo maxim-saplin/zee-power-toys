@@ -283,12 +283,12 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BlinkerConfig model', () {
-    test('defaults match phase0 values', () {
+    test('defaults: small single-circle indicator, vertically centred', () {
       const cfg = BlinkerConfig();
-      expect(cfg.shape, BlinkerShape.dots);
+      expect(cfg.shape, BlinkerShape.dots); // dots = single small circle
       expect(cfg.sizeScale, 1.0);
-      expect(cfg.sidePadFrac, closeTo(0.02, 0.001));
-      expect(cfg.vertFrac, closeTo(0.40, 0.001));
+      expect(cfg.sidePadFrac, closeTo(0.04, 0.001));
+      expect(cfg.vertFrac, closeTo(0.50, 0.001));
     });
 
     test('round-trips through JSON for each shape', () {

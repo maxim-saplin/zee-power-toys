@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale.dart';
 import '../screens/settings_home_screen.dart';
+import '../theme/app_theme.dart';
 
 /// Shot key — exposed at library level so main.dart can pass it to extensions.
 final GlobalKey dhuShotKey = GlobalKey();
@@ -24,6 +25,19 @@ class DhuApp extends ConsumerWidget {
       key: dhuShotKey,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        theme: AppTheme.dhu,
+        // The DHU runs a single tuned dark theme — pin it so the OS light/dark
+        // setting can't swap us to an unstyled light Material default.
+        themeMode: ThemeMode.dark,
+        darkTheme: AppTheme.dhu,
+        // Clamp text scaling to 1.0: the type scale is hand-tuned for the
+        // 160dpi DHU, and OS accessibility scaling would otherwise inflate it
+        // back into the oversized look we are eliminating.
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: 1.0,
+          maxScaleFactor: 1.0,
+          child: child!,
+        ),
         // Localization delegates — AppLocalizations + the three Flutter globals.
         localizationsDelegates: const [
           AppLocalizations.delegate,

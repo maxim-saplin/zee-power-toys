@@ -19,6 +19,13 @@ import '../services/config_store.dart';
 /// rendering rule: no light backgrounds — the widget is transparent except for
 /// the bright marks themselves.
 ///
+/// Sizing: a real dashboard turn indicator is *small* — a neat amber dot near
+/// the edge, not a billboard.  The mark uses a fixed logical diameter
+/// ([_kBaseDiameter]) scaled by [BlinkerConfig.sizeScale], so it stays a tidy
+/// indicator regardless of how tall the Safe Area / slot is.  Marks sit near
+/// the left/right edges of the slot, vertically centred via
+/// [BlinkerConfig.vertFrac].
+///
 /// Blink cadence: 450ms on/off — the embedded BlinkerOverlayView value
 /// (production path, more in sync with real-car BCM 120 BPM cadence than the
 /// 500ms standalone diagnostic activities).
@@ -31,6 +38,12 @@ class BlinkerWidget extends HookConsumerWidget {
 
   // 450ms matches BlinkerOverlayView.BLINK_INTERVAL_MS (production embedded value).
   static const Duration _kBlinkHalf = Duration(milliseconds: 450);
+
+  /// Base mark diameter in logical px at sizeScale = 1.0.  Sized like a real
+  /// dashboard turn indicator (small + crisp at 160dpi), NOT a slot fraction —
+  /// so it never bloats with a tall Safe Area.  The arrow/smiley shapes derive
+  /// their footprint from this same unit so every shape reads at one scale.
+  static const double _kBaseDiameter = 18.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,10 +102,11 @@ class BlinkerWidget extends HookConsumerWidget {
         final slotW = constraints.maxWidth;
         final slotH = constraints.maxHeight;
 
-        // Base size calibrated to the slot height; scaled by user config.
-        // phase0 dot = 12dp; the slot height at the reference 616×175dp HUD is
-        // ~175*0.6 ≈ 105dp, so 12/105 ≈ 0.11 → use 0.12 for comfortable visibility.
-        final baseSize = slotH * 0.12 * cfg.sizeScale;
+        // Small fixed-ish diameter — a neat indicator, never a billboard.
+        // Clamp against the slot so it can't overflow a very short slot, but
+        // otherwise it stays the calibrated small size.
+        final diameter =
+            (_kBaseDiameter * cfg.sizeScale).clamp(8.0, slotH * 0.5);
 
         final vertCenter = slotH * cfg.vertFrac;
         // Horizontal: sidePadFrac is inward from the outer slot edge.
@@ -105,11 +119,11 @@ class BlinkerWidget extends HookConsumerWidget {
             if (showLeft)
               Positioned(
                 left: padX,
-                top: vertCenter - baseSize * _shapeVertHalf(cfg.shape),
+                top: vertCenter - _markHeight(cfg.shape, diameter) / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-left'),
                   shape: cfg.shape,
-                  size: baseSize,
+                  diameter: diameter,
                   color: color,
                   side: _Side.left,
                 ),
@@ -117,11 +131,11 @@ class BlinkerWidget extends HookConsumerWidget {
             if (showRight)
               Positioned(
                 right: padX,
-                top: vertCenter - baseSize * _shapeVertHalf(cfg.shape),
+                top: vertCenter - _markHeight(cfg.shape, diameter) / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-right'),
                   shape: cfg.shape,
-                  size: baseSize,
+                  diameter: diameter,
                   color: color,
                   side: _Side.right,
                 ),
@@ -132,15 +146,16 @@ class BlinkerWidget extends HookConsumerWidget {
     );
   }
 
-  /// Half-height multiplier for each shape — used to vertically center the mark.
-  static double _shapeVertHalf(BlinkerShape shape) {
+  /// Rendered height of a mark for the given shape, used to vertically centre
+  /// it.  All shapes are normalised around [diameter] so they stay small.
+  static double _markHeight(BlinkerShape shape, double diameter) {
     switch (shape) {
       case BlinkerShape.dots:
-        return 1.5; // stack of 3 dots
+        return diameter; // single circle
       case BlinkerShape.arrows:
-        return 0.5; // single chevron height ≈ baseSize * 1.0
+        return diameter; // chevron drawn in a diameter-tall box
       case BlinkerShape.smiley:
-        return 1.0; // circle diameter = 2 * baseSize
+        return diameter; // smiley drawn in a diameter box
     }
   }
 }
@@ -148,17 +163,20 @@ class BlinkerWidget extends HookConsumerWidget {
 enum _Side { left, right }
 
 /// A single blinker mark (left or right) rendered as the configured shape.
+///
+/// [diameter] is the small base size shared by all shapes so each reads as a
+/// neat indicator rather than a slot-filling billboard.
 class _BlinkerMark extends StatelessWidget {
   const _BlinkerMark({
     super.key,
     required this.shape,
-    required this.size,
+    required this.diameter,
     required this.color,
     required this.side,
   });
 
   final BlinkerShape shape;
-  final double size;
+  final double diameter;
   final Color color;
   final _Side side;
 
@@ -166,57 +184,35 @@ class _BlinkerMark extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (shape) {
       case BlinkerShape.dots:
-        return _DotsShape(size: size, color: color);
+        return _CircleShape(diameter: diameter, color: color);
       case BlinkerShape.arrows:
-        return _ArrowShape(size: size, color: color, side: side);
+        return _ArrowShape(diameter: diameter, color: color, side: side);
       case BlinkerShape.smiley:
-        return _SmileyShape(size: size, color: color);
+        return _SmileyShape(diameter: diameter, color: color);
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Shape: dots
+// Shape: circle (default — "dots")
 // ---------------------------------------------------------------------------
 
-/// Three stacked amber dots — faithful port of phase0 BlinkerOverlayView.
+/// A single small amber circle — the default blinker mark.
 ///
-/// phase0 used a single 12dp oval per side.  The "beautiful" name in
-/// HudBeautifulBlinkerActivity suggests a cluster; we render three dots
-/// (top/mid/bottom) to evoke the cluster aesthetic while staying readable.
-class _DotsShape extends StatelessWidget {
-  const _DotsShape({required this.size, required this.color});
+/// Real dashboard turn indicators are small, clean circles; one neat dot per
+/// active side reads at a glance without dominating the HUD.  (The shape enum
+/// value is still named `dots` for config compatibility.)
+class _CircleShape extends StatelessWidget {
+  const _CircleShape({required this.diameter, required this.color});
 
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    // Three dots stacked vertically with a small gap.
-    final gap = size * 0.3;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        _Dot(size: size, color: color),
-        SizedBox(height: gap),
-        _Dot(size: size, color: color),
-        SizedBox(height: gap),
-        _Dot(size: size, color: color),
-      ],
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot({required this.size, required this.color});
-  final double size;
+  final double diameter;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
+      width: diameter,
+      height: diameter,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
@@ -229,28 +225,28 @@ class _Dot extends StatelessWidget {
 // Shape: arrows
 // ---------------------------------------------------------------------------
 
-/// Turn-arrow chevron — ported from phase0 ic_blinker_left / ic_blinker_right.
+/// A small neat turn-arrow chevron — ported from phase0 ic_blinker_left/right.
 ///
 /// Original SVG viewport 120×60; left path: M110,10 L50,10 L20,30 L50,50 L110,50
-/// L110,38 L70,38 L70,22 L110,22 Z.  Right: mirror.
-/// We scale this into a [size × size/2] bounding box for a compact HUD mark.
+/// L110,38 L70,38 L70,22 L110,22 Z.  Right: mirror.  We render it in a compact
+/// [1.4·diameter × diameter] box so it preserves the chevron aspect ratio while
+/// staying the same small scale as the circle.
 class _ArrowShape extends StatelessWidget {
   const _ArrowShape({
-    required this.size,
+    required this.diameter,
     required this.color,
     required this.side,
   });
 
-  final double size;
+  final double diameter;
   final Color color;
   final _Side side;
 
   @override
   Widget build(BuildContext context) {
-    // Arrow width = 2 * size to preserve the 120:60 aspect ratio.
     return SizedBox(
-      width: size * 2,
-      height: size,
+      width: diameter * 1.4,
+      height: diameter,
       child: CustomPaint(
         painter: _ArrowPainter(color: color, side: side),
       ),
@@ -314,21 +310,20 @@ class _ArrowPainter extends CustomPainter {
 // Shape: smiley
 // ---------------------------------------------------------------------------
 
-/// Yellow smiley face — new shape per REQUIREMENTS "yellow smileys".
+/// A small yellow smiley face — per REQUIREMENTS "yellow smileys".
 ///
-/// Design: filled amber circle with two dot eyes and a curved mouth,
-/// all in a darker amber so the face reads on the projector without
-/// emitting bright whites (emissive-on-black rule: no light backgrounds).
+/// Rendered at the same small [diameter] as the circle so it reads as a neat
+/// indicator.  Filled amber face with two dot eyes and a curved mouth in a
+/// darker amber so features read as cutouts on the projector without emitting
+/// bright whites (emissive-on-black rule: no light backgrounds).
 class _SmileyShape extends StatelessWidget {
-  const _SmileyShape({required this.size, required this.color});
+  const _SmileyShape({required this.diameter, required this.color});
 
-  final double size;
+  final double diameter;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    // Diameter = 2 * size so the smiley is a generous mark.
-    final diameter = size * 2;
     return SizedBox(
       width: diameter,
       height: diameter,
@@ -363,21 +358,21 @@ class _SmileyPainter extends CustomPainter {
       ..color = const Color(0xFF7A5C00) // dark amber / brown
       ..style = PaintingStyle.fill;
 
-    final eyeR = r * 0.12;
+    final eyeR = r * 0.14;
     final eyeY = cy - r * 0.22;
-    canvas.drawCircle(Offset(cx - r * 0.30, eyeY), eyeR, featurePaint);
-    canvas.drawCircle(Offset(cx + r * 0.30, eyeY), eyeR, featurePaint);
+    canvas.drawCircle(Offset(cx - r * 0.32, eyeY), eyeR, featurePaint);
+    canvas.drawCircle(Offset(cx + r * 0.32, eyeY), eyeR, featurePaint);
 
     // Smile arc.
     final mouthPaint = Paint()
       ..color = const Color(0xFF7A5C00)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = r * 0.10
+      ..strokeWidth = r * 0.14
       ..strokeCap = StrokeCap.round;
     final mouthRect = Rect.fromCenter(
       center: Offset(cx, cy + r * 0.05),
-      width: r * 0.90,
-      height: r * 0.55,
+      width: r * 0.95,
+      height: r * 0.60,
     );
     canvas.drawArc(mouthRect, math.pi * 0.15, math.pi * 0.70, false, mouthPaint);
   }

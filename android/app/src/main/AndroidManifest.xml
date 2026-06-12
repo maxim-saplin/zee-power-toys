@@ -19,6 +19,15 @@
          will show the dialog; the download itself always completes. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- YNavi CarApp host permissions (Block YNavi / YNaviCarAppHost).
+         TEMPLATE_RENDERER: system/signature permission pre-granted on Zeekr OS;
+         required to bind the CarApp cluster host.  Declaring it here is harmless
+         on stock Android where it is not enforced.
+         NAVIGATION_TEMPLATES: required by the AndroidX Car App library when the host
+         connects to a navigation CarApp service. -->
+    <uses-permission android:name="android.car.permission.TEMPLATE_RENDERER" />
+    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
+
     <application
         android:label="zee_power_toys"
         android:name="${applicationName}"
@@ -122,5 +131,9 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- YNavi mod detection: allows PackageManager.getPackageInfo() and
+             bindService() to resolve ru.yandex.yandexnavi on API 30+.
+             Without this entry, the package is invisible to non-system apps. -->
+        <package android:name="ru.yandex.yandexnavi" />
     </queries>
 </manifest>

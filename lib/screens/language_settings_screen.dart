@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/services.dart';
+import '../theme/app_theme.dart';
+import '../widgets/settings_layout.dart';
 
 /// Combined Language Settings screen — three clearly separated sections:
 ///
@@ -106,148 +108,164 @@ class _LanguageSettingsScreenState
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.languageTitle)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // ──────────────────────────────────────────────────────────────
-            // Section 1 — App language
-            // ──────────────────────────────────────────────────────────────
-            _SectionHeading(l10n.langSectionApp),
-            _LanguagePicker(
-              selectedTag: appLocale,
-              onChanged: _setAppLocale,
-              enabled: true,
-              keys: const _PickerKeys(
-                system: 'lang-system',
-                en: 'lang-en',
-                ru: 'lang-ru',
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ──────────────────────────────────────────────────────────────
-            // Section 2 — System language
-            // ──────────────────────────────────────────────────────────────
-            _SectionHeading(l10n.langSectionSystem),
-            Text(
-              '${l10n.langCurrentValue}: ${systemLocale.toLanguageTag()}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (_clusterSupported == false || _clusterSupported == null && true)
-              // Show hint when we already know system writes are unsupported
-              // (_clusterSupported false ≡ no AdaptAPI ≡ no CHANGE_CONFIGURATION).
-              // We key off clusterSupported as a proxy: if cluster is unavailable
-              // (no ecarx framework), system writes are also privileged + absent.
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  l10n.langCarOnly,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.secondary),
+      body: ListView(
+        padding: const EdgeInsets.all(Insets.lg),
+        children: <Widget>[
+          // ──────────────────────────────────────────────────────────────
+          // Section 1 — App language
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: l10n.langSectionApp,
+            padded: false,
+            children: <Widget>[
+              _LanguagePicker(
+                selectedTag: appLocale,
+                onChanged: _setAppLocale,
+                enabled: true,
+                keys: const _PickerKeys(
+                  system: 'lang-system',
+                  en: 'lang-en',
+                  ru: 'lang-ru',
                 ),
               ),
-            _LanguagePicker(
-              selectedTag: systemLocale.languageCode,
-              onChanged: (tag) {
-                if (tag != null) _setSystemLanguage(Locale(tag));
-              },
-              // System write requires CHANGE_CONFIGURATION — T3 only.
-              // Disable on emulator to make the constraint visible in the UI.
-              enabled: _clusterSupported == true,
-              keys: const _PickerKeys(
-                system: 'sys-lang-system',
-                en: 'sys-lang-en',
-                ru: 'sys-lang-ru',
-              ),
-              showSystemOption: false,
-            ),
-            if (_systemResult != null)
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
+          // ──────────────────────────────────────────────────────────────
+          // Section 2 — System language
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: l10n.langSectionSystem,
+            padded: false,
+            children: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.md,
+                  Insets.lg,
+                  0,
+                ),
                 child: Text(
-                  _systemResult!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
+                  '${l10n.langCurrentValue}: ${systemLocale.toLanguageTag()}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              if (_clusterSupported == false ||
+                  _clusterSupported == null && true)
+                // Show hint when we already know system writes are unsupported
+                // (_clusterSupported false ≡ no AdaptAPI ≡ no CHANGE_CONFIGURATION).
+                // We key off clusterSupported as a proxy: if cluster is
+                // unavailable (no ecarx framework), system writes are also
+                // privileged + absent.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.lg,
+                    Insets.xs,
+                    Insets.lg,
+                    0,
+                  ),
+                  child: Text(
+                    l10n.langCarOnly,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
                   ),
                 ),
-              ),
-
-            const SizedBox(height: 24),
-
-            // ──────────────────────────────────────────────────────────────
-            // Section 3 — Cluster language
-            // ──────────────────────────────────────────────────────────────
-            _SectionHeading(l10n.langSectionCluster),
-            if (clusterSupported == false)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  l10n.langCarOnly,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.secondary),
+              _LanguagePicker(
+                selectedTag: systemLocale.languageCode,
+                onChanged: (tag) {
+                  if (tag != null) _setSystemLanguage(Locale(tag));
+                },
+                // System write requires CHANGE_CONFIGURATION — T3 only.
+                // Disable on emulator to make the constraint visible in the UI.
+                enabled: _clusterSupported == true,
+                keys: const _PickerKeys(
+                  system: 'sys-lang-system',
+                  en: 'sys-lang-en',
+                  ru: 'sys-lang-ru',
                 ),
-              )
-            else if (clusterSupported == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: CircularProgressIndicator(),
+                showSystemOption: false,
               ),
-            _LanguagePicker(
-              selectedTag: null, // cluster has no persistent local state
-              onChanged: (tag) {
-                if (tag != null) _setClusterLanguage(Locale(tag));
-              },
-              enabled: clusterSupported == true,
-              keys: const _PickerKeys(
-                system: 'cluster-lang-system',
-                en: 'cluster-lang-en',
-                ru: 'cluster-lang-ru',
-              ),
-              showSystemOption: false,
-            ),
-            if (_clusterResult != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  _clusterResult!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
+              if (_systemResult != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.lg,
+                    0,
+                    Insets.lg,
+                    Insets.sm,
+                  ),
+                  child: Text(
+                    _systemResult!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
+          // ──────────────────────────────────────────────────────────────
+          // Section 3 — Cluster language
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: l10n.langSectionCluster,
+            padded: false,
+            children: <Widget>[
+              if (clusterSupported == false)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.lg,
+                    Insets.md,
+                    Insets.lg,
+                    0,
+                  ),
+                  child: Text(
+                    l10n.langCarOnly,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                )
+              else if (clusterSupported == null)
+                const Padding(
+                  padding: EdgeInsets.all(Insets.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              _LanguagePicker(
+                selectedTag: null, // cluster has no persistent local state
+                onChanged: (tag) {
+                  if (tag != null) _setClusterLanguage(Locale(tag));
+                },
+                enabled: clusterSupported == true,
+                keys: const _PickerKeys(
+                  system: 'cluster-lang-system',
+                  en: 'cluster-lang-en',
+                  ru: 'cluster-lang-ru',
+                ),
+                showSystemOption: false,
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Section heading
-// ---------------------------------------------------------------------------
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4, top: 4),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+              if (_clusterResult != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.lg,
+                    0,
+                    Insets.lg,
+                    Insets.sm,
+                  ),
+                  child: Text(
+                    _clusterResult!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -264,11 +282,7 @@ class _SectionHeading extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _PickerKeys {
-  const _PickerKeys({
-    required this.system,
-    required this.en,
-    required this.ru,
-  });
+  const _PickerKeys({required this.system, required this.en, required this.ru});
   final String system;
   final String en;
   final String ru;

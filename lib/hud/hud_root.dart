@@ -142,9 +142,11 @@ class _HudSlots extends StatelessWidget {
         ),
 
         // BATTERY — top-right corner (Steam-Deck-style battery + temp + charging stats).
+        // A small right/top inset keeps the entire indicator (pill + % + °C) visibly
+        // inside the Safe Area with a comfortable margin away from the clipping edge.
         Positioned(
-          right: 0,
-          top: 0,
+          right: saWidth * 0.008,
+          top: saHeight * 0.010,
           width: batteryW,
           height: upperH,
           child: const BatteryWidget(),

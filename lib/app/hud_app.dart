@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 
 import '../hud/hud_root.dart';
+import '../theme/app_theme.dart';
 
 /// Shot key — exposed at library level so main.dart can pass it to extensions.
 final GlobalKey hudShotKey = GlobalKey();
@@ -22,6 +23,19 @@ class HudApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // The HUD shares the DHU's dark theme so any Material defaults (text
+      // colour, etc.) stay dark — but the emissive rule still owns the
+      // backdrop: the scaffold below is black/transparent, never light.
+      theme: AppTheme.dhu,
+      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.dhu,
+      // Clamp text scaling so OS accessibility settings can't inflate emissive
+      // marks beyond the Safe Area (the HUD has fixed optics).
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.0,
+        maxScaleFactor: 1.0,
+        child: child!,
+      ),
       home: RepaintBoundary(key: hudShotKey, child: const _HudScreen()),
     );
   }

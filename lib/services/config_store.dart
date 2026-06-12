@@ -164,38 +164,38 @@ class BatteryConfig {
 
 /// Shape of the blinker indicator rendered in the HUD BLINKER slot.
 ///
-/// `dots`   — phase0 amber dot cluster (default; faithful to BlinkerOverlayView).
+/// `dots`   — a single small amber circle per side (default; reads like a real
+///            dashboard turn indicator, not a billboard).
 /// `arrows` — chevron turn-arrows ported from phase0 ic_blinker_left/right SVG.
 /// `smiley` — a yellow smiley face (new, per REQUIREMENTS "yellow smileys").
 enum BlinkerShape { dots, arrows, smiley }
 
-/// Blinker appearance config.  All fields are fractions of the Safe Area unless
-/// otherwise noted so they stay correct at any HUD resolution.
+/// Blinker appearance config.
 ///
-/// Phase-0 grounding (BlinkerOverlayView):
-///   dot size = 12dp, left X offset -282dp, right X offset +292dp,
-///   Y offset -60.5dp from Safe Area centre.  The dot pair sits in the upper
-///   portion of the display, well clear of the Guidance slot.
+/// The mark is sized as a small fixed-ish indicator (see [BlinkerWidget]); the
+/// fields here govern its scale and placement within the BLINKER slot.
+///
+/// `sizeScale` multiplies the small base diameter (1.0 = the calibrated neat
+/// indicator size).
 ///
 /// `sidePadFrac` is the inward padding from the left/right Safe Area edge, as a
-/// fraction of Safe Area width.  Derived from phase0: the HUD Safe Area was
-/// ~820dp wide; the dots sat ~282/820 ≈ 0.34 in from the nearest edge.
-/// We round to 0.02 so the dot lands near the outer edge and matches phase0.
+/// fraction of Safe Area width.  A small value keeps the mark near the outer
+/// edge with a comfortable margin.
 ///
 /// `vertFrac` is the vertical centre of the blinker mark as a fraction of the
-/// blinker slot height (0 = top, 1 = bottom).  0.40 places it in the upper
-/// portion, matching -60.5dp Y offset from centre in phase0.
+/// blinker slot height (0 = top, 1 = bottom).  0.50 centres it vertically.
 class BlinkerConfig {
   const BlinkerConfig({
     this.shape = BlinkerShape.dots,
     this.sizeScale = 1.0,
-    this.sidePadFrac = 0.02,
-    this.vertFrac = 0.40,
+    this.sidePadFrac = 0.04,
+    this.vertFrac = 0.50,
   });
 
   final BlinkerShape shape;
 
-  /// Multiplier applied to the base blinker size (1.0 = phase0 size).
+  /// Multiplier applied to the small base blinker diameter (1.0 = the
+  /// calibrated neat indicator size).
   final double sizeScale;
 
   /// Inward padding from the left/right edge of the Safe Area, as fraction of
@@ -236,8 +236,8 @@ class BlinkerConfig {
     return BlinkerConfig(
       shape: shape,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
-      sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.02,
-      vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.40,
+      sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
+      vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.50,
     );
   }
 

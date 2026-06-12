@@ -49,6 +49,8 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | — | Boot shim + ConfigStore plain native-readable format + foreground service + auto-launch | ADR 0003/0002 | _moved to [0010](0010-boot-fgs-autolaunch.md)_ → **done** |
 | — | Safe Area: hand-calibrated rectangle applied to the HUD surface, with preview parity | ADR 0001 | _delivered with the HUD-preview feature Block_ |
 | [0017](0017-final-sweep.md) | **Final sweep** — installer dedup reconciliation (0014 §3), docs/contract reconciliation, HUD-optics + efficiency hardening, MVP finalization for on-car testing | ADR 0007 | **done** |
+| [0018](0018-premium-ui-ynavi-host.md) | **Premium DHU UI + real YNavi CarApp host** — dark M3 theme + 160-dpi scale fix + small-circle blinker; YNavi `NavigationCarAppService` bind (handshake/surface/location confirmed; map render → 0019) | ADR 0001/0005/0007 | **done** |
+| [0019](0019-ynavi-map-render.md) | **YNavi cluster map render** — draw the real YNavi map onto the HUD surface (phase0 recipe: `pm clear` + perms, P9 paywall bypass, surface-race + template-probe fixes) | ADR 0001/0005 | **in-progress** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.

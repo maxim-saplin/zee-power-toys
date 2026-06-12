@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/services.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
+import '../theme/app_theme.dart';
 
 /// Install screen — download and install the Modded Launcher and YNavi mod
 /// from configured GitHub releases.
@@ -25,7 +26,7 @@ class InstallScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.installTitle)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Insets.lg),
         children: <Widget>[
           _InstallCard(
             key: const ValueKey('card-launcher'),
@@ -35,7 +36,7 @@ class InstallScreen extends ConsumerWidget {
             asset: kLauncherAsset,
             installer: installer,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Insets.md),
           _InstallCard(
             key: const ValueKey('card-ynavi'),
             installKey: const ValueKey('install-ynavi'),
@@ -93,31 +94,37 @@ class _InstallCardState extends State<_InstallCard> {
 
   void _startInstall() {
     if (_busy) return;
-    setState(() => _progress = const InstallProgress(
-          phase: InstallPhase.downloading,
-          fraction: 0.0,
-        ));
-    _sub = widget.installer.install(widget.asset).listen(
-      (progress) => setState(() => _progress = progress),
-      onDone: () {
-        // Stream closed without a final event: treat as done.
-        if (_progress?.phase != InstallPhase.done &&
-            _progress?.phase != InstallPhase.failed) {
-          setState(() => _progress = const InstallProgress(
-                phase: InstallPhase.done,
-                fraction: 1.0,
-              ));
-        }
-      },
-      onError: (Object err) => setState(
-        () => _progress = InstallProgress(
-          phase: InstallPhase.failed,
-          fraction: 0.0,
-          message: err.toString(),
-        ),
+    setState(
+      () => _progress = const InstallProgress(
+        phase: InstallPhase.downloading,
+        fraction: 0.0,
       ),
-      cancelOnError: false,
     );
+    _sub = widget.installer
+        .install(widget.asset)
+        .listen(
+          (progress) => setState(() => _progress = progress),
+          onDone: () {
+            // Stream closed without a final event: treat as done.
+            if (_progress?.phase != InstallPhase.done &&
+                _progress?.phase != InstallPhase.failed) {
+              setState(
+                () => _progress = const InstallProgress(
+                  phase: InstallPhase.done,
+                  fraction: 1.0,
+                ),
+              );
+            }
+          },
+          onError: (Object err) => setState(
+            () => _progress = InstallProgress(
+              phase: InstallPhase.failed,
+              fraction: 0.0,
+              message: err.toString(),
+            ),
+          ),
+          cancelOnError: false,
+        );
   }
 
   @override
@@ -129,7 +136,7 @@ class _InstallCardState extends State<_InstallCard> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Insets.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -137,26 +144,36 @@ class _InstallCardState extends State<_InstallCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: Insets.xs,
+                    right: Insets.md,
+                  ),
+                  child: Icon(
+                    Icons.archive_outlined,
+                    size: Sizes.iconMd,
+                    color: cs.primary,
+                  ),
+                ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
                         widget.name,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: Insets.xs),
                       Text(
                         widget.description,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: Insets.md),
                 ElevatedButton(
                   key: widget.installKey,
                   onPressed: _busy ? null : _startInstall,
@@ -167,20 +184,23 @@ class _InstallCardState extends State<_InstallCard> {
 
             // --- Progress section — only visible when an install is active ---
             if (_progress != null) ...[
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: _busy || phase == InstallPhase.done ? fraction : null,
-                backgroundColor: cs.surfaceContainerHighest,
-                color: phase == InstallPhase.failed ? cs.error : null,
+              const SizedBox(height: Insets.md),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.button),
+                child: LinearProgressIndicator(
+                  value: _busy || phase == InstallPhase.done ? fraction : null,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  color: phase == InstallPhase.failed ? cs.error : null,
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: Insets.sm),
               Text(
                 _phaseLabel(l10n, phase, _progress?.message),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: phase == InstallPhase.failed
-                          ? cs.error
-                          : cs.onSurfaceVariant,
-                    ),
+                  color: phase == InstallPhase.failed
+                      ? cs.error
+                      : cs.onSurfaceVariant,
+                ),
               ),
             ],
           ],
