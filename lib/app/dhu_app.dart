@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/locale.dart';
 import '../screens/settings_home_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dhu_scaled_layout.dart';
 
 /// Shot key — exposed at library level so main.dart can pass it to extensions.
 final GlobalKey dhuShotKey = GlobalKey();
@@ -18,38 +19,47 @@ class DhuApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(appLocaleProvider);
 
-    // The RepaintBoundary wraps the entire MaterialApp so that ext.zee.shot
-    // captures whatever route is currently visible (Settings hub, pushed screens,
-    // etc.) rather than just the static home widget.
-    return RepaintBoundary(
-      key: dhuShotKey,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dhu,
-        // The DHU runs a single tuned dark theme — pin it so the OS light/dark
-        // setting can't swap us to an unstyled light Material default.
-        themeMode: ThemeMode.dark,
-        darkTheme: AppTheme.dhu,
-        // Clamp text scaling to 1.0: the type scale is hand-tuned for the
-        // 160dpi DHU, and OS accessibility scaling would otherwise inflate it
-        // back into the oversized look we are eliminating.
-        builder: (context, child) => MediaQuery.withClampedTextScaling(
-          minScaleFactor: 1.0,
-          maxScaleFactor: 1.0,
-          child: child!,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.dhu,
+      // The DHU runs a single tuned dark theme — pin it so the OS light/dark
+      // setting can't swap us to an unstyled light Material default.
+      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.dhu,
+      // Scale-up + text-scale clamp applied together inside the MaterialApp
+      // builder so descendants see the correct post-scale logical dimensions.
+      //
+      // DhuScaledLayout: for the DHU's 2560×1600 @ 160 dpi (dpr ≈ 1.0) display
+      // the auto scale factor is 3.0, making the UI premium-large and crisp.
+      // On smaller / normal-DPI screens (tests, desktop T1) scale ≈ 1.0 and
+      // the widget is a transparent pass-through (no overhead).
+      //
+      // RepaintBoundary (key=dhuShotKey) is placed inside DhuScaledLayout so
+      // ext.zee.shot captures the scaled content.
+      //
+      // MediaQuery.withClampedTextScaling: pin text scaling to 1.0 so OS
+      // accessibility settings cannot re-inflate the hand-tuned type scale.
+      builder: (context, child) => RepaintBoundary(
+        key: dhuShotKey,
+        child: DhuScaledLayout(
+          child: MediaQuery.withClampedTextScaling(
+            minScaleFactor: 1.0,
+            maxScaleFactor: 1.0,
+            child: child!,
+          ),
         ),
-        // Localization delegates — AppLocalizations + the three Flutter globals.
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        // null → follow the system locale (platform default).
-        locale: locale,
-        home: const SettingsHomeScreen(),
       ),
+      // Localization delegates — AppLocalizations + the three Flutter globals.
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      // null → follow the system locale (platform default).
+      locale: locale,
+      home: const SettingsHomeScreen(),
     );
   }
 }

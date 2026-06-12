@@ -24,6 +24,7 @@ import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
+import 'services/config_store.dart';
 import 'services/installer.dart';
 import 'services/minimap_host.dart';
 import 'services/shared_prefs_config_store.dart';
@@ -107,6 +108,13 @@ Future<void> dhuMain(List<String> args) async {
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
+
+  // Wire MinimapConfig → MinimapHost: enable/disable + Safe-Area-relative
+  // bounds derived from the preset (or manual fracs in advanced mode).
+  // Idempotent on the native side (setMinimap is a NOOP when already in state).
+  // Fires once on startup (persisted config) and on every subsequent change.
+  _applyMinimapConfig(minimapHostRaw, store.value);
+  store.changes.listen((cfg) => _applyMinimapConfig(minimapHostRaw, cfg));
 
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
@@ -232,6 +240,40 @@ class _DhuRootState extends State<_DhuRoot> {
 bool get _isDesktop =>
     !kIsWeb &&
     (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
+
+// ---------------------------------------------------------------------------
+// MinimapHost config wiring — preset→geometry applied on config changes.
+//
+// Calibrated HUD backing-display dimensions (Zeekr S2, 1024×576 @ 213 dpi).
+// Used to convert Safe-Area fractions to physical-pixel MinimapView bounds.
+// Adjust if a different HUD display is used (T3 field calibration required).
+// ---------------------------------------------------------------------------
+const double _kHudW = 1024.0;
+const double _kHudH = 576.0;
+
+/// Apply [cfg.minimap] to [host]: enable/disable the MinimapView and update
+/// its Safe-Area-relative bounds from the active preset (or manual fractions
+/// in advanced mode).
+///
+/// Called once on startup (persisted config) and on every config change.
+/// Both enable() and setBounds() are idempotent on the native side.
+/// Errors are swallowed: MinimapHost may not be ready on startup (T1 fake is
+/// always ready; T2 native is ready after setupHud completes).
+void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
+  final mm = cfg.minimap;
+  host.enable(mm.enabled).catchError((_) {});
+  if (!mm.enabled) return;
+
+  final sa = cfg.safeArea;
+  final saLeft = sa.left * _kHudW;
+  final saTop = sa.top * _kHudH;
+  final saW = (sa.right - sa.left) * _kHudW;
+  final saH = (sa.bottom - sa.top) * _kHudH;
+
+  final fracs = mm.resolvedFracs;
+  final bounds = Rect.fromLTWH(saLeft, saTop, saW * fracs.$1, saH * fracs.$2);
+  host.setBounds(bounds).catchError((_) {});
+}
 
 // ---------------------------------------------------------------------------
 // Boot state query — Feedback Loop visibility (Block 0010).

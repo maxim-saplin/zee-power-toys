@@ -3,30 +3,38 @@ import 'installer.dart';
 // ---------------------------------------------------------------------------
 // Install targets — deployment-time configuration.
 //
-// Replace the placeholder values below with the real GitHub release
-// coordinates when the actual releases are published.
+// Both APKs are tracked as Git-LFS objects in their respective repos.
+// The download URL resolves to the LFS raw-content CDN:
+//   https://media.githubusercontent.com/media/<repo>/<branch>/<path>
 //
-// Format:
-//   repo      — "owner/repo-name"  (no https://, no .git)
-//   tag       — the release tag string, e.g. "v1.2.0"
-//   assetName — the exact filename of the APK asset on that release
-//
-// The download URL is resolved by NativeInstaller to:
-//   https://github.com/<repo>/releases/download/<tag>/<assetName>
+// To update to a newer artifact:
+//   1. Bump the [path] (and/or [branch]) to the new versioned filename.
+//   2. Verify the file is git-tracked in the clone:
+//        git -C /path/to/clone ls-files '*.apk'
+//   3. Update this file and commit in the same Block.
 // ---------------------------------------------------------------------------
 
-// TODO: real release coordinates — replace with actual repo/tag/asset values.
-
-/// Modded Launcher APK — provides YNavi as default navigation app.
-const GithubAsset kLauncherAsset = GithubAsset(
-  repo: 'zeepowertoys/modded-launcher',        // TODO: real repo
-  tag: 'v1.0.0',                                // TODO: real tag
-  assetName: 'modded-launcher-release.apk',    // TODO: real asset name
+/// YNavi mod APK — adds HUD support and minimap broadcast to Yandex.Navi.
+///
+/// Repo:   https://github.com/maxim-saplin/ynavi-zee
+/// Clone:  /home/user/src/ynavi-zee  (verified: `git ls-files '*.apk'`)
+/// Branch: speedcam
+/// Path:   modded_apks/zeekr_signed_v11.apk  (Zeekr-specific signed build)
+const GithubAsset kYnaviAsset = GithubAsset(
+  repo: 'maxim-saplin/ynavi-zee',
+  branch: 'speedcam',
+  path: 'modded_apks/zeekr_signed_v11.apk',
 );
 
-/// YNavi mod APK — adds HUD support and minimap broadcast to Yandex.Navi.
-const GithubAsset kYnaviAsset = GithubAsset(
-  repo: 'zeepowertoys/ynavi-mod',              // TODO: real repo
-  tag: 'v1.0.0',                               // TODO: real tag
-  assetName: 'ynavi-mod-release.apk',          // TODO: real asset name
+/// Modded Launcher APK — provides YNavi as default navigation app.
+///
+/// Repo:   https://github.com/maxim-saplin/zee_hud_2
+/// Clone:  /home/user/src/zee_hud_2  (verified: `git ls-files '*.apk'`)
+/// Branch: speedcam
+/// Path:   zeekr_apk_mod_vendor/6.7.0/modded_apks/XCLauncher3-670-proxy-signed-v8.apk
+///         (latest versioned signed build in the tree)
+const GithubAsset kLauncherAsset = GithubAsset(
+  repo: 'maxim-saplin/zee_hud_2',
+  branch: 'speedcam',
+  path: 'zeekr_apk_mod_vendor/6.7.0/modded_apks/XCLauncher3-670-proxy-signed-v8.apk',
 );

@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
+import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
@@ -563,36 +564,28 @@ void registerZeeExtensions({
 
       final target = params['target'];
       if (target == 'launcher') {
-        asset = const GithubAsset(
-          repo: 'zeepowertoys/modded-launcher',
-          tag: 'v1.0.0',
-          assetName: 'modded-launcher-release.apk',
-        );
+        asset = kLauncherAsset;
       } else if (target == 'ynavi') {
-        asset = const GithubAsset(
-          repo: 'zeepowertoys/ynavi-mod',
-          tag: 'v1.0.0',
-          assetName: 'ynavi-mod-release.apk',
-        );
+        asset = kYnaviAsset;
       } else {
-        // Arbitrary asset: repo/tag/asset params (T2 real-download testing).
+        // Arbitrary asset: repo/branch/path params (T2 real-download testing).
         final repo = params['repo'];
-        final tag = params['tag'];
-        final assetName = params['asset'];
-        if (repo != null && tag != null && assetName != null) {
-          asset = GithubAsset(repo: repo, tag: tag, assetName: assetName);
+        final branch = params['branch'];
+        final path = params['path'];
+        if (repo != null && branch != null && path != null) {
+          asset = GithubAsset(repo: repo, branch: branch, path: path);
         }
       }
 
       if (asset == null) {
         return _extError(
           'ext.zee.install: provide target=launcher|ynavi '
-          'OR repo=<r> tag=<t> asset=<a>',
+          'OR repo=<r> branch=<b> path=<p>',
         );
       }
 
       final targetLabel = target ??
-          '${params['repo']}/${params['tag']}/${params['asset']}';
+          '${params['repo']}/${params['branch']}/${params['path']}';
 
       // Reset and update the holder's map in-place (not reassignment) so the
       // readViewModel closure always reads through the same reference.

@@ -255,4 +255,69 @@ void main() {
       expect(ru.minimapThemeLight, isNotEmpty);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // MinimapConfig.presetFractions / resolvedFracs (Block 0020 minimap wiring)
+  // ---------------------------------------------------------------------------
+  group('MinimapConfig preset fractions', () {
+    test('presetFractions map contains all three presets', () {
+      expect(MinimapConfig.presetFractions, contains('compact'));
+      expect(MinimapConfig.presetFractions, contains('balanced'));
+      expect(MinimapConfig.presetFractions, contains('large'));
+    });
+
+    test('resolvedFracs — compact preset', () {
+      const cfg = MinimapConfig(preset: 'compact');
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(MinimapConfig.presetFractions['compact']!.$1));
+      expect(fracs.$2, equals(MinimapConfig.presetFractions['compact']!.$2));
+    });
+
+    test('resolvedFracs — balanced preset (default)', () {
+      const cfg = MinimapConfig();
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(MinimapConfig.presetFractions['balanced']!.$1));
+      expect(fracs.$2, equals(MinimapConfig.presetFractions['balanced']!.$2));
+    });
+
+    test('resolvedFracs — large preset', () {
+      const cfg = MinimapConfig(preset: 'large');
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(MinimapConfig.presetFractions['large']!.$1));
+      expect(fracs.$2, equals(MinimapConfig.presetFractions['large']!.$2));
+    });
+
+    test('resolvedFracs — advanced mode uses manual fracs', () {
+      const cfg = MinimapConfig(
+        advanced: true,
+        widthFrac: 0.45,
+        heightFrac: 0.75,
+      );
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(0.45));
+      expect(fracs.$2, equals(0.75));
+    });
+
+    test('resolvedFracs — advanced without fracs falls back to preset', () {
+      const cfg = MinimapConfig(advanced: true, preset: 'large');
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(MinimapConfig.presetFractions['large']!.$1));
+    });
+
+    test('resolvedFracs — unknown preset falls back to balanced', () {
+      const cfg = MinimapConfig(preset: 'unknown-preset');
+      final fracs = cfg.resolvedFracs;
+      expect(fracs.$1, equals(MinimapConfig.presetFractions['balanced']!.$1));
+      expect(fracs.$2, equals(MinimapConfig.presetFractions['balanced']!.$2));
+    });
+
+    test('fracs are in valid 0..1 range', () {
+      for (final entry in MinimapConfig.presetFractions.entries) {
+        expect(entry.value.$1, inInclusiveRange(0.0, 1.0),
+            reason: '${entry.key} widthFrac out of range');
+        expect(entry.value.$2, inInclusiveRange(0.0, 1.0),
+            reason: '${entry.key} heightFrac out of range');
+      }
+    });
+  });
 }

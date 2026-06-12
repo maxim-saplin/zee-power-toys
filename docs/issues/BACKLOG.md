@@ -51,6 +51,7 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | [0017](0017-final-sweep.md) | **Final sweep** — installer dedup reconciliation (0014 §3), docs/contract reconciliation, HUD-optics + efficiency hardening, MVP finalization for on-car testing | ADR 0007 | **done** |
 | [0018](0018-premium-ui-ynavi-host.md) | **Premium DHU UI + real YNavi CarApp host** — dark M3 theme + 160-dpi scale fix + small-circle blinker; YNavi `NavigationCarAppService` bind (handshake/surface/location confirmed; map render → 0019) | ADR 0001/0005/0007 | **done** |
 | [0019](0019-ynavi-map-render.md) | **YNavi cluster map render** — draw the real YNavi map onto the HUD surface (phase0 recipe: `pm clear` + perms, P9 paywall bypass, surface-race + template-probe fixes) | ADR 0001/0005 | **done** |
+| [0020](0020-leftovers-scale-install-minimap.md) | **Leftovers** — DHU low-DPI UI scale-up (3.0× at 2560×1600@160dpi) + MinimapConfig→MinimapHost preset wiring + real LFS install coordinates + `nav-hud` doc reconcile | ADR 0001/0004/0007 | **done** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.

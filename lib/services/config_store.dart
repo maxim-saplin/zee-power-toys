@@ -92,6 +92,33 @@ class MinimapConfig {
   @override
   int get hashCode =>
       Object.hash(enabled, preset, advanced, widthFrac, heightFrac, themeFollow);
+
+  // ---------------------------------------------------------------------------
+  // Preset geometry
+  // ---------------------------------------------------------------------------
+
+  /// Preset name → (widthFrac, heightFrac) of HUD Safe Area.
+  ///
+  /// These fractions are the default geometry for each preset. They are applied
+  /// by the MinimapHost wiring in main.dart whenever the config changes and the
+  /// preset (not advanced) mode is active.
+  static const Map<String, (double, double)> presetFractions = {
+    'compact':  (0.35, 0.60),
+    'balanced': (0.50, 0.80),
+    'large':    (0.70, 1.00),
+  };
+
+  /// Resolved safe-area fractions for the current config.
+  ///
+  /// In advanced mode (when [advanced] is true AND [widthFrac]/[heightFrac] are
+  /// set), returns those manual values clamped to [0.1, 1.0].
+  /// In preset mode, returns [presetFractions] for [preset] (fallback: balanced).
+  (double, double) get resolvedFracs {
+    if (advanced && widthFrac != null && heightFrac != null) {
+      return (widthFrac!.clamp(0.1, 1.0), heightFrac!.clamp(0.1, 1.0));
+    }
+    return presetFractions[preset] ?? presetFractions['balanced']!;
+  }
 }
 
 /// Battery widget appearance config.

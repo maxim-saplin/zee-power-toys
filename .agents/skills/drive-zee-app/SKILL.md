@@ -111,7 +111,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | `ext.zee.shot` | both | — | `{surface, w, h, png_b64}` | RepaintBoundary→PNG→base64 |
 | `ext.zee.inject` | dhu | `kind=speed value=<kmh>`, `kind=blinker value=left\|right\|hazard\|off`, `kind=charge charging=true\|false kw=<f> volts=<f> amps=<f>`, `kind=battery levelPct=<i> tempC=<f>`, `kind=powerFlow value=drive\|regen\|standstill\|unknown` | CarSignals snapshot | T1 only (FakeCarSignals); T2/T3 use ADB broadcast |
 | `ext.zee.minimap` | dhu | `on=true\|false`, `x=<f> y=<f> w=<f> h=<f>`, `key=<k> value=<v>` | `{surface, minimap, on}` | Registered only when MinimapHost present (T2 DHU) |
-| `ext.zee.install` | dhu | `target=launcher\|ynavi` OR `repo=<r> tag=<t> asset=<a>` | `{surface, install:{target, started}}` | Triggers install; poll `read-view-model` for live progress |
+| `ext.zee.install` | dhu | `target=launcher\|ynavi` OR `repo=<r> branch=<b> path=<p>` | `{surface, install:{target, started}}` | Triggers install; poll `read-view-model` for live progress |
 | `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, surface, scope, value, systemLocale?}` | `scope=system\|cluster` is T3-only; T1/T2 returns `{ok:false, reason:"unsupported-on-device"}` |
 | `ext.zee.setUsbMode` | dhu | `value=peripheral\|host\|auto` | `{ok, reason?, usbMode, usbWritable}` | T1 FakeUsbMode always writable; T2 needs platform signing |
 | `ext.zee.bootState` | both | — | `{surface, hudEnabled, configReadOk, …native fields}` | DHU Android includes native FGS status; T1/HUD config-store only |
@@ -186,7 +186,7 @@ uv run dev/feedback_loop.py tap --surface dhu --key minimap-enable-toggle
 
 Note: `tapByKey` only succeeds when the keyed widget is in the LIVE widget tree (i.e., its screen is mounted).  Navigate to the relevant screen first.
 
-Available keys on the settings home screen: `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`.  The HUD settings tile has no ValueKey (navigate to it programmatically or use `set-config` instead of a tap).  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `dhu-toggle`, `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`.
+Available keys on the settings home screen: `nav-hud`, `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`.  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `dhu-toggle`, `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`.
 
 ### Inject blinker then screenshot the HUD
 

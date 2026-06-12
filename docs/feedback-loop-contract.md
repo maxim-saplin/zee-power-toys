@@ -26,7 +26,7 @@ cheatsheet; this table is the contract.
 | `ext.zee.inject` | both | `kind=speed\|blinker\|charge\|battery\|powerFlow value=…` | CarSignals snapshot | T1 only — VM-service path into `FakeCarSignals`; errors on a real source (use the ADB broadcast on T2/T3) |
 | `ext.zee.bootState` | both | _(none)_ | `{surface, hudEnabled, configReadOk, …native FGS fields}` | DHU/Android adds native foreground-service status; T1/HUD is config-store only |
 | `ext.zee.minimap` | dhu | `on=true\|false`, `x y w h`, `key value` | `{surface, minimap, on}` | Registered only when `MinimapHost` is injected |
-| `ext.zee.install` | dhu | `target=launcher\|ynavi` or `repo tag asset` | `{surface, install:{target, started}}` | Registered only when `Installer` is injected; poll `readViewModel.install.phase` for progress |
+| `ext.zee.install` | dhu | `target=launcher\|ynavi` or `repo branch path` | `{surface, install:{target, started}}` | Registered only when `Installer` is injected; poll `readViewModel.install.phase` for progress |
 | `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, scope, value, systemLocale?}` | Registered only when `SystemConfig` is injected; `system\|cluster` is T3-only |
 | `ext.zee.setUsbMode` | dhu | `value=peripheral\|host\|auto` | `{ok, reason?, usbMode, usbWritable}` | Registered only when `UsbModePort` is injected; T2 needs platform signing |
 

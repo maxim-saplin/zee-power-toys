@@ -7,25 +7,25 @@ import '../installer.dart';
 /// Android implementation of [Installer].
 ///
 /// Communicates with the native Kotlin [InstallerController] via two channels:
-///   - MethodChannel  "zee/installer"        — start(repo, tag, asset)
+///   - MethodChannel  "zee/installer"        — start(url)
 ///   - EventChannel   "zee/installer/events" — progress stream
 ///
-/// The native side resolves the GitHub releases download URL:
-///   `https://github.com/<repo>/releases/download/<tag>/<assetName>`
-/// downloads the APK to the app cache directory emitting byte-level progress,
-/// then launches PackageInstaller session API (or falls back to ACTION_VIEW).
+/// The resolved LFS raw-content URL is passed directly; the native side
+/// downloads the APK and launches PackageInstaller session API (or falls back
+/// to ACTION_VIEW).  URL form:
+///   `https://media.githubusercontent.com/media/<repo>/<branch>/<path>`
 class NativeInstaller implements Installer {
   static const _method = MethodChannel('zee/installer');
   static const _events = EventChannel('zee/installer/events');
 
   @override
   Stream<InstallProgress> install(GithubAsset asset) {
+    final String url = asset.downloadUrl;
+
     // Open the native event stream before invoking start() so no progress
     // events are missed between the method call returning and the stream setup.
     final rawStream = _events.receiveBroadcastStream(<String, Object?>{
-      'repo': asset.repo,
-      'tag': asset.tag,
-      'asset': asset.assetName,
+      'url': url,
     });
 
     // Transform raw Map events → typed InstallProgress objects.
@@ -68,9 +68,7 @@ class NativeInstaller implements Installer {
     // (e.g. channel not found before the engine is ready) are surfaced as a
     // failed progress event so the UI always sees a clean stream.
     _method.invokeMethod<void>('start', <String, Object?>{
-      'repo': asset.repo,
-      'tag': asset.tag,
-      'asset': asset.assetName,
+      'url': url,
     }).catchError((Object err) {
       if (!controller.isClosed) {
         controller.add(InstallProgress(

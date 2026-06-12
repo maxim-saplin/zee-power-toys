@@ -13,20 +13,19 @@ import java.util.concurrent.RejectedExecutionException
  * InstallerController — wires Dart ↔ Kotlin for the installer feature (Block 0014).
  *
  * Channels registered on the DHU (primary) engine messenger:
- *   MethodChannel  "zee/installer"         — start(repo, tag, asset)
+ *   MethodChannel  "zee/installer"         — start(url)
  *   EventChannel   "zee/installer/events"  — install progress stream
  *
  * Flow:
- *   1. Dart calls start() with {repo, tag, asset}.
- *   2. The native side resolves the GitHub releases download URL:
- *        https://github.com/<repo>/releases/download/<tag>/<asset>
- *   3. Downloader streams the APK to the app cache directory.
- *   4. Progress events are emitted on the EventChannel:
+ *   1. Dart calls start() with {url} — a pre-resolved LFS raw-content URL:
+ *        https://media.githubusercontent.com/media/<repo>/<branch>/<path>
+ *   2. Downloader streams the APK to the app cache directory.
+ *   3. Progress events are emitted on the EventChannel:
  *        {phase: "downloading", fraction: 0.0..1.0}
  *        {phase: "installing",  fraction: 0.8}
  *        {phase: "done",        fraction: 1.0}
  *        {phase: "failed",      fraction: 0.0, message: "<error>"}
- *   5. AppInstaller commits a PackageInstaller session (or falls back to
+ *   4. AppInstaller commits a PackageInstaller session (or falls back to
  *      an intent).  The actual install dialog/completion is user-gated (T3).
  *
  * Threading:
@@ -43,10 +42,6 @@ class InstallerController(
         private const val TAG = "ZEE/Installer"
         private const val METHOD_CHANNEL = "zee/installer"
         private const val EVENT_CHANNEL  = "zee/installer/events"
-
-        // GitHub releases CDN base URL — resolved by Downloader (follows redirects).
-        private fun githubUrl(repo: String, tag: String, asset: String): String =
-            "https://github.com/$repo/releases/download/$tag/$asset"
     }
 
     // Single-thread executor: serialises download/install operations.
@@ -57,26 +52,24 @@ class InstallerController(
 
     // Dedup guard (Block 0014 reconciliation): both the "start" method call and
     // the EventChannel onListen trigger startInstall on one Dart invocation; this
-    // is the asset key currently in flight, so the second trigger is a NOOP.
+    // is the URL currently in flight, so the second trigger is a NOOP.
     @Volatile private var inFlightKey: String? = null
 
     private val methodChannel = MethodChannel(messenger, METHOD_CHANNEL)
     private val eventChannel  = EventChannel(messenger, EVENT_CHANNEL)
 
     init {
-        // Method channel: start(repo, tag, asset) kicks off the download.
+        // Method channel: start(url) kicks off the download.
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "start" -> {
-                    val repo  = call.argument<String>("repo")  ?: ""
-                    val tag   = call.argument<String>("tag")   ?: ""
-                    val asset = call.argument<String>("asset") ?: ""
-                    if (repo.isEmpty() || tag.isEmpty() || asset.isEmpty()) {
-                        result.error("BAD_ARGS", "repo/tag/asset required", null)
+                    val url = call.argument<String>("url") ?: ""
+                    if (url.isEmpty()) {
+                        result.error("BAD_ARGS", "url required", null)
                     } else {
                         // Acknowledge immediately; progress comes on the event stream.
                         result.success(null)
-                        startInstall(repo, tag, asset)
+                        startInstall(url)
                     }
                 }
                 else -> result.notImplemented()
@@ -84,21 +77,19 @@ class InstallerController(
         }
 
         // Event channel: the Dart EventChannel.receiveBroadcastStream sends the
-        // {repo, tag, asset} arguments as the listen arguments.
+        // {url} argument as the listen argument.
         eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                 eventSink = sink
                 Log.d(TAG, "EventChannel: Dart subscribed")
 
-                // The Dart side passes the install params in receiveBroadcastStream.
+                // The Dart side passes the install URL in receiveBroadcastStream.
                 // We kick off the download here (the method call "start" above is
                 // an alternative trigger — both paths guard against double-start).
                 if (arguments is Map<*, *>) {
-                    val repo  = arguments["repo"]  as? String ?: ""
-                    val tag   = arguments["tag"]   as? String ?: ""
-                    val asset = arguments["asset"] as? String ?: ""
-                    if (repo.isNotEmpty() && tag.isNotEmpty() && asset.isNotEmpty()) {
-                        startInstall(repo, tag, asset)
+                    val url = arguments["url"] as? String ?: ""
+                    if (url.isNotEmpty()) {
+                        startInstall(url)
                     }
                 }
             }
@@ -114,37 +105,37 @@ class InstallerController(
     /**
      * Kick off the download + install on the background executor.
      *
-     * Dedup: a 2nd startInstall call for the same repo/tag/asset key while one is
-     * already in flight is a NOOP — both the EventChannel onListen and the
-     * MethodChannel start() fire startInstall on one Dart invocation; the second
-     * trigger hits the key guard and returns immediately.  inFlightKey is cleared
-     * when the executor task reaches a terminal state (done or failed), so a later
-     * re-install of the same asset is allowed.  Two different assets queue on the
-     * single-thread executor.
+     * Dedup: a 2nd startInstall call for the same URL while one is already in
+     * flight is a NOOP — both the EventChannel onListen and the MethodChannel
+     * start() fire startInstall on one Dart invocation; the second trigger hits
+     * the key guard and returns immediately.  inFlightKey is cleared when the
+     * executor task reaches a terminal state (done or failed), so a later
+     * re-install of the same asset is allowed.  Two different assets queue on
+     * the single-thread executor.
      *
      * Invariant: inFlightKey is cleared BEFORE Dart is notified of any terminal
      * state so that a re-tap from Dart cannot be wrongly NOOP'd.
      */
     @Synchronized
-    private fun startInstall(repo: String, tag: String, asset: String) {
-        val key = "$repo/$tag/$asset"
-        if (key == inFlightKey) {
-            Log.i(TAG, "startInstall: $key already in flight — NOOP (dedup)")
+    private fun startInstall(url: String) {
+        if (url == inFlightKey) {
+            Log.i(TAG, "startInstall: $url already in flight — NOOP (dedup)")
             return
         }
-        inFlightKey = key
-        Log.i(TAG, "startInstall: repo=$repo tag=$tag asset=$asset")
+        inFlightKey = url
+        Log.i(TAG, "startInstall: url=$url")
         try {
             executor.submit {
                 var terminalPhase = "failed"
                 var terminalFraction = 0.0
                 var terminalMessage: String? = null
                 try {
-                    val url = githubUrl(repo, tag, asset)
                     Log.i(TAG, "Resolved URL: $url")
 
                     val cacheDir = context.cacheDir
-                    val apkFile = File(cacheDir, "${asset.removeSuffix(".apk")}_${tag}.apk")
+                    // Derive a stable cache filename from the last path segment of the URL.
+                    val apkName = url.substringAfterLast('/').ifEmpty { "install.apk" }
+                    val apkFile = File(cacheDir, apkName)
 
                     // --- Download phase ---
                     sendProgress("downloading", 0.0)
@@ -192,7 +183,7 @@ class InstallerController(
         } catch (e: RejectedExecutionException) {
             // Executor was shut down (tearDown called) — release the key so it
             // isn't left permanently stuck.
-            Log.w(TAG, "startInstall: executor shut down, releasing key $key", e)
+            Log.w(TAG, "startInstall: executor shut down, releasing key $url", e)
             inFlightKey = null
         }
     }

@@ -120,15 +120,20 @@ void main() {
     });
 
     testWidgets('GithubAsset model fields are accessible', (tester) async {
-      // Model test — verifies GithubAsset holds repo/tag/assetName.
+      // Model test — verifies GithubAsset holds repo/branch/path and exposes
+      // the resolved LFS download URL.
       const asset = GithubAsset(
         repo: 'owner/repo',
-        tag: 'v1.0',
-        assetName: 'app.apk',
+        branch: 'main',
+        path: 'apps/app.apk',
       );
       expect(asset.repo, equals('owner/repo'));
-      expect(asset.tag, equals('v1.0'));
-      expect(asset.assetName, equals('app.apk'));
+      expect(asset.branch, equals('main'));
+      expect(asset.path, equals('apps/app.apk'));
+      expect(
+        asset.downloadUrl,
+        equals('https://media.githubusercontent.com/media/owner/repo/main/apps/app.apk'),
+      );
     });
 
     testWidgets('InstallProgress model phase + fraction', (tester) async {
@@ -149,7 +154,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
 
       final installer = FakeInstaller();
-      const asset = GithubAsset(repo: 'r', tag: 't', assetName: 'a.apk');
+      const asset = GithubAsset(repo: 'r', branch: 'b', path: 'a.apk');
 
       final phases = <InstallPhase>[];
       installer.install(asset).listen((p) => phases.add(p.phase));
