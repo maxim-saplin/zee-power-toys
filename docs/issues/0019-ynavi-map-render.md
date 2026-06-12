@@ -77,5 +77,9 @@ Three bugs chained to block the map render:
    + `pg.post { addView(this, idx, lp) }` forces a full TextureView lifecycle (detach → release
    → re-attach → new GL-attached SurfaceTexture → `onSurfaceTextureAvailable`).
 
-Confirmed artifact: `shots/redo/t2-ynavi-map.png` — "Kuzmy Chornaga St" label visible on
-Display 2 (1280×720, 213 dpi HUD overlay) through the green-yellow ColorMatrix filter.
+Confirmed artifact: `shots/redo/t2-ynavi-map.png` (original, pre-0021) — "Kuzmy Chornaga St"
+label visible on Display 2 but map was a **near-solid yellow wash** (colour filter applied on
+TextureView directly — ineffective for SurfaceTexture content; day-mode map).
+
+**Readability corrected in Block 0021** (`filterWrapper` pattern + night mode + zoom-out).
+The `shots/redo/t2-ynavi-map.png` artifact was overwritten by Block 0021 with the readable render.

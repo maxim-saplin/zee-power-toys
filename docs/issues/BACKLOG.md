@@ -50,8 +50,9 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | — | Safe Area: hand-calibrated rectangle applied to the HUD surface, with preview parity | ADR 0001 | _delivered with the HUD-preview feature Block_ |
 | [0017](0017-final-sweep.md) | **Final sweep** — installer dedup reconciliation (0014 §3), docs/contract reconciliation, HUD-optics + efficiency hardening, MVP finalization for on-car testing | ADR 0007 | **done** |
 | [0018](0018-premium-ui-ynavi-host.md) | **Premium DHU UI + real YNavi CarApp host** — dark M3 theme + 160-dpi scale fix + small-circle blinker; YNavi `NavigationCarAppService` bind (handshake/surface/location confirmed; map render → 0019) | ADR 0001/0005/0007 | **done** |
-| [0019](0019-ynavi-map-render.md) | **YNavi cluster map render** — draw the real YNavi map onto the HUD surface (phase0 recipe: `pm clear` + perms, P9 paywall bypass, surface-race + template-probe fixes) | ADR 0001/0005 | **done** |
+| [0019](0019-ynavi-map-render.md) | **YNavi cluster map render** — draw the real YNavi map onto the HUD surface (phase0 recipe: `pm clear` + perms, P9 paywall bypass, surface-race + template-probe fixes) | ADR 0001/0005 | **done** *(map rendered; readability fixed in 0021)* |
 | [0020](0020-leftovers-scale-install-minimap.md) | **Leftovers** — DHU low-DPI UI scale-up (3.0× at 2560×1600@160dpi) + MinimapConfig→MinimapHost preset wiring + real LFS install coordinates + `nav-hud` doc reconcile | ADR 0001/0004/0007 | **done** |
+| [0021](0021-hud-minimap-readability-phase0-filter.md) | **HUD minimap readability** — phase0 `filterWrapper` pattern + parametric `createHudFilterPaint` + night mode + 2× zoom-out; fixes the yellow-wash from 0019 | ADR 0001/0005 | **done** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.
@@ -70,4 +71,6 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | [0016](0016-usb-adb-toggle.md) | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | **done** |
 
 ### Out of scope (post-MVP, architecture-ready)
+
+See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-testing.md) — how to compare phase0 reference vs our app on one emulator or on-car, without conflict.
 - **Speedcam** (+ Alien mode) — slots in as a future `SpeedcamService` + a location signal; no design effort now. ADR 0003's service-port model makes it additive (events out: nearest cam, danger level; commands in: lane toggles), with radar / alien visuals being more Flutter HUD content (ADR 0001).

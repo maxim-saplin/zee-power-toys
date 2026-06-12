@@ -260,10 +260,20 @@ class MainActivity : FlutterActivity() {
             val pres = Presentation(this, display)
             val root = FrameLayout(pres.context)
 
-            // Layer 1 (bottom): native animated Minimap stand-in with HUD colour filter.
+            // Layer 1 (bottom): native Minimap / YNavi surface with HUD colour filter.
+            // The TextureView is wrapped in a FrameLayout (filterWrapper) so the hardware-
+            // layer ColorMatrix is applied on the PARENT — applying it directly on the
+            // TextureView does NOT filter SurfaceTexture content (see hud-presentation-host.md §7).
             val mm = MinimapView(pres.context).also { it.mainActivity = this }
             minimapView = mm
-            root.addView(mm, FrameLayout.LayoutParams(
+            val filterWrapper = FrameLayout(pres.context)
+            filterWrapper.addView(mm, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+            ))
+            mm.filterWrapper = filterWrapper
+            filterWrapper.setLayerType(View.LAYER_TYPE_HARDWARE, createHudFilterPaint())
+            root.addView(filterWrapper, FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ))
@@ -310,6 +320,80 @@ class MainActivity : FlutterActivity() {
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // HUD filter — parametric ColorMatrix with hue passthrough.
+    // Ported from phase0 CarAppHostService.createHudFilterPaint (hud-presentation-host.md §7).
+    // Defaults: contrast=3.0, threshold=150, preset=0 (green-yellow), saturation=0 (fully
+    // monochrome-tinted), brightness=-20, huePass=1.0, hueAngle=120 (green).
+    // threshold=150 maps pixels darker than ~150/255 to BLACK → dark emissive background.
+    // huePass=1.0 + hueAngle=120 keeps green/yellow map features in color; all else → mono.
+    // -------------------------------------------------------------------------
+
+    private fun createHudFilterPaint(
+        contrast: Float = 3.0f,
+        threshold: Int = 150,
+        preset: Int = 0,         // 0=green-yellow (default), 1=cyan, 2=white, 3=amber, 4=red
+        saturation: Float = 0f,
+        brightness: Int = -20,
+        invert: Boolean = false,
+        huePass: Float = 1.0f,
+        hueAngle: Int = 120,     // degrees: 0=red, 60=yellow, 120=green, 180=cyan, 240=blue
+    ): Paint {
+        val (tR, tG, tB) = when (preset) {
+            1 -> Triple(0.1f, 0.9f, 1.0f)    // cyan
+            2 -> Triple(1.0f, 1.0f, 1.0f)    // white
+            3 -> Triple(1.0f, 0.75f, 0.0f)   // amber
+            4 -> Triple(1.0f, 0.15f, 0.0f)   // red
+            else -> Triple(0.7f, 1.0f, 0.1f) // green-yellow (preset=0, default)
+        }
+        val c = contrast
+        val t = -threshold.toFloat()
+        val s = saturation.coerceIn(0f, 1f)
+        val ms = 1f - s   // monochrome weight
+        val b = brightness.toFloat()
+        val hp = huePass.coerceIn(0f, 1f)
+        val lr = 0.3f; val lg = 0.6f; val lb = 0.1f
+
+        // Base coefficients per output channel (monochrome-tint + saturation blend).
+        val rR = ms * lr * c * tR + s * c;  val rG_r = ms * lg * c * tR;          val rB_r = ms * lb * c * tR
+        val gR = ms * lr * c * tG;          val gG = ms * lg * c * tG + s * c;    val gB_g = ms * lb * c * tG
+        val bR = ms * lr * c * tB;          val bG_b = ms * lg * c * tB;          val bB = ms * lb * c * tB + s * c
+        val rOff = ms * t * tR + s * t + b
+        val gOff = ms * t * tG + s * t + b
+        val bOff = ms * t * tB + s * t + b
+
+        // Per-channel hue passthrough: triangle peaking at each channel's primary hue
+        // (R=0°, G=120°, B=240°), 120° half-width.  At huePass=1.0 + hueAngle=120 the
+        // green channel row is replaced by identity-contrast, keeping map road colours
+        // green/yellow while the dark background is zeroed by the threshold.
+        val angle = (hueAngle % 360).toFloat()
+        fun hueWeight(primary: Float): Float {
+            val d = Math.abs(((angle - primary + 180f) % 360f) - 180f)
+            return (1f - d / 120f).coerceIn(0f, 1f)
+        }
+        val hpR = hp * hueWeight(0f)
+        val hpG = hp * hueWeight(120f)
+        val hpB = hp * hueWeight(240f)
+
+        val cm = ColorMatrix(floatArrayOf(
+            rR * (1f - hpR) + c * hpR,  rG_r * (1f - hpR),           rB_r * (1f - hpR),           0f, rOff * (1f - hpR) + (t + b) * hpR,
+            gR * (1f - hpG),            gG * (1f - hpG) + c * hpG,   gB_g * (1f - hpG),           0f, gOff * (1f - hpG) + (t + b) * hpG,
+            bR * (1f - hpB),            bG_b * (1f - hpB),           bB * (1f - hpB) + c * hpB,   0f, bOff * (1f - hpB) + (t + b) * hpB,
+            0f,                         0f,                          0f,                          1f, 0f,
+        ))
+
+        if (invert) {
+            val inv = ColorMatrix(floatArrayOf(
+                -1f, 0f,  0f,  0f, 255f,
+                 0f, -1f, 0f,  0f, 255f,
+                 0f, 0f,  -1f, 0f, 255f,
+                 0f, 0f,  0f,  1f,   0f,
+            ))
+            cm.preConcat(inv)
+        }
+        return Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
     }
 
     // -------------------------------------------------------------------------
@@ -442,8 +526,14 @@ class MainActivity : FlutterActivity() {
         val host = yNaviCarAppHost ?: return
         if (isYnaviAvailable()) {
             val dpi = hudDensityDpi()
-            host.start(Surface(surface), width, height, dpi)
-            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height dpi=$dpi")
+            // Oversample the buffer at 2× (minimapScale=0.5): tells YNavi to render
+            // a larger map area which the compositor scales down to viewport size,
+            // giving a zoom-out effect for better readability (phase0 §6 pattern).
+            val bufW = width * 2
+            val bufH = height * 2
+            surface.setDefaultBufferSize(bufW, bufH)
+            host.start(Surface(surface), bufW, bufH, dpi)
+            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height buf=${bufW}x${bufH} dpi=$dpi")
         } else {
             minimapView?.resumeRendering()
             Log.i(TAG, "startYNaviOnSurfaceReady: YNavi unavailable — placeholder resumed")
@@ -559,6 +649,14 @@ class MinimapView(context: android.content.Context) :
     /** Direct reference to the hosting MainActivity for cross-context callbacks. */
     var mainActivity: MainActivity? = null
 
+    /**
+     * Parent FrameLayout that carries the LAYER_TYPE_HARDWARE ColorMatrix filter.
+     * Set by MainActivity.setupHud() immediately after creating the view.
+     * onSurfaceTextureUpdated() calls filterWrapper.invalidate() so the hardware
+     * layer re-renders each YNavi frame (TextureView updates bypass View.invalidate).
+     */
+    var filterWrapper: FrameLayout? = null
+
     @Volatile var baseHue: Float = 120f // green-yellow hue
     @Volatile private var running = false
     private var renderThread: Thread? = null
@@ -588,7 +686,6 @@ class MinimapView(context: android.content.Context) :
             return
         }
         // Re-apply the hardware layer before the render loop resumes drawing.
-        applyHardwareLayerFilter()
         paused = false
         if (!running || renderThread == null) {
             // Thread was stopped by parkForYNavi(); restart it.
@@ -652,30 +749,14 @@ class MinimapView(context: android.content.Context) :
         }
     }
 
-    /** Apply (or re-apply) the green-yellow hardware layer ColorMatrix filter. */
-    private fun applyHardwareLayerFilter() {
-        val cm = ColorMatrix(floatArrayOf(
-            0.63f,  1.26f, 0.21f, 0f, -125f,
-            0.90f,  1.80f, 0.30f, 0f, -170f,
-            0.09f,  0.18f, 0.03f, 0f,  -35f,
-            0f,     0f,    0f,   1f,    0f,
-        ))
-        val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
-        setLayerType(LAYER_TYPE_HARDWARE, paint)
-    }
-
     init {
-        // The native layer must be opaque so the FilterWrapper colour shows
-        // through clearly; the transparent Flutter overlay sits on top.
-        isOpaque = true
+        // isOpaque=false: the TextureView does not need to claim it fills all pixels;
+        // the filterWrapper parent's hardware layer handles compositing.
+        isOpaque = false
         surfaceTextureListener = this
-
-        // Apply the HUD-readability green-yellow ColorMatrix filter as a
-        // hardware layer directly on this TextureView.  We own the drawing
-        // (lockCanvas loop), so View invalidation keeps the layer current.
-        // NOTE: parkForYNavi() removes this layer to free the SurfaceTexture
-        // producer slot (api=2) before handing the surface to YNavi's EGL renderer.
-        applyHardwareLayerFilter()
+        // Filter is applied by filterWrapper (FrameLayout parent) via LAYER_TYPE_HARDWARE.
+        // Setting it on the TextureView directly does NOT filter SurfaceTexture content
+        // from YNavi's EGL renderer — the wrapper pattern is mandatory (hud-presentation-host.md §7).
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
@@ -728,6 +809,10 @@ class MinimapView(context: android.content.Context) :
                         Paint().apply { color = Color.BLACK; textSize = h * 0.12f; isAntiAlias = true })
                 } finally {
                     unlockCanvasAndPost(canvas)
+                    // Notify the parent hardware layer that a new placeholder frame is
+                    // ready. TextureView's own invalidation does not propagate through a
+                    // LAYER_TYPE_HARDWARE parent (same staleness reason as onSurfaceTextureUpdated).
+                    filterWrapper?.postInvalidate()
                 }
                 try { Thread.sleep(16) } catch (_: InterruptedException) { break }
             }
@@ -744,5 +829,10 @@ class MinimapView(context: android.content.Context) :
         return true
     }
 
-    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+        // Hardware layer on filterWrapper caches its output; TextureView SurfaceTexture
+        // updates bypass View.invalidate(), so the cached layer goes stale without
+        // this explicit call. Matches phase0 onSurfaceTextureUpdated pattern (§7 doc).
+        filterWrapper?.invalidate()
+    }
 }

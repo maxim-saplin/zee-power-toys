@@ -251,13 +251,27 @@ class YNaviCarAppHost(
             appIntent
         )
 
+        // Force YNavi night/dark mode so the map background is dark.
+        // Bright day-map pushed through any tint filter = yellow wash; dark map +
+        // threshold (150) + huePass = readable bright road features on black background.
+        // Matches phase0 performHandshake nightMode logic (hud-presentation-host.md §10).
+        val nightConfig = Configuration(context.resources.configuration).apply {
+            uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                Configuration.UI_MODE_NIGHT_YES
+        }
+
         if (!callWithTimeout("onAppCreate", APP_CREATE_TIMEOUT_MS) { cb ->
-                target.onAppCreate(carHostStub, appIntent, context.resources.configuration, cb)
+                target.onAppCreate(carHostStub, appIntent, nightConfig, cb)
             }) return
 
         if (!callWithTimeout("onAppStart") { cb -> target.onAppStart(cb) }) return
 
         if (!callWithTimeout("onAppResume") { cb -> target.onAppResume(cb) }) return
+
+        // Re-deliver night config after resume so YNavi applies the dark map theme.
+        callWithTimeout("onConfigurationChanged") { cb ->
+            target.onConfigurationChanged(nightConfig, cb)
+        }
 
         // Fetch both managers and probe templates (phase0 pattern).
         probeManagersAndTemplates(target)
