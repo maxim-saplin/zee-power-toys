@@ -54,6 +54,7 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | [0020](0020-leftovers-scale-install-minimap.md) | **Leftovers** — DHU low-DPI UI scale-up (3.0× at 2560×1600@160dpi) + MinimapConfig→MinimapHost preset wiring + real LFS install coordinates + `nav-hud` doc reconcile | ADR 0001/0004/0007 | **done** |
 | [0021](0021-hud-minimap-readability-phase0-filter.md) | **HUD minimap readability** — phase0 `filterWrapper` pattern + parametric `createHudFilterPaint` + night mode + 2× zoom-out; fixes the yellow-wash from 0019 | ADR 0001/0005 | **done** |
 | [0022](0022-hud-optics-lifecycle-hardening.md) | **HUD optics + lifecycle hardening** — black bg + real-display minimap bounds + battery Safe-Area inset + HUD-engine runtime teardown + native thread/alloc lifecycle (QA1-1/2/4/7, QA4-1–6) | ADR 0001/0003 | **done** |
+| [0023](0023-drivability-dhu-ux-localization.md) | **Drivability fix + DHU UX + localization** — `tapByKey` callback fix + dhu-only inject + HUD-settings split + USB hub tile + minimap presets + `setLanguage` unsupported off-car + EN/RU slot labels (QA3-1/2/3, QA2-1/2/4/5/6/7/8) | ADR 0003/0004 | **done** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.

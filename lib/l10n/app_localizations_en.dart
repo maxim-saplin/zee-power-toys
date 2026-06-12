@@ -302,4 +302,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get usbPlatformSigningRequired =>
       'Requires platform signing — available on the car';
+
+  @override
+  String get hudSlotGuidance => 'GUIDANCE';
+
+  @override
+  String get hudSlotMinimap => 'MINIMAP';
+
+  @override
+  String get minimapPresetDisabledHint => 'Custom dimensions active';
 }

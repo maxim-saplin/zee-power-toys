@@ -23,7 +23,7 @@ cheatsheet; this table is the contract.
 | `ext.zee.setConfig` | both | `hudBoxOn`, `hudEnabled`, `blinkerShape\|Size`, `battery\|temp\|chargingShow`, `locale`, `minimap*`, safe-area keys | `dumpState` snapshot | Write config; params arrive as `Map<String, String>`; DHU→HUD relay fires |
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped:true, key, x, y\|mode}` or `{tapped:false, error}` | Synthetic tap via three-tier fallback (callback walk → pointer events → ancestor walk) |
 | `ext.zee.shot` | both | _(none)_ | `{surface, w, h, png_b64}` | Per-isolate `RenderRepaintBoundary.toImage()` → PNG → base64 |
-| `ext.zee.inject` | both | `kind=speed\|blinker\|charge\|battery\|powerFlow value=…` | CarSignals snapshot | T1 only — VM-service path into `FakeCarSignals`; errors on a real source (use the ADB broadcast on T2/T3) |
+| `ext.zee.inject` | dhu | `kind=speed\|blinker\|charge\|battery\|powerFlow value=…` | CarSignals snapshot | DHU only — HUD CarSignals are relay-driven; injecting on HUD would diverge the surfaces. T2/T3 use ADB broadcast |
 | `ext.zee.bootState` | both | _(none)_ | `{surface, hudEnabled, configReadOk, …native FGS fields}` | DHU/Android adds native foreground-service status; T1/HUD is config-store only |
 | `ext.zee.minimap` | dhu | `on=true\|false`, `x y w h`, `key value` | `{surface, minimap, on}` | Registered only when `MinimapHost` is injected |
 | `ext.zee.install` | dhu | `target=launcher\|ynavi` or `repo branch path` | `{surface, install:{target, started}}` | Registered only when `Installer` is injected; poll `readViewModel.install.phase` for progress |

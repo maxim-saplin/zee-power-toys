@@ -679,6 +679,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Requires platform signing — available on the car'**
   String get usbPlatformSigningRequired;
+
+  /// HUD preview slot stub label: navigation guidance
+  ///
+  /// In en, this message translates to:
+  /// **'GUIDANCE'**
+  String get hudSlotGuidance;
+
+  /// HUD preview slot stub label: YNavi minimap
+  ///
+  /// In en, this message translates to:
+  /// **'MINIMAP'**
+  String get hudSlotMinimap;
+
+  /// Caption shown below the preset row when advanced mode overrides it
+  ///
+  /// In en, this message translates to:
+  /// **'Custom dimensions active'**
+  String get minimapPresetDisabledHint;
 }
 
 class _AppLocalizationsDelegate

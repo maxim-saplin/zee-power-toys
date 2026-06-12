@@ -290,5 +290,14 @@
   "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
 
   "usbPlatformSigningRequired": "Requires platform signing — available on the car",
-  "@usbPlatformSigningRequired": { "description": "Hint shown when USB mode write requires platform signing (T3 only)" }
+  "@usbPlatformSigningRequired": { "description": "Hint shown when USB mode write requires platform signing (T3 only)" },
+
+  "hudSlotGuidance": "GUIDANCE",
+  "@hudSlotGuidance": { "description": "HUD preview slot stub label: navigation guidance" },
+
+  "hudSlotMinimap": "MINIMAP",
+  "@hudSlotMinimap": { "description": "HUD preview slot stub label: YNavi minimap" },
+
+  "minimapPresetDisabledHint": "Custom dimensions active",
+  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" }
 }

@@ -143,7 +143,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get languageTitle => 'Язык';
 
   @override
-  String get languageSystem => 'По умолчанию';
+  String get languageSystem => 'По умолчанию (системное)';
 
   @override
   String get languageEnglish => 'English';
@@ -303,4 +303,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get usbPlatformSigningRequired =>
       'Требуется системная подпись — доступно в автомобиле';
+
+  @override
+  String get hudSlotGuidance => 'НАВИГАЦИЯ';
+
+  @override
+  String get hudSlotMinimap => 'МИНИКАРТА';
+
+  @override
+  String get minimapPresetDisabledHint => 'Активны пользовательские размеры';
 }

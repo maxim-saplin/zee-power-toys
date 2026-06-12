@@ -142,6 +142,15 @@ class SystemConfigController(
 
         Log.i(TAG, "setSystemLanguage: tag=$tag")
 
+        // Guard: CHANGE_CONFIGURATION is a signature-level permission granted only on
+        // Zeekr system builds (T3).  Reject early on the emulator and unprivileged builds
+        // so we never claim success for a non-persistent in-process locale change (QA3-3).
+        if (context.checkSelfPermission("android.permission.CHANGE_CONFIGURATION")
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "setSystemLanguage: no CHANGE_CONFIGURATION permission — unsupported-on-device")
+            return mapOf("ok" to false, "reason" to "unsupported-on-device")
+        }
+
         return runCatching {
             val locale = parseLocaleTag(tag)
             val conf = context.resources.configuration

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
 import 'battery_widget.dart';
@@ -159,7 +160,9 @@ class _HudSlots extends StatelessWidget {
             top: 0,
             width: guidanceW,
             height: upperH * 0.9,
-            child: const _SlotStub(label: 'GUIDANCE'),
+            child: _SlotStub(
+              label: AppLocalizations.of(context).hudSlotGuidance,
+            ),
           ),
 
         // MINIMAP — lower-left, square
@@ -169,7 +172,9 @@ class _HudSlots extends StatelessWidget {
             top: lowerY,
             width: minimapSide,
             height: lowerH,
-            child: const _SlotStub(label: 'MINIMAP'),
+            child: _SlotStub(
+              label: AppLocalizations.of(context).hudSlotMinimap,
+            ),
           ),
       ],
     );

@@ -371,8 +371,12 @@ void registerZeeExtensions({
     });
   }
 
-  // inject — push a fake CarSignalEvent into THIS isolate's FakeCarSignals.
-  developer.registerExtension('ext.zee.inject', (method, params) async {
+  // inject — push a fake CarSignalEvent into the DHU isolate's FakeCarSignals.
+  // Registered on DHU only: HUD CarSignals are driven exclusively via the
+  // DHU→HUD relay, so injecting on HUD would bypass the relay and diverge
+  // the two surfaces. Always target surface=dhu (or ADB broadcast on T2/T3).
+  if (surface == 'dhu') {
+    developer.registerExtension('ext.zee.inject', (method, params) async {
     final fake = carSignals is FakeCarSignals ? carSignals : null;
     if (fake == null) {
       return _extError(
@@ -418,7 +422,8 @@ void registerZeeExtensions({
     return developer.ServiceExtensionResponse.result(
       jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
     );
-  });
+    }); // end ext.zee.inject
+  } // end if (surface == 'dhu')
 
   // tapByKey — synthetic-tap a widget identified by ValueKey<String>.
   // Ported from the flutter-debug skill's nothingness AgentService pattern.
@@ -731,15 +736,21 @@ VoidCallback? _onTapOf(Element el) {
   return null;
 }
 
-/// Invoke the first `onTap` found in [root]'s subtree; returns true if one fired.
-bool _invokeOnTapInSubtree(Element root) => _walkSubtree(root, (el) {
-      final onTap = _onTapOf(el);
-      if (onTap != null) {
-        onTap();
-        return true;
-      }
-      return false;
-    });
+/// Invoke the first `onTap` found in [root] itself or its subtree; returns true if one fired.
+/// includeSelf=true ensures keyed GestureDetectors (the matched element IS the detector)
+/// are invoked directly without needing an inner descendant.
+bool _invokeOnTapInSubtree(Element root) => _walkSubtree(
+  root,
+  (el) {
+    final onTap = _onTapOf(el);
+    if (onTap != null) {
+      onTap();
+      return true;
+    }
+    return false;
+  },
+  includeSelf: true,
+);
 
 /// Invoke the first `onTap` on [element] itself, then its ancestors, then its
 /// subtree; returns true if one fired.

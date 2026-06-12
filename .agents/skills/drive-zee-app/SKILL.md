@@ -109,7 +109,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | `ext.zee.setConfig` | both | `hudBoxOn=true\|false`, `hudEnabled=`, `safeArea=<json>`, `safeLeft/Top/Right/Bottom=<f>`, `blinkerShape=dots\|arrows\|smiley`, `blinkerSize=<f>`, `batteryShow=`, `tempShow=`, `chargingShow=`, `locale=en\|ru\|system`, `minimapEnabled=`, `minimapPreset=compact\|balanced\|large`, `minimapTheme=auto\|dark\|light` | dumpState snapshot | Writes to ConfigStore; DHU→HUD relay fires automatically |
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped, key, mode\|x,y}` | Three-tier fallback: callback→pointer→ancestor |
 | `ext.zee.shot` | both | — | `{surface, w, h, png_b64}` | RepaintBoundary→PNG→base64 |
-| `ext.zee.inject` | dhu | `kind=speed value=<kmh>`, `kind=blinker value=left\|right\|hazard\|off`, `kind=charge charging=true\|false kw=<f> volts=<f> amps=<f>`, `kind=battery levelPct=<i> tempC=<f>`, `kind=powerFlow value=drive\|regen\|standstill\|unknown` | CarSignals snapshot | T1 only (FakeCarSignals); T2/T3 use ADB broadcast |
+| `ext.zee.inject` | dhu | `kind=speed value=<kmh>`, `kind=blinker value=left\|right\|hazard\|off`, `kind=charge charging=true\|false kw=<f> volts=<f> amps=<f>`, `kind=battery levelPct=<i> tempC=<f>`, `kind=powerFlow value=drive\|regen\|standstill\|unknown` | CarSignals snapshot | DHU only (FakeCarSignals); HUD CarSignals are relay-driven — always inject on dhu so both surfaces update. T2/T3 use ADB broadcast |
 | `ext.zee.minimap` | dhu | `on=true\|false`, `x=<f> y=<f> w=<f> h=<f>`, `key=<k> value=<v>` | `{surface, minimap, on}` | Registered only when MinimapHost present (T2 DHU) |
 | `ext.zee.install` | dhu | `target=launcher\|ynavi` OR `repo=<r> branch=<b> path=<p>` | `{surface, install:{target, started}}` | Triggers install; poll `read-view-model` for live progress |
 | `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, surface, scope, value, systemLocale?}` | `scope=system\|cluster` is T3-only; T1/T2 returns `{ok:false, reason:"unsupported-on-device"}` |
@@ -186,7 +186,7 @@ uv run dev/feedback_loop.py tap --surface dhu --key minimap-enable-toggle
 
 Note: `tapByKey` only succeeds when the keyed widget is in the LIVE widget tree (i.e., its screen is mounted).  Navigate to the relevant screen first.
 
-Available keys on the settings home screen: `nav-hud`, `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`.  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `dhu-toggle`, `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`.
+Available keys on the settings home screen: `nav-hud`, `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`, `nav-usb`.  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `dhu-toggle`, `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`, `blinker-shape-smiley`.  USB/ADB screen (nav-usb): `usb-mode-selector`, `usb-peripheral`, `usb-host`, `usb-auto`.
 
 ### Inject blinker then screenshot the HUD
 

@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/l10n/app_localizations.dart';
 import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/providers/usb_mode.dart';
-import 'package:zee_power_toys/screens/diagnostics_screen.dart';
+import 'package:zee_power_toys/screens/usb_adb_screen.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
 import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
@@ -18,12 +18,13 @@ import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 import 'package:zee_power_toys/services/usb_mode.dart';
 
 // ---------------------------------------------------------------------------
-// Block 0016 tests
+// Block 0016 / 0023 tests
 //
 // Three groups:
 //   1. UsbMode mapping: peripheral↔"0" / host↔"1" via FakeUsbMode.
-//   2. DiagnosticsScreen shows USB/ADB section; SegmentedButton works on T1.
-//   3. DiagnosticsScreen shows disabled hint when FakeUsbMode.unsupported=true.
+//   2. UsbAdbScreen shows USB/ADB section; SegmentedButton works on T1.
+//      (QA2-2: screen moved from DiagnosticsScreen to dedicated hub tile.)
+//   3. UsbAdbScreen shows disabled hint when FakeUsbMode.unsupported=true.
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -129,22 +130,18 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // 2. DiagnosticsScreen shows USB/ADB section; SegmentedButton works on T1
+  // 2. UsbAdbScreen shows USB/ADB section; SegmentedButton works on T1
   // -------------------------------------------------------------------------
 
-  group('DiagnosticsScreen USB/ADB section — writable T1', () {
+  group('UsbAdbScreen USB/ADB section — writable T1', () {
     testWidgets('USB/ADB section heading is visible', (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode();
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
-      // Scroll until Peripheral (inside the USB/ADB card) is visible, then
-      // verify the section heading.  Scrolling by card content is more reliable
-      // than scrolling by section title (which may not exist before the scroll).
-      await tester.scrollUntilVisible(find.text('Peripheral'), 200);
-      await tester.pumpAndSettle();
-
+      // Peripheral button should be immediately visible (no scroll needed on this
+      // dedicated screen). Verify USB / ADB heading and the segment labels.
       expect(find.text('USB / ADB'), findsWidgets);
     });
 
@@ -152,10 +149,7 @@ void main() {
         (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode();
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.text('Peripheral'), 200);
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       expect(find.text('Peripheral'), findsOneWidget);
@@ -167,10 +161,7 @@ void main() {
         (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(initialMode: UsbMode.peripheral);
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.text('Host'), 200);
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Host'));
@@ -183,10 +174,7 @@ void main() {
         (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode();
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.text('Auto'), 200);
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Auto'));
@@ -198,10 +186,7 @@ void main() {
     testWidgets('current mode "Current: Peripheral" is shown', (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(initialMode: UsbMode.peripheral);
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(find.textContaining('Current:'), 200);
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Current:'), findsWidgets);
@@ -212,18 +197,12 @@ void main() {
   // 3. Disabled hint when unsupported
   // -------------------------------------------------------------------------
 
-  group('DiagnosticsScreen USB/ADB — disabled when unsupported', () {
+  group('UsbAdbScreen USB/ADB — disabled when unsupported', () {
     testWidgets('shows platform-signing-required hint when unsupported',
         (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(unsupported: true);
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(
-        find.text('Requires platform signing — available on the car'),
-        200,
-      );
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       expect(
@@ -236,11 +215,7 @@ void main() {
         (tester) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(unsupported: true);
-      await tester.pumpWidget(_wrap(const DiagnosticsScreen(), store, usbMode));
-      await tester.pumpAndSettle();
-
-      // Scroll to find Host segment (might be offscreen on small test viewport).
-      await tester.scrollUntilVisible(find.text('Host'), 200);
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Host'));

@@ -133,7 +133,7 @@
   "languageTitle": "Язык",
   "@languageTitle": { "description": "Language picker screen title" },
 
-  "languageSystem": "По умолчанию",
+  "languageSystem": "По умолчанию (системное)",
   "@languageSystem": { "description": "Option: follow the system locale" },
 
   "languageEnglish": "English",
@@ -290,5 +290,14 @@
   "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
 
   "usbPlatformSigningRequired": "Требуется системная подпись — доступно в автомобиле",
-  "@usbPlatformSigningRequired": { "description": "Hint when USB mode write requires platform signing" }
+  "@usbPlatformSigningRequired": { "description": "Hint when USB mode write requires platform signing" },
+
+  "hudSlotGuidance": "НАВИГАЦИЯ",
+  "@hudSlotGuidance": { "description": "HUD preview slot stub label: navigation guidance" },
+
+  "hudSlotMinimap": "МИНИКАРТА",
+  "@hudSlotMinimap": { "description": "HUD preview slot stub label: YNavi minimap" },
+
+  "minimapPresetDisabledHint": "Активны пользовательские размеры",
+  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" }
 }

@@ -2,21 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/config.dart';
+import '../providers/services.dart';
 import '../theme/app_theme.dart';
 import 'diagnostics_screen.dart';
 import 'hud_settings_screen.dart';
 import 'install_screen.dart';
 import 'language_settings_screen.dart';
 import 'minimap_settings_screen.dart';
+import 'usb_adb_screen.dart';
 
 /// DHU Settings hub — the root screen of the DHU navigation shell.
 ///
-/// Shows five sections (HUD, Minimap, Diagnostics, Language, Install) as a
-/// single grouped card — a clean, scannable modern hub rather than a stack of
-/// loose list rows.  Language navigates to [LanguageSettingsScreen] which hosts
-/// three clearly-separated sub-sections: App / System / Cluster (Block 0015).
-/// Each section push-navigates with a plain Navigator/MaterialPageRoute —
-/// no go_router needed for this shallow, non-deep-linked navigation tree.
+/// Shows six sections as a grouped card: HUD, Minimap, Diagnostics, Language,
+/// Install, and USB/ADB.  Language navigates to [LanguageSettingsScreen] which
+/// hosts three clearly-separated sub-sections: App / System / Cluster
+/// (Block 0015).  USB/ADB was moved here from Diagnostics (Block 0023 QA2-2)
+/// to keep Diagnostics read-only.
 class SettingsHomeScreen extends ConsumerWidget {
   const SettingsHomeScreen({super.key});
 
@@ -96,9 +98,26 @@ class SettingsHomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const _TileDivider(),
+                _SectionTile(
+                  key: const ValueKey('nav-usb'),
+                  icon: Icons.usb_outlined,
+                  title: l10n.sectionUsbAdb,
+                  subtitle: l10n.sectionUsbAdbSubtitle,
+                  onTap: () => Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const UsbAdbScreen(),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+          const SizedBox(height: Insets.xl),
+          // Contextual status footer — fills the lower half of the hub and
+          // surfaces the two most relevant live states at a glance (QA2-5).
+          _StatusFooter(l10n: l10n),
         ],
       ),
     );
@@ -152,4 +171,70 @@ class _TileDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Divider(height: 1, indent: Insets.lg + Sizes.iconMd + Insets.lg);
+}
+
+// ---------------------------------------------------------------------------
+// Status footer — small contextual bar below the hub card (QA2-5).
+//
+// Shows live HUD on/off and minimap on/off so the lower half of the premium
+// DHU screen is never blank.  No new routes needed — it is purely read-only.
+// ---------------------------------------------------------------------------
+
+class _StatusFooter extends ConsumerWidget {
+  const _StatusFooter({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncCfg = ref.watch(appConfigProvider);
+    final store = ref.watch(configStoreProvider);
+    final cfg = asyncCfg.when(
+      data: (c) => c,
+      loading: () => store.value,
+      error: (e, st) => store.value,
+    );
+    final theme = Theme.of(context);
+    final active = theme.colorScheme.primary;
+    final inactive = theme.colorScheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.md,
+        vertical: Insets.sm,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            cfg.hudEnabled
+                ? Icons.remove_red_eye
+                : Icons.remove_red_eye_outlined,
+            size: 14,
+            color: cfg.hudEnabled ? active : inactive,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${l10n.sectionHud} ${cfg.hudEnabled ? "on" : "off"}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cfg.hudEnabled ? active : inactive,
+            ),
+          ),
+          const SizedBox(width: Insets.xl),
+          Icon(
+            Icons.map_outlined,
+            size: 14,
+            color: cfg.minimap.enabled ? active : inactive,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${l10n.sectionMinimap} ${cfg.minimap.enabled ? "on" : "off"}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cfg.minimap.enabled ? active : inactive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -99,7 +99,11 @@ Future<void> dhuMain(List<String> args) async {
     await native.loadSystemLocale();
     systemConfigRaw = native;
   } else {
-    systemConfigRaw = FakeSystemConfig();
+    // T1 desktop: system/cluster language writes are not supported off-car.
+    // unsupported:true → FakeSystemConfig returns {ok:false, reason:"unsupported-on-device"}
+    // for system/cluster writes, and clusterSupported() returns false, so the
+    // Language settings screen disables the System and Cluster pickers (QA3-3).
+    systemConfigRaw = FakeSystemConfig(unsupported: true);
   }
 
   // On Android, NativeUsbMode talks to UsbModeController via zee/usb_mode.

@@ -88,76 +88,97 @@ class MinimapSettingsScreen extends ConsumerWidget {
         const SizedBox(height: Insets.xl),
 
         // ----------------------------------------------------------------
-        // Preset selector (basic mode)
+        // Preset selector — always shown; dimmed/disabled in advanced mode.
+        // When advanced=true a caption explains that custom dimensions take
+        // precedence, but the row stays visible so users can navigate back.
         // ----------------------------------------------------------------
         SettingsSection(
           title: l10n.minimapSection,
           children: <Widget>[
-            if (!cfg.advanced) ...<Widget>[
-              Text(l10n.minimapPreset, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: Insets.sm),
-              SegmentedButton<String>(
-                segments: <ButtonSegment<String>>[
-                  ButtonSegment(
-                    value: 'compact',
-                    label: Text(l10n.minimapPresetCompact),
-                  ),
-                  ButtonSegment(
-                    value: 'balanced',
-                    label: Text(l10n.minimapPresetBalanced),
-                  ),
-                  ButtonSegment(
-                    value: 'large',
-                    label: Text(l10n.minimapPresetLarge),
-                  ),
-                ],
-                selected: <String>{cfg.preset},
-                onSelectionChanged: (Set<String> sel) {
-                  if (sel.isEmpty) return;
-                  store.setConfig(
-                    store.value.copyWith(
-                      minimap: cfg.copyWith(preset: sel.first),
-                    ),
-                  );
-                },
-              ),
-              // Invisible GestureDetector hooks so agent tapByKey works on T1.
-              Opacity(
-                opacity: 0,
-                child: Row(
+            Opacity(
+              opacity: cfg.advanced ? 0.45 : 1.0,
+              child: IgnorePointer(
+                ignoring: cfg.advanced,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    GestureDetector(
-                      key: const ValueKey('minimap-preset-compact'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          minimap: cfg.copyWith(preset: 'compact'),
+                    Text(l10n.minimapPreset, style: theme.textTheme.bodyMedium),
+                    const SizedBox(height: Insets.sm),
+                    SegmentedButton<String>(
+                      segments: <ButtonSegment<String>>[
+                        ButtonSegment(
+                          value: 'compact',
+                          label: Text(l10n.minimapPresetCompact),
                         ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
+                        ButtonSegment(
+                          value: 'balanced',
+                          label: Text(l10n.minimapPresetBalanced),
+                        ),
+                        ButtonSegment(
+                          value: 'large',
+                          label: Text(l10n.minimapPresetLarge),
+                        ),
+                      ],
+                      selected: <String>{cfg.preset},
+                      onSelectionChanged: (Set<String> sel) {
+                        if (sel.isEmpty) return;
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(preset: sel.first),
+                          ),
+                        );
+                      },
                     ),
-                    GestureDetector(
-                      key: const ValueKey('minimap-preset-balanced'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          minimap: cfg.copyWith(preset: 'balanced'),
-                        ),
+                    // Invisible GestureDetector hooks so agent tapByKey works on T1.
+                    Opacity(
+                      opacity: 0,
+                      child: Row(
+                        children: <Widget>[
+                          GestureDetector(
+                            key: const ValueKey('minimap-preset-compact'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                minimap: cfg.copyWith(preset: 'compact'),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('minimap-preset-balanced'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                minimap: cfg.copyWith(preset: 'balanced'),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('minimap-preset-large'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                minimap: cfg.copyWith(preset: 'large'),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                        ],
                       ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('minimap-preset-large'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          minimap: cfg.copyWith(preset: 'large'),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: Insets.xs),
-            ],
+            ),
+            if (cfg.advanced)
+              Padding(
+                padding: const EdgeInsets.only(top: Insets.xs),
+                child: Text(
+                  l10n.minimapPresetDisabledHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+              ),
+            const SizedBox(height: Insets.xs),
 
             // --------------------------------------------------------------
             // Advanced mode: manual dimension sliders (opt-in ExpansionTile)

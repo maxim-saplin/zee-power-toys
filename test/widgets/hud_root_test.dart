@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:zee_power_toys/hud/battery_widget.dart';
 import 'package:zee_power_toys/hud/blinker_widget.dart';
 import 'package:zee_power_toys/hud/hud_root.dart';
+import 'package:zee_power_toys/l10n/app_localizations.dart';
 import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/services/car_signals.dart';
 import 'package:zee_power_toys/services/config_store.dart';
@@ -42,7 +43,11 @@ void main() {
         installerProvider.overrideWithValue(FakeInstaller()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+      ),
     );
   }
 

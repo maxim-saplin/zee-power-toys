@@ -36,58 +36,67 @@ class HudSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.hudSettingsTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(Insets.lg),
+      body: Column(
         children: <Widget>[
-          // ----------------------------------------------------------------
-          // Layout section: live preview + Safe Area inset + debug toggle
-          // ----------------------------------------------------------------
-          SettingsSection(
-            title: l10n.sectionHud,
-            children: <Widget>[
-              // Live HUD preview — the SAME HudRoot, scaled to fit.  Rounded so
-              // it reads as an inset device screen, not a raw rectangle.
-              ClipRRect(
-                borderRadius: BorderRadius.circular(Radii.button),
-                child: const HudPreview(),
-              ),
-              const SizedBox(height: Insets.lg),
-              SettingsSlider(
-                label: l10n.safeAreaInset,
-                valueLabel: '${(currentInset * 100).toStringAsFixed(1)}%',
-                minLabel: '0%',
-                maxLabel: '25%',
-                sliderKey: const ValueKey('safe-area-inset-slider'),
-                min: 0.0,
-                max: 0.25,
-                divisions: 50,
-                value: currentInset.clamp(0.0, 0.25),
-                onChanged: (v) {
-                  // Symmetric inset: all four edges pull in by v.
-                  // right/bottom shrink from the opposite edge: 1 - v.
-                  final next = safeArea.copyWith(
-                    left: v,
-                    top: v,
-                    right: 1.0 - v,
-                    bottom: 1.0 - v,
-                  );
-                  store.setConfig(store.value.copyWith(safeArea: next));
-                },
-              ),
-              const SizedBox(height: Insets.xs),
-              // Debug: hudBox toggle (retained from Block 0001 skeleton).
-              SettingsToggleRow(
-                label: l10n.debugHudBox,
-                control: Switch(
-                  key: const ValueKey('dhu-toggle'),
-                  value: hudBoxOn,
-                  onChanged: (_) => store.setConfig(
-                    store.value.copyWith(hudBoxOn: !hudBoxOn),
-                  ),
-                ),
-              ),
-            ],
+          // ─── Sticky preview ──────────────────────────────────────────────
+          // Capped at 200 logical dp so the blinker / battery / Safe-Area
+          // controls below are always reachable without scrolling the preview
+          // out of sight.  The preview stays live while any control is edited.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(Radii.button),
+              child: const HudPreview(),
+            ),
           ),
+
+          // ─── Scrollable controls ─────────────────────────────────────────
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(Insets.lg),
+              children: <Widget>[
+                // ----------------------------------------------------------------
+                // Layout section: Safe Area inset + debug toggle
+                // ----------------------------------------------------------------
+                SettingsSection(
+                  title: l10n.sectionHud,
+                  children: <Widget>[
+                    SettingsSlider(
+                      label: l10n.safeAreaInset,
+                      valueLabel: '${(currentInset * 100).toStringAsFixed(1)}%',
+                      minLabel: '0%',
+                      maxLabel: '25%',
+                      sliderKey: const ValueKey('safe-area-inset-slider'),
+                      min: 0.0,
+                      max: 0.25,
+                      divisions: 50,
+                      value: currentInset.clamp(0.0, 0.25),
+                      onChanged: (v) {
+                        // Symmetric inset: all four edges pull in by v.
+                        // right/bottom shrink from the opposite edge: 1 - v.
+                        final next = safeArea.copyWith(
+                          left: v,
+                          top: v,
+                          right: 1.0 - v,
+                          bottom: 1.0 - v,
+                        );
+                        store.setConfig(store.value.copyWith(safeArea: next));
+                      },
+                    ),
+                    const SizedBox(height: Insets.xs),
+                    // Debug: hudBox toggle (retained from Block 0001 skeleton).
+                    SettingsToggleRow(
+                      label: l10n.debugHudBox,
+                      control: Switch(
+                        key: const ValueKey('dhu-toggle'),
+                        value: hudBoxOn,
+                        onChanged: (_) => store.setConfig(
+                          store.value.copyWith(hudBoxOn: !hudBoxOn),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
           const SizedBox(height: Insets.xl),
 
@@ -311,7 +320,10 @@ class HudSettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ), // end Expanded
+    ], // end Column children
+  ), // end Column
+);
   }
 }
 
