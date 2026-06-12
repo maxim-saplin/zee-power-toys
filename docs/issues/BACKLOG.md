@@ -80,6 +80,7 @@ See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-tes
 
 ### Deferred hardening (tracked, low-priority — surfaced by the QA sweep)
 Non-blocking polish noted so it is never invisible. None gate on-car (T3) testing.
+- **Minimap surface confinement** (final-QA T2) — the readable YNavi cluster map renders **full-display** rather than clipped to the computed minimap sub-rectangle (`setMinimapBounds(136,225,512,232)` logs as applied and is inside the Safe Area, but the native `MinimapView`/`TextureView` does not visually confine the surface after the bind/re-add cycle; the battery widget overlaps the map). Readability + black background + Safe-Area-correct bounds are confirmed; this is a layout-confinement follow-up (the projector's Safe Area crops it on-device). Proof: `shots/redo/t2-hud-final-readable.png`.
 - **Installer dedup automated test** (QA5-9 / 0017 §3) — Robolectric double-trigger guard for the native installer; logic is in place, the regression test is not.
 - **Per-tier VM-URI files** (QA3-5) — `dev/zee_run.py` writes a single `/tmp/zee_vm_uri.txt`, so a T2 launch shadows a live T1 session; split into `/tmp/zee_vm_uri_{t1,t2}.txt` for parallel sessions (today: run one tier at a time, or set `ZEE_VM_URI` explicitly).
 - **FGS auto-start in dev** (QA4-7) — the foreground service starts only via `BootReceiver`, so `bootState.fgsRunning` is always `false` under `flutter run`; a `TEST_BOOT` hook in `zee_run.py up` would exercise it.
