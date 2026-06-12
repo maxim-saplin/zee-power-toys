@@ -29,6 +29,7 @@ import 'services/config_store.dart';
 import 'services/hud_host.dart';
 import 'services/installer.dart';
 import 'services/minimap_host.dart';
+import 'services/minimap_viewport.dart';
 import 'services/shared_prefs_config_store.dart';
 import 'services/system_config.dart';
 import 'services/usb_mode.dart';
@@ -145,13 +146,34 @@ Future<void> dhuMain(List<String> args) async {
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
-  // display dimensions (e.g. 1280×720 on the emulator).  Update _hudW/_hudH
-  // and re-apply minimap config so bounds use the real display (QA1-2, QA1-4).
+  // display dimensions + dpi (e.g. 1280×720 @ 213 dpi on the emulator).
+  // Update _hudW/_hudH/_hudDpi and recompute the HudSafeArea fractions from
+  // phase0 dp constants × real density so the Flutter overlay (battery/blinker)
+  // uses the correct Safe Area for this display (not the baked-in T3 defaults).
+  // Then re-apply minimap config with the real display metrics (QA1-2, QA1-4).
   if (minimapHostRaw is NativeMinimapHost) {
-    minimapHostRaw.onHudReady.listen((size) {
-      _hudW = size.$1;
-      _hudH = size.$2;
-      _applyMinimapConfig(minimapHostRaw, store.value);
+    minimapHostRaw.onHudReady.listen((dims) {
+      _hudW   = dims.$1;
+      _hudH   = dims.$2;
+      _hudDpi = dims.$3.toInt();
+      // Recompute HudSafeArea fractions from phase0 dp constants × actual density
+      // and relay to the HUD Flutter overlay via the config store + relay.
+      final fracs = computeHudSafeAreaFracs(
+        displayW: _hudW,
+        displayH: _hudH,
+        dpi: _hudDpi.toDouble(),
+      );
+      store.setConfig(store.value.copyWith(
+        safeArea: store.value.safeArea.copyWith(
+          left:   fracs.left,
+          top:    fracs.top,
+          right:  fracs.right,
+          bottom: fracs.bottom,
+        ),
+      ));
+      // setConfig fires store.changes → pushConfigToHud relay → HUD overlay updated.
+      // _applyMinimapConfig will also be called via the store.changes listener above,
+      // with updated _hudW/_hudH/_hudDpi already in place.
     });
   }
 
@@ -281,40 +303,44 @@ bool get _isDesktop =>
     (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
 
 // ---------------------------------------------------------------------------
-// MinimapHost config wiring — preset→geometry applied on config changes.
+// MinimapHost config wiring — phase0 square viewport geometry (Block 0025).
 //
-// Default HUD backing-display dimensions (Zeekr S2 nominal 1024×576 @ 213 dpi).
+// HUD display metrics — defaults for Zeekr S2 (1024×576 @ 213 dpi).
 // Overwritten at runtime when native reports the actual display via hudReady
 // (see NativeMinimapHost.onHudReady in dhuMain — QA1-2).  On T1 desktop the
-// FakeMinimapHost ignores physical pixel bounds, so the default values are fine.
+// FakeMinimapHost ignores physical pixel bounds, so the defaults are fine.
 // ---------------------------------------------------------------------------
 // ignore: prefer_final_fields — intentionally mutable; updated by onHudReady.
 double _hudW = 1024.0;
 // ignore: prefer_final_fields
 double _hudH = 576.0;
+// ignore: prefer_final_fields
+int _hudDpi = 213; // Zeekr S2 / T2 emulator density; updated from onHudReady.
 
-/// Apply [cfg.minimap] to [host]: enable/disable the MinimapView and update
-/// its Safe-Area-relative bounds from the active preset (or manual fractions
-/// in advanced mode).
+/// Apply [cfg.minimap] to [host] using phase0's square viewport geometry.
 ///
-/// Called once on startup (persisted config) and on every config change.
-/// Both enable() and setBounds() are idempotent on the native side.
-/// Errors are swallowed: MinimapHost may not be ready on startup (T1 fake is
-/// always ready; T2 native is ready after setupHud completes).
+/// Bounds are computed from the empirical phase0 Safe Area dp constants ×
+/// real HUD display density — not from fraction-based config values.
+/// The SQUARE_LEFT placement (preset-sized square on the left of the Safe Area)
+/// ensures no collision with the battery widget on the right.
+///
+/// Phase0 pattern: setBounds BEFORE enable so the filterWrapper is sized to
+/// the viewport rect before parkForYNavi triggers the YNavi surface start.
+///
+/// Called once on startup and on every config change (both paths are idempotent).
 void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   final mm = cfg.minimap;
+  if (mm.enabled) {
+    // Compute the phase0 square viewport from dp constants × real density.
+    final bounds = computeMinimapViewport(
+      displayW: _hudW,
+      displayH: _hudH,
+      dpi: _hudDpi.toDouble(),
+      preset: mm.preset,
+    );
+    host.setBounds(bounds).catchError((_) {});
+  }
   host.enable(mm.enabled).catchError((_) {});
-  if (!mm.enabled) return;
-
-  final sa = cfg.safeArea;
-  final saLeft = sa.left * _hudW;
-  final saTop = sa.top * _hudH;
-  final saW = (sa.right - sa.left) * _hudW;
-  final saH = (sa.bottom - sa.top) * _hudH;
-
-  final fracs = mm.resolvedFracs;
-  final bounds = Rect.fromLTWH(saLeft, saTop, saW * fracs.$1, saH * fracs.$2);
-  host.setBounds(bounds).catchError((_) {});
 }
 
 // ---------------------------------------------------------------------------

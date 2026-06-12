@@ -18,6 +18,7 @@ import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
+import android.view.Gravity
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
@@ -538,11 +539,27 @@ class MainActivity : FlutterActivity() {
                     val y = call.argument<Int>("y") ?: 0
                     val w = call.argument<Int>("w") ?: FrameLayout.LayoutParams.MATCH_PARENT
                     val h = call.argument<Int>("h") ?: FrameLayout.LayoutParams.MATCH_PARENT
-                    v.layoutParams = FrameLayout.LayoutParams(w, h).apply {
-                        leftMargin = x; topMargin = y
+                    // Phase0 model (hud-presentation-host.md §5): size the filterWrapper
+                    // to the viewport rect, NOT the MinimapView.  The filterWrapper carries
+                    // the LAYER_TYPE_HARDWARE ColorMatrix filter; sizing it to the square
+                    // confines both the YNavi map surface and the colour filter to the
+                    // viewport.  The MinimapView remains MATCH_PARENT inside filterWrapper.
+                    val fw = v.filterWrapper
+                    if (fw != null) {
+                        fw.layoutParams = FrameLayout.LayoutParams(w, h).apply {
+                            leftMargin = x
+                            topMargin  = y
+                            gravity    = Gravity.TOP or Gravity.START
+                        }
+                        fw.requestLayout()
+                        Log.i(TAG, "setMinimapBounds($x,$y,$w,$h): filterWrapper SIZED")
+                    } else {
+                        Log.w(TAG, "setMinimapBounds($x,$y,$w,$h): filterWrapper null — fallback on MinimapView")
+                        v.layoutParams = FrameLayout.LayoutParams(w, h).apply {
+                            leftMargin = x; topMargin = y
+                        }
+                        v.requestLayout()
                     }
-                    v.requestLayout()
-                    Log.i(TAG, "setMinimapBounds($x,$y,$w,$h): APPLIED")
                     result.success("bounds:$x,$y,$w,$h")
                 }
                 "setMinimapParam" -> {

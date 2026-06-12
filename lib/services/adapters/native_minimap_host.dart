@@ -32,11 +32,12 @@ class NativeMinimapHost implements MinimapHost {
 
   // Non-broadcast: buffers events so hudReady is not lost if Dart startup is
   // slower than the native 1500ms HUD_SPAWN_DELAY (QA1-2).
-  final _hudReadyController = StreamController<(double, double)>();
+  final _hudReadyController = StreamController<(double, double, double)>();
 
-  /// Fires once (or again on re-enable) with the actual HUD display (width, height)
-  /// in physical pixels, reported by native after [setupHud()] completes.
-  Stream<(double, double)> get onHudReady => _hudReadyController.stream;
+  /// Fires once (or again on re-enable) with the actual HUD display
+  /// (width, height, dpi) in physical pixels / dpi, reported by native after
+  /// [setupHud()] completes.  The dpi is used for phase0 Safe-Area computation.
+  Stream<(double, double, double)> get onHudReady => _hudReadyController.stream;
 
   NativeMinimapHost() {
     _guidanceStream = _guidanceCh
@@ -59,9 +60,10 @@ class NativeMinimapHost implements MinimapHost {
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     if (call.method == 'hudReady') {
       final args = call.arguments as Map?;
-      final w = (args?['w'] as num?)?.toDouble() ?? 1024.0;
-      final h = (args?['h'] as num?)?.toDouble() ?? 576.0;
-      _hudReadyController.add((w, h));
+      final w   = (args?['w']   as num?)?.toDouble() ?? 1024.0;
+      final h   = (args?['h']   as num?)?.toDouble() ??  576.0;
+      final dpi = (args?['dpi'] as num?)?.toDouble() ??  213.0;
+      _hudReadyController.add((w, h, dpi));
     }
   }
 

@@ -284,13 +284,18 @@ class BlinkerConfig {
 /// through the projector optics.  All four values are logical fractions 0..1
 /// relative to the backing display's width (left/right) or height (top/bottom).
 ///
-/// Phase-0 defaults are derived from the hand-calibrated Zeekr S2 values in
-/// hud-presentation-host.md: display 1024×576 @ 213 dpi, density=1.33125.
-///   safeW≈820 px, safeH≈233 px, safeCenterX≈519 px, safeCenterY≈296 px
+/// The fraction defaults below are derived from phase-0 dp constants
+/// (616×175 dp @ +5/+6 offset — see `lib/services/minimap_viewport.dart`)
+/// converted for the Zeekr S2 nominal display (1024×576 @ 213 dpi):
+///   density=1.33125; safeW≈820 px, safeH≈233 px
 ///   → left=109/1024≈0.1064, top=180/576≈0.3125,
 ///     right=929/1024≈0.9072, bottom=413/576≈0.7170
-/// These are T3-calibrated values; T3 validation should re-confirm on the
-/// physical car if optics shift between units.
+///
+/// At runtime, when the actual HUD display metrics are known (after `onHudReady`),
+/// `dhuMain` recomputes and updates these fractions from the same dp constants ×
+/// real density so the Flutter HUD overlay (battery, blinker) is positioned
+/// correctly on any display size.  The fallback defaults keep T1 desktop
+/// preview reasonable before the real metrics arrive.
 class HudSafeArea {
   const HudSafeArea({
     this.left = _defaultLeft,
@@ -299,7 +304,8 @@ class HudSafeArea {
     this.bottom = _defaultBottom,
   });
 
-  /// Phase-0 hand-calibrated defaults (Zeekr S2, 1024×576 display).
+  /// Phase-0 dp-constant defaults computed for 1024×576 @ 213 dpi (Zeekr S2 nominal).
+  /// On T2 (1280×720) and T3 (real car) these are overwritten at runtime by dhuMain.
   static const double _defaultLeft = 0.1064;
   static const double _defaultTop = 0.3125;
   static const double _defaultRight = 0.9072;

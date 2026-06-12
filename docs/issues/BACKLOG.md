@@ -56,6 +56,7 @@ Builds the spine the whole app hangs off. Confirmed on T1 first, then re-confirm
 | [0022](0022-hud-optics-lifecycle-hardening.md) | **HUD optics + lifecycle hardening** — black bg + real-display minimap bounds + battery Safe-Area inset + HUD-engine runtime teardown + native thread/alloc lifecycle (QA1-1/2/4/7, QA4-1–6) | ADR 0001/0003 | **done** |
 | [0023](0023-drivability-dhu-ux-localization.md) | **Drivability fix + DHU UX + localization** — `tapByKey` callback fix + dhu-only inject + HUD-settings split + USB hub tile + minimap presets + `setLanguage` unsupported off-car + EN/RU slot labels (QA3-1/2/3, QA2-1/2/4/5/6/7/8) | ADR 0003/0004 | **done** |
 | [0024](0024-repo-hygiene-docs-scale-test.md) | **Repo hygiene + docs + scale test** — untrack dead-weight binaries + gitignore, `dhuSmartScale` test (+10 → 209), `debugPrint`, README/CONTEXT/contract/SKILL reconcile, tracked-deferral list (QA5-1/2/3/9/14, QA3-4/6/7) | ADR 0007 | **done** |
+| [0025](0025-minimap-safe-area-confinement.md) | **Minimap Safe-Area confinement** — phase0 square viewport geometry + empirical Safe Area (T2); `filterWrapper` sized (not MinimapView); `setBounds`-before-`enable` ordering; dp-constant model + 19 geometry tests | ADR 0001/0005 | **done** |
 
 ### Wave 1+ — Feature areas  (satisfies → [REQUIREMENTS.md](../../REQUIREMENTS.md))
 One stub per capability; each fans into its own Blocks when its turn comes.
@@ -80,7 +81,7 @@ See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-tes
 
 ### Deferred hardening (tracked, low-priority — surfaced by the QA sweep)
 Non-blocking polish noted so it is never invisible. None gate on-car (T3) testing.
-- **Minimap surface confinement** (final-QA T2) — the readable YNavi cluster map renders **full-display** rather than clipped to the computed minimap sub-rectangle (`setMinimapBounds(136,225,512,232)` logs as applied and is inside the Safe Area, but the native `MinimapView`/`TextureView` does not visually confine the surface after the bind/re-add cycle; the battery widget overlaps the map). Readability + black background + Safe-Area-correct bounds are confirmed; this is a layout-confinement follow-up (the projector's Safe Area crops it on-device). Proof: `shots/redo/t2-hud-final-readable.png`.
+- ~~**Minimap surface confinement**~~ → **resolved as [Block 0025](0025-minimap-safe-area-confinement.md)** — `filterWrapper` sized to viewport rect; phase0 dp-constant geometry; `setBounds`-before-`enable` ordering. Proof: `shots/redo/t2-hud-minimap-confined.png`.
 - **Installer dedup automated test** (QA5-9 / 0017 §3) — Robolectric double-trigger guard for the native installer; logic is in place, the regression test is not.
 - **Per-tier VM-URI files** (QA3-5) — `dev/zee_run.py` writes a single `/tmp/zee_vm_uri.txt`, so a T2 launch shadows a live T1 session; split into `/tmp/zee_vm_uri_{t1,t2}.txt` for parallel sessions (today: run one tier at a time, or set `ZEE_VM_URI` explicitly).
 - **FGS auto-start in dev** (QA4-7) — the foreground service starts only via `BootReceiver`, so `bootState.fgsRunning` is always `false` under `flutter run`; a `TEST_BOOT` hook in `zee_run.py up` would exercise it.

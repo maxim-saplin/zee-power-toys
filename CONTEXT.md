@@ -11,7 +11,7 @@ The head-up display projected onto the windshield. An emissive projector: black 
 _Avoid_: heads-up display, windscreen display
 
 **Safe Area**:
-The portion of the HUD's backing display actually visible through the projector optics. A fixed, hand-calibrated rectangle; content outside it is clipped or invisible.
+The portion of the HUD's backing display actually visible through the projector optics. A fixed rectangle derived from phase0 dp-constants (`hudSafeAreaWidthDp=616, hudSafeAreaHeightDp=175, hudSafeAreaOffsetXDp=+5, hudSafeAreaOffsetYDp=+6`) applied to the real display density at `onHudReady` time. Content outside it is clipped or invisible.
 _Avoid_: visible bounds, HUD bounds, viewport
 
 **Cluster**:
@@ -25,7 +25,7 @@ _Avoid_: head unit, infotainment, IVI
 ### HUD content
 
 **Minimap**:
-The navigation map shown on the HUD. Drawn by YNavi into a surface we host — it is foreign content, not something we render.
+The navigation map shown on the HUD. Drawn by YNavi into a surface we host — it is foreign content, not something we render. The viewport is a square confined to the Safe Area using phase0's geometry model (`squareSizeFraction=0.9`, `squarePaddingDp=31`, placement mode `SQUARE_LEFT`). On T2 (1280×720 @ 213dpi) this yields a 210×210px square at Rect(278, 263, 488, 473).
 _Avoid_: map view, nav map
 
 **Blinker**:
