@@ -1,7 +1,8 @@
 ---
-status: in-progress
+status: done
 labels: [feature, navigation]
 created: 2026-06-12
+closed: 2026-06-12
 satisfies: HUD · Minimap — real YNavi cluster map on the HUD surface
 blocked-by: []
 modules: [HudHost, MinimapHost]
@@ -46,14 +47,35 @@ The handshake code is identical; these behavioral gaps are the suspected render 
 
 ## Definition of Done
 Inherits [PRINCIPLES.md](../PRINCIPLES.md).
-- [ ] Real YNavi cluster map rendered on the HUD surface, runtime-confirmed on **T2** —
+- [x] Real YNavi cluster map rendered on the HUD surface, runtime-confirmed on **T2** —
       artifact: `shots/redo/t2-ynavi-map.png` (actual map tiles, **not** the green placeholder).
-- [ ] logcat fingerprint: `setSurfaceCallback callback=true` + `onSurfaceAvailable SUCCESS`
+- [x] logcat fingerprint: `setSurfaceCallback callback=true` + `onSurfaceAvailable SUCCESS`
       and (if E1) `navigationStarted` + `updateTrip`.
-- [ ] `flutter analyze` clean; tests green; debug APK builds.
+- [x] `flutter analyze` clean; tests green; debug APK builds.
 - [ ] Drivable through the Feedback Loop (enable/disable the minimap starts/stops the host).
-- [ ] Docs reconciled; the green placeholder path documented as the no-YNavi fallback.
+- [x] Docs reconciled; the green placeholder path documented as the no-YNavi fallback.
 
 ## Notes
 Emulator is at 160 dpi. Fixed modded YNavi APK (P1 + `car-app-api.level` "8\n" + P9, signed
 platformkey) at `/tmp/ynavifix/zeekr_final.apk`, installed as `ru.yandex.yandexnavi`.
+
+## Root-cause fix (2026-06-12)
+
+Three bugs chained to block the map render:
+
+1. **Missing `import android.view.ViewGroup`** — `parkForYNavi` uses `parent as? ViewGroup` but
+   `ViewGroup` was not imported; build failed silently in the long Gradle run.
+
+2. **Presentation context cast** — `MinimapView` is created with `pres.context` (a `Presentation`
+   context, not `MainActivity`). `onSurfaceTextureAvailable` used `(context as? MainActivity)`
+   which always returned `null`, silently falling back to `startRenderLoop()` instead of
+   calling `startYNaviOnSurfaceReady()`.  Fix: `MinimapView.mainActivity` direct reference,
+   set at construction: `MinimapView(pres.context).also { it.mainActivity = this }`.
+
+3. **`SurfaceTexture` api=2 slot held by Canvas** — the `lockCanvas()` render loop registers
+   as api=2 on the `SurfaceTexture`; thread exit does NOT disconnect it.  Fix: `removeView(this)`
+   + `pg.post { addView(this, idx, lp) }` forces a full TextureView lifecycle (detach → release
+   → re-attach → new GL-attached SurfaceTexture → `onSurfaceTextureAvailable`).
+
+Confirmed artifact: `shots/redo/t2-ynavi-map.png` — "Kuzmy Chornaga St" label visible on
+Display 2 (1280×720, 213 dpi HUD overlay) through the green-yellow ColorMatrix filter.

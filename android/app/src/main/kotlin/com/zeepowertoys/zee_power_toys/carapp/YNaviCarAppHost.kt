@@ -20,6 +20,7 @@ import androidx.car.app.IOnDoneCallback
 import androidx.car.app.SessionInfo
 import androidx.car.app.SessionInfoIntentEncoder
 import androidx.car.app.SurfaceContainer
+import androidx.car.app.model.TemplateWrapper
 import androidx.car.app.navigation.model.Trip
 import androidx.car.app.serialization.Bundleable
 import androidx.car.app.versioning.CarAppApiLevels
@@ -80,8 +81,10 @@ class YNaviCarAppHost(
 
     @Volatile private var carApp: ICarApp? = null
     @Volatile private var appManager: IAppManager? = null
+    @Volatile private var navigationManager: androidx.car.app.navigation.INavigationManager? = null
     @Volatile private var isBound = false
     @Volatile private var active = false  // true when start() has been called, false after stop()
+    @Volatile private var didTemplateProbe = false
 
     /** True between start() and stop() — read by MainActivity to avoid restarting a live host. */
     val isActive: Boolean get() = active
@@ -106,8 +109,9 @@ class YNaviCarAppHost(
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
-            Log.w(TAG, "onServiceDisconnected name=${name.flattenToShortString()}")
+            Log.w(TAG, "onServiceDisconnected name=${name.flattenToShortString()} — GOAL2: YNavi DISCONNECT")
             carApp = null
+            didTemplateProbe = false
             appHostStub.clearSurfaceCallback()
             if (active) {
                 Log.i(TAG, "Scheduling reconnect in ${RECONNECT_DELAY_MS}ms")
@@ -119,6 +123,7 @@ class YNaviCarAppHost(
         override fun onBindingDied(name: ComponentName) {
             Log.w(TAG, "onBindingDied name=${name.flattenToShortString()}")
             carApp = null
+            didTemplateProbe = false
             appHostStub.clearSurfaceCallback()
             try {
                 if (isBound) {
@@ -246,7 +251,7 @@ class YNaviCarAppHost(
             appIntent
         )
 
-        if (!callWithTimeout("onAppCreate") { cb ->
+        if (!callWithTimeout("onAppCreate", APP_CREATE_TIMEOUT_MS) { cb ->
                 target.onAppCreate(carHostStub, appIntent, context.resources.configuration, cb)
             }) return
 
@@ -254,19 +259,49 @@ class YNaviCarAppHost(
 
         if (!callWithTimeout("onAppResume") { cb -> target.onAppResume(cb) }) return
 
-        // Fetch AppManager and start location updates (same as phase0 probeManagersAndTemplates).
-        fetchAppManagerAndStartUpdates(target)
+        // Fetch both managers and probe templates (phase0 pattern).
+        probeManagersAndTemplates(target)
     }
 
-    private fun fetchAppManagerAndStartUpdates(target: ICarApp) {
+    // -------------------------------------------------------------------------
+    // Manager probing + template fetch (phase0 pattern)
+    // -------------------------------------------------------------------------
+
+    private fun probeManagersAndTemplates(target: ICarApp) {
+        // Fetch AppManager
+        val appMgr = fetchAppManager(target)
+        appManager = appMgr
+
+        // Fetch NavigationManager (phase0 also fetches this)
+        fetchNavigationManager(target)
+
+        // Start location updates
+        if (appMgr != null) {
+            callWithTimeout("startLocationUpdates") { cb ->
+                appMgr.startLocationUpdates(cb)
+            }
+        }
+
+        // Wire onInvalidate to re-fetch template (nudges YNavi to push frames)
+        if (appMgr != null) {
+            appHostStub.onInvalidate = {
+                worker.execute { fetchAndLogTemplate(appMgr, "invalidate") }
+            }
+        }
+
+        // One-shot template probe (triggers YNavi rendering pipeline)
+        probeTemplateOnce(appMgr)
+    }
+
+    private fun fetchAppManager(target: ICarApp): IAppManager? {
         val result = callForResultWithTimeout("getManager(app)") { cb ->
             target.getManager("app", cb)
-        } ?: return
+        } ?: return null
 
         val unpacked = runCatching { result.get() }.getOrElse { e ->
             Log.e(TAG, "getManager(app) unpack failed", e)
             null
-        } ?: return
+        } ?: return null
 
         val manager: IAppManager? = when (unpacked) {
             is IAppManager -> unpacked
@@ -274,15 +309,61 @@ class YNaviCarAppHost(
             else -> null
         }
         Log.i(TAG, "getManager(app) resolved=${manager != null} type=${unpacked.javaClass.name}")
-        appManager = manager
+        return manager
+    }
 
-        if (manager != null) {
-            callWithTimeout("startLocationUpdates") { cb ->
-                manager.startLocationUpdates(cb)
-            }
-            appHostStub.onInvalidate = {
-                // No-op on this path — we don't probe templates; guidance comes via updateTrip.
-            }
+    private fun fetchNavigationManager(target: ICarApp): androidx.car.app.navigation.INavigationManager? {
+        val result = callForResultWithTimeout("getManager(navigation)") { cb ->
+            target.getManager("navigation", cb)
+        } ?: return null
+
+        val unpacked = runCatching { result.get() }.getOrElse { e ->
+            Log.e(TAG, "getManager(navigation) unpack failed", e)
+            null
+        } ?: return null
+
+        val manager: androidx.car.app.navigation.INavigationManager? = when (unpacked) {
+            is androidx.car.app.navigation.INavigationManager -> unpacked
+            is IBinder -> androidx.car.app.navigation.INavigationManager.Stub.asInterface(unpacked)
+            else -> null
+        }
+        Log.i(TAG, "getManager(navigation) resolved=${manager != null} type=${unpacked.javaClass.name}")
+        navigationManager = manager
+        return manager
+    }
+
+    private fun probeTemplateOnce(manager: IAppManager?) {
+        if (manager == null) return
+        if (didTemplateProbe) {
+            Log.i(TAG, "getTemplate[oneshot] skipped: already probed")
+            return
+        }
+        didTemplateProbe = true
+        // Delay slightly before probing (phase0 uses 500ms delay)
+        worker.execute {
+            try { Thread.sleep(500) } catch (_: InterruptedException) { return@execute }
+            fetchAndLogTemplate(manager, "oneshot")
+        }
+    }
+
+    private fun fetchAndLogTemplate(manager: IAppManager, step: String) {
+        val result = callForResultWithTimeout("getTemplate[$step]") { cb ->
+            manager.getTemplate(cb)
+        } ?: return
+
+        val unpacked = runCatching { result.get() }.getOrElse { e ->
+            Log.e(TAG, "getTemplate[$step] unpack failed", e)
+            return
+        }
+        Log.i(TAG, "getTemplate[$step] SUCCESS payload=${unpacked?.javaClass?.name ?: "null"}")
+        
+        // GOAL 1: Unpack TemplateWrapper to identify the inner template type (paywall vs navigation).
+        if (unpacked is TemplateWrapper) {
+            val template = unpacked.template
+            Log.i(TAG, "getTemplate[$step] INNER_TEMPLATE class=${template?.javaClass?.name ?: "null"} " +
+                "template=$template id=${unpacked.id}")
+        } else {
+            Log.w(TAG, "getTemplate[$step] UNEXPECTED: payload is NOT TemplateWrapper, got ${unpacked?.javaClass?.name}")
         }
     }
 
@@ -314,6 +395,8 @@ class YNaviCarAppHost(
             // Commit teardown: drop the session state and unbind.
             carApp = null
             appManager = null
+            navigationManager = null
+            didTemplateProbe = false
             appHostStub.onInvalidate = null
             carHostStub.onTripUpdated = null
             carHostStub.onNavigationStateChanged = null
@@ -363,7 +446,7 @@ class YNaviCarAppHost(
     // IOnDoneCallback helpers (verbatim from phase0)
     // -------------------------------------------------------------------------
 
-    private fun callWithTimeout(step: String, remoteCall: (IOnDoneCallback) -> Unit): Boolean {
+    private fun callWithTimeout(step: String, timeoutMs: Long = CALL_TIMEOUT_MS, remoteCall: (IOnDoneCallback) -> Unit): Boolean {
         val latch = CountDownLatch(1)
         val errorRef = AtomicReference<String?>(null)
         val callback = object : IOnDoneCallback.Stub() {
@@ -380,7 +463,7 @@ class YNaviCarAppHost(
         }
         return try {
             remoteCall(callback)
-            val completed = latch.await(CALL_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            val completed = latch.await(timeoutMs, TimeUnit.MILLISECONDS)
             when {
                 !completed -> { Log.e(TAG, "$step TIMEOUT after ${CALL_TIMEOUT_MS}ms"); false }
                 errorRef.get() != null -> false
@@ -437,6 +520,9 @@ class YNaviCarAppHost(
 
         /** Timeout per IOnDoneCallback call (phase0 production value). */
         private const val CALL_TIMEOUT_MS = 10_000L
+
+        /** Longer timeout for onAppCreate — YNavi cold-start after pm clear takes ~12s on the emulator. */
+        private const val APP_CREATE_TIMEOUT_MS = 30_000L
 
         /** Wait after unbind for YNavi's onDestroyLifecycle (phase0 production value). */
         private const val REBIND_DELAY_MS = 2_000L

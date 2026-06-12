@@ -20,6 +20,7 @@ import android.view.Display
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
@@ -107,7 +108,8 @@ class MainActivity : FlutterActivity() {
 
     // YNavi CarApp host — binds to YNavi and feeds the MinimapView surface.
     // Null when YNavi is unavailable or the minimap is disabled.
-    private var yNaviCarAppHost: YNaviCarAppHost? = null
+    // Internal visibility so MinimapView can check isActive for exclusive surface ownership.
+    internal var yNaviCarAppHost: YNaviCarAppHost? = null
 
     // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
     @Volatile private var guidanceSink: EventChannel.EventSink? = null
@@ -259,7 +261,7 @@ class MainActivity : FlutterActivity() {
             val root = FrameLayout(pres.context)
 
             // Layer 1 (bottom): native animated Minimap stand-in with HUD colour filter.
-            val mm = MinimapView(pres.context)
+            val mm = MinimapView(pres.context).also { it.mainActivity = this }
             minimapView = mm
             root.addView(mm, FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -353,30 +355,16 @@ class MainActivity : FlutterActivity() {
                                 // Hand the MinimapView surface over to YNavi.
                                 // If the surface is already available, start immediately;
                                 // otherwise onSurfaceTextureAvailable starts on availability.
-                                val st = v.surfaceTexture
-                                if (st != null) {
-                                    // Park the placeholder render loop — YNavi owns the surface.
-                                    // setLayerType(LAYER_TYPE_NONE) schedules the hardware layer
-                                    // removal but the GPU's RenderThread releases the api=2
-                                    // (CPU) EGL producer hold asynchronously on the next frame.
-                                    // We must delay host.start() until after that release or
-                                    // YNavi's eglCreateWindowSurface fails with
-                                    // "already connected (cur=2 req=1)".
-                                    // 200 ms is enough for one RenderThread frame + vsync margin.
+                                // Park the placeholder render loop and hand the surface to YNavi.
+                                    // parkForYNavi() stops the render thread, sets
+                                    // pendingYNaviStart=true, and removes/re-adds the view to
+                                    // trigger a full TextureView lifecycle cycle that frees
+                                    // the api=2 Canvas producer and creates a fresh
+                                    // GL-attached SurfaceTexture.  host.start() is called
+                                    // from startYNaviOnSurfaceReady() when
+                                    // onSurfaceTextureAvailable fires — NOT here.
                                     v.parkForYNavi()
-                                    val w = v.width.takeIf { it > 0 } ?: FrameLayout.LayoutParams.MATCH_PARENT
-                                    val h = v.height.takeIf { it > 0 } ?: FrameLayout.LayoutParams.MATCH_PARENT
-                                    val dpi = hudDensityDpi()
-                                    handler.postDelayed({
-                                        host.start(Surface(st), w, h, dpi)
-                                        Log.i(TAG, "setMinimap(true): YNavi host started (after layer-release delay) w=$w h=$h dpi=$dpi")
-                                    }, 200L)
-                                } else {
-                                    // Surface not ready yet; MinimapView.onSurfaceTextureAvailable
-                                    // will call startYNaviOnSurfaceReady() when it fires.
-                                    v.pendingYNaviStart = true
-                                    Log.i(TAG, "setMinimap(true): surface not ready — deferred to onSurfaceTextureAvailable")
-                                }
+                                    Log.i(TAG, "setMinimap(true): parkForYNavi called — YNavi start deferred to onSurfaceTextureAvailable")
                             }
                         } else {
                             // YNavi unavailable — fall back to placeholder render loop.
@@ -568,6 +556,9 @@ class MainActivity : FlutterActivity() {
 class MinimapView(context: android.content.Context) :
     TextureView(context), TextureView.SurfaceTextureListener {
 
+    /** Direct reference to the hosting MainActivity for cross-context callbacks. */
+    var mainActivity: MainActivity? = null
+
     @Volatile var baseHue: Float = 120f // green-yellow hue
     @Volatile private var running = false
     private var renderThread: Thread? = null
@@ -590,6 +581,12 @@ class MinimapView(context: android.content.Context) :
 
     /** Resume the render loop (called when the minimap is shown). */
     fun resumeRendering() {
+        // GOAL 2: Never resume while YNavi host is active (strict exclusive ownership).
+        val host = (context as? MainActivity)?.yNaviCarAppHost
+        if (host?.isActive == true) {
+            Log.w("ZEE", "MinimapView: resumeRendering BLOCKED — YNavi host is ACTIVE (exclusive surface)")
+            return
+        }
         // Re-apply the hardware layer before the render loop resumes drawing.
         applyHardwareLayerFilter()
         paused = false
@@ -614,15 +611,45 @@ class MinimapView(context: android.content.Context) :
      * surface but eglCreateWindowSurface fails with "already connected (cur=2 req=1)".
      */
     fun parkForYNavi() {
+        Log.i("ZEE", "MinimapView: parkForYNavi ENTER running=$running paused=$paused thread=${renderThread != null}")
         // Stop the render thread so it releases any api=2 (Canvas) producer hold.
         running = false
         paused = true  // belt-and-suspenders: prevent re-entry if loop re-checks
         synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if waiting
         renderThread?.interrupt()
+        try {
+            // Block until the render thread actually exits (max 500ms timeout).
+            renderThread?.join(500)
+        } catch (_: InterruptedException) {}
         renderThread = null
-        // Remove the hardware layer so the hardware compositor releases its hold too.
-        setLayerType(LAYER_TYPE_NONE, null)
-        Log.i("ZEE", "MinimapView: render loop PARKED for YNavi surface ownership")
+        // CRITICAL: Signal YNavi start for when the surface becomes available.
+        // This is set BEFORE the detach/re-attach so it is in place when
+        // onSurfaceTextureAvailable fires on the re-attach.
+        pendingYNaviStart = true
+        // Disconnect api=2 by forcing a full TextureView lifecycle cycle:
+        //   removeView()  → onDetachedFromWindow()  → mSurface.release()
+        //                   (api=2 producer slot on old SurfaceTexture is freed)
+        //   addView()     → onAttachedToWindow()  → new hardware layer created
+        //                 → new GL-attached SurfaceTexture allocated internally
+        //                 → onSurfaceTextureAvailable() fires
+        //                 → startYNaviOnSurfaceReady() → host.start(Surface(newSt), …)
+        //
+        // SurfaceTexture(false) (detached mode) does NOT work: GL attachment is
+        // asynchronous and producers fail with
+        // "SurfaceTexture is not attached to a View" until it completes.
+        // setSurfaceTexture() with LAYER_TYPE_NONE also fails: mLayer is destroyed
+        // before the swap so mLayer.setSurfaceTexture(freshSt) is never called.
+        val pg = parent as? ViewGroup
+        if (pg != null) {
+            val idx = pg.indexOfChild(this)
+            val lp = layoutParams
+            pg.removeView(this)         // onDetachedFromWindow → mSurface.release()
+            pg.post { pg.addView(this, idx, lp) }  // re-attach → fresh GL-attached SurfaceTexture
+            Log.i("ZEE", "MinimapView: render loop PARKED (thread exited; view detached for fresh GL-attached SurfaceTexture)")
+        } else {
+            Log.w("ZEE", "MinimapView: parkForYNavi — no parent ViewGroup; pendingYNaviStart=true only")
+            Log.i("ZEE", "MinimapView: render loop PARKED (thread exited; no parent, YNavi start deferred)")
+        }
     }
 
     /** Apply (or re-apply) the green-yellow hardware layer ColorMatrix filter. */
@@ -655,9 +682,9 @@ class MinimapView(context: android.content.Context) :
         if (pendingYNaviStart) {
             pendingYNaviStart = false
             // Delegate to MainActivity to start the YNavi host on the main thread.
-            (context as? MainActivity)?.startYNaviOnSurfaceReady(surface, width, height)
+            (mainActivity ?: context as? MainActivity)?.startYNaviOnSurfaceReady(surface, width, height)
                 ?: run {
-                    // Fallback: context is not MainActivity (e.g. Presentation context);
+                    // Fallback: no activity reference (e.g. Presentation context);
                     // start the placeholder instead.
                     startRenderLoop()
                 }
