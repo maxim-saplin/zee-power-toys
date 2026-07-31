@@ -205,9 +205,6 @@
   "safeAreaInset": "Safe Area inset",
   "@safeAreaInset": { "description": "Safe Area inset slider label" },
 
-  "debugHudBox": "Debug HUD box",
-  "@debugHudBox": { "description": "Debug toggle label for HUD bounding box" },
-
   "positionTop": "Top",
   "@positionTop": { "description": "Slider start label: top" },
 
@@ -299,5 +296,47 @@
   "@hudSlotMinimap": { "description": "HUD preview slot stub label: YNavi minimap" },
 
   "minimapPresetDisabledHint": "Custom dimensions active",
-  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" }
+  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" },
+
+  "sectionSimulate": "Simulate",
+  "@sectionSimulate": { "description": "Simulate nav tile title (debug-only screen)" },
+
+  "sectionSimulateSubtitle": "Fire live signals to test the HUD",
+  "@sectionSimulateSubtitle": { "description": "Simulate nav tile subtitle" },
+
+  "simulateTitle": "Simulate",
+  "@simulateTitle": { "description": "Simulate screen app-bar title" },
+
+  "simulateDescription": "Debug only — injects live CarSignals so you can watch the HUD react in real time.",
+  "@simulateDescription": { "description": "Explanatory caption at the top of the Simulate screen" },
+
+  "simulateBlinkerLabel": "Blinker",
+  "@simulateBlinkerLabel": { "description": "Blinker control group label on the Simulate screen" },
+
+  "simulateOff": "Off",
+  "@simulateOff": { "description": "Simulate blinker: off" },
+
+  "simulateLeft": "Left",
+  "@simulateLeft": { "description": "Simulate blinker: left" },
+
+  "simulateRight": "Right",
+  "@simulateRight": { "description": "Simulate blinker: right" },
+
+  "simulateHazard": "Hazard",
+  "@simulateHazard": { "description": "Simulate blinker: hazard (both sides)" },
+
+  "simulateChargingLabel": "Charging",
+  "@simulateChargingLabel": { "description": "Charging toggle label on the Simulate screen" },
+
+  "simulateChargeKwLabel": "Charge power",
+  "@simulateChargeKwLabel": { "description": "Charging kW slider label on the Simulate screen" },
+
+  "simulateBatteryLabel": "Battery level",
+  "@simulateBatteryLabel": { "description": "Battery percent slider label on the Simulate screen" },
+
+  "simulateBatteryTempLabel": "Battery temperature",
+  "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
+
+  "simulateSpeedLabel": "Speed",
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
 }

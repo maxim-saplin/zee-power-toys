@@ -23,7 +23,6 @@ class HudSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final safeArea = ref.watch(safeAreaProvider);
-    final hudBoxOn = ref.watch(hudBoxOnProvider);
     final blinkerCfg = ref.watch(blinkerConfigProvider);
     final batteryCfg = ref.watch(batteryConfigProvider);
     final store = ref.read(configStoreProvider);
@@ -82,18 +81,6 @@ class HudSettingsScreen extends ConsumerWidget {
                         );
                         store.setConfig(store.value.copyWith(safeArea: next));
                       },
-                    ),
-                    const SizedBox(height: Insets.xs),
-                    // Debug: hudBox toggle (retained from Block 0001 skeleton).
-                    SettingsToggleRow(
-                      label: l10n.debugHudBox,
-                      control: Switch(
-                        key: const ValueKey('dhu-toggle'),
-                        value: hudBoxOn,
-                        onChanged: (_) => store.setConfig(
-                          store.value.copyWith(hudBoxOn: !hudBoxOn),
-                        ),
-                      ),
                     ),
                   ],
                 ),

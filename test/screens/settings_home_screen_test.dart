@@ -73,7 +73,11 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('HUD'));
-      await tester.pumpAndSettle();
+      // Not pumpAndSettle(): HudSettingsScreen's Config Preview (Block 0026)
+      // forces the blinker into a perpetually-repeating blink animation, which
+      // never settles. Pump past the route-push transition instead.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // HudSettingsScreen appbar title appears.
       expect(find.text('HUD Settings'), findsOneWidget);

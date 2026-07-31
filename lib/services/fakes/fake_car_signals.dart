@@ -17,6 +17,12 @@ class FakeCarSignals implements CarSignals {
   @override
   CarSnapshot get snapshot => _snapshot;
 
+  /// Block 0026 Developer Simulate screen: identical mechanics to [relay] —
+  /// update the snapshot and push the event — since on T1 "simulate" and
+  /// "the live signal chain" are the same fake stream.
+  @override
+  Future<void> simulate(CarSignalEvent event) async => relay(event);
+
   // ---------------------------------------------------------------------------
   // Emit helpers — one per signal kind.
   // ---------------------------------------------------------------------------

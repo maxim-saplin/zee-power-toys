@@ -33,7 +33,7 @@ CLI subcommands (output is always JSON to stdout):
 
 Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py whoami-all
-  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py tap --surface dhu --key dhu-toggle
+  ZEE_VM_URI=ws://... uv run dev/feedback_loop.py tap --surface dhu --key blinker-shape-arrows
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=speed value=80
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=blinker value=left
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=charge charging=true kw=50

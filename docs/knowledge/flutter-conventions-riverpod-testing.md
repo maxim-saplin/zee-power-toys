@@ -522,7 +522,7 @@ From ADR 0003: ConfigStore must use a plain, native-readable format because the 
 
 Schema: one key per config entry, JSON-encoded string values. Kotlin boot shim reads keys it needs (HUD enabled, feature flags) synchronously at startup.
 
-> **Confirmed on T1 (Block 0001):** `shared_preferences` namespaces every key under `flutter.`. The whole `AppConfig` is stored as one JSON string under **`flutter.zee.config`** → on-disk `{"flutter.zee.config":"{\"hudBoxOn\":true}"}`. On Android this is `shared_prefs/<package>_preferences.xml` (or the plugin's file) with the same `flutter.zee.config` key. **The native boot shim must read the key `flutter.zee.config`.**
+> **Confirmed on T1 (Block 0001):** `shared_preferences` namespaces every key under `flutter.`. The whole `AppConfig` is stored as one JSON string under **`flutter.zee.config`** → on-disk `{"flutter.zee.config":"{\"hudEnabled\":true}"}`. On Android this is `shared_prefs/<package>_preferences.xml` (or the plugin's file) with the same `flutter.zee.config` key. **The native boot shim must read the key `flutter.zee.config`.**
 
 ## Lift-ready artifacts
 

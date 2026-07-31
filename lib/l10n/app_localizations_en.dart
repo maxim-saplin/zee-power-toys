@@ -215,9 +215,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get safeAreaInset => 'Safe Area inset';
 
   @override
-  String get debugHudBox => 'Debug HUD box';
-
-  @override
   String get positionTop => 'Top';
 
   @override
@@ -311,4 +308,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minimapPresetDisabledHint => 'Custom dimensions active';
+
+  @override
+  String get sectionSimulate => 'Simulate';
+
+  @override
+  String get sectionSimulateSubtitle => 'Fire live signals to test the HUD';
+
+  @override
+  String get simulateTitle => 'Simulate';
+
+  @override
+  String get simulateDescription =>
+      'Debug only — injects live CarSignals so you can watch the HUD react in real time.';
+
+  @override
+  String get simulateBlinkerLabel => 'Blinker';
+
+  @override
+  String get simulateOff => 'Off';
+
+  @override
+  String get simulateLeft => 'Left';
+
+  @override
+  String get simulateRight => 'Right';
+
+  @override
+  String get simulateHazard => 'Hazard';
+
+  @override
+  String get simulateChargingLabel => 'Charging';
+
+  @override
+  String get simulateChargeKwLabel => 'Charge power';
+
+  @override
+  String get simulateBatteryLabel => 'Battery level';
+
+  @override
+  String get simulateBatteryTempLabel => 'Battery temperature';
+
+  @override
+  String get simulateSpeedLabel => 'Speed';
 }

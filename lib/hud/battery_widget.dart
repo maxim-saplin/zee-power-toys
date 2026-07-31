@@ -106,19 +106,22 @@ class BatteryWidget extends ConsumerWidget {
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          // ---- Battery icon row ----
-          // FittedBox lets the row shrink if the slot is narrow without
-          // overflowing.  The BATTERY slot is ~12% of Safe Area width, which
-          // at the reference 820dp SA width is ~98dp — comfortable at sizeScale=1.0
-          // but tight at larger scales.
-          FittedBox(
-            alignment: Alignment.topRight,
-            fit: BoxFit.scaleDown,
-            child: Row(
+      // FittedBox around the WHOLE panel (icon+pct row, temp row, charging
+      // stats row) — not just the icon row — so any combination of optional
+      // rows shrinks to fit the slot instead of overflowing it. The BATTERY
+      // slot is ~12% of Safe Area width (~98dp at the reference 820dp SA
+      // width at sizeScale=1.0), comfortable normally but tight once temp +
+      // charging-stats are both showing at a larger sizeScale or a small
+      // backing display.
+      child: FittedBox(
+        alignment: Alignment.topRight,
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            // ---- Battery icon row ----
+            Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
@@ -147,32 +150,32 @@ class BatteryWidget extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
 
-          // ---- Temperature row (optional) ----
-          if (cfg.showTemp) ...<Widget>[
-            SizedBox(height: base * 0.18),
-            Text(
-              tempC != null
-                  ? '${tempC.toStringAsFixed(0)}°C'
-                  : '--°C',
-              key: const ValueKey('battery-temp-text'),
-              style: tempStyle,
-            ),
-          ],
+            // ---- Temperature row (optional) ----
+            if (cfg.showTemp) ...<Widget>[
+              SizedBox(height: base * 0.18),
+              Text(
+                tempC != null
+                    ? '${tempC.toStringAsFixed(0)}°C'
+                    : '--°C',
+                key: const ValueKey('battery-temp-text'),
+                style: tempStyle,
+              ),
+            ],
 
-          // ---- Charging stats panel (show-while-charging) ----
-          if (showStats) ...<Widget>[
-            SizedBox(height: base * 0.30),
-            _ChargingStats(
-              key: const ValueKey('charging-stats'),
-              kw: kw,
-              base: base,
-              kwColor: _kKwColor,
-              secondaryColor: _kTextSecondary,
-            ),
+            // ---- Charging stats panel (show-while-charging) ----
+            if (showStats) ...<Widget>[
+              SizedBox(height: base * 0.30),
+              _ChargingStats(
+                key: const ValueKey('charging-stats'),
+                kw: kw,
+                base: base,
+                kwColor: _kKwColor,
+                secondaryColor: _kTextSecondary,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -10,6 +11,7 @@ import 'hud_settings_screen.dart';
 import 'install_screen.dart';
 import 'language_settings_screen.dart';
 import 'minimap_settings_screen.dart';
+import 'simulate_screen.dart';
 import 'usb_adb_screen.dart';
 
 /// DHU Settings hub — the root screen of the DHU navigation shell.
@@ -111,6 +113,24 @@ class SettingsHomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Debug-only (Block 0026): drives real CarSignals for live
+                // testing. Extensions/this tile alike are stripped from
+                // release builds — never shipped to a real car.
+                if (kDebugMode) ...<Widget>[
+                  const _TileDivider(),
+                  _SectionTile(
+                    key: const ValueKey('nav-simulate'),
+                    icon: Icons.bolt_outlined,
+                    title: l10n.sectionSimulate,
+                    subtitle: l10n.sectionSimulateSubtitle,
+                    onTap: () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SimulateScreen(),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

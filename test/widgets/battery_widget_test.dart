@@ -115,7 +115,7 @@ void main() {
     });
 
     test('fromJson with missing battery key uses defaults', () {
-      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final cfg = AppConfig.fromJson(<String, Object?>{});
       expect(cfg.battery, equals(const BatteryConfig()));
     });
 

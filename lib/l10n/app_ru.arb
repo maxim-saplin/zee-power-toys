@@ -205,9 +205,6 @@
   "safeAreaInset": "Отступ безопасной области",
   "@safeAreaInset": { "description": "Safe Area inset slider label" },
 
-  "debugHudBox": "Отладочная рамка HUD",
-  "@debugHudBox": { "description": "Debug toggle label for HUD bounding box" },
-
   "positionTop": "Сверху",
   "@positionTop": { "description": "Slider start label: top" },
 
@@ -299,5 +296,47 @@
   "@hudSlotMinimap": { "description": "HUD preview slot stub label: YNavi minimap" },
 
   "minimapPresetDisabledHint": "Активны пользовательские размеры",
-  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" }
+  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" },
+
+  "sectionSimulate": "Симуляция",
+  "@sectionSimulate": { "description": "Simulate nav tile title (debug-only screen)" },
+
+  "sectionSimulateSubtitle": "Отправка живых сигналов для проверки HUD",
+  "@sectionSimulateSubtitle": { "description": "Simulate nav tile subtitle" },
+
+  "simulateTitle": "Симуляция",
+  "@simulateTitle": { "description": "Simulate screen app-bar title" },
+
+  "simulateDescription": "Только для отладки — отправляет живые сигналы CarSignals, чтобы вы могли увидеть реакцию HUD в реальном времени.",
+  "@simulateDescription": { "description": "Explanatory caption at the top of the Simulate screen" },
+
+  "simulateBlinkerLabel": "Поворотник",
+  "@simulateBlinkerLabel": { "description": "Blinker control group label on the Simulate screen" },
+
+  "simulateOff": "Выкл",
+  "@simulateOff": { "description": "Simulate blinker: off" },
+
+  "simulateLeft": "Налево",
+  "@simulateLeft": { "description": "Simulate blinker: left" },
+
+  "simulateRight": "Направо",
+  "@simulateRight": { "description": "Simulate blinker: right" },
+
+  "simulateHazard": "Аварийка",
+  "@simulateHazard": { "description": "Simulate blinker: hazard (both sides)" },
+
+  "simulateChargingLabel": "Зарядка",
+  "@simulateChargingLabel": { "description": "Charging toggle label on the Simulate screen" },
+
+  "simulateChargeKwLabel": "Мощность зарядки",
+  "@simulateChargeKwLabel": { "description": "Charging kW slider label on the Simulate screen" },
+
+  "simulateBatteryLabel": "Уровень заряда",
+  "@simulateBatteryLabel": { "description": "Battery percent slider label on the Simulate screen" },
+
+  "simulateBatteryTempLabel": "Температура батареи",
+  "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
+
+  "simulateSpeedLabel": "Скорость",
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
 }

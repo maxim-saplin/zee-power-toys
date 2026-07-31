@@ -51,6 +51,35 @@ class NativeCarSignals implements CarSignals {
   @override
   CarSnapshot get snapshot => _snapshot;
 
+  /// Block 0026 Developer Simulate screen: encodes [event] into the kind/value
+  /// string pair `SimulatorState.apply` (Kotlin) parses — the same format the
+  /// ADB `SIMULATE` broadcast extras use — and invokes the native "simulate"
+  /// method (`CarSignalsController.onMethodCall`), which forwards through the
+  /// real `SimulatedCarSignals`/EventChannel path. Safe no-op on a real car
+  /// with AdaptAPI selected (native `simSource` stays null).
+  @override
+  Future<void> simulate(CarSignalEvent event) {
+    final (String kind, String value) = switch (event) {
+      SpeedEvent(:final kmh) => ('speed', '$kmh'),
+      BlinkerEvent(:final state) => ('blinker', state.name),
+      ChargeEvent(:final charging, :final volts, :final amps, :final kw) => (
+          'charge',
+          charging
+              ? '$charging:${volts ?? ''}:${amps ?? ''}:${kw ?? ''}'
+              : '$charging',
+        ),
+      BatteryEvent(:final levelPct, :final tempC) => (
+          'battery',
+          '$levelPct:$tempC',
+        ),
+      PowerFlowEvent(:final flow) => ('powerFlow', flow.name),
+    };
+    return _methodCh.invokeMethod<void>('simulate', <String, String>{
+      'kind': kind,
+      'value': value,
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Decode the discriminated map from Kotlin → typed CarSignalEvent.
   // Internal but @visibleForTesting so unit tests can call directly.

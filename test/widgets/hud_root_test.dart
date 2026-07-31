@@ -268,17 +268,15 @@ void main() {
   group('AppConfig with safeArea', () {
     test('toJson / fromJson round-trips safeArea', () {
       const config = AppConfig(
-        hudBoxOn: true,
         safeArea: HudSafeArea(left: 0.10, top: 0.30, right: 0.90, bottom: 0.72),
       );
       final json = config.toJson();
       final config2 = AppConfig.fromJson(json);
-      expect(config2.hudBoxOn, isTrue);
       expect(config2.safeArea, equals(config.safeArea));
     });
 
     test('fromJson with missing safeArea key uses defaults', () {
-      final config = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final config = AppConfig.fromJson(<String, Object?>{});
       expect(config.safeArea, equals(const HudSafeArea()));
     });
   });
@@ -344,7 +342,7 @@ void main() {
     });
 
     test('fromJson with missing blinker key uses defaults', () {
-      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final cfg = AppConfig.fromJson(<String, Object?>{});
       expect(cfg.blinker, equals(const BlinkerConfig()));
     });
   });

@@ -5,6 +5,15 @@
 abstract class CarSignals {
   Stream<CarSignalEvent> get events;
   CarSnapshot get snapshot;
+
+  /// Emit a synthetic [CarSignalEvent] through the real, unforced signal
+  /// chain (Block 0026 — Developer Simulate screen). This is distinct from
+  /// the Config Preview's demo override (`hud_preview.dart`): that scopes a
+  /// fixed value to one widget subtree, while this actually drives
+  /// [events]/[snapshot] end-to-end, the same as an injected car signal
+  /// would. On a real car with AdaptAPI selected as the live source, this is
+  /// a safe no-op (mirrors the existing ADB-broadcast simulate path).
+  Future<void> simulate(CarSignalEvent event);
 }
 
 // ---------------------------------------------------------------------------

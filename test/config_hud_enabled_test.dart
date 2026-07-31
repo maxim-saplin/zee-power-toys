@@ -33,14 +33,14 @@ void main() {
     test('round-trip through JSON string preserves hudEnabled=false', () {
       // Use fromJsonString path (the SharedPrefsConfigStore path).
       final fromStr = AppConfig.fromJsonString(
-        '{"hudEnabled":false,"hudBoxOn":false}',
+        '{"hudEnabled":false}',
       );
       expect(fromStr.hudEnabled, isFalse);
     });
 
     test('fromJson defaults hudEnabled=true when key absent', () {
       // Simulates an old config file that predates the hudEnabled key.
-      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final cfg = AppConfig.fromJson(<String, Object?>{});
       expect(cfg.hudEnabled, isTrue,
           reason: 'missing key must default to true (fail-open boot policy)');
     });
@@ -53,10 +53,10 @@ void main() {
     });
 
     test('copyWith only updates hudEnabled', () {
-      const src = AppConfig(hudEnabled: false, hudBoxOn: true);
+      const src = AppConfig(hudEnabled: false, locale: 'ru');
       final copy = src.copyWith(hudEnabled: true);
       expect(copy.hudEnabled, isTrue);
-      expect(copy.hudBoxOn, isTrue); // other fields untouched
+      expect(copy.locale, equals('ru')); // other fields untouched
     });
 
     test('equality respects hudEnabled', () {

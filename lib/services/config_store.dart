@@ -365,7 +365,6 @@ class HudSafeArea {
 /// Plain JSON serialization so the native boot shim can read it.
 class AppConfig {
   const AppConfig({
-    this.hudBoxOn = false,
     this.hudEnabled = true,
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
@@ -373,8 +372,6 @@ class AppConfig {
     this.minimap = const MinimapConfig(),
     this.locale,
   });
-
-  final bool hudBoxOn;
 
   /// Whether the HUD engine should be spawned at all.
   ///
@@ -401,7 +398,6 @@ class AppConfig {
   final String? locale;
 
   AppConfig copyWith({
-    bool? hudBoxOn,
     bool? hudEnabled,
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
@@ -410,7 +406,6 @@ class AppConfig {
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
     Object? locale = _unset,
   }) => AppConfig(
-    hudBoxOn: hudBoxOn ?? this.hudBoxOn,
     hudEnabled: hudEnabled ?? this.hudEnabled,
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
@@ -420,7 +415,6 @@ class AppConfig {
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'hudBoxOn': hudBoxOn,
     'hudEnabled': hudEnabled,
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
@@ -430,7 +424,6 @@ class AppConfig {
   };
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
-    hudBoxOn: json['hudBoxOn'] as bool? ?? false,
     hudEnabled: json['hudEnabled'] as bool? ?? true,
     safeArea: json['safeArea'] is Map<String, Object?>
         ? HudSafeArea.fromJson(json['safeArea']! as Map<String, Object?>)
@@ -454,7 +447,6 @@ class AppConfig {
   @override
   bool operator ==(Object other) =>
       other is AppConfig &&
-      other.hudBoxOn == hudBoxOn &&
       other.hudEnabled == hudEnabled &&
       other.safeArea == safeArea &&
       other.blinker == blinker &&
@@ -464,7 +456,7 @@ class AppConfig {
 
   @override
   int get hashCode =>
-      Object.hash(hudBoxOn, hudEnabled, safeArea, blinker, battery, minimap, locale);
+      Object.hash(hudEnabled, safeArea, blinker, battery, minimap, locale);
 }
 
 // Sentinel used by copyWith to distinguish "pass null" from "omit".

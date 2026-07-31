@@ -17,10 +17,10 @@ cheatsheet; this table is the contract.
 
 | Extension | Surface | Params | Returns | Notes |
 |---|---|---|---|---|
-| `ext.zee.whoami` | both | _(none)_ | `{surface, isolate, pid, hudBoxOn, hudEnabled}` | Stable identity probe; driver builds the surface→isolateId map from this |
-| `ext.zee.dumpState` | both | _(none)_ | `{surface, hudBoxOn, …}` | Raw internal state; grows with the app |
+| `ext.zee.whoami` | both | _(none)_ | `{surface, isolate, pid, hudEnabled}` | Stable identity probe; driver builds the surface→isolateId map from this |
+| `ext.zee.dumpState` | both | _(none)_ | `{surface, hudEnabled, …}` | Raw internal state; grows with the app |
 | `ext.zee.readViewModel` | both | _(none)_ | derived view-state incl. `activeSlots`, `plannedSlots`, CarSignals, `systemLocale`, `usbMode`, `install` | Derived Riverpod view-state (ADR 0003) |
-| `ext.zee.setConfig` | both | `hudBoxOn`, `hudEnabled`, `blinkerShape\|Size`, `battery\|temp\|chargingShow`, `locale`, `minimap*`, safe-area keys | `dumpState` snapshot | Write config; params arrive as `Map<String, String>`; DHU→HUD relay fires |
+| `ext.zee.setConfig` | both | `hudEnabled`, `blinkerShape\|Size`, `battery\|temp\|chargingShow`, `locale`, `minimap*`, safe-area keys | `dumpState` snapshot | Write config; params arrive as `Map<String, String>`; DHU→HUD relay fires |
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped:true, key, x, y\|mode}` or `{tapped:false, error}` | Synthetic tap via three-tier fallback (callback walk → pointer events → ancestor walk) |
 | `ext.zee.shot` | both | _(none)_ | `{surface, w, h, png_b64}` | Per-isolate `RenderRepaintBoundary.toImage()` → PNG → base64 |
 | `ext.zee.inject` | dhu | `kind=speed\|blinker\|charge\|battery\|powerFlow value=…` | CarSignals snapshot | DHU only — HUD CarSignals are relay-driven; injecting on HUD would diverge the surfaces. T2/T3 use ADB broadcast |
@@ -79,23 +79,22 @@ Both isolates are named `main` and share a `rootLib` URI.  Surfaces are
   "surface": "dhu",
   "isolate": 1234567890,
   "pid": 98765,
-  "hudBoxOn": false,
   "hudEnabled": false
 }
 ```
 
 `isolate` is `identityHashCode(store)` — a stable discriminator for the
-lifetime of the isolate.  `hudBoxOn` is included for convenience (same as
-`dumpState` today).
+lifetime of the isolate.
 
 ---
 
 ## `ext.zee.tapByKey` notes
 
 - The widget must carry a `ValueKey<String>` exactly matching the `key` param.
-- The toggle in `lib/screens/hud_settings_screen.dart` carries `ValueKey('dhu-toggle')`.
+- The shape segments in `lib/screens/hud_settings_screen.dart` carry
+  `ValueKey('blinker-shape-dots'|'blinker-shape-arrows'|'blinker-shape-smiley')`.
 - Tap verification: call `dump_state(surface='hud')` after the tap and confirm
-  `hudBoxOn` has flipped (the DHU→HUD relay path, ADR 0003).
+  `blinker.shape` has flipped (the DHU→HUD relay path, ADR 0003).
 
 ---
 

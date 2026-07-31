@@ -53,7 +53,6 @@ void registerZeeExtensions({
         'surface': surface,
         'isolate': identityHashCode(store),
         'pid': pid,
-        'hudBoxOn': store.value.hudBoxOn,
         'hudEnabled': store.value.hudEnabled,
       }),
     );
@@ -91,7 +90,6 @@ void registerZeeExtensions({
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
-        'hudBoxOn': store.value.hudBoxOn,
         // locale: null = follow system; 'en'/'ru' = explicit override.
         'locale': store.value.locale,
         'speedKmh': snap?.speedKmh,
@@ -147,16 +145,11 @@ void registerZeeExtensions({
     );
   });
 
-    // setConfig — supports hudBoxOn, hudEnabled, safeArea, blinker, battery.
+    // setConfig — supports hudEnabled, safeArea, blinker, battery.
   // safeArea param: JSON-encoded object string e.g. '{"left":0.1,"top":0.3,...}'
   // or individual edge keys: safeLeft, safeTop, safeRight, safeBottom.
   developer.registerExtension('ext.zee.setConfig', (method, params) async {
     var next = store.value;
-
-    final rawHudBoxOn = params['hudBoxOn'];
-    if (rawHudBoxOn != null) {
-      next = next.copyWith(hudBoxOn: rawHudBoxOn == 'true');
-    }
 
     // hudEnabled — gates native HUD-engine spawn (boot shim reads this, ADR 0003).
     final rawHudEnabled = params['hudEnabled'];
@@ -658,7 +651,6 @@ void registerZeeExtensions({
 String _dumpStateJson(String surface, ConfigStore store) =>
     jsonEncode(<String, Object?>{
       'surface': surface,
-      'hudBoxOn': store.value.hudBoxOn,
       'hudEnabled': store.value.hudEnabled,
       'locale': store.value.locale,
       'safeArea': store.value.safeArea.toJson(),

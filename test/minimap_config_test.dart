@@ -127,16 +127,16 @@ void main() {
     });
 
     test('fromJson with absent minimap key uses defaults', () {
-      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final cfg = AppConfig.fromJson(<String, Object?>{});
       expect(cfg.minimap, equals(const MinimapConfig()));
     });
 
     test('copyWith minimap does not affect other fields', () {
-      const src = AppConfig(hudBoxOn: true);
+      const src = AppConfig(locale: 'ru');
       final copy = src.copyWith(
         minimap: const MinimapConfig(enabled: true),
       );
-      expect(copy.hudBoxOn, isTrue);
+      expect(copy.locale, equals('ru'));
       expect(copy.minimap.enabled, isTrue);
     });
   });

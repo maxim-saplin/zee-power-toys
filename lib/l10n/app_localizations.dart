@@ -506,12 +506,6 @@ abstract class AppLocalizations {
   /// **'Safe Area inset'**
   String get safeAreaInset;
 
-  /// Debug toggle label for HUD bounding box
-  ///
-  /// In en, this message translates to:
-  /// **'Debug HUD box'**
-  String get debugHudBox;
-
   /// Slider start label: top
   ///
   /// In en, this message translates to:
@@ -697,6 +691,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom dimensions active'**
   String get minimapPresetDisabledHint;
+
+  /// Simulate nav tile title (debug-only screen)
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate'**
+  String get sectionSimulate;
+
+  /// Simulate nav tile subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Fire live signals to test the HUD'**
+  String get sectionSimulateSubtitle;
+
+  /// Simulate screen app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate'**
+  String get simulateTitle;
+
+  /// Explanatory caption at the top of the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Debug only — injects live CarSignals so you can watch the HUD react in real time.'**
+  String get simulateDescription;
+
+  /// Blinker control group label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Blinker'**
+  String get simulateBlinkerLabel;
+
+  /// Simulate blinker: off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get simulateOff;
+
+  /// Simulate blinker: left
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get simulateLeft;
+
+  /// Simulate blinker: right
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get simulateRight;
+
+  /// Simulate blinker: hazard (both sides)
+  ///
+  /// In en, this message translates to:
+  /// **'Hazard'**
+  String get simulateHazard;
+
+  /// Charging toggle label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Charging'**
+  String get simulateChargingLabel;
+
+  /// Charging kW slider label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Charge power'**
+  String get simulateChargeKwLabel;
+
+  /// Battery percent slider label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Battery level'**
+  String get simulateBatteryLabel;
+
+  /// Battery temperature slider label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Battery temperature'**
+  String get simulateBatteryTempLabel;
+
+  /// Speed slider label on the Simulate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get simulateSpeedLabel;
 }
 
 class _AppLocalizationsDelegate

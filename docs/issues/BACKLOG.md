@@ -73,6 +73,7 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | [0012](0012-diagnostics-dashboard.md) | Diagnostics dashboard — clean up the phase0 AP browser | App-shell · dashboard | **done** |
 | — | Localization EN / RU — picks system lang, choosable in UI | Cross-cutting | _moved to [0011](0011-localization-nav-shell.md)_ → **done** (+ DHU nav shell) |
 | [0016](0016-usb-adb-toggle.md) | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | **done** |
+| [0026](0026-hud-preview-vs-live-simulate-split.md) | Split Config Preview (always-visible demo, no signal needed) from Developer Simulate (in-app live CarSignal injection); retire dead `hudBoxOn` | HUD · preview | **done** |
 
 ### Out of scope (post-MVP, architecture-ready)
 

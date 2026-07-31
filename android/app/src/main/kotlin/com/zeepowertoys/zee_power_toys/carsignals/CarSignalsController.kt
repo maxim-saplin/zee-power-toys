@@ -109,6 +109,20 @@ class CarSignalsController(
                 result.success(null)
             }
             "snapshot" -> result.success(source?.snapshot()?.toMap())
+            // simulate — in-app equivalent of the SimulateReceiver ADB broadcast
+            // (Block 0026, Developer Simulate screen). Reuses the same parsing
+            // (SimulatorState.apply) and forwarding (onSimulatedEvent) as the
+            // broadcast path, so it is a safe no-op when AdaptAPI is the live
+            // source (simSource stays null — see onSimulatedEvent).
+            "simulate" -> {
+                val kind = call.argument<String>("kind")
+                val value = call.argument<String>("value")
+                val event = if (kind != null && value != null) {
+                    SimulatorState.apply(kind, value)
+                } else null
+                if (event != null) onSimulatedEvent(event)
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
     }

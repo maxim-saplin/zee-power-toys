@@ -107,7 +107,7 @@ void main() {
     });
 
     test('fromJson without locale key returns null', () {
-      final cfg = AppConfig.fromJson(<String, Object?>{'hudBoxOn': false});
+      final cfg = AppConfig.fromJson(<String, Object?>{});
       expect(cfg.locale, isNull);
     });
   });
@@ -119,7 +119,7 @@ void main() {
   group('AppConfig.copyWith locale sentinel', () {
     test('omitting locale preserves the existing value', () {
       const cfg = AppConfig(locale: 'ru');
-      final copy = cfg.copyWith(hudBoxOn: true);
+      final copy = cfg.copyWith(hudEnabled: false);
       expect(copy.locale, equals('ru'));
     });
 

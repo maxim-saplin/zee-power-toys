@@ -215,9 +215,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get safeAreaInset => 'Отступ безопасной области';
 
   @override
-  String get debugHudBox => 'Отладочная рамка HUD';
-
-  @override
   String get positionTop => 'Сверху';
 
   @override
@@ -312,4 +309,48 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get minimapPresetDisabledHint => 'Активны пользовательские размеры';
+
+  @override
+  String get sectionSimulate => 'Симуляция';
+
+  @override
+  String get sectionSimulateSubtitle =>
+      'Отправка живых сигналов для проверки HUD';
+
+  @override
+  String get simulateTitle => 'Симуляция';
+
+  @override
+  String get simulateDescription =>
+      'Только для отладки — отправляет живые сигналы CarSignals, чтобы вы могли увидеть реакцию HUD в реальном времени.';
+
+  @override
+  String get simulateBlinkerLabel => 'Поворотник';
+
+  @override
+  String get simulateOff => 'Выкл';
+
+  @override
+  String get simulateLeft => 'Налево';
+
+  @override
+  String get simulateRight => 'Направо';
+
+  @override
+  String get simulateHazard => 'Аварийка';
+
+  @override
+  String get simulateChargingLabel => 'Зарядка';
+
+  @override
+  String get simulateChargeKwLabel => 'Мощность зарядки';
+
+  @override
+  String get simulateBatteryLabel => 'Уровень заряда';
+
+  @override
+  String get simulateBatteryTempLabel => 'Температура батареи';
+
+  @override
+  String get simulateSpeedLabel => 'Скорость';
 }

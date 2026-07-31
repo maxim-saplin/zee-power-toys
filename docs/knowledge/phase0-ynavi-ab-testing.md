@@ -63,7 +63,7 @@ cd /home/user/src/zee-power-toys
 uv run dev/zee_run.py up --tier t2
 
 # Then enable the minimap via the Feedback Loop
-uv run dev/feedback_loop.py set-config --surface dhu hudBoxOn=true minimapEnabled=true
+uv run dev/feedback_loop.py set-config --surface dhu minimapEnabled=true
 uv run dev/feedback_loop.py minimap on=true x=0 y=0 w=640 h=360
 ```
 

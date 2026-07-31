@@ -186,7 +186,7 @@ uv run dev/feedback_loop.py tap --surface dhu --key minimap-enable-toggle
 
 Note: `tapByKey` only succeeds when the keyed widget is in the LIVE widget tree (i.e., its screen is mounted).  Navigate to the relevant screen first.
 
-Available keys on the settings home screen: `nav-hud`, `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`, `nav-usb`.  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `dhu-toggle`, `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`, `blinker-shape-smiley`.  USB/ADB screen (nav-usb): `usb-mode-selector`, `usb-peripheral`, `usb-host`, `usb-auto`.
+Available keys on the settings home screen: `nav-hud`, `nav-minimap`, `nav-diagnostics`, `nav-language`, `nav-install`, `nav-usb`, `nav-simulate` (debug builds only).  Keys on minimap settings: `minimap-enable-toggle`, `minimap-preset-compact`, `minimap-preset-balanced`, `minimap-preset-large`.  HUD settings screen key: `safe-area-inset-slider`, `blinker-shape-dots`, `blinker-shape-arrows`, `blinker-shape-smiley`.  USB/ADB screen (nav-usb): `usb-mode-selector`, `usb-peripheral`, `usb-host`, `usb-auto`.  Simulate screen (nav-simulate, Block 0026): `simulate-blinker-off`, `simulate-blinker-left`, `simulate-blinker-right`, `simulate-blinker-hazard`, `simulate-charging-toggle`.
 
 ### Inject blinker then screenshot the HUD
 
