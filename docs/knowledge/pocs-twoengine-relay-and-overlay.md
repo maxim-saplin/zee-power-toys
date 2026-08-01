@@ -381,7 +381,11 @@ The overlay display for testing is set via:
 ```
 adb shell settings put global overlay_display_devices 1280x720/213
 ```
-(from the PoC pattern — the dev/emulator stand-in for the real HUD display).
+(from the PoC pattern — the dev/emulator stand-in for the real HUD display.
+**Historical:** this is the value the `multidisplay_poc` PoC actually used; the
+real HUD geometry — emulator and car alike — is **1024×576 @ 213dpi**
+(`overlay_display_devices "1024x576/213"`), the value the shipped app's tooling
+uses. See `CONTEXT.md`'s Minimap glossary entry.)
 
 ---
 
@@ -631,7 +635,7 @@ Both PoCs use `sdk: ^3.12.1`. No special Flutter constraints. `multidisplay_poc`
 - desktop_multi_window 0.3.0 uses an in-process ChannelRegistry for unidirectional WindowMethodChannel routing. If two HUD windows are accidentally created (missing idempotency guard), the second call to setMethodCallHandler will overwrite the first, silently dropping pushConfig messages.
 - The MinimapView render thread accesses @Volatile baseHue from the main thread and the render thread concurrently without a lock. For a color float this is safe on JVM, but if the real minimap uses more complex shared state, a lock or AtomicReference is needed.
 - FlutterEngineGroup.createAndRunEngine() is synchronous but the engine starts asynchronously. fv.attachToFlutterEngine(eng) called immediately after may attach before the engine's first frame, causing a blank Presentation for a brief period. The PoC tolerates this; the production app should handle the loading state.
-- The overlay display set via 'adb shell settings put global overlay_display_devices 1280x720/213' is an emulator/dev stand-in. The real Zeekr car's HUD display will appear as a different DisplayId (likely id=1 or id=2) with its own resolution and density. Display discovery must be validated on the actual hardware.
+- The overlay display set via 'adb shell settings put global overlay_display_devices 1280x720/213' is an emulator/dev stand-in **from this PoC** (historical — the shipped app's emulator overlay was later corrected to 1024×576/213 to match the real HUD geometry; see CONTEXT.md's Minimap entry). The real Zeekr car's HUD display appears as a different DisplayId (id=2 — confirmed by Block 0022/0025's dynamic-dimension plumbing, which reads the real display's metrics rather than assuming a fixed size) with its own resolution and density; the app itself has still never run on that hardware (T3) as of this writing.
 - The zee_drive.py logcat scan reads the last 6000 lines (-t 6000). On a heavily-used device with many log entries this may not go back far enough to find the VM service URI if the app was started a long time ago. The '--vm-uri' / '$ZEE_VM_URI' override is the reliable path for CI.
 - approach_b (custom GTK runner) has no inter-engine channel (no desktop_multi_window, no Hub). It proves isolated heaps but does NOT demonstrate config relay. If desktop_multi_window breaks, approach_b would need the Hub wired manually via fl_method_channel in C++, which is significantly more complex.
 - ext.zee.shot's RepaintBoundary.toImage() is called on the UI isolate; for large screens at high pixel ratios this can take >16ms and cause a frame drop. Keep pixelRatio at 1.0 (as the PoC does) for diagnostic use only; never call it in a hot path.

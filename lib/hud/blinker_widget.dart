@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'blinker_geometry.dart';
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/car_signals.dart';
@@ -21,29 +22,35 @@ import '../services/config_store.dart';
 ///
 /// Sizing: a real dashboard turn indicator is *small* — a neat amber dot near
 /// the edge, not a billboard.  The mark uses a fixed logical diameter
-/// ([_kBaseDiameter]) scaled by [BlinkerConfig.sizeScale], so it stays a tidy
-/// indicator regardless of how tall the Safe Area / slot is.  Marks sit near
-/// the left/right edges of the slot, vertically centred via
-/// [BlinkerConfig.vertFrac].
+/// ([kBlinkerBaseDiameter], via [blinkerMarkDiameter]) scaled by
+/// [BlinkerConfig.sizeScale], so it stays a tidy indicator regardless of how
+/// tall the Safe Area / slot is.  Marks sit near the left/right edges of the
+/// slot, vertically centred via [BlinkerConfig.vertFrac].
 ///
 /// Blink cadence: 450ms on/off — the embedded BlinkerOverlayView value
 /// (production path, more in sync with real-car BCM 120 BPM cadence than the
-/// 500ms standalone diagnostic activities).
+/// 500ms standalone diagnostic activities).  The blink state is a pure
+/// function of elapsed time ([blinkOnAt]), driven off the repeating
+/// [AnimationController]'s current value — see the `build` method for why
+/// that indirection is needed: `repeat()` never emits
+/// `AnimationStatus.completed`/`.dismissed`, so nothing may derive blink
+/// state from animation *status*, only from elapsed time.
 class BlinkerWidget extends HookConsumerWidget {
-  const BlinkerWidget({super.key});
+  const BlinkerWidget({super.key, this.forceBlinkOn});
+
+  /// Test-only escape hatch: when non-null, bypasses the blink-cadence
+  /// animation entirely and renders on/off exactly as given, so widget tests
+  /// don't need to pump real wall-clock time to reach a specific phase of the
+  /// blink cycle. Left `null` in production.
+  @visibleForTesting
+  final bool? forceBlinkOn;
 
   // Phase0 hud_amber: #FFC107.  Slightly warmer than Material Yellow 500
   // (#FFEB3B) — matches the physical HUD amber exactly.
   static const Color _kAmber = Color(0xFFFFC107);
 
   // 450ms matches BlinkerOverlayView.BLINK_INTERVAL_MS (production embedded value).
-  static const Duration _kBlinkHalf = Duration(milliseconds: 450);
-
-  /// Base mark diameter in logical px at sizeScale = 1.0.  Sized like a real
-  /// dashboard turn indicator (small + crisp at 160dpi), NOT a slot fraction —
-  /// so it never bloats with a tall Safe Area.  The arrow/smiley shapes derive
-  /// their footprint from this same unit so every shape reads at one scale.
-  static const double _kBaseDiameter = 18.0;
+  static const Duration _kBlinkHalf = kBlinkerHalfCycle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,13 +59,16 @@ class BlinkerWidget extends HookConsumerWidget {
 
     final isActive = state != BlinkerState.off;
 
-    // AnimationController runs only while the blinker is active (no idle timers).
-    // repeat() drives a 0→1 tween; we use the integer blink counter to toggle.
-    final controller = useAnimationController(
-      duration: _kBlinkHalf,
-      // Start immediately when active so the first frame is visible.
-      initialValue: isActive ? 0.0 : 0.0,
-    );
+    // AnimationController runs only while the blinker is active (no idle
+    // timers) — repeat() over one full blink cycle (2 × _kBlinkHalf: on then
+    // off). Bug fixed here: repeat() never emits AnimationStatus.completed or
+    // .dismissed (it just loops value 0→1 forever), so blink state can never
+    // be derived from animation *status* — the previous status-listener
+    // driver was dead code and the mark rendered steady on. blinkOnAt() below
+    // derives blink state from elapsed time instead, which is what actually
+    // changes every tick.
+    final cyclePeriod = _kBlinkHalf * 2;
+    final controller = useAnimationController(duration: cyclePeriod);
 
     // Effect: start/stop the repeat animation in sync with active state.
     // useEffect re-runs whenever [isActive] changes.
@@ -72,24 +82,22 @@ class BlinkerWidget extends HookConsumerWidget {
       return null;
     }, [isActive]);
 
-    // Blink: true on every even cycle (controller completes one half-cycle →
-    // increments; we derive on/off from the current animation status + value).
-    // A simpler approach: listen to the AnimationStatus and toggle a local bool.
-    final blinkOn = useState(true);
-    useEffect(() {
-      void listener(AnimationStatus status) {
-        if (status == AnimationStatus.completed) {
-          // Flip on each half-cycle completion.
-          blinkOn.value = !blinkOn.value;
-          controller.reverse();
-        } else if (status == AnimationStatus.dismissed) {
-          blinkOn.value = !blinkOn.value;
-          controller.forward();
-        }
-      }
-      controller.addStatusListener(listener);
-      return () => controller.removeStatusListener(listener);
-    }, [controller]);
+    // useAnimation subscribes to the controller so this widget rebuilds every
+    // tick while it repeats — without this, nothing reads controller.value
+    // and the widget never repaints even though the controller is running.
+    // Called unconditionally (regardless of forceBlinkOn) to keep hook-call
+    // order stable across rebuilds of the same widget instance.
+    final animValue = useAnimation(controller);
+
+    // forceBlinkOn (test-only) bypasses the animation entirely; otherwise
+    // blink state is elapsed-time-within-cycle fed through the shared pure
+    // function, so the same cadence is exercised deterministically in tests
+    // via blinkOnAt() directly.
+    final blinkOn = forceBlinkOn ??
+        blinkOnAt(
+          Duration(microseconds: (animValue * cyclePeriod.inMicroseconds).round()),
+          half: _kBlinkHalf,
+        );
 
     if (!isActive) return const SizedBox.shrink();
 
@@ -103,23 +111,24 @@ class BlinkerWidget extends HookConsumerWidget {
         final slotH = constraints.maxHeight;
 
         // Small fixed-ish diameter — a neat indicator, never a billboard.
-        // Clamp against the slot so it can't overflow a very short slot, but
-        // otherwise it stays the calibrated small size.
-        final diameter =
-            (_kBaseDiameter * cfg.sizeScale).clamp(8.0, slotH * 0.5);
+        // Clamped against the slot (see blinkerMarkDiameter) so it can't
+        // overflow a very short slot, but otherwise stays the calibrated
+        // small size.
+        final diameter = blinkerMarkDiameter(slotH: slotH, sizeScale: cfg.sizeScale);
+        final box = blinkerMarkBox(cfg.shape, diameter);
 
         final vertCenter = slotH * cfg.vertFrac;
         // Horizontal: sidePadFrac is inward from the outer slot edge.
         final padX = slotW * cfg.sidePadFrac;
 
-        final color = blinkOn.value ? _kAmber : Colors.transparent;
+        final color = blinkOn ? _kAmber : Colors.transparent;
 
         return Stack(
           children: <Widget>[
             if (showLeft)
               Positioned(
                 left: padX,
-                top: vertCenter - _markHeight(cfg.shape, diameter) / 2,
+                top: vertCenter - box.height / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-left'),
                   shape: cfg.shape,
@@ -131,7 +140,7 @@ class BlinkerWidget extends HookConsumerWidget {
             if (showRight)
               Positioned(
                 right: padX,
-                top: vertCenter - _markHeight(cfg.shape, diameter) / 2,
+                top: vertCenter - box.height / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-right'),
                   shape: cfg.shape,
@@ -144,19 +153,6 @@ class BlinkerWidget extends HookConsumerWidget {
         );
       },
     );
-  }
-
-  /// Rendered height of a mark for the given shape, used to vertically centre
-  /// it.  All shapes are normalised around [diameter] so they stay small.
-  static double _markHeight(BlinkerShape shape, double diameter) {
-    switch (shape) {
-      case BlinkerShape.dots:
-        return diameter; // single circle
-      case BlinkerShape.arrows:
-        return diameter; // chevron drawn in a diameter-tall box
-      case BlinkerShape.smiley:
-        return diameter; // smiley drawn in a diameter box
-    }
   }
 }
 
@@ -225,12 +221,13 @@ class _CircleShape extends StatelessWidget {
 // Shape: arrows
 // ---------------------------------------------------------------------------
 
-/// A small neat turn-arrow chevron — ported from phase0 ic_blinker_left/right.
-///
-/// Original SVG viewport 120×60; left path: M110,10 L50,10 L20,30 L50,50 L110,50
-/// L110,38 L70,38 L70,22 L110,22 Z.  Right: mirror.  We render it in a compact
-/// [1.4·diameter × diameter] box so it preserves the chevron aspect ratio while
-/// staying the same small scale as the circle.
+/// A small solid turn-signal triangle — the ISO 2575 idiom, tip pointing
+/// outward. Geometry lives in [blinkerArrowPath]; see its doc comment for why
+/// this has no tail (an earlier tailed pentagon read as a banner, not an
+/// indicator, and any tail detail mushes to nothing at this mark's small
+/// default size on an emissive projector). Rendered in a compact
+/// [1.2·diameter × diameter] box (via [blinkerMarkBox]) — wide enough to show
+/// the taper, small enough to stay a neat indicator like the circle.
 class _ArrowShape extends StatelessWidget {
   const _ArrowShape({
     required this.diameter,
@@ -244,9 +241,10 @@ class _ArrowShape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final box = blinkerMarkBox(BlinkerShape.arrows, diameter);
     return SizedBox(
-      width: diameter * 1.4,
-      height: diameter,
+      width: box.width,
+      height: box.height,
       child: CustomPaint(
         painter: _ArrowPainter(color: color, side: side),
       ),
@@ -265,40 +263,10 @@ class _ArrowPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-
-    // Scale phase0 120×60 viewport to our canvas size.
-    final scaleX = size.width / 120.0;
-    final scaleY = size.height / 60.0;
-
-    Path p;
-    if (side == _Side.left) {
-      // Left arrow: M110,10 L50,10 L20,30 L50,50 L110,50 L110,38 L70,38 L70,22 L110,22 Z
-      p = Path()
-        ..moveTo(110 * scaleX, 10 * scaleY)
-        ..lineTo(50 * scaleX, 10 * scaleY)
-        ..lineTo(20 * scaleX, 30 * scaleY)
-        ..lineTo(50 * scaleX, 50 * scaleY)
-        ..lineTo(110 * scaleX, 50 * scaleY)
-        ..lineTo(110 * scaleX, 38 * scaleY)
-        ..lineTo(70 * scaleX, 38 * scaleY)
-        ..lineTo(70 * scaleX, 22 * scaleY)
-        ..lineTo(110 * scaleX, 22 * scaleY)
-        ..close();
-    } else {
-      // Right arrow: M10,10 L70,10 L100,30 L70,50 L10,50 L10,38 L50,38 L50,22 L10,22 Z
-      p = Path()
-        ..moveTo(10 * scaleX, 10 * scaleY)
-        ..lineTo(70 * scaleX, 10 * scaleY)
-        ..lineTo(100 * scaleX, 30 * scaleY)
-        ..lineTo(70 * scaleX, 50 * scaleY)
-        ..lineTo(10 * scaleX, 50 * scaleY)
-        ..lineTo(10 * scaleX, 38 * scaleY)
-        ..lineTo(50 * scaleX, 38 * scaleY)
-        ..lineTo(50 * scaleX, 22 * scaleY)
-        ..lineTo(10 * scaleX, 22 * scaleY)
-        ..close();
-    }
-    canvas.drawPath(p, paint);
+    canvas.drawPath(
+      blinkerArrowPath(size, isLeft: side == _Side.left),
+      paint,
+    );
   }
 
   @override
@@ -354,11 +322,21 @@ class _SmileyPainter extends CustomPainter {
 
     // Face features drawn in a darker amber so they read as cutouts on the
     // projector (contrast against the amber fill, no bright white).
+    //
+    // Sizing: at the default mark size (kBlinkerBaseDiameter = 18px, r = 9),
+    // the original 0.14·r eye radius / stroke width worked out to ~1.26
+    // logical px — sub-2px detail that mushes into a faint smear on this
+    // emissive projector rather than reading as an eye or a mouth (fine
+    // detail disappears; see CONTEXT.md). Scaled up to ~0.20–0.22·r (~1.8–2px
+    // at r=9), the features clear that floor while a) staying clearly
+    // smaller than the face itself and b) not overlapping each other or the
+    // face edge (checked: two eyes at ±0.32·r offset with 0.22·r radius sit
+    // well inside the r=9 face, no overlap).
     final featurePaint = Paint()
       ..color = const Color(0xFF7A5C00) // dark amber / brown
       ..style = PaintingStyle.fill;
 
-    final eyeR = r * 0.14;
+    final eyeR = r * 0.22;
     final eyeY = cy - r * 0.22;
     canvas.drawCircle(Offset(cx - r * 0.32, eyeY), eyeR, featurePaint);
     canvas.drawCircle(Offset(cx + r * 0.32, eyeY), eyeR, featurePaint);
@@ -367,7 +345,7 @@ class _SmileyPainter extends CustomPainter {
     final mouthPaint = Paint()
       ..color = const Color(0xFF7A5C00)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = r * 0.14
+      ..strokeWidth = r * 0.26
       ..strokeCap = StrokeCap.round;
     final mouthRect = Rect.fromCenter(
       center: Offset(cx, cy + r * 0.05),

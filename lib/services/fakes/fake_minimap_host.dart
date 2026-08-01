@@ -27,7 +27,11 @@ class FakeMinimapHost implements MinimapHost {
   set ynaviAvailable(bool v) => _ynaviAvailable = v;
 
   @override
-  Future<void> enable(bool on) async => lastEnabled = on;
+  Future<String?> enable(bool on) async {
+    lastEnabled = on;
+    if (!on) return 'applied:false';
+    return _ynaviAvailable ? 'applied:true' : 'unavailable';
+  }
 
   @override
   Future<void> setBounds(Rect r) async => lastBounds = r;

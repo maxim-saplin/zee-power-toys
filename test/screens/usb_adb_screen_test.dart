@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zee_power_toys/l10n/app_localizations.dart';
-import 'package:zee_power_toys/providers/services.dart';
-import 'package:zee_power_toys/providers/usb_mode.dart';
 import 'package:zee_power_toys/screens/usb_adb_screen.dart';
 import 'package:zee_power_toys/services/config_store.dart';
-import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
-import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_installer.dart';
-import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
 import 'package:zee_power_toys/services/fakes/fake_usb_mode.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 import 'package:zee_power_toys/services/usb_mode.dart';
+
+import '../support/harness.dart';
 
 // ---------------------------------------------------------------------------
 // Block 0016 / 0023 tests
@@ -32,27 +24,7 @@ import 'package:zee_power_toys/services/usb_mode.dart';
 // ---------------------------------------------------------------------------
 
 Widget _wrap(Widget child, ConfigStore store, FakeUsbMode usbMode) =>
-    ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(FakeCarSignals()),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(FakeInstaller()),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
-        usbModeProvider.overrideWithValue(usbMode),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: child,
-      ),
-    );
+    wrapWithProviders(child, store: store, usbMode: usbMode);
 
 Future<SharedPrefsConfigStore> _makeStore() async {
   SharedPreferences.setMockInitialValues({});
@@ -77,10 +49,13 @@ void main() {
       expect(await fake.getRawUsbMode(), equals('1'));
     });
 
-    test('auto → getRawUsbMode returns "0" (peripheral forced on boot)', () async {
-      final fake = FakeUsbMode(initialMode: UsbMode.auto);
-      expect(await fake.getRawUsbMode(), equals('0'));
-    });
+    test(
+      'auto → getRawUsbMode returns "0" (peripheral forced on boot)',
+      () async {
+        final fake = FakeUsbMode(initialMode: UsbMode.auto);
+        expect(await fake.getRawUsbMode(), equals('0'));
+      },
+    );
 
     test('setUsbMode(peripheral) → ok; currentMode=peripheral', () async {
       final fake = FakeUsbMode();
@@ -145,8 +120,9 @@ void main() {
       expect(find.text('USB / ADB'), findsWidgets);
     });
 
-    testWidgets('SegmentedButton with Peripheral, Host, Auto is visible',
-        (tester) async {
+    testWidgets('SegmentedButton with Peripheral, Host, Auto is visible', (
+      tester,
+    ) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode();
       await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
@@ -157,8 +133,9 @@ void main() {
       expect(find.text('Auto'), findsOneWidget);
     });
 
-    testWidgets('tapping Host segment sets UsbMode.host via FakeUsbMode',
-        (tester) async {
+    testWidgets('tapping Host segment sets UsbMode.host via FakeUsbMode', (
+      tester,
+    ) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(initialMode: UsbMode.peripheral);
       await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
@@ -170,8 +147,9 @@ void main() {
       expect(usbMode.lastSetMode, equals(UsbMode.host));
     });
 
-    testWidgets('tapping Auto segment sets UsbMode.auto via FakeUsbMode',
-        (tester) async {
+    testWidgets('tapping Auto segment sets UsbMode.auto via FakeUsbMode', (
+      tester,
+    ) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode();
       await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
@@ -198,21 +176,32 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('UsbAdbScreen USB/ADB — disabled when unsupported', () {
-    testWidgets('shows platform-signing-required hint when unsupported',
-        (tester) async {
+    testWidgets('shows platform-signing-required hint when unsupported', (
+      tester,
+    ) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(unsupported: true);
       await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
       await tester.pumpAndSettle();
 
+      // Task 2: the hint text was reworded to be honest that this build lacks
+      // platform signing on *any* tier this wave (not just "unavailable off-car,
+      // available on the car" — the old text implied the car write would
+      // succeed, which it does not this wave either).
       expect(
-        find.text('Requires platform signing — available on the car'),
+        find.text(
+          'Actually changing the USB mode requires platform (system) '
+          'signing, which this build does not have — on the emulator or '
+          'the car. Your selection is saved, but the USB role itself will '
+          'not change until the app is platform-signed.',
+        ),
         findsOneWidget,
       );
     });
 
-    testWidgets('SegmentedButton does not call setUsbMode when unsupported',
-        (tester) async {
+    testWidgets('SegmentedButton does not call setUsbMode when unsupported', (
+      tester,
+    ) async {
       final store = await _makeStore();
       final usbMode = FakeUsbMode(unsupported: true);
       await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));

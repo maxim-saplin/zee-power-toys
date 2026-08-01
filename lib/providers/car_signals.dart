@@ -57,3 +57,10 @@ final powerFlowProvider = Provider<PowerFlow>((ref) {
   if (event is PowerFlowEvent) return event.flow;
   return ref.watch(carSignalsProvider).snapshot.powerFlow;
 });
+
+/// Which car-signal source is actually live: 'adaptapi' | 'simulated' (T2/T3
+/// native — the native CarSignalsController's own auto-detected choice) or
+/// 'fake' (T1 desktop / HUD isolate). Resolves once; see [CarSignals.sourceKind].
+final signalSourceProvider = FutureProvider<String>((ref) {
+  return ref.watch(carSignalsProvider).sourceKind;
+});

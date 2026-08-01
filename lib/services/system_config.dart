@@ -39,12 +39,17 @@ abstract class SystemConfig {
   /// the LANG environment variable / the OS locale.
   Locale get systemLocale;
 
-  /// Attempt to set the Android system language.
+  /// Attempt to set the car's system HMI language via the AdaptAPI/OTA path
+  /// (`IOtaSession.setSystemHMILanguage`, with an `AdaptInternalManager`
+  /// fallback) — the same mechanism [setClusterLanguage] uses, since the OTA
+  /// call's own name says *System*, not just cluster.
   ///
-  /// On the car (T3) this calls [android.app.ActivityManager.updateConfiguration()]
-  /// with a new locale — a privileged operation requiring CHANGE_CONFIGURATION
-  /// permission (granted to car-system APKs).  On the emulator / stock Android the
-  /// call is guarded and returns [ok: false, reason: "unsupported-on-device"].
+  /// Requires the ecarx AdaptAPI (absent on T1/T2) → [ok: false, reason:
+  /// "unsupported-on-device"]. Present but denied at the privileged call →
+  /// [ok: false, reason: "no-privilege"]. Whether this actually changes the
+  /// car's system language can only be confirmed on T3 (see
+  /// docs/issues/BACKLOG.md) — it may still fail there without platform
+  /// signing.
   Future<LanguageSetResult> setSystemLanguage(Locale locale);
 
   /// Attempt to set the instrument-cluster HMI language.
@@ -63,4 +68,14 @@ abstract class SystemConfig {
   /// Returns false on the emulator (no AdaptAPI), true on the Zeekr car.
   /// Used by the UI to disable the cluster picker off-car.
   Future<bool> clusterSupported();
+
+  /// Whether the system language write APIs are available on this device.
+  ///
+  /// This is a **capability** probe (is the ecarx AdaptAPI present), not a
+  /// **permission** probe — a prior version of this port gated the System
+  /// picker on `CHANGE_CONFIGURATION`, a permission that can never be granted
+  /// to this app, so the picker always reported unavailable for the wrong
+  /// reason. Returns false on the emulator (no AdaptAPI), true on the Zeekr
+  /// car. Used by the UI to disable the System picker off-car.
+  Future<bool> systemSupported();
 }

@@ -6,10 +6,41 @@
 """zee_run.py — launch the zee-power-toys app and wait until it is drivable.
 
 Subcommands
-  up [--tier t1|t2]   start flutter run, clean stale forwards, wait until BOTH
+  preflight [--tier t1|t2] [--fix]
+                      T2-specific device-readiness checks that must be true
+                      BEFORE `flutter run` starts (auto-run by `up --tier t2`,
+                      with --fix implied, so the launch is deterministic):
+                        - adb reachable
+                        - overlay_display_devices == "1024x576/213"
+                        - a secondary display actually resolves at that
+                          geometry (dumpsys display)
+                        - hudEnabled read from the persisted config (report
+                          only; not a preflight failure)
+                      --fix repairs a wrong/missing overlay_display_devices
+                      setting and polls dumpsys display until the secondary
+                      display reappears (changing the setting destroys and
+                      recreates the display, so this must happen BEFORE
+                      flutter run, never after).
+  up [--tier t1|t2] [--no-self-heal]
+                      start flutter run, clean stale forwards, wait until BOTH
                       dhu + hud surfaces answer ext.zee.whoami, then print the
                       VM WebSocket URI.  Exits 0 when ready; non-zero on timeout.
-  down [--tier t1|t2] stop the running flutter run for the given tier.
+                      T2: runs `preflight --fix` first — a missing overlay
+                      display means the HUD engine never spawns and `up`
+                      times out at 60s with no useful message otherwise.
+                      Self-heal (T2, unless --no-self-heal): if after ~20s
+                      only the dhu surface has answered and its own whoami
+                      reports hudEnabled=false, `up` is trapped forever
+                      (setupHud's native-side gate skips the HUD engine
+                      entirely) — so `up` sets hudEnabled=true via
+                      ext.zee.setConfig, then runs `down`+`up` ONCE more
+                      (guarded so it can never loop) instead of hanging for
+                      the full 60s budget with no recovery.
+  down [--tier t1|t2] stop the running flutter run for the given tier.  Also
+                      `am force-stop`s the on-device app for T2 (safe here:
+                      the host-side `flutter run` process is already dead by
+                      this point) — the pgid kill alone leaves the app
+                      process running on the device.
 
 T1 (default) — `flutter run -d linux`
   Writes flutter run stdout/stderr to $ZEE_RUN_LOG (default /tmp/zee_run_t1.log).
@@ -21,14 +52,22 @@ T2 — `flutter run -d emulator-5554`
   PID stored in /tmp/zee_run_t2.pid.
 
 Typical use
-  uv run dev/zee_run.py up           # T1 — ready in ~15 s on a warm cache
-  uv run dev/zee_run.py up --tier t2 # T2
-  uv run dev/zee_run.py down         # stop T1
+  uv run dev/zee_run.py preflight --tier t2 --fix  # optional standalone check
+  uv run dev/zee_run.py up                         # T1 — ready in ~15 s on a warm cache
+  uv run dev/zee_run.py up --tier t2               # T2
+  uv run dev/zee_run.py down                        # stop T1
 
 Environment
   ZEE_RUN_LOG    path for flutter run log (default /tmp/zee_run_t1.log)
   ZEE_VM_URI     override VM URI (skips discovery; up still waits for surfaces)
   ADB_SERIAL     adb device serial (default emulator-5554)
+
+Session URI files (QA3-5 fix — see docs/issues/BACKLOG.md)
+  Each tier gets its own /tmp/zee_vm_uri_<tier>.txt (written by `up`, removed
+  by `down`) instead of one shared file, so a T2 launch no longer shadows a
+  live T1 session.  dev/zee_drive.py's resolve_ws_uri() liveness-probes any
+  file-sourced URI (`getVersion`) and deletes it on failure instead of
+  handing back a dead port that would hang the caller's first real RPC.
 """
 
 from __future__ import annotations
@@ -41,6 +80,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 # Reuse discovery + VMClient from zee_drive (same directory).
 sys.path.insert(0, os.path.dirname(__file__))
@@ -55,18 +95,23 @@ _T1_PID = Path("/tmp/zee_run_t1.pid")
 _T2_LOG = Path("/tmp/zee_run_t2.log")
 _T2_PID = Path("/tmp/zee_run_t2.pid")
 
-# Canonical current-session URI file — written by `up`, deleted by `down`.
-# resolve_ws_uri() in zee_drive reads this (precedence 2, after explicit override).
-_VM_URI_FILE = Path("/tmp/zee_vm_uri.txt")
-
 READY_TIMEOUT_S = 120.0   # wait up to 2 min for VM URI to appear in log
 SURFACE_TIMEOUT_S = 60.0  # separate fresh timeout for both surfaces to answer
+SELF_HEAL_CHECK_S = 20.0  # first checkpoint: diagnose the hudEnabled trap here
 POLL_INTERVAL_S = 1.0
+
+EXPECTED_OVERLAY = "1024x576/213"
+EXPECTED_HUD_W = 1024
+EXPECTED_HUD_H = 576
 
 
 def _tier_files(tier: str) -> tuple[Path, Path]:
     """Return (log_path, pid_path) for the given tier."""
     return (_T1_LOG, _T1_PID) if tier == "t1" else (_T2_LOG, _T2_PID)
+
+
+def _vm_uri_file(tier: str) -> Path:
+    return Path(_z.vm_uri_file(tier))
 
 
 # ---------------------------------------------------------------------------
@@ -92,42 +137,217 @@ def _clear_stale_forwards() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Surface readiness poll
+# preflight — T2 device-readiness checks that must be true BEFORE flutter run
 # ---------------------------------------------------------------------------
 
-async def _wait_for_both_surfaces(ws_uri: str, timeout_s: float = READY_TIMEOUT_S) -> bool:
-    """Return True once both dhu+hud surfaces answer ext.zee.whoami, else False."""
-    deadline = time.monotonic() + timeout_s
-    while time.monotonic() < deadline:
-        try:
-            async def probe(c: _z.VMClient) -> dict[str, str]:
-                surface_map: dict[str, str] = {}
-                isos = await c.isolates()
-                for iso in isos:
-                    try:
-                        res = await c.rpc("ext.zee.whoami", {"isolateId": iso["id"]})
-                        surf = res.get("surface", "") if isinstance(res, dict) else ""
-                        if surf:
-                            surface_map[surf] = iso["id"]
-                    except Exception:
-                        pass
-                return surface_map
+def cmd_preflight(tier: str, fix: bool, quiet: bool = False) -> tuple[bool, dict[str, Any]]:
+    """Run device-readiness checks. Returns (ok, result_dict).
 
-            surface_map = await _z._with_client(ws_uri, probe)
-            if "dhu" in surface_map and "hud" in surface_map:
-                return True
+    T1 has no adb/display surface to check — reports pass=True trivially.
+    """
+    result: dict[str, Any] = {"tier": tier}
+
+    if tier == "t1":
+        result["note"] = "T1 desktop has no adb/overlay-display surface — nothing to preflight"
+        result["pass"] = True
+        return True, result
+
+    def _log(msg: str) -> None:
+        if not quiet:
+            print(f"[zee_run:preflight] {msg}")
+
+    # --- adb reachable -------------------------------------------------
+    devices = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=15)
+    reachable = any(
+        line.startswith(_z.DEFAULT_SERIAL) and "device" in line
+        for line in devices.stdout.splitlines()
+    )
+    result["adbReachable"] = reachable
+    _log(f"adb reachable ({_z.DEFAULT_SERIAL}): {reachable}")
+    if not reachable:
+        result["pass"] = False
+        result["remedy"] = (
+            f"adb device {_z.DEFAULT_SERIAL!r} not reachable — check `adb devices` "
+            "and that the emulator/device is running"
+        )
+        return False, result
+
+    # --- overlay_display_devices setting --------------------------------
+    r = _adb("shell", "settings", "get", "global", "overlay_display_devices")
+    current = (r.stdout or "").strip()
+    overlay_ok = current == EXPECTED_OVERLAY
+    result["overlayDisplayDevicesBefore"] = current
+    _log(f"overlay_display_devices = {current!r} (want {EXPECTED_OVERLAY!r}): {overlay_ok}")
+
+    def _display_resolves() -> bool:
+        # Pre-launch-safe: resolve_hud_display()'s DisplayViewport parsing
+        # needs a Presentation already attached (i.e. flutter run's HUD
+        # engine), which does not exist yet at preflight time — see
+        # overlay_display_geometry()'s docstring.
+        info = _z.overlay_display_geometry(serial=_z.DEFAULT_SERIAL)
+        return info is not None and info["w"] == EXPECTED_HUD_W and info["h"] == EXPECTED_HUD_H
+
+    display_ok = overlay_ok and _display_resolves()
+
+    if not display_ok and fix:
+        # Covers both failure shapes: the setting itself is wrong/empty, AND
+        # the setting already reads correctly but the display never actually
+        # materialized (observed live: `settings put` with an unchanged value
+        # does not reliably re-fire display creation). Force a clear ->
+        # re-apply cycle either way so --fix is a real recreate, not a no-op
+        # write.
+        _log(f"--fix: clearing then re-setting overlay_display_devices to {EXPECTED_OVERLAY!r}")
+        _adb("shell", "settings", "put", "global", "overlay_display_devices", "")
+        time.sleep(1.0)
+        _adb("shell", "settings", "put", "global", "overlay_display_devices", EXPECTED_OVERLAY)
+        # Changing the setting destroys/recreates the display — poll dumpsys
+        # display until the new one actually appears at the expected geometry.
+        deadline = time.monotonic() + 15.0
+        while time.monotonic() < deadline:
+            if _display_resolves():
+                display_ok = True
+                overlay_ok = True
+                break
+            time.sleep(1.0)
+        r2 = _adb("shell", "settings", "get", "global", "overlay_display_devices")
+        current = (r2.stdout or "").strip()
+        overlay_ok = overlay_ok or current == EXPECTED_OVERLAY
+        result["fixed"] = display_ok
+        _log(f"after --fix: overlay_display_devices = {current!r}; recovered: {display_ok}")
+
+    result["overlayDisplayDevices"] = current
+    result["overlayOk"] = overlay_ok
+    if not overlay_ok:
+        result["pass"] = False
+        result["remedy"] = (
+            f'adb shell settings put global overlay_display_devices "{EXPECTED_OVERLAY}" '
+            "(then re-run `preflight --fix`, or `up --tier t2` which runs preflight "
+            "automatically)"
+        )
+        return False, result
+
+    # --- secondary display resolves at the expected geometry ------------
+    info = _z.overlay_display_geometry(serial=_z.DEFAULT_SERIAL)
+    result["hudDisplay"] = info if info is not None else {"error": "no Overlay display device found"}
+    result["displayOk"] = display_ok
+    _log(f"secondary display resolves at expected geometry: {display_ok}")
+    if not display_ok:
+        result["pass"] = False
+        result["remedy"] = (
+            f'adb shell settings put global overlay_display_devices "{EXPECTED_OVERLAY}"'
+        )
+        return False, result
+
+    # --- hudEnabled from persisted config (report only) ------------------
+    hud_enabled = _z.read_persisted_hud_enabled(serial=_z.DEFAULT_SERIAL)
+    result["hudEnabled"] = hud_enabled
+    _log(f"persisted hudEnabled: {hud_enabled!r}")
+
+    result["pass"] = True
+    return True, result
+
+
+# ---------------------------------------------------------------------------
+# Surface readiness poll (with hudEnabled diagnosis for self-heal)
+# ---------------------------------------------------------------------------
+
+async def _probe_surfaces_once(ws_uri: str) -> dict[str, dict[str, Any]]:
+    """One-shot probe: return {surface: whoami_result} for every isolate that answers."""
+    async def probe(c: _z.VMClient) -> dict[str, dict[str, Any]]:
+        out: dict[str, dict[str, Any]] = {}
+        try:
+            isos = await c.isolates()
         except Exception:
-            pass  # VM service not up yet — keep polling
+            return out
+        for iso in isos:
+            try:
+                res = await c.rpc("ext.zee.whoami", {"isolateId": iso["id"]})
+                if isinstance(res, dict) and res.get("surface"):
+                    out[res["surface"]] = res
+            except Exception:
+                pass
+        return out
+
+    try:
+        return await _z._with_client(ws_uri, probe)
+    except Exception:
+        return {}
+
+
+async def _wait_for_ready(ws_uri: str, timeout_s: float) -> dict[str, Any]:
+    """Poll until both dhu+hud answer whoami, or [timeout_s] elapses.
+
+    Returns {"ready": bool, "surfaces": {surface: whoami_result}} — the
+    latest probe snapshot is always included so callers can diagnose *why*
+    it isn't ready yet (e.g. the hudEnabled trap) rather than just timing out.
+    """
+    deadline = time.monotonic() + timeout_s
+    surfaces: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        surfaces = await _probe_surfaces_once(ws_uri)
+        if "dhu" in surfaces and "hud" in surfaces:
+            return {"ready": True, "surfaces": surfaces}
         await asyncio.sleep(POLL_INTERVAL_S)
-    return False
+    return {"ready": False, "surfaces": surfaces}
+
+
+async def _set_dhu_hud_enabled_true(ws_uri: str) -> bool:
+    """Call ext.zee.setConfig hudEnabled=true on the dhu isolate. Returns success."""
+    async def fn(c: _z.VMClient) -> bool:
+        try:
+            isos = await c.isolates()
+        except Exception:
+            return False
+        for iso in isos:
+            try:
+                res = await c.rpc("ext.zee.whoami", {"isolateId": iso["id"]})
+            except Exception:
+                continue
+            if isinstance(res, dict) and res.get("surface") == "dhu":
+                await c.rpc("ext.zee.setConfig", {"isolateId": iso["id"], "hudEnabled": "true"})
+                return True
+        return False
+
+    try:
+        return await _z._with_client(ws_uri, fn)
+    except Exception:
+        return False
+
+
+def _dump_setup_hud_logcat() -> str:
+    """Return recent `setupHud` logcat lines — the native side's own reason
+    the HUD engine did/didn't spawn (used in the failure message when `hud`
+    never answers while hudEnabled is true)."""
+    try:
+        r = subprocess.run(
+            ["adb", "-s", _z.DEFAULT_SERIAL, "logcat", "-d"],
+            capture_output=True, text=True, timeout=20,
+        )
+        lines = [ln for ln in r.stdout.splitlines() if "setupHud" in ln]
+        return "\n".join(lines[-20:]) if lines else "(no setupHud lines found in logcat)"
+    except Exception as e:
+        return f"(logcat dump failed: {e})"
 
 
 # ---------------------------------------------------------------------------
 # up
 # ---------------------------------------------------------------------------
 
-def cmd_up(tier: str) -> int:
+def cmd_up(tier: str, self_heal: bool = True) -> int:
     log_path, pid_path = _tier_files(tier)
+    uri_path = _vm_uri_file(tier)
+
+    # --- T2: preflight FIRST — the overlay display must exist before
+    # flutter run starts, else the HUD engine never spawns and `up` times
+    # out at 60s with no useful message (FIX 1). --fix is implied here so
+    # the launch is deterministic; standalone `preflight` still defaults to
+    # no --fix so it can be used as a pure health check.
+    if tier == "t2":
+        ok, pf = cmd_preflight(tier, fix=True)
+        if not ok:
+            print(f"[zee_run] preflight FAILED: {pf.get('remedy', pf)}", file=sys.stderr)
+            return 1
+        print(f"[zee_run] preflight OK (hudEnabled={pf.get('hudEnabled')!r})")
 
     # --- stop any stale process -------------------------------------------------
     if pid_path.exists():
@@ -188,21 +408,52 @@ def cmd_up(tier: str) -> int:
         return 1
 
     # --- persist URI so driving tools find the current session without --vm-uri --
-    _VM_URI_FILE.write_text(ws_uri)
-    print(f"[zee_run] URI persisted → {_VM_URI_FILE}")
+    uri_path.write_text(ws_uri)
+    print(f"[zee_run] URI persisted → {uri_path}")
 
     # --- wait for both dhu + hud surfaces to answer whoami --------------------
-    # Use a fresh dedicated timeout so a long cold build does not starve the
-    # surface-readiness wait (FIX 3).
+    # Two-phase wait (FIX 2): a first SELF_HEAL_CHECK_S checkpoint to diagnose
+    # the hudEnabled=false trap (setupHud's native gate silently skips the HUD
+    # engine — no amount of extra waiting will ever make `hud` answer), then
+    # the remainder of the budget for the ordinary slow-cold-build case.
     print("[zee_run] waiting for both dhu + hud surfaces …")
-    ready = asyncio.run(_wait_for_both_surfaces(ws_uri, timeout_s=SURFACE_TIMEOUT_S))
+    first = asyncio.run(_wait_for_ready(ws_uri, timeout_s=min(SELF_HEAL_CHECK_S, SURFACE_TIMEOUT_S)))
+
+    if not first["ready"]:
+        surfaces = first["surfaces"]
+        only_dhu = "dhu" in surfaces and "hud" not in surfaces
+        dhu_hud_enabled = (surfaces.get("dhu") or {}).get("hudEnabled")
+
+        if tier == "t2" and self_heal and only_dhu and dhu_hud_enabled is False:
+            print(
+                "[zee_run] self-heal: only dhu answered and hudEnabled=false — "
+                "this is an unrecoverable trap (setupHud's native gate skips the "
+                "HUD engine entirely); setting hudEnabled=true and restarting once"
+            )
+            healed = asyncio.run(_set_dhu_hud_enabled_true(ws_uri))
+            print(f"[zee_run] self-heal: ext.zee.setConfig hudEnabled=true → {healed}")
+            cmd_down(tier)
+            print("[zee_run] self-heal: restarting (self-heal disabled on this retry)")
+            return cmd_up(tier, self_heal=False)
+
+        remaining = max(0.0, SURFACE_TIMEOUT_S - SELF_HEAL_CHECK_S)
+        second = asyncio.run(_wait_for_ready(ws_uri, timeout_s=remaining)) if remaining > 0 else first
+        ready = second["ready"]
+        surfaces = second["surfaces"]
+    else:
+        ready = True
+        surfaces = first["surfaces"]
+
     if not ready:
-        print("[zee_run] timed out waiting for both surfaces", file=sys.stderr)
+        msg = f"[zee_run] timed out waiting for both surfaces; found: {list(surfaces)}"
+        if tier == "t2" and "hud" not in surfaces:
+            msg += "\n[zee_run] setupHud logcat (native-side reason):\n" + _dump_setup_hud_logcat()
+        print(msg, file=sys.stderr)
         return 1
 
     print(f"[zee_run] READY — both surfaces up")
     print(f"[zee_run] VM URI: {ws_uri}")
-    print(f"\nExport for other tools (optional — driving tools read {_VM_URI_FILE} automatically):")
+    print(f"\nExport for other tools (optional — driving tools read {uri_path} automatically):")
     print(f"  export ZEE_VM_URI='{ws_uri}'")
     return 0
 
@@ -213,8 +464,15 @@ def cmd_up(tier: str) -> int:
 
 def cmd_down(tier: str) -> int:
     _, pid_path = _tier_files(tier)
+    uri_path = _vm_uri_file(tier)
     if not pid_path.exists():
         print(f"[zee_run] no PID file for tier {tier} — nothing to stop")
+        # Even with no local pid file, a previous session may have left the
+        # app running on-device (FIX 3) — clean it up on T2 regardless.
+        if tier == "t2":
+            _adb("shell", "am", "force-stop", "com.zeepowertoys.zee_power_toys")
+            print("[zee_run] force-stopped com.zeepowertoys.zee_power_toys on device")
+        uri_path.unlink(missing_ok=True)
         return 0
     try:
         pid = int(pid_path.read_text().strip())
@@ -224,7 +482,7 @@ def cmd_down(tier: str) -> int:
             pgid = os.getpgid(pid)
             os.killpg(pgid, signal.SIGTERM)
             print(f"[zee_run] sent SIGTERM to pgid={pgid} (pid={pid})")
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):
             print(f"[zee_run] process already gone")
             pgid = None
         # Wait briefly for clean exit, then escalate.
@@ -236,18 +494,30 @@ def cmd_down(tier: str) -> int:
                 except ProcessLookupError:
                     break
             else:
+                # PermissionError here (observed live, self-heal down/up cycle):
+                # by the time we escalate, the pgid can already be gone/reaped
+                # or reassigned to something we no longer have rights to signal
+                # — either way there is nothing left of OUR process to kill, so
+                # this must not raise (an unhandled exception here would abort
+                # the self-heal restart in cmd_up, which calls cmd_down mid-flow).
                 try:
                     os.killpg(pgid, signal.SIGKILL)
                     print(f"[zee_run] escalated to SIGKILL for pgid={pgid}")
-                except ProcessLookupError:
-                    pass
+                except (ProcessLookupError, PermissionError):
+                    print(f"[zee_run] escalate to SIGKILL for pgid={pgid} skipped (already gone)")
     except (ValueError, ProcessLookupError):
         print(f"[zee_run] process already gone")
     pid_path.unlink(missing_ok=True)
-    # Remove canonical URI file so stale URIs don't shadow a future session.
-    _VM_URI_FILE.unlink(missing_ok=True)
+    # Remove this tier's session URI file so stale URIs never shadow a future session.
+    uri_path.unlink(missing_ok=True)
     if tier == "t2":
         _clear_stale_forwards()
+        # FIX 3: the pgid kill above only stops the HOST-side `flutter run`
+        # process group — it does not stop the app running ON the device.
+        # Safe here (only here): `flutter run` is already dead, so this is
+        # not the "force-stop a live flutter run" hazard from the skill doc.
+        _adb("shell", "am", "force-stop", "com.zeepowertoys.zee_power_toys")
+        print("[zee_run] force-stopped com.zeepowertoys.zee_power_toys on device")
     print(f"[zee_run] done")
     return 0
 
@@ -262,17 +532,30 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = p.add_subparsers(dest="cmd", required=True)
 
+    pf_p = sub.add_parser("preflight", help="T2 device-readiness checks (auto-run by `up --tier t2`)")
+    pf_p.add_argument("--tier", choices=["t1", "t2"], default="t2",
+                      help="target tier (default: t2)")
+    pf_p.add_argument("--fix", action="store_true",
+                      help="repair a wrong/missing overlay_display_devices setting")
+
     up_p = sub.add_parser("up", help="start flutter run and wait for both surfaces")
     up_p.add_argument("--tier", choices=["t1", "t2"], default="t1",
                       help="target tier (default: t1)")
+    up_p.add_argument("--no-self-heal", action="store_true",
+                      help="disable the hudEnabled=false auto-recovery (T2 only)")
 
     dn_p = sub.add_parser("down", help="stop the running flutter run for a tier")
     dn_p.add_argument("--tier", choices=["t1", "t2"], default="t1",
                       help="target tier (default: t1)")
 
     args = p.parse_args(argv)
-    if args.cmd == "up":
-        return cmd_up(args.tier)
+    if args.cmd == "preflight":
+        ok, result = cmd_preflight(args.tier, fix=args.fix)
+        import json
+        print(json.dumps(result, indent=2))
+        return 0 if ok else 1
+    elif args.cmd == "up":
+        return cmd_up(args.tier, self_heal=not args.no_self_heal)
     elif args.cmd == "down":
         return cmd_down(args.tier)
     return 0

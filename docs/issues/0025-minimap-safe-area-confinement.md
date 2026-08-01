@@ -13,7 +13,7 @@ tier: T2
 ## Block scope
 Fix the minimap rendering to a properly-confined square inside the HUD Safe Area, matching the geometry model from `phase0/IAppHostStub.computeViewportRect()`.
 
-Root cause (found during 0022 QA): `setMinimapBounds` was sizing the `MinimapView` (TextureView child) but NOT its parent `filterWrapper` (the `FrameLayout` carrying `LAYER_TYPE_HARDWARE`). The hardware-layer FrameLayout remained `MATCH_PARENT` (1280×720), so its `ColorMatrix` layer covered the full display regardless of the TextureView's own size. Battery widget overlapped.
+Root cause (found during 0022 QA): `setMinimapBounds` was sizing the `MinimapView` (TextureView child) but NOT its parent `filterWrapper` (the `FrameLayout` carrying `LAYER_TYPE_HARDWARE`). The hardware-layer FrameLayout remained `MATCH_PARENT` (1280×720 — the T2 emulator overlay in use at the time; historical, since corrected to 1024×576/213 to match the real HUD), so its `ColorMatrix` layer covered the full display regardless of the TextureView's own size. Battery widget overlapped.
 
 Two additional structural fixes:
 1. **Phase0 viewport math** — replace hand-calibrated fraction-based bounds with the canonical dp-constant model from phase0 (`hudSafeAreaWidthDp=616, hudSafeAreaHeightDp=175, hudSafeAreaOffsetXDp=+5, hudSafeAreaOffsetYDp=+6`; `squareSizeFraction=0.9, squarePaddingDp=31`). Gives display-density-independent geometry.
@@ -43,7 +43,10 @@ The dp-constant model from `IAppHostStub.kt` L208-211 and `HudSettings.kt`:
 - **Minimap**: `squareSizeFraction=0.9` (default `balanced`), `squarePaddingDp=31`, `minimapScale=0.5`
 - **Placement**: `SQUARE_LEFT` — left-align within Safe Area with padding
 
-**T2 computed viewport** (1280×720 @ 213dpi, `balanced`, `SQUARE_LEFT`):
+**T2 computed viewport** (1280×720 @ 213dpi, `balanced`, `SQUARE_LEFT` — **historical**: the
+emulator overlay in use at the time this Block ran; the real HUD geometry, emulator and car
+alike, is 1024×576 @ 213dpi, yielding `Rect.fromLTWH(150, 191, 210, 210)` instead — see
+`CONTEXT.md`'s Minimap entry and `test/minimap_viewport_test.dart`'s T3-nominal group):
 - density = 213/160 = 1.33125
 - safeW ≈ 820px, safeH ≈ 233px; safeLeft ≈ 237, safeRight ≈ 1057; safeTop ≈ 252, safeBottom ≈ 485
 - side = 233 × 0.9 ≈ **210px**; paddingPx ≈ 41

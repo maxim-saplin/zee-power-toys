@@ -1,5 +1,95 @@
 import 'dart:convert';
 
+import 'minimap_viewport.dart' show hudPresetSizeFraction;
+
+// ---------------------------------------------------------------------------
+// MinimapLooks
+// ---------------------------------------------------------------------------
+
+/// Native colour-filter parameters applied to the YNavi minimap render.
+///
+/// Mirrors a hand-picked subset of MainActivity.kt's `MinimapParams` — the
+/// native holder behind `setMinimapParam` — chosen for being the only three
+/// knobs that (a) have a genuinely visible, honestly-nameable effect and (b)
+/// are worth a permanent UI slot (PRINCIPLES.md #1, "every option must earn
+/// its place"). The rest of `MinimapParams` (`saturation`, native `brightness`,
+/// `invert`, `huePass`, `hueAngle`, `bufScale`, `dpiScale`) stays reachable
+/// only via `ext.zee.minimap key=... value=...` — still runtime-drivable
+/// (#3), just not surfaced as a permanent control (#1). In particular
+/// `huePass` is intentionally left at its native default of 0.0 (pure
+/// monochrome tint) — see `MainActivity.kt`'s `MinimapParams` doc: hue
+/// passthrough was tried and rejected (floods on map content sharing the
+/// pass hue), so [colorPreset] is the sole colour control and `hueAngle` is
+/// moot at huePass=0.
+///
+/// Defaults are the values measured good on the real HUD (MainActivity.kt's
+/// `MinimapParams` defaults / "THE FIX" history comment): green-yellow tint,
+/// contrast=3.5, threshold=165 — chosen so an untouched install gets the
+/// good look without opening this screen.
+class MinimapLooks {
+  const MinimapLooks({
+    this.colorPreset = 'green-yellow',
+    this.contrast = 3.5,
+    this.threshold = 165.0,
+  });
+
+  /// Native `preset` param token: 'green-yellow' | 'white' | 'amber' | 'cyan'.
+  /// Forwarded verbatim to `setParams` — `MainActivity.kt`'s
+  /// `presetIndexFromName()` accepts these exact string tokens directly, so
+  /// no local index mapping is needed on the Dart side.
+  final String colorPreset;
+
+  /// Forwarded as the native `contrast` param.
+  final double contrast;
+
+  /// Forwarded as the native `threshold` param. Named "Brightness" in the UI
+  /// because that is the user-visible effect: a HIGHER threshold crushes MORE
+  /// of the source image to black (a darker background, more "crushed"), not
+  /// a literal brightness multiplier — see `_applyMinimapConfig`/the settings
+  /// screen for the honest label.
+  final double threshold;
+
+  MinimapLooks copyWith({
+    String? colorPreset,
+    double? contrast,
+    double? threshold,
+  }) => MinimapLooks(
+    colorPreset: colorPreset ?? this.colorPreset,
+    contrast: contrast ?? this.contrast,
+    threshold: threshold ?? this.threshold,
+  );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'colorPreset': colorPreset,
+    'contrast': contrast,
+    'threshold': threshold,
+  };
+
+  factory MinimapLooks.fromJson(Map<String, Object?> json) => MinimapLooks(
+    colorPreset: json['colorPreset'] as String? ?? 'green-yellow',
+    contrast: (json['contrast'] as num?)?.toDouble() ?? 3.5,
+    threshold: (json['threshold'] as num?)?.toDouble() ?? 165.0,
+  );
+
+  /// Wire-format params map for [MinimapHost.setParams] — the exact keys
+  /// `setMinimapParam` reads natively (`preset`/`contrast`/`threshold`).
+  Map<String, Object?> toParams() => <String, Object?>{
+    'preset': colorPreset,
+    'contrast': contrast,
+    'threshold': threshold,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is MinimapLooks &&
+      other.colorPreset == colorPreset &&
+      other.contrast == contrast &&
+      other.threshold == threshold;
+
+  @override
+  int get hashCode => Object.hash(colorPreset, contrast, threshold);
+}
+
 // ---------------------------------------------------------------------------
 // MinimapConfig
 // ---------------------------------------------------------------------------
@@ -7,20 +97,30 @@ import 'dart:convert';
 /// HUD minimap (YNavi) configuration.
 ///
 /// Defaults: enabled=false (safe until mod detected), preset='balanced',
-/// advanced=false, themeFollow='auto'.
+/// advanced=false, looks=[MinimapLooks] defaults.
 ///
-/// themeFollow ∈ {'auto', 'dark', 'light'}:
-///   - 'auto'  → HUD palette follows MediaQuery.platformBrightness
-///   - 'dark'  → always dark palette
-///   - 'light' → always light palette
+/// There used to be a `themeFollow` field ('auto'|'dark'|'light') driving a
+/// System/Dark/Light radio group here. It was deleted outright, not merely
+/// left unwired: it persisted a preference nothing native could honestly
+/// apply. The only physically meaningful destination would be the
+/// `Configuration.UI_MODE_NIGHT_*` value handed to YNavi, and Block 0021
+/// deliberately pins that to night — a day map through an emissive projector
+/// is a bright wash on black glass, precisely the defect 0021 fixed (see
+/// CONTEXT.md's HUD glossary entry: "black pixels emit no light... never
+/// light-on-dark UI"). A "light" HUD theme contradicts that rule outright,
+/// and the DHU app itself is intentionally `ThemeMode.dark` — so 'light' had
+/// nowhere true to go, 'dark' was already the permanent reality, and 'auto'
+/// just meant "maybe silently give you the broken one". After the Look
+/// section (colorPreset/contrast/threshold, see [MinimapLooks]) the honest
+/// colour control is the colour preset — so this control was removed rather
+/// than kept as another knob that lies.
 class MinimapConfig {
   const MinimapConfig({
     this.enabled = false,
     this.preset = 'balanced',
     this.advanced = false,
-    this.widthFrac,
-    this.heightFrac,
-    this.themeFollow = 'auto',
+    this.sizeFraction,
+    this.looks = const MinimapLooks(),
   });
 
   /// Whether the minimap is enabled. Only meaningful when YNavi mod is present.
@@ -29,54 +129,72 @@ class MinimapConfig {
   /// Preset name: 'compact', 'balanced', or 'large'.
   final String preset;
 
-  /// When true, show manual dimension sliders instead of the preset selector.
+  /// When true, show the manual Size slider instead of the preset selector.
   final bool advanced;
 
-  /// Manual width as fraction of HUD safe area width (0..1); null = use preset.
-  final double? widthFrac;
+  /// Manual override of the minimap square's size fraction (side = safeH ×
+  /// sizeFraction), clamped to [0.1, 1.0]; null = derive from [preset] via
+  /// [hudPresetSizeFraction]. [hudPresetSizeFraction] (in minimap_viewport.dart,
+  /// next to the rest of the viewport geometry) is the single source of truth
+  /// for preset→fraction — this class used to keep its own duplicate
+  /// `presetFractions` map with different numbers than the one actually used
+  /// to compute the rendered viewport, which is exactly the kind of drift
+  /// this Block exists to remove. See [resolvedSizeFraction].
+  final double? sizeFraction;
 
-  /// Manual height as fraction of HUD safe area height (0..1); null = use preset.
-  final double? heightFrac;
+  /// Native colour-filter parameters (Look section: colour preset,
+  /// brightness, contrast). See [MinimapLooks].
+  final MinimapLooks looks;
 
-  /// Theme-follow mode: 'auto' | 'dark' | 'light'.
-  final String themeFollow;
+  /// Resolved size fraction actually used to compute the rendered viewport
+  /// (see `computeMinimapViewport` in minimap_viewport.dart, called from
+  /// `_applyMinimapConfig` in main.dart).
+  ///
+  /// In advanced mode with a manual [sizeFraction] set, returns that value
+  /// clamped to [0.1, 1.0]. Otherwise returns [hudPresetSizeFraction] for
+  /// [preset].
+  double get resolvedSizeFraction {
+    if (advanced && sizeFraction != null) {
+      return sizeFraction!.clamp(0.1, 1.0);
+    }
+    return hudPresetSizeFraction(preset);
+  }
 
   MinimapConfig copyWith({
     bool? enabled,
     String? preset,
     bool? advanced,
-    Object? widthFrac = _unset,
-    Object? heightFrac = _unset,
-    String? themeFollow,
+    Object? sizeFraction = _unset,
+    MinimapLooks? looks,
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
     preset: preset ?? this.preset,
     advanced: advanced ?? this.advanced,
-    widthFrac:
-        identical(widthFrac, _unset) ? this.widthFrac : widthFrac as double?,
-    heightFrac:
-        identical(heightFrac, _unset)
-            ? this.heightFrac
-            : heightFrac as double?,
-    themeFollow: themeFollow ?? this.themeFollow,
+    sizeFraction: identical(sizeFraction, _unset)
+        ? this.sizeFraction
+        : sizeFraction as double?,
+    looks: looks ?? this.looks,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'enabled': enabled,
     'preset': preset,
     'advanced': advanced,
-    if (widthFrac != null) 'widthFrac': widthFrac,
-    if (heightFrac != null) 'heightFrac': heightFrac,
-    'themeFollow': themeFollow,
+    if (sizeFraction != null) 'sizeFraction': sizeFraction,
+    'looks': looks.toJson(),
   };
 
   factory MinimapConfig.fromJson(Map<String, Object?> json) => MinimapConfig(
     enabled: json['enabled'] as bool? ?? false,
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
-    widthFrac: (json['widthFrac'] as num?)?.toDouble(),
-    heightFrac: (json['heightFrac'] as num?)?.toDouble(),
-    themeFollow: json['themeFollow'] as String? ?? 'auto',
+    sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
+    // Unknown/removed keys (widthFrac, heightFrac, themeFollow from older
+    // persisted configs) are simply never read here — fromJson tolerates
+    // extra keys in the map by construction, so old installs keep loading.
+    looks: json['looks'] is Map<String, Object?>
+        ? MinimapLooks.fromJson(json['looks']! as Map<String, Object?>)
+        : const MinimapLooks(),
   );
 
   @override
@@ -85,40 +203,12 @@ class MinimapConfig {
       other.enabled == enabled &&
       other.preset == preset &&
       other.advanced == advanced &&
-      other.widthFrac == widthFrac &&
-      other.heightFrac == heightFrac &&
-      other.themeFollow == themeFollow;
+      other.sizeFraction == sizeFraction &&
+      other.looks == looks;
 
   @override
   int get hashCode =>
-      Object.hash(enabled, preset, advanced, widthFrac, heightFrac, themeFollow);
-
-  // ---------------------------------------------------------------------------
-  // Preset geometry
-  // ---------------------------------------------------------------------------
-
-  /// Preset name → (widthFrac, heightFrac) of HUD Safe Area.
-  ///
-  /// These fractions are the default geometry for each preset. They are applied
-  /// by the MinimapHost wiring in main.dart whenever the config changes and the
-  /// preset (not advanced) mode is active.
-  static const Map<String, (double, double)> presetFractions = {
-    'compact':  (0.35, 0.60),
-    'balanced': (0.50, 0.80),
-    'large':    (0.70, 1.00),
-  };
-
-  /// Resolved safe-area fractions for the current config.
-  ///
-  /// In advanced mode (when [advanced] is true AND [widthFrac]/[heightFrac] are
-  /// set), returns those manual values clamped to [0.1, 1.0].
-  /// In preset mode, returns [presetFractions] for [preset] (fallback: balanced).
-  (double, double) get resolvedFracs {
-    if (advanced && widthFrac != null && heightFrac != null) {
-      return (widthFrac!.clamp(0.1, 1.0), heightFrac!.clamp(0.1, 1.0));
-    }
-    return presetFractions[preset] ?? presetFractions['balanced']!;
-  }
+      Object.hash(enabled, preset, advanced, sizeFraction, looks);
 }
 
 /// Battery widget appearance config.
@@ -304,8 +394,9 @@ class HudSafeArea {
     this.bottom = _defaultBottom,
   });
 
-  /// Phase-0 dp-constant defaults computed for 1024×576 @ 213 dpi (Zeekr S2 nominal).
-  /// On T2 (1280×720) and T3 (real car) these are overwritten at runtime by dhuMain.
+  /// Phase-0 dp-constant defaults computed for 1024×576 @ 213 dpi (Zeekr S2 nominal;
+  /// matches the real HUD display on both T2 emulator and T3 car).
+  /// These are overwritten at runtime by dhuMain from the actual reported metrics.
   static const double _defaultLeft = 0.1064;
   static const double _defaultTop = 0.3125;
   static const double _defaultRight = 0.9072;
@@ -371,6 +462,7 @@ class AppConfig {
     this.battery = const BatteryConfig(),
     this.minimap = const MinimapConfig(),
     this.locale,
+    this.autoUsbPeripheral = false,
   });
 
   /// Whether the HUD engine should be spawned at all.
@@ -397,6 +489,19 @@ class AppConfig {
   /// future locale codes need no schema change.
   final String? locale;
 
+  /// Whether the DHU should re-apply USB peripheral mode on every boot
+  /// (the "auto" USB mode — Block 0016 / UsbMode.auto).
+  ///
+  /// **Top-level key, not nested** — this must match exactly what the native
+  /// pre-Flutter boot shim reads: `ConfigShim.readAutoUsbPeripheral` /
+  /// `boot/ConfigShim.kt:41-47` does `json.optBoolean("autoUsbPeripheral", ...)`
+  /// directly on the root `flutter.zee.config` JSON object, not on a nested
+  /// object. Before this field existed, `AppConfig` never wrote this key at
+  /// all, so `BootReceiver`'s re-apply on boot always read the `optBoolean`
+  /// default (`false`) — "auto" looked selectable in the UI but never
+  /// persisted anything a boot could read back (Task 2).
+  final bool autoUsbPeripheral;
+
   AppConfig copyWith({
     bool? hudEnabled,
     HudSafeArea? safeArea,
@@ -405,6 +510,7 @@ class AppConfig {
     MinimapConfig? minimap,
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
     Object? locale = _unset,
+    bool? autoUsbPeripheral,
   }) => AppConfig(
     hudEnabled: hudEnabled ?? this.hudEnabled,
     safeArea: safeArea ?? this.safeArea,
@@ -412,6 +518,7 @@ class AppConfig {
     battery: battery ?? this.battery,
     minimap: minimap ?? this.minimap,
     locale: identical(locale, _unset) ? this.locale : locale as String?,
+    autoUsbPeripheral: autoUsbPeripheral ?? this.autoUsbPeripheral,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -421,6 +528,7 @@ class AppConfig {
     'battery': battery.toJson(),
     'minimap': minimap.toJson(),
     if (locale != null) 'locale': locale,
+    'autoUsbPeripheral': autoUsbPeripheral,
   };
 
   factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
@@ -438,6 +546,7 @@ class AppConfig {
         ? MinimapConfig.fromJson(json['minimap']! as Map<String, Object?>)
         : const MinimapConfig(),
     locale: json['locale'] as String?,
+    autoUsbPeripheral: json['autoUsbPeripheral'] as bool? ?? false,
   );
 
   /// Convenience: round-trip through JSON string (used by SharedPrefsConfigStore).
@@ -452,11 +561,19 @@ class AppConfig {
       other.blinker == blinker &&
       other.battery == battery &&
       other.minimap == minimap &&
-      other.locale == locale;
+      other.locale == locale &&
+      other.autoUsbPeripheral == autoUsbPeripheral;
 
   @override
-  int get hashCode =>
-      Object.hash(hudEnabled, safeArea, blinker, battery, minimap, locale);
+  int get hashCode => Object.hash(
+    hudEnabled,
+    safeArea,
+    blinker,
+    battery,
+    minimap,
+    locale,
+    autoUsbPeripheral,
+  );
 }
 
 // Sentinel used by copyWith to distinguish "pass null" from "omit".

@@ -2,6 +2,12 @@ package com.zeepowertoys.zee_power_toys.carsignals
 
 // Snapshot of current native car signal state.
 // Passed back to Dart via MethodChannel "snapshot" and used by the ContentProvider dump.
+//
+// [source] — which CarSignalSource is actually live behind this snapshot:
+// "adaptapi" | "simulated". Populated by CarSignalsController from its own
+// selectSource() decision (never re-derived here) so Dart/the UI can report
+// the real signal source instead of leaving the user to guess whether they
+// are looking at demo data or a real car (the emulator-vs-car confusion).
 data class CarSignalSnapshot(
     val speedKmh: Int? = null,
     val blinker: String = "off",   // off | left | right | hazard
@@ -12,6 +18,7 @@ data class CarSignalSnapshot(
     val batteryPct: Int? = null,
     val batteryTempC: Double? = null,
     val powerFlow: String = "unknown",
+    val source: String = "unknown",   // adaptapi | simulated | unknown
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "speedKmh" to speedKmh,
@@ -23,6 +30,7 @@ data class CarSignalSnapshot(
         "batteryPct" to batteryPct,
         "batteryTempC" to batteryTempC,
         "powerFlow" to powerFlow,
+        "source" to source,
     )
 
     fun toJson(): String = buildString {
@@ -35,7 +43,8 @@ data class CarSignalSnapshot(
         append("\"chargeKw\":${chargeKw ?: "null"},")
         append("\"batteryPct\":${batteryPct ?: "null"},")
         append("\"batteryTempC\":${batteryTempC ?: "null"},")
-        append("\"powerFlow\":\"$powerFlow\"")
+        append("\"powerFlow\":\"$powerFlow\",")
+        append("\"source\":\"$source\"")
         append("}")
     }
 }

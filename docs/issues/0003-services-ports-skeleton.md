@@ -27,7 +27,10 @@ Define **all** service ports the MVP hangs off (ADR 0003) as abstract Dart class
 - **CarSignals** port: `Stream<CarSignalEvent> get events` + latest-snapshot accessor. `sealed class CarSignalEvent` → `SpeedEvent(kmh)`, `BlinkerEvent(BlinkerState{off,left,right,hazard})`, `ChargeEvent(charging, volts?, amps?, kw?)`, `BatteryEvent(levelPct, tempC)`, `PowerFlowEvent(PowerFlow)`. `FakeCarSignals` with `emitSpeed/emitBlinker/emitCharge/emitBattery` driven by `ext.zee.inject`.
 - **ConfigStore**: keep; the schema grows per feature later.
 - **MinimapHost** port: commands `enable(bool)`, `setBounds(rect)`, `setParams(...)`; events = trip data (`GuidanceEvent{turnArrow, distanceM, roadName, etaMin}`). `FakeMinimapHost` records commands + can emit canned trip data.
-- **HudHost** port: `show()/hide()`, `applySafeArea(Rect)`. `DesktopHudHost` (T1) wraps the desktop_multi_window HUD window.
+- **HudHost** port: `show()/hide()`. (Historical: this Block also specified `applySafeArea(Rect)` and a
+  `DesktopHudHost` for T1. Neither survived — `applySafeArea` shipped with an empty native body and zero
+  callers and was deleted in the 2026-07-31 recovery wave, since the Safe Area is derived from the real
+  display metrics via native's `onHudReady`; `DesktopHudHost` was never written, T1 uses `FakeHudHost`.)
 - **Installer** port: `Stream<InstallProgress> install(GithubAsset)`. `FakeInstaller` simulates progress.
 - **SystemConfig** port: `Locale get systemLocale`, `setSystemLanguage`, `setClusterLanguage`. `FakeSystemConfig` in-memory.
 - **Relay generalization**: hub carries a typed envelope `{kind: config|carSignal, payload}`. CarSignals events injected on DHU relay to the HUD isolate; HUD re-derives.

@@ -3,7 +3,14 @@ import 'dart:ui' show Rect;
 /// Navigation-sidecar port (YNavi minimap).
 /// Commands flow in (enable/bounds/params); trip guidance events flow out.
 abstract class MinimapHost {
-  Future<void> enable(bool on);
+  /// Enables/disables the minimap surface. Returns the native gate result
+  /// when known (e.g. `"applied:true"`, `"unavailable"` when YNavi is absent
+  /// or the host failed to start, `"no-minimap"` before the HUD engine
+  /// exists) — surfaced verbatim in `ext.zee.readViewModel`'s `minimap.native`
+  /// field. Native (Android) is the sole source of the availability gate: a
+  /// Dart-side `enable(true)` alone can never make content appear when YNavi
+  /// is absent (Block "kill the rainbow placeholder").
+  Future<String?> enable(bool on);
   Future<void> setBounds(Rect r);
   Future<void> setParams(Map<String, Object?> p);
   Stream<GuidanceEvent> get guidance;

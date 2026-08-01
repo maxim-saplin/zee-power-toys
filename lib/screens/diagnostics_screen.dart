@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/car_signals.dart';
+import '../providers/hud_geometry.dart';
 import '../providers/usb_mode.dart';
 import '../services/car_signals.dart';
 import '../services/usb_mode.dart';
@@ -35,11 +36,67 @@ class DiagnosticsScreen extends ConsumerWidget {
     // Read-only USB mode — no writes here; use nav-usb hub tile for writes.
     final usbPort = ref.watch(usbModeProvider);
 
+    // Which signal source is actually live (adaptapi/simulated/fake), and the
+    // real HUD backing-display geometry — together they answer the question
+    // this screen used to leave silent: "am I looking at demo data, an
+    // injected simulation, or a real car — and which display?" (Task 1).
+    final sourceAsync = ref.watch(signalSourceProvider);
+    final hudGeom = ref.watch(hudGeometryProvider);
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.diagnosticsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(Insets.lg),
         children: <Widget>[
+          // ---- Signal source + HUD display (Task 1) --------------------------
+          _SectionCard(
+            title: l10n.diagSectionSource,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.sm,
+                  Insets.lg,
+                  Insets.sm,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      l10n.diagSignalSource,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    sourceAsync.when(
+                      data: (kind) => Chip(
+                        key: const ValueKey('diag-signal-source-chip'),
+                        label: Text(_signalSourceLabel(kind, l10n)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      loading: () => const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      error: (_, _) => Chip(
+                        label: Text(l10n.diagSignalSourceUnknown),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _SignalRow(
+                label: l10n.diagHudDisplay,
+                value: hudGeom == null
+                    ? '—'
+                    : 'id=${hudGeom.displayId ?? '?'} '
+                          '${hudGeom.w}×${hudGeom.h} @${hudGeom.dpi} dpi',
+                unit: '',
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.md),
+
           // ---- Motion -------------------------------------------------------
           _SectionCard(
             title: l10n.diagSectionMotion,
@@ -149,7 +206,6 @@ class DiagnosticsScreen extends ConsumerWidget {
   // ---------------------------------------------------------------------------
   // Value-formatting helpers — convert enums to localized display strings.
   // ---------------------------------------------------------------------------
-
 }
 
 // ---------------------------------------------------------------------------
@@ -175,10 +231,20 @@ String _powerFlowLabel(PowerFlow flow, AppLocalizations l10n) {
 }
 
 String _usbModeLabel(UsbMode mode, AppLocalizations l10n) => switch (mode) {
-      UsbMode.peripheral => l10n.usbModePeripheral,
-      UsbMode.host => l10n.usbModeHost,
-      UsbMode.auto => l10n.usbModeAuto,
-    };
+  UsbMode.peripheral => l10n.usbModePeripheral,
+  UsbMode.host => l10n.usbModeHost,
+  UsbMode.auto => l10n.usbModeAuto,
+};
+
+/// Localized label for the live [CarSignals.sourceKind] value ('adaptapi' |
+/// 'simulated' | 'fake'); anything else (future values, decode hiccups) falls
+/// back to the same "unknown" label a channel error would show.
+String _signalSourceLabel(String kind, AppLocalizations l10n) => switch (kind) {
+  'adaptapi' => l10n.diagSignalSourceAdaptApi,
+  'simulated' => l10n.diagSignalSourceSimulated,
+  'fake' => l10n.diagSignalSourceFake,
+  _ => l10n.diagSignalSourceUnknown,
+};
 
 // ---------------------------------------------------------------------------
 // _SectionCard — groups related signal rows under a header.

@@ -29,6 +29,14 @@ CLI subcommands (output is always JSON to stdout):
   set-config      --surface dhu|hud  key=value ...
   tap             --surface dhu|hud  --key <ValueKey>
   shot            --surface dhu|hud  [--out path/to/file.png]
+                  [--layer flutter|native|both] [--expect WxH]
+                  flutter (default): RepaintBoundary only — CANNOT see the
+                    native minimap composite (docs/issues/0009-minimap-under-
+                    layer.md:39). native: full device composite via `adb
+                    exec-out screencap` (no VM session needed). both: writes
+                    both, reports both dimension pairs.
+  hud-display                          discover the HUD secondary display
+                                        (displayId/w/h/dpi) via dumpsys display
   inject          kind=speed|blinker|charge|battery  value=...  [--surface dhu]
 
 Examples:
@@ -37,6 +45,8 @@ Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=speed value=80
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=blinker value=left
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=charge charging=true kw=50
+  uv run dev/feedback_loop.py hud-display
+  uv run dev/feedback_loop.py shot --surface hud --layer both --out /tmp/hud.png
 """
 
 from __future__ import annotations
@@ -47,6 +57,7 @@ import base64
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 from abc import ABC, abstractmethod
@@ -157,6 +168,85 @@ class T2NativeChannel(NativeChannel):
             except json.JSONDecodeError:
                 pass
         return {"raw_output": output, "error": "could not parse JSON from DUMP result"}
+
+
+# ---------------------------------------------------------------------------
+# Native composite capture — `adb exec-out screencap` (Block 0027).
+#
+# ext.zee.shot (the VM-service path) captures ONLY the Flutter RepaintBoundary.
+# On the HUD surface that misses the native MinimapView TextureView entirely —
+# the map is composited by Android, under the transparent Flutter overlay, and
+# is structurally invisible to the Flutter-side capture (docs/issues/0009-
+# minimap-under-layer.md:39). `adb exec-out screencap -p -d <displayId>`
+# captures the full device composite instead — this is the only way to
+# verify the thing the product actually is.
+# ---------------------------------------------------------------------------
+
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+
+def _parse_wxh(s: str) -> tuple[int, int]:
+    """Parse a 'WxH' string (e.g. '1024x576') into (w, h)."""
+    m = re.match(r"^\s*(\d+)\s*x\s*(\d+)\s*$", s)
+    if not m:
+        raise ValueError(f"bad --expect value {s!r}; expected WxH e.g. 1024x576")
+    return int(m.group(1)), int(m.group(2))
+
+
+def shot_native(
+    surface: str,
+    out_path: str | None,
+    *,
+    serial: str = _z.DEFAULT_SERIAL,
+    expect: tuple[int, int] | None = None,
+) -> dict[str, Any]:
+    """Capture the full native composite via `adb exec-out screencap -p -d <displayId>`.
+
+    surface == 'hud': displayId is discovered via `resolve_hud_display()` — the
+      real secondary display the HUD Presentation lives on (do NOT hardcode).
+    surface == 'dhu' (or anything else): displayId 0 (the primary display).
+
+    The PNG's IHDR chunk (bytes 16..24: width, height, both big-endian uint32)
+    is parsed directly — no Pillow dependency. When [expect] (w, h) is given
+    and the capture does not match, nothing is written to [out_path] and the
+    returned dict carries an "error" key; callers should treat that as a
+    hard failure (non-zero exit at the CLI).
+    """
+    display_id = 0
+    if surface == "hud":
+        info = _z.resolve_hud_display(serial=serial)
+        display_id = info["displayId"]
+
+    proc = _z.adb(
+        "exec-out", "screencap", "-p", "-d", str(display_id),
+        serial=serial, binary=True, check=True,
+    )
+    png: bytes = proc.stdout
+
+    if len(png) < 24 or png[:8] != _PNG_MAGIC:
+        return {
+            "error": "screencap did not return a valid PNG",
+            "displayId": display_id,
+            "bytes": len(png),
+        }
+
+    w, h = struct.unpack(">II", png[16:24])
+
+    if expect is not None and (w, h) != tuple(expect):
+        return {
+            "error": "dimension mismatch",
+            "got": [w, h],
+            "want": list(expect),
+            "displayId": display_id,
+        }
+
+    result: dict[str, Any] = {"surface": surface, "displayId": display_id, "w": w, "h": h}
+    if out_path:
+        p = Path(out_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(png)
+        result["saved_to"] = str(p)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +500,32 @@ def build_parser() -> argparse.ArgumentParser:
     shot = sub.add_parser("shot", help="capture a PNG screenshot")
     shot.add_argument("--surface", required=True, choices=["dhu", "hud"])
     shot.add_argument("--out", default=None, help="path to save the PNG (optional)")
+    shot.add_argument(
+        "--layer",
+        choices=["flutter", "native", "both"],
+        default="flutter",
+        help=(
+            "flutter (default, unchanged behaviour): ext.zee.shot RepaintBoundary "
+            "capture — CANNOT see the native minimap composite "
+            "(docs/issues/0009-minimap-under-layer.md:39). "
+            "native: full device composite via `adb exec-out screencap` (no VM "
+            "session needed). both: writes native to --out and flutter to "
+            "--out.flutter.png, reports both dimension pairs."
+        ),
+    )
+    shot.add_argument(
+        "--expect",
+        default=None,
+        help="WxH (e.g. 1024x576) — assert the native capture's dimensions; "
+        "on mismatch nothing is written and the command exits non-zero",
+    )
+
+    # hud-display — discover the HUD secondary display (Block 0027).
+    sub.add_parser(
+        "hud-display",
+        help="discover the HUD secondary display via `adb shell dumpsys display` "
+        "(displayId/w/h/dpi) — pure adb, no VM session needed",
+    )
 
     # inject — T1: VM-service ext.zee.inject on DHU; T2/T3: native channel
     inj = sub.add_parser(
@@ -444,13 +560,34 @@ def main(argv: list[str] | None = None) -> int:
     p = build_parser()
     args = p.parse_args(argv)
 
+    # hud-display is pure adb (dumpsys display) — no VM session, no tier.
+    if args.cmd == "hud-display":
+        try:
+            info = _z.resolve_hud_display(serial=args.serial)
+            print(json.dumps(info, indent=2))
+            return 0
+        except Exception as e:
+            print(json.dumps({"error": str(e)}, indent=2), file=sys.stderr)
+            return 1
+
+    # `shot --layer native` is also pure adb (screencap) — no VM session needed.
+    if args.cmd == "shot" and args.layer == "native":
+        expect = _parse_wxh(args.expect) if args.expect else None
+        try:
+            result = shot_native(args.surface, args.out, serial=args.serial, expect=expect)
+        except Exception as e:
+            print(json.dumps({"error": str(e)}, indent=2), file=sys.stderr)
+            return 1
+        print(json.dumps(result, indent=2))
+        return 1 if "error" in result else 0
+
     # Resolve VM URI (logcat/env/flag).
     # For native-dump on T2 we don't need the VM URI — but we still try to
     # resolve it (gracefully) so other commands work in the same session.
     ws_uri: str | None = None
     if args.cmd != "native-dump":
         try:
-            ws_uri = _z.resolve_ws_uri(serial=args.serial, override=args.vm_uri)
+            ws_uri = _z.resolve_ws_uri(serial=args.serial, override=args.vm_uri, tier=args.tier)
         except Exception as e:
             print(
                 json.dumps({"error": f"VM discovery failed: {e}"}, indent=2),
@@ -496,7 +633,21 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "tap":
             result = await fl.tap(args.surface, args.key)
         elif args.cmd == "shot":
-            result = await fl.shot(args.surface, out_path=args.out)
+            # args.layer == "native" is handled earlier (no VM session needed);
+            # here layer is "flutter" (default, unchanged behaviour) or "both".
+            if args.layer == "both":
+                expect = _parse_wxh(args.expect) if args.expect else None
+                try:
+                    native_result = shot_native(
+                        args.surface, args.out, serial=args.serial, expect=expect,
+                    )
+                except Exception as e:
+                    native_result = {"error": str(e)}
+                flutter_out = f"{args.out}.flutter.png" if args.out else None
+                flutter_result = await fl.shot(args.surface, out_path=flutter_out)
+                result = {"native": native_result, "flutter": flutter_result}
+            else:
+                result = await fl.shot(args.surface, out_path=args.out)
         elif args.cmd == "inject":
             kv = _parse_kvs(args.kvs)
             surface = getattr(args, "surface", "dhu")
@@ -515,6 +666,13 @@ def main(argv: list[str] | None = None) -> int:
         rc, result = asyncio.run(_open_feedback_loop(ws_uri, native, run))
         if result is not None:
             print(json.dumps(result, indent=2))
+        if (
+            args.cmd == "shot"
+            and args.layer == "both"
+            and isinstance(result, dict)
+            and "error" in result.get("native", {})
+        ):
+            return 1
         return rc
     except Exception as e:
         print(

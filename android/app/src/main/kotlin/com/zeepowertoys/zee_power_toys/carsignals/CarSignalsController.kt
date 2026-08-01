@@ -43,6 +43,12 @@ class CarSignalsController(
     private var eventSink: EventChannel.EventSink? = null
     private var started = false
 
+    // Which source selectSource() actually picked — "adaptapi" | "simulated".
+    // Surfaced to Dart (CarSignalSnapshot.source) so the UI can tell the user
+    // whether they are looking at demo data or a real car, instead of the
+    // decision being logged and nowhere else (Task 1 — signal-source honesty).
+    private var sourceKind: String = "unknown"
+
     init {
         methodChannel.setMethodCallHandler(this)
         eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
@@ -70,10 +76,12 @@ class CarSignalsController(
         val src: CarSignalSource = when {
             override == "sim" -> {
                 Log.i(TAG, "CarSignals source = Simulated (ADB override persist.zee.carsignals=sim)")
+                sourceKind = "simulated"
                 SimulatedCarSignals()
             }
             override == "adapt" -> {
                 Log.i(TAG, "CarSignals source = AdaptAPI (ADB override persist.zee.carsignals=adapt)")
+                sourceKind = "adaptapi"
                 AdaptApiCarSignals(ctx)
             }
             else -> {
@@ -82,13 +90,16 @@ class CarSignalsController(
                 try {
                     if (adapApi.probe()) {
                         Log.i(TAG, "CarSignals source = AdaptAPI (auto-detected: Car.create succeeded)")
+                        sourceKind = "adaptapi"
                         adapApi
                     } else {
                         Log.i(TAG, "CarSignals source = Simulated (auto-detected: AdaptAPI probe returned false)")
+                        sourceKind = "simulated"
                         SimulatedCarSignals()
                     }
                 } catch (t: Throwable) {
                     Log.i(TAG, "CarSignals source = Simulated (auto-detected: AdaptAPI probe threw: ${t.message})")
+                    sourceKind = "simulated"
                     SimulatedCarSignals()
                 }
             }
@@ -98,6 +109,13 @@ class CarSignalsController(
         if (src is SimulatedCarSignals) simSource = src
     }
 
+    // Annotate a raw source snapshot with the resolved sourceKind before
+    // handing it to Dart — the source objects themselves (AdaptApiCarSignals /
+    // SimulatedCarSignals) know nothing about which one was selected; only
+    // this controller does (selectSource() above).
+    private fun snapshotWithSource(): CarSignalSnapshot? =
+        source?.snapshot()?.copy(source = sourceKind)
+
     // MethodChannel handler — Dart calls start() and snapshot()
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
@@ -106,9 +124,12 @@ class CarSignalsController(
                     started = true
                     source?.start { event -> emitEvent(event) }
                 }
-                result.success(null)
+                // Return the (source-annotated) snapshot so Dart learns the
+                // live signal source from the very first round-trip — no
+                // separate "snapshot" call needed just to answer "which source?".
+                result.success(snapshotWithSource()?.toMap())
             }
-            "snapshot" -> result.success(source?.snapshot()?.toMap())
+            "snapshot" -> result.success(snapshotWithSource()?.toMap())
             // simulate — in-app equivalent of the SimulateReceiver ADB broadcast
             // (Block 0026, Developer Simulate screen). Reuses the same parsing
             // (SimulatorState.apply) and forwarding (onSimulatedEvent) as the

@@ -22,6 +22,27 @@
   "diagnosticsTitle": "Диагностика",
   "@diagnosticsTitle": { "description": "Diagnostics screen app-bar title" },
 
+  "diagSectionSource": "Источник сигнала",
+  "@diagSectionSource": { "description": "Diagnostics: Signal source section heading" },
+
+  "diagSignalSource": "Источник",
+  "@diagSignalSource": { "description": "Diagnostics: signal source row label" },
+
+  "diagSignalSourceAdaptApi": "AdaptAPI (автомобиль)",
+  "@diagSignalSourceAdaptApi": { "description": "Signal source: native AdaptAPI (real car signals)" },
+
+  "diagSignalSourceSimulated": "Симуляция (эмулятор)",
+  "@diagSignalSourceSimulated": { "description": "Signal source: native simulator fallback, no AdaptAPI" },
+
+  "diagSignalSourceFake": "Заглушка (десктоп)",
+  "@diagSignalSourceFake": { "description": "Signal source: T1 pure-Dart fake" },
+
+  "diagSignalSourceUnknown": "Неизвестно",
+  "@diagSignalSourceUnknown": { "description": "Signal source: not yet resolved or a decode error" },
+
+  "diagHudDisplay": "Дисплей HUD",
+  "@diagHudDisplay": { "description": "Diagnostics: HUD backing-display geometry row label" },
+
   "diagSectionMotion": "Движение",
   "@diagSectionMotion": { "description": "Diagnostics: Motion section heading" },
 
@@ -199,6 +220,9 @@
   "showChargingStats": "Показывать данные зарядки (при зарядке)",
   "@showChargingStats": { "description": "Toggle: show charging stats panel" },
 
+  "batterySize": "Размер",
+  "@batterySize": { "description": "Battery size slider label" },
+
   "safeAreaSection": "Безопасная область (доли)",
   "@safeAreaSection": { "description": "Safe Area readout heading" },
 
@@ -217,7 +241,7 @@
   "sectionMinimap": "Миникарта",
   "@sectionMinimap": { "description": "Minimap settings section label" },
 
-  "sectionMinimapSubtitle": "Миникарта YNavi, пресеты, темная/светлая",
+  "sectionMinimapSubtitle": "Миникарта YNavi, размер, цвет",
   "@sectionMinimapSubtitle": { "description": "Minimap settings section subtitle" },
 
   "minimapTitle": "Миникарта",
@@ -247,23 +271,32 @@
   "minimapAdvanced": "Расширенно",
   "@minimapAdvanced": { "description": "Minimap advanced expansion tile title" },
 
-  "minimapWidth": "Ширина (доля безопасной области)",
-  "@minimapWidth": { "description": "Minimap manual width slider label" },
+  "minimapSize": "Размер (доля безопасной области)",
+  "@minimapSize": { "description": "Minimap manual size slider label" },
 
-  "minimapHeight": "Высота (доля безопасной области)",
-  "@minimapHeight": { "description": "Minimap manual height slider label" },
+  "minimapLookSection": "Вид",
+  "@minimapLookSection": { "description": "Minimap Look section heading (colour preset, brightness, contrast)" },
 
-  "minimapThemeSection": "Тема",
-  "@minimapThemeSection": { "description": "Minimap theme section heading" },
+  "minimapLookPreset": "Цветовой пресет",
+  "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
 
-  "minimapThemeAuto": "Системная (авто)",
-  "@minimapThemeAuto": { "description": "Minimap theme: follow system brightness" },
+  "minimapLookPresetGreenYellow": "Зелёно-жёлтый",
+  "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
 
-  "minimapThemeDark": "Тёмная",
-  "@minimapThemeDark": { "description": "Minimap theme: force dark palette" },
+  "minimapLookPresetWhite": "Белый",
+  "@minimapLookPresetWhite": { "description": "Minimap colour preset: white" },
 
-  "minimapThemeLight": "Светлая",
-  "@minimapThemeLight": { "description": "Minimap theme: force light palette" },
+  "minimapLookPresetAmber": "Янтарный",
+  "@minimapLookPresetAmber": { "description": "Minimap colour preset: amber" },
+
+  "minimapLookPresetCyan": "Голубой",
+  "@minimapLookPresetCyan": { "description": "Minimap colour preset: cyan" },
+
+  "minimapLookBrightness": "Яркость",
+  "@minimapLookBrightness": { "description": "Minimap brightness slider label (backed by the native threshold param)" },
+
+  "minimapLookContrast": "Контраст",
+  "@minimapLookContrast": { "description": "Minimap contrast slider label" },
 
   "sectionUsbAdb": "USB / ADB",
   "@sectionUsbAdb": { "description": "USB/ADB settings section label" },
@@ -286,14 +319,23 @@
   "usbCurrentMode": "Текущий",
   "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
 
-  "usbPlatformSigningRequired": "Требуется системная подпись — доступно в автомобиле",
-  "@usbPlatformSigningRequired": { "description": "Hint when USB mode write requires platform signing" },
-
-  "hudSlotGuidance": "НАВИГАЦИЯ",
-  "@hudSlotGuidance": { "description": "HUD preview slot stub label: navigation guidance" },
+  "usbPlatformSigningRequired": "Для фактического переключения режима USB нужна системная подпись, которой у этой сборки нет — ни на эмуляторе, ни в автомобиле. Выбор сохраняется, но сам режим USB не изменится, пока приложение не будет подписано системным ключом.",
+  "@usbPlatformSigningRequired": { "description": "Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved" },
 
   "hudSlotMinimap": "МИНИКАРТА",
-  "@hudSlotMinimap": { "description": "HUD preview slot stub label: YNavi minimap" },
+  "@hudSlotMinimap": { "description": "Accessibility label for the HUD minimap slot's schematic glyph (a11y only)" },
+
+  "hudFullDisplayToggle": "Полный экран",
+  "@hudFullDisplayToggle": { "description": "HUD settings: toggle full backing-display debug view" },
+
+  "hudFullDisplayToggleSubtitle": "Показать весь дисплей HUD целиком, с обводкой Safe Area (отладка)",
+  "@hudFullDisplayToggleSubtitle": { "description": "Subtitle for the full-display debug toggle" },
+
+  "hudPreviewBadgeDemo": "ПРЕДПРОСМОТР · ДЕМО",
+  "@hudPreviewBadgeDemo": { "description": "HudPreview badge: forced demo CarSignal state" },
+
+  "hudPreviewBadgeLive": "ЖИВОЙ · СИМУЛЯЦИЯ",
+  "@hudPreviewBadgeLive": { "description": "HudPreview badge: Simulate screen's live unforced CarSignal preview" },
 
   "minimapPresetDisabledHint": "Активны пользовательские размеры",
   "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" },

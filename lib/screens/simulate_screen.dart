@@ -7,6 +7,7 @@ import '../providers/car_signals.dart';
 import '../providers/services.dart';
 import '../services/car_signals.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud_preview.dart';
 import '../widgets/settings_layout.dart';
 
 /// Developer Simulate screen (Block 0026) — debug-only, drives the *real*
@@ -258,22 +259,23 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
   }
 }
 
-/// Grey-glass box rendering the real, UNFORCED [HudRoot] — no signal override,
-/// unlike `HudPreview` (Config Preview). Reads live CarSignals directly so
-/// Simulate controls above are watchable in real time.
+/// Grey-glass box rendering the real, UNFORCED [HudRoot] — reads live
+/// CarSignals directly so the Simulate controls above are watchable in real
+/// time, unlike the Config Preview which pins them to a demo scenario.
+///
+/// This delegates to [HudPreview] rather than re-implementing the glass box.
+/// It used to be a hand-rolled copy with a hardcoded `1024 / 576` aspect, which
+/// meant it showed the whole backing display instead of the optically visible
+/// Safe Area *and* carried the ~2.9x mark-size exaggeration that `HudPreview`
+/// now corrects — two bugs kept alive purely by the duplication.
 class _LiveHudPreviewBox extends StatelessWidget {
   const _LiveHudPreviewBox();
 
   @override
   Widget build(BuildContext context) {
-    return const AspectRatio(
-      aspectRatio: 1024 / 576,
-      child: Stack(
-        children: <Widget>[
-          ColoredBox(color: Color(0xFF888888), child: SizedBox.expand()),
-          HudRoot(showSafeAreaBorder: true),
-        ],
-      ),
+    return const HudPreview(
+      forceDemoSignals: false,
+      badge: HudPreviewBadge.liveSimulated,
     );
   }
 }

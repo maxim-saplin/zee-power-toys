@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../providers/services.dart';
 import '../services/config_store.dart';
+import '../services/minimap_viewport.dart' show hudPresetSizeFraction;
 import '../theme/app_theme.dart';
 import '../widgets/settings_layout.dart';
 
@@ -12,9 +13,19 @@ import '../widgets/settings_layout.dart';
 ///
 /// Enable toggle — disabled when ynaviAvailableProvider is false (no compatible
 /// mod detected), shown with a localized hint.
-/// Basic mode: compact/balanced/large preset selector.
-/// Advanced ExpansionTile: manual width/height fraction sliders.
-/// Theme: System/Dark/Light selector (themeFollow in MinimapConfig).
+/// Basic mode: compact/balanced/large preset selector (shortcuts that set
+/// [MinimapConfig.sizeFraction]).
+/// Advanced ExpansionTile: one continuous Size slider driving
+/// [MinimapConfig.sizeFraction] (see `computeMinimapViewport` /
+/// `resolvedSizeFraction` — this genuinely resizes the rendered rect; it
+/// replaced the old widthFrac/heightFrac sliders, which the aspect-locked
+/// square viewport never actually consumed).
+/// Look section: colour preset / brightness (threshold) / contrast — the
+/// three [MinimapLooks] knobs pushed to the native ColorMatrix filter via
+/// `host.setParams` in `_applyMinimapConfig` (main.dart).
+///
+/// There is no Theme section any more — see [MinimapConfig]'s doc comment
+/// (config_store.dart) for why `themeFollow` was deleted rather than wired.
 ///
 /// All changes go through store.setConfig → persisted via SharedPrefsConfigStore
 /// → relayed to HUD isolate via the existing change-stream listener.
@@ -124,7 +135,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
                         if (sel.isEmpty) return;
                         store.setConfig(
                           store.value.copyWith(
-                            minimap: cfg.copyWith(preset: sel.first),
+                            minimap: _withPreset(cfg, sel.first),
                           ),
                         );
                       },
@@ -138,7 +149,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
                             key: const ValueKey('minimap-preset-compact'),
                             onTap: () => store.setConfig(
                               store.value.copyWith(
-                                minimap: cfg.copyWith(preset: 'compact'),
+                                minimap: _withPreset(cfg, 'compact'),
                               ),
                             ),
                             child: const SizedBox(width: 1, height: 1),
@@ -147,7 +158,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
                             key: const ValueKey('minimap-preset-balanced'),
                             onTap: () => store.setConfig(
                               store.value.copyWith(
-                                minimap: cfg.copyWith(preset: 'balanced'),
+                                minimap: _withPreset(cfg, 'balanced'),
                               ),
                             ),
                             child: const SizedBox(width: 1, height: 1),
@@ -156,7 +167,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
                             key: const ValueKey('minimap-preset-large'),
                             onTap: () => store.setConfig(
                               store.value.copyWith(
-                                minimap: cfg.copyWith(preset: 'large'),
+                                minimap: _withPreset(cfg, 'large'),
                               ),
                             ),
                             child: const SizedBox(width: 1, height: 1),
@@ -181,7 +192,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
             const SizedBox(height: Insets.xs),
 
             // --------------------------------------------------------------
-            // Advanced mode: manual dimension sliders (opt-in ExpansionTile)
+            // Advanced mode: manual Size slider (opt-in ExpansionTile)
             // --------------------------------------------------------------
             _AdvancedTile(cfg: cfg, store: store, l10n: l10n),
           ],
@@ -190,42 +201,115 @@ class MinimapSettingsScreen extends ConsumerWidget {
         const SizedBox(height: Insets.xl),
 
         // ----------------------------------------------------------------
-        // Theme follow: System / Dark / Light
-        // Dark/light auto: when themeFollow='auto', HUD palette resolves
-        // using MediaQuery.platformBrightnessOf(context) at render time.
-        // 'dark'/'light' force the respective palette regardless of system.
+        // Look: colour preset / brightness / contrast — the three native
+        // ColorMatrix knobs (MinimapLooks) wired all the way to
+        // host.setParams in _applyMinimapConfig (main.dart). Everything else
+        // MinimapParams accepts (saturation, native brightness, invert,
+        // huePass, hueAngle, bufScale, dpiScale) stays ext.zee.minimap-only —
+        // see MinimapLooks' doc comment (config_store.dart).
         // ----------------------------------------------------------------
         SettingsSection(
-          title: l10n.minimapThemeSection,
-          padded: false,
+          title: l10n.minimapLookSection,
           children: <Widget>[
-            RadioGroup<String>(
-              groupValue: cfg.themeFollow,
-              onChanged: (v) {
-                if (v == null) return;
+            Text(l10n.minimapLookPreset, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: Insets.sm),
+            SegmentedButton<String>(
+              segments: <ButtonSegment<String>>[
+                ButtonSegment(
+                  value: 'green-yellow',
+                  label: Text(l10n.minimapLookPresetGreenYellow),
+                ),
+                ButtonSegment(
+                  value: 'white',
+                  label: Text(l10n.minimapLookPresetWhite),
+                ),
+                ButtonSegment(
+                  value: 'amber',
+                  label: Text(l10n.minimapLookPresetAmber),
+                ),
+                ButtonSegment(
+                  value: 'cyan',
+                  label: Text(l10n.minimapLookPresetCyan),
+                ),
+              ],
+              selected: <String>{cfg.looks.colorPreset},
+              onSelectionChanged: (Set<String> sel) {
+                if (sel.isEmpty) return;
                 store.setConfig(
-                  store.value.copyWith(minimap: cfg.copyWith(themeFollow: v)),
+                  store.value.copyWith(
+                    minimap: cfg.copyWith(
+                      looks: cfg.looks.copyWith(colorPreset: sel.first),
+                    ),
+                  ),
                 );
               },
-              child: Column(
+            ),
+            // Invisible GestureDetector hooks so agent tapByKey works on T1.
+            Opacity(
+              opacity: 0,
+              child: Row(
                 children: <Widget>[
-                  RadioListTile<String>(
-                    key: const ValueKey('minimap-theme-auto'),
-                    title: Text(l10n.minimapThemeAuto),
-                    value: 'auto',
-                  ),
-                  RadioListTile<String>(
-                    key: const ValueKey('minimap-theme-dark'),
-                    title: Text(l10n.minimapThemeDark),
-                    value: 'dark',
-                  ),
-                  RadioListTile<String>(
-                    key: const ValueKey('minimap-theme-light'),
-                    title: Text(l10n.minimapThemeLight),
-                    value: 'light',
-                  ),
+                  for (final p in const <String>[
+                    'green-yellow',
+                    'white',
+                    'amber',
+                    'cyan',
+                  ])
+                    GestureDetector(
+                      key: ValueKey('minimap-look-$p'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          minimap: cfg.copyWith(
+                            looks: cfg.looks.copyWith(colorPreset: p),
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
                 ],
               ),
+            ),
+            const SizedBox(height: Insets.md),
+            SettingsSlider(
+              label: l10n.minimapLookBrightness,
+              valueLabel: cfg.looks.threshold.round().toString(),
+              minLabel: '100',
+              maxLabel: '220',
+              sliderKey: const ValueKey('minimap-look-brightness-slider'),
+              min: 100,
+              max: 220,
+              divisions: 24,
+              value: cfg.looks.threshold.clamp(100, 220),
+              onChanged: (v) {
+                store.setConfig(
+                  store.value.copyWith(
+                    minimap: cfg.copyWith(
+                      looks: cfg.looks.copyWith(threshold: v),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: Insets.md),
+            SettingsSlider(
+              label: l10n.minimapLookContrast,
+              valueLabel: cfg.looks.contrast.toStringAsFixed(1),
+              minLabel: '1.0',
+              maxLabel: '6.0',
+              sliderKey: const ValueKey('minimap-look-contrast-slider'),
+              min: 1.0,
+              max: 6.0,
+              divisions: 10,
+              value: cfg.looks.contrast.clamp(1.0, 6.0),
+              onChanged: (v) {
+                store.setConfig(
+                  store.value.copyWith(
+                    minimap: cfg.copyWith(
+                      looks: cfg.looks.copyWith(contrast: v),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -234,7 +318,16 @@ class MinimapSettingsScreen extends ConsumerWidget {
   }
 }
 
-/// Opt-in advanced dimension sliders.  Kept as a private widget so the section
+/// Returns [cfg] with [preset] applied as both the size-preset name AND its
+/// corresponding [MinimapConfig.sizeFraction] — presets are shortcuts for the
+/// Size slider (Task 2), so picking one keeps the slider's value in sync
+/// with the preset actually applied, rather than leaving a stale manual
+/// value behind that would silently win the next time advanced mode reads
+/// [MinimapConfig.resolvedSizeFraction].
+MinimapConfig _withPreset(MinimapConfig cfg, String preset) =>
+    cfg.copyWith(preset: preset, sizeFraction: hudPresetSizeFraction(preset));
+
+/// Opt-in advanced Size slider.  Kept as a private widget so the section
 /// card body stays readable.
 class _AdvancedTile extends StatelessWidget {
   const _AdvancedTile({
@@ -249,6 +342,10 @@ class _AdvancedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Current slider position: the manual override if one is set, else the
+    // fraction the active preset resolves to — so the slider always starts
+    // at a value that matches what's actually rendered right now.
+    final sizeFraction = cfg.sizeFraction ?? hudPresetSizeFraction(cfg.preset);
     return Theme(
       // Hide the ExpansionTile's default divider lines — the card already
       // provides the visual grouping.
@@ -266,36 +363,18 @@ class _AdvancedTile extends StatelessWidget {
         },
         children: <Widget>[
           SettingsSlider(
-            label: l10n.minimapWidth,
-            valueLabel: '${((cfg.widthFrac ?? 0.3) * 100).toStringAsFixed(0)}%',
-            minLabel: '10%',
-            maxLabel: '90%',
-            sliderKey: const ValueKey('minimap-width-slider'),
-            min: 0.1,
-            max: 0.9,
-            divisions: 16,
-            value: (cfg.widthFrac ?? 0.3).clamp(0.1, 0.9),
+            label: l10n.minimapSize,
+            valueLabel: '${(sizeFraction * 100).round()}%',
+            minLabel: '30%',
+            maxLabel: '100%',
+            sliderKey: const ValueKey('minimap-size-slider'),
+            min: 0.3,
+            max: 1.0,
+            divisions: 14,
+            value: sizeFraction.clamp(0.3, 1.0),
             onChanged: (v) {
               store.setConfig(
-                store.value.copyWith(minimap: cfg.copyWith(widthFrac: v)),
-              );
-            },
-          ),
-          const SizedBox(height: Insets.md),
-          SettingsSlider(
-            label: l10n.minimapHeight,
-            valueLabel:
-                '${((cfg.heightFrac ?? 0.3) * 100).toStringAsFixed(0)}%',
-            minLabel: '10%',
-            maxLabel: '90%',
-            sliderKey: const ValueKey('minimap-height-slider'),
-            min: 0.1,
-            max: 0.9,
-            divisions: 16,
-            value: (cfg.heightFrac ?? 0.3).clamp(0.1, 0.9),
-            onChanged: (v) {
-              store.setConfig(
-                store.value.copyWith(minimap: cfg.copyWith(heightFrac: v)),
+                store.value.copyWith(minimap: cfg.copyWith(sizeFraction: v)),
               );
             },
           ),

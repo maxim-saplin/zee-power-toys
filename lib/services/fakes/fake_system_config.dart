@@ -15,11 +15,9 @@ import '../system_config.dart';
 /// [systemLocale] defaults to [initial] (or 'en') — the fake cannot read the
 /// real platform locale on T1, so the initial value is fixed at construction.
 class FakeSystemConfig implements SystemConfig {
-  FakeSystemConfig({
-    Locale? initial,
-    bool unsupported = false,
-  })  : _systemLocale = initial ?? _platformLocale(),
-        _unsupported = unsupported; // ignore: prefer_initializing_formals
+  FakeSystemConfig({Locale? initial, bool unsupported = false})
+    : _systemLocale = initial ?? _platformLocale(),
+      _unsupported = unsupported; // ignore: prefer_initializing_formals
 
   final bool _unsupported;
 
@@ -38,7 +36,9 @@ class FakeSystemConfig implements SystemConfig {
   Future<LanguageSetResult> setSystemLanguage(Locale locale) async {
     if (_unsupported) {
       return const LanguageSetResult(
-          ok: false, reason: 'unsupported-on-device');
+        ok: false,
+        reason: 'unsupported-on-device',
+      );
     }
     lastSystemLanguage = locale;
     _systemLocale = locale;
@@ -49,7 +49,9 @@ class FakeSystemConfig implements SystemConfig {
   Future<LanguageSetResult> setClusterLanguage(Locale locale) async {
     if (_unsupported) {
       return const LanguageSetResult(
-          ok: false, reason: 'unsupported-on-device');
+        ok: false,
+        reason: 'unsupported-on-device',
+      );
     }
     lastClusterLanguage = locale;
     return const LanguageSetResult(ok: true);
@@ -57,6 +59,9 @@ class FakeSystemConfig implements SystemConfig {
 
   @override
   Future<bool> clusterSupported() async => !_unsupported;
+
+  @override
+  Future<bool> systemSupported() async => !_unsupported;
 
   /// Best-effort locale from the platform environment variable on Linux.
   /// Returns Locale('en') when the environment is unavailable.

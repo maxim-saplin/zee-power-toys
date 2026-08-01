@@ -1,12 +1,13 @@
-import 'dart:ui' show Rect;
-
 import '../hud_host.dart';
 
-/// T1 fake for [HudHost].
-/// show/hide/applySafeArea are no-ops on the desktop tier — the HUD window is
-/// already managed by desktop_multi_window in main.dart.
+/// Off-car fake for [HudHost].
+///
+/// [show]/[hide] only record intent: on the desktop tier the second window is
+/// created directly in `main.dart`, so there is no surface for this fake to own.
+/// That is a known fidelity gap — the "HUD engine runs only while the HUD is
+/// active" guarantee (ADR 0001) is real on Android, where `tearDownHud()`
+/// destroys the engine, but not here.
 class FakeHudHost implements HudHost {
-  Rect? lastSafeArea;
   bool visible = false;
 
   @override
@@ -14,7 +15,4 @@ class FakeHudHost implements HudHost {
 
   @override
   Future<void> hide() async => visible = false;
-
-  @override
-  Future<void> applySafeArea(Rect safeArea) async => lastSafeArea = safeArea;
 }

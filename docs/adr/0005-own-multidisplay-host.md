@@ -16,5 +16,17 @@ ADR 0001 needs a two-engine host that puts a transparent Flutter overlay *over* 
 
 **Consequences:**
 - We maintain ~200 lines of Kotlin host code. The trade is ~50 lines of saved boilerplate vs. zero dependency risk on the rendering critical path of a long-lived, safety-relevant car app.
+
+> **Reconciliation (2026-07-31, recovery wave):** the "~200 lines" figure (also in the Decision above) is
+> badly out of date — the native host is **~3,900 lines** of Kotlin, with `MainActivity.kt` alone at ~900.
+> It is also not purely a *host*: it contains the parametric HUD `ColorMatrix` optics
+> (`createHudFilterPaint`) and the whole `MinimapView` TextureView renderer. The *decision* still stands —
+> owning the `Presentation` hierarchy is what lets the native YNavi map composite beneath a transparent
+> `FlutterView`, which no surveyed package permits — but the cost was understated by more than an order of
+> magnitude, and `MainActivity.kt` is now a decomposition candidate.
+>
+> The "new risk" below is **closed**: VM-service drivability of the secondary isolate was runtime-proven in
+> Block 0004 and is exercised on every `zee_run.py up`, which waits for `ext.zee.whoami` to answer on both
+> the `dhu` and `hud` isolates before reporting READY.
 - Revisit only if a package later exposes the Presentation's view hierarchy (native under-layer) *and* leaves engine/state ownership to us.
 - **New risk (carried to ADR 0004):** VM-service drivability of the secondary isolate is assumed from the standard embedding mechanism, not yet runtime-proven; confirm with a `getVM` isolate-count + `ext.zee.*` reachability check when the engine-spawn path is built.

@@ -22,13 +22,19 @@ import '../car_signals.dart';
 /// contract with zero codegen).
 class NativeCarSignals implements CarSignals {
   static const _methodCh = MethodChannel('zee/car_signals');
-  static const _eventCh  = EventChannel('zee/car_signals/events');
+  static const _eventCh = EventChannel('zee/car_signals/events');
 
   final StreamController<CarSignalEvent> _ctrl =
       StreamController<CarSignalEvent>.broadcast();
 
   CarSnapshot _snapshot = const CarSnapshot();
   StreamSubscription<dynamic>? _sub;
+
+  // Resolved once the native "start" round-trip returns the (source-annotated)
+  // initial snapshot — see CarSignalsController.kt's selectSource()/sourceKind.
+  // 'unknown' if the channel call fails; never left incomplete so callers can
+  // always await [sourceKind] without hanging.
+  final Completer<String> _sourceKindCompleter = Completer<String>();
 
   NativeCarSignals() {
     _sub = _eventCh.receiveBroadcastStream().listen(
@@ -38,11 +44,23 @@ class NativeCarSignals implements CarSignals {
           // a transient error (e.g. during engine lifecycle transitions).
           debugPrintNativeEvent('NativeCarSignals: native event error: $err'),
     );
-    // Tell the native side to start emitting.  Fire-and-forget; errors are
-    // benign (controller may not be ready yet on first frame).
-    _methodCh.invokeMethod<void>('start').catchError((Object e) {
-      debugPrintNativeEvent('NativeCarSignals: start() failed: $e');
-    });
+    // Tell the native side to start emitting.  The response is the initial
+    // CarSignalSnapshot (incl. `source`) so we learn which source was
+    // auto-selected from this same round-trip — no extra call needed.
+    _methodCh
+        .invokeMapMethod<String, Object?>('start')
+        .then((raw) {
+          final source = raw?['source'] as String?;
+          if (!_sourceKindCompleter.isCompleted) {
+            _sourceKindCompleter.complete(source ?? 'unknown');
+          }
+        })
+        .catchError((Object e) {
+          debugPrintNativeEvent('NativeCarSignals: start() failed: $e');
+          if (!_sourceKindCompleter.isCompleted) {
+            _sourceKindCompleter.complete('unknown');
+          }
+        });
   }
 
   @override
@@ -50,6 +68,9 @@ class NativeCarSignals implements CarSignals {
 
   @override
   CarSnapshot get snapshot => _snapshot;
+
+  @override
+  Future<String> get sourceKind => _sourceKindCompleter.future;
 
   /// Block 0026 Developer Simulate screen: encodes [event] into the kind/value
   /// string pair `SimulatorState.apply` (Kotlin) parses — the same format the
@@ -63,15 +84,15 @@ class NativeCarSignals implements CarSignals {
       SpeedEvent(:final kmh) => ('speed', '$kmh'),
       BlinkerEvent(:final state) => ('blinker', state.name),
       ChargeEvent(:final charging, :final volts, :final amps, :final kw) => (
-          'charge',
-          charging
-              ? '$charging:${volts ?? ''}:${amps ?? ''}:${kw ?? ''}'
-              : '$charging',
-        ),
+        'charge',
+        charging
+            ? '$charging:${volts ?? ''}:${amps ?? ''}:${kw ?? ''}'
+            : '$charging',
+      ),
       BatteryEvent(:final levelPct, :final tempC) => (
-          'battery',
-          '$levelPct:$tempC',
-        ),
+        'battery',
+        '$levelPct:$tempC',
+      ),
       PowerFlowEvent(:final flow) => ('powerFlow', flow.name),
     };
     return _methodCh.invokeMethod<void>('simulate', <String, String>{
@@ -107,13 +128,15 @@ class NativeCarSignals implements CarSignals {
         case 'charge':
           final charging = m['charging'] as bool? ?? false;
           final volts = _asDouble(m['volts']);
-          final amps  = _asDouble(m['amps']);
-          final kw    = _asDouble(m['kw']);
+          final amps = _asDouble(m['amps']);
+          final kw = _asDouble(m['kw']);
           _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
-          _ctrl.add(ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw));
+          _ctrl.add(
+            ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw),
+          );
 
         case 'battery':
-          final pct   = _asInt(m['levelPct']) ?? 0;
+          final pct = _asInt(m['levelPct']) ?? 0;
           final tempC = _asDouble(m['tempC']) ?? 0.0;
           _snapshot = _snapshot.copyWith(batteryPct: pct, batteryTempC: tempC);
           _ctrl.add(BatteryEvent(levelPct: pct, tempC: tempC));

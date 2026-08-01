@@ -2,45 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:zee_power_toys/hud/battery_widget.dart';
-import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
-import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_installer.dart';
-import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
-import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/harness.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
-  /// Wraps [child] in a minimal ProviderScope with in-memory services.
-  Widget wrapWithProviders(
-    Widget child, {
-    AppConfig? config,
-    FakeCarSignals? signals,
-  }) {
-    final store = SharedPrefsConfigStore();
-    if (config != null) {
-      store.setConfig(config);
-    }
-    return ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(signals ?? FakeCarSignals()),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(FakeInstaller()),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
-      ],
-      child: MaterialApp(home: Scaffold(body: child)),
-    );
-  }
+  setUp(useMockPrefs);
 
   // ---------------------------------------------------------------------------
   // BatteryConfig model
@@ -137,14 +106,16 @@ void main() {
       final config = AppConfig(
         battery: const BatteryConfig(showBattery: false),
       );
-      await tester.binding.setSurfaceSize(const Size(200, 200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(
-        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
-        config: config,
-      ));
-      await tester.pump();
+      await pumpHud(
+        tester,
+        wrapWithProviders(
+          const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+          config: config,
+          scaffold: true,
+          localizations: false,
+        ),
+        size: const Size(200, 200),
+      );
 
       // No icon, no pct text, no temp text.
       expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
@@ -160,6 +131,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 50, tempC: 25.0);
       await tester.pump();
@@ -178,6 +151,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 0, tempC: 20.0);
       await tester.pump();
@@ -194,6 +169,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 50, tempC: 22.0);
       await tester.pump();
@@ -209,6 +186,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 100, tempC: 25.0);
       await tester.pump();
@@ -229,6 +208,8 @@ void main() {
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         config: config,
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 72, tempC: 24.0);
       await tester.pump();
@@ -249,6 +230,8 @@ void main() {
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
         config: config,
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 72, tempC: 24.0);
       await tester.pump();
@@ -270,6 +253,8 @@ void main() {
         const SizedBox(width: 200, height: 300, child: BatteryWidget()),
         config: config,
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 50, tempC: 25.0);
       signals.emitCharge(charging: true, kw: 42.0);
@@ -288,6 +273,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 300, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 50, tempC: 25.0);
       signals.emitCharge(charging: false);
@@ -311,6 +298,8 @@ void main() {
         const SizedBox(width: 200, height: 300, child: BatteryWidget()),
         config: config,
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 50, tempC: 25.0);
       signals.emitCharge(charging: true, kw: 50.0);
@@ -328,6 +317,8 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 300, child: BatteryWidget()),
         signals: signals,
+        scaffold: true,
+        localizations: false,
       ));
       signals.emitBattery(levelPct: 72, tempC: 24.0);
       signals.emitCharge(charging: true, kw: 42.0);
@@ -343,6 +334,144 @@ void main() {
 
       // Charging stats gone.
       expect(find.byKey(const ValueKey('charging-stats')), findsNothing);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Size-slider honesty (battery-widget-honest-range).
+  //
+  // The `battery-size` slider in hud_settings_screen.dart is labelled
+  // 0.5×–2.5×. Before this Block, the whole panel (icon+pct in a Row, temp
+  // and charging-stats below) was wide enough that its natural size already
+  // exceeded the fixed BATTERY slot by sizeScale≈1.07 — so FittedBox's
+  // scaleDown was silently absorbing roughly the top three-quarters of the
+  // slider's labelled range: dragging the slider past its first quarter
+  // produced almost no visible change. That FittedBox itself must stay (it's
+  // the Block 0026 overflow fix — see the group below) — the real fix is
+  // giving it less to compensate for, by laying the icon/pct/temp/kW content
+  // out vertically (matching the slot's own tall-narrow aspect: ~12% of Safe
+  // Area width, ~60% of its height — hud_root.dart:131,128) instead of
+  // side-by-side.
+  //
+  // These tests measure the *rendered* (post-FittedBox) on-screen size via
+  // tester.getTopLeft/getBottomRight — unlike tester.getSize, those apply the
+  // full transform chain (including FittedBox's scale), so they reflect what
+  // actually reaches the screen, not the unscaled layout size.
+  group('BatteryWidget — size slider honesty', () {
+    // The real BATTERY slot at the reference Safe Area geometry (1024×576 @
+    // 213dpi, T2/T3 — CONTEXT.md's 616×175dp Safe Area converted to logical
+    // px at that density): saWidth*0.12 × saHeight*0.6 (hud_root.dart:131,
+    // 128). This is the actual physical constraint the slider's range is
+    // honest (or not) against.
+    const slotSize = Size(98.4, 139.8);
+
+    Size renderedIconSize(WidgetTester tester) {
+      final finder = find.byKey(const ValueKey('battery-icon'));
+      final topLeft = tester.getTopLeft(finder);
+      final bottomRight = tester.getBottomRight(finder);
+      return Size(bottomRight.dx - topLeft.dx, bottomRight.dy - topLeft.dy);
+    }
+
+    Future<void> pumpAt(
+      WidgetTester tester, {
+      required double sizeScale,
+      bool showTemp = true,
+      bool showChargingStats = true,
+      bool charging = false,
+    }) async {
+      final signals = FakeCarSignals();
+      final config = AppConfig(
+        battery: BatteryConfig(
+          sizeScale: sizeScale,
+          showTemp: showTemp,
+          showChargingStats: showChargingStats,
+        ),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        SizedBox.fromSize(size: slotSize, child: const BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 24.0);
+      if (charging) signals.emitCharge(charging: true, kw: 42.0);
+      await tester.pump();
+    }
+
+    testWidgets(
+        'no charging stats: icon keeps growing with sizeScale across '
+        'almost the entire 0.5-2.5 range (single "NN%" line is the only '
+        'competing width, so it stays under the slot for far longer than '
+        'the old icon+pct row did)', (tester) async {
+      await tester.binding.setSurfaceSize(slotSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpAt(tester, sizeScale: 0.5, showTemp: false, showChargingStats: false);
+      final at05 = renderedIconSize(tester).width;
+
+      await pumpAt(tester, sizeScale: 1.5, showTemp: false, showChargingStats: false);
+      final at15 = renderedIconSize(tester).width;
+
+      await pumpAt(tester, sizeScale: 2.0, showTemp: false, showChargingStats: false);
+      final at20 = renderedIconSize(tester).width;
+
+      // Real, substantial growth at every step — not the near-flat line the
+      // old row layout produced once past sizeScale≈1.07.
+      expect(at15, greaterThan(at05 * 1.5),
+          reason: 'growth from 0.5x to 1.5x must be substantial, not '
+              'absorbed by FittedBox scaleDown');
+      expect(at20, greaterThan(at15 * 1.05),
+          reason: 'growth must still be visible out at 2.0x when charging '
+              'stats are not competing for width');
+    });
+
+    testWidgets(
+        'temp + charging stats shown (worst case): growth is still real up '
+        'through the middle of the range, even though the widest line (the '
+        '"NN kW" charging stat) caps it earlier than the no-stats case',
+        (tester) async {
+      await tester.binding.setSurfaceSize(slotSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpAt(tester, sizeScale: 0.5, charging: true);
+      final at05 = renderedIconSize(tester).width;
+
+      await pumpAt(tester, sizeScale: 1.0, charging: true);
+      final at10 = renderedIconSize(tester).width;
+
+      await pumpAt(tester, sizeScale: 1.25, charging: true);
+      final at125 = renderedIconSize(tester).width;
+
+      // Strictly increasing across this stretch — this is exactly the span
+      // that used to be flat (or nearly so) before the vertical-stack
+      // layout change.
+      expect(at10, greaterThan(at05));
+      expect(at125, greaterThan(at10));
+    });
+
+    testWidgets(
+        'no overflow at the slider maximum (2.5x) with battery + temp + '
+        'charging stats all rendering at once — pins the Block 0026 fix '
+        '(FittedBox around the whole panel, not just the icon row)',
+        (tester) async {
+      await tester.binding.setSurfaceSize(slotSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpAt(tester, sizeScale: 2.5, charging: true);
+
+      // A RenderFlex/layout overflow surfaces as a FlutterError captured by
+      // the test binding, not a thrown Dart exception during pump() — so it
+      // must be checked via takeException(), not a try/catch around pumpAt.
+      expect(tester.takeException(), isNull,
+          reason: 'the whole panel must still fit (via FittedBox scaleDown), '
+              'never overflow the fixed BATTERY slot, at the maximum '
+              'sizeScale with every optional row showing at once');
+
+      // The widget must still actually render something (not blank) —
+      // scaling down to fit is correct; disappearing is not.
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
     });
   });
 }

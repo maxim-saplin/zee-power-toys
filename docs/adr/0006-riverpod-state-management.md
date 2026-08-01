@@ -6,7 +6,15 @@ ADR 0003 makes each isolate derive its own view-state from service event streams
 
 - **Per-tier injection is native to it.** Each service (CarSignals, ConfigStore, MinimapHost, HudHost) is exposed as a provider; `ProviderScope` `override`s inject Dart fakes on T1 and real adapters on Android with **zero change to the Dart brain** — this is exactly ADR 0002's requirement, expressed in one mechanism.
 - **Events → state with little ceremony.** `StreamProvider`/`AsyncNotifier` map a service's event stream to derived view-state; widgets `watch` it.
-- **Loop-inspectable.** `ProviderObserver` gives the Feedback Loop a uniform hook to dump derived state, complementing the `ext.zee.*` VM-service extensions.
+- **Loop-inspectable.** The Feedback Loop reads derived state through the `ext.zee.*` VM-service extensions.
+
+> **Reconciliation (2026-07-31, recovery wave):** this bullet originally claimed `ProviderObserver` gives
+> the loop "a uniform hook to dump derived state." No `ProviderObserver` exists anywhere in `lib/` and none
+> was ever written. `ext.zee.readViewModel` reads `ConfigStore` and `CarSignals` **directly** — there is no
+> `ProviderContainer` in `lib/debug/` — so the loop's view of state is assembled by hand, not observed.
+> That is a real limitation, not just a doc error: hand-assembly is why `readViewModel` was still
+> advertising a `plannedSlots` list containing the long-shipped minimap. A `ProviderObserver` remains a
+> reasonable future improvement, but the ADR must not claim one that does not exist.
 
 `flutter_hooks` is a complement, not a competitor — it handles widget-local state/lifecycle and pairs with Riverpod (`hooks_riverpod`); adopt it where it reduces `StatefulWidget` boilerplate.
 

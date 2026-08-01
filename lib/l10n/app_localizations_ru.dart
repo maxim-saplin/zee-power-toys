@@ -30,6 +30,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get diagnosticsTitle => 'Диагностика';
 
   @override
+  String get diagSectionSource => 'Источник сигнала';
+
+  @override
+  String get diagSignalSource => 'Источник';
+
+  @override
+  String get diagSignalSourceAdaptApi => 'AdaptAPI (автомобиль)';
+
+  @override
+  String get diagSignalSourceSimulated => 'Симуляция (эмулятор)';
+
+  @override
+  String get diagSignalSourceFake => 'Заглушка (десктоп)';
+
+  @override
+  String get diagSignalSourceUnknown => 'Неизвестно';
+
+  @override
+  String get diagHudDisplay => 'Дисплей HUD';
+
+  @override
   String get diagSectionMotion => 'Движение';
 
   @override
@@ -209,6 +230,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get showChargingStats => 'Показывать данные зарядки (при зарядке)';
 
   @override
+  String get batterySize => 'Размер';
+
+  @override
   String get safeAreaSection => 'Безопасная область (доли)';
 
   @override
@@ -227,8 +251,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionMinimap => 'Миникарта';
 
   @override
-  String get sectionMinimapSubtitle =>
-      'Миникарта YNavi, пресеты, темная/светлая';
+  String get sectionMinimapSubtitle => 'Миникарта YNavi, размер, цвет';
 
   @override
   String get minimapTitle => 'Миникарта';
@@ -259,22 +282,31 @@ class AppLocalizationsRu extends AppLocalizations {
   String get minimapAdvanced => 'Расширенно';
 
   @override
-  String get minimapWidth => 'Ширина (доля безопасной области)';
+  String get minimapSize => 'Размер (доля безопасной области)';
 
   @override
-  String get minimapHeight => 'Высота (доля безопасной области)';
+  String get minimapLookSection => 'Вид';
 
   @override
-  String get minimapThemeSection => 'Тема';
+  String get minimapLookPreset => 'Цветовой пресет';
 
   @override
-  String get minimapThemeAuto => 'Системная (авто)';
+  String get minimapLookPresetGreenYellow => 'Зелёно-жёлтый';
 
   @override
-  String get minimapThemeDark => 'Тёмная';
+  String get minimapLookPresetWhite => 'Белый';
 
   @override
-  String get minimapThemeLight => 'Светлая';
+  String get minimapLookPresetAmber => 'Янтарный';
+
+  @override
+  String get minimapLookPresetCyan => 'Голубой';
+
+  @override
+  String get minimapLookBrightness => 'Яркость';
+
+  @override
+  String get minimapLookContrast => 'Контраст';
 
   @override
   String get sectionUsbAdb => 'USB / ADB';
@@ -299,13 +331,23 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get usbPlatformSigningRequired =>
-      'Требуется системная подпись — доступно в автомобиле';
-
-  @override
-  String get hudSlotGuidance => 'НАВИГАЦИЯ';
+      'Для фактического переключения режима USB нужна системная подпись, которой у этой сборки нет — ни на эмуляторе, ни в автомобиле. Выбор сохраняется, но сам режим USB не изменится, пока приложение не будет подписано системным ключом.';
 
   @override
   String get hudSlotMinimap => 'МИНИКАРТА';
+
+  @override
+  String get hudFullDisplayToggle => 'Полный экран';
+
+  @override
+  String get hudFullDisplayToggleSubtitle =>
+      'Показать весь дисплей HUD целиком, с обводкой Safe Area (отладка)';
+
+  @override
+  String get hudPreviewBadgeDemo => 'ПРЕДПРОСМОТР · ДЕМО';
+
+  @override
+  String get hudPreviewBadgeLive => 'ЖИВОЙ · СИМУЛЯЦИЯ';
 
   @override
   String get minimapPresetDisabledHint => 'Активны пользовательские размеры';

@@ -5,26 +5,41 @@ import android.os.Build
 import android.util.Log
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import java.util.Locale
 
 /**
  * Native handler for the "zee/system_config" MethodChannel.
  *
- * Exposes four methods to the Dart layer:
+ * Exposes five methods to the Dart layer:
  *
  *   systemLocale      → String (BCP-47 tag, e.g. "en-US", "ru-RU")
- *   setSystemLanguage → Map {ok, reason?}  (T3-only write; guarded)
+ *   setSystemLanguage → Map {ok, reason?}  (T3-only write via AdaptAPI/OTA; guarded)
  *   setClusterLanguage→ Map {ok, reason?}  (T3-only write via AdaptAPI; guarded)
  *   clusterSupported  → Boolean            (false on emulator, true on car)
+ *   systemSupported   → Boolean            (false on emulator, true on car)
  *
  * ── phase0-derived mechanism ─────────────────────────────────────────────────
  *
  * SYSTEM LANGUAGE (setSystemLanguage):
- *   Uses ActivityManager.updateConfiguration() with a new Configuration + Locale.
- *   This requires android.permission.CHANGE_CONFIGURATION — a signature-level
- *   permission granted only to Zeekr system APKs (T3).  On the emulator the call
- *   is attempted first; SecurityException is caught and reported as
- *   {ok:false, reason:"unsupported-on-device"}.
+ *   There is no persistent, system-wide way to change the Android locale from
+ *   an unprivileged app: the platform API for that needs a signature-level,
+ *   privileged permission that is deliberately NOT declared in this app's
+ *   manifest (declaring it would be pointless — it cannot be granted without
+ *   platform signing, which is out of scope this wave) and the unprivileged
+ *   fallback (mutating this process's own resource-configuration snapshot)
+ *   is not persistent and not system-wide anyway — a prior version of this
+ *   method did exactly that and reported success, which was an illusion.
+ *   Instead this method reuses the AdaptAPI/OTA mechanism already proven for
+ *   cluster language below:
+ *     car.getIOtaSession().setSystemHMILanguage(langEnum.toLong())
+ *   — note the call's own name says *System*, not just cluster — with the
+ *   AdaptInternalManager.set("Adapt-OTA","SET_SYSTEM_HMI_LANGUAGE",JSON)
+ *   fallback if IOtaSession is unavailable. Both require the ecarx AdaptAPI
+ *   (com.ecarx.xui.adaptapi.car.Car); absent on T1/T2 → {ok:false,
+ *   reason:"unsupported-on-device"}. Present but denied at the reflective call
+ *   → {ok:false, reason:"no-privilege"}. Whether the OTA call actually
+ *   changes the car's system language can only be confirmed on T3 (see
+ *   docs/issues/BACKLOG.md) — untested here, and may still fail on-car this
+ *   wave without platform signing.
  *
  * CLUSTER LANGUAGE (setClusterLanguage) — two paths from ClusterLocaleProbe:
  *
@@ -102,6 +117,7 @@ class SystemConfigController(
             "setSystemLanguage"  -> result.success(setSystemLanguage(call))
             "setClusterLanguage" -> result.success(setClusterLanguage(call))
             "clusterSupported"   -> result.success(isClusterSupported())
+            "systemSupported"    -> result.success(isSystemSupported())
             else                 -> result.notImplemented()
         }
     }
@@ -129,44 +145,68 @@ class SystemConfigController(
     }
 
     // -------------------------------------------------------------------------
-    // setSystemLanguage — attempt to change Android system language
+    // setSystemLanguage — attempt to change the car's system HMI language via
+    // the AdaptAPI/OTA path (Task 3 fix — see the class doc comment above).
     //
-    // Requires android.permission.CHANGE_CONFIGURATION (signature-level).
-    // On emulator/stock Android → SecurityException → {ok:false, unsupported}.
-    // On Zeekr car (T3) the permission is granted → updates configuration.
+    // No privileged-permission gate here: the platform permission this used
+    // to check for can never be granted to this app (not declared in the
+    // manifest, signature-level, requires platform signing this app does not
+    // have) so checking for it only ever produced a denial that looked like a
+    // capability check but was really just describing our own manifest. The
+    // real capability question is "is the ecarx AdaptAPI present" — reported
+    // via [systemSupported] and the reason codes below.
     // -------------------------------------------------------------------------
 
     private fun setSystemLanguage(call: MethodCall): Map<String, Any?> {
         val tag = call.argument<String>("languageTag")
             ?: return mapOf("ok" to false, "reason" to "missing-languageTag")
 
-        Log.i(TAG, "setSystemLanguage: tag=$tag")
+        Log.i(TAG, "setSystemLanguage: tag=$tag — probing AdaptAPI (OTA path)")
 
-        // Guard: CHANGE_CONFIGURATION is a signature-level permission granted only on
-        // Zeekr system builds (T3).  Reject early on the emulator and unprivileged builds
-        // so we never claim success for a non-persistent in-process locale change (QA3-3).
-        if (context.checkSelfPermission("android.permission.CHANGE_CONFIGURATION")
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "setSystemLanguage: no CHANGE_CONFIGURATION permission — unsupported-on-device")
+        val iCar = acquireCar()
+        if (iCar == null) {
+            Log.w(TAG, "setSystemLanguage: AdaptAPI Car unavailable — unsupported-on-device")
             return mapOf("ok" to false, "reason" to "unsupported-on-device")
         }
 
+        val langEnum = resolveClusterLangEnum(tag)
+        Log.i(TAG, "setSystemLanguage: langEnum=$langEnum for tag=$tag")
+
         return runCatching {
-            val locale = parseLocaleTag(tag)
-            val conf = context.resources.configuration
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                conf.setLocale(locale)
-            } else {
-                @Suppress("DEPRECATION")
-                conf.locale = locale
+            // Primary: IOtaSession.setSystemHMILanguage — its own name says
+            // *System*, which is why it is the primary path here (not just
+            // for cluster language below).
+            val otaSession = runCatching {
+                iCar.javaClass.getMethod("getIOtaSession").invoke(iCar)
+                    ?: iCar.javaClass.getMethod("getOtaSession").invoke(iCar)
+            }.getOrNull()
+
+            if (otaSession != null) {
+                val setLang = otaSession.javaClass.getMethod(
+                    "setSystemHMILanguage", Long::class.javaPrimitiveType)
+                setLang.invoke(otaSession, langEnum.toLong())
+                Log.i(TAG, "setSystemLanguage: IOtaSession.setSystemHMILanguage($langEnum) ok")
+                return@runCatching mapOf("ok" to true, "path" to "IOtaSession", "langEnum" to langEnum)
             }
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(conf, context.resources.displayMetrics)
-            Log.i(TAG, "setSystemLanguage: success locale=$locale")
-            mapOf("ok" to true)
+
+            // Fallback documented alongside the primary path (class doc :41):
+            // AdaptInternalManager.set("Adapt-OTA","SET_SYSTEM_HMI_LANGUAGE",JSON).
+            // The exact package for AdaptInternalManager is not confirmed by any
+            // grounding doc in this repo (unlike Car, whose path is verified) —
+            // best-effort guess alongside com.ecarx.xui.adaptapi.car.Car; any
+            // ClassNotFoundException here is classified below same as an absent
+            // AdaptAPI, so this fallback can never make a false claim of success.
+            val mgrClass = Class.forName("com.ecarx.xui.adaptapi.AdaptInternalManager")
+            val setMethod = mgrClass.getMethod(
+                "set", String::class.java, String::class.java, String::class.java)
+            val json = "{\"language\":$langEnum}"
+            setMethod.invoke(null, "Adapt-OTA", "SET_SYSTEM_HMI_LANGUAGE", json)
+            Log.i(TAG, "setSystemLanguage: AdaptInternalManager fallback ok")
+            mapOf("ok" to true, "path" to "AdaptInternalManager", "langEnum" to langEnum)
         }.getOrElse { e ->
             val reason = when (e) {
-                is SecurityException -> "unsupported-on-device"
+                is SecurityException -> "no-privilege"
+                is ClassNotFoundException, is NoSuchMethodException -> "unsupported-on-device"
                 else -> "exception: ${e.message}"
             }
             Log.w(TAG, "setSystemLanguage failed: $reason", e)
@@ -192,13 +232,9 @@ class SystemConfigController(
 
         Log.i(TAG, "setClusterLanguage: tag=$tag")
 
-        // First check: can we even find the AdaptAPI class?
-        val carClass = runCatching {
-            Class.forName("com.ecarx.xui.adaptapi.car.Car")
-        }.getOrNull()
-
-        if (carClass == null) {
-            Log.w(TAG, "setClusterLanguage: AdaptAPI Car class not found — unsupported-on-device")
+        val iCar = acquireCar()
+        if (iCar == null) {
+            Log.w(TAG, "setClusterLanguage: AdaptAPI Car unavailable — unsupported-on-device")
             return mapOf("ok" to false, "reason" to "unsupported-on-device")
         }
 
@@ -207,10 +243,6 @@ class SystemConfigController(
         Log.i(TAG, "setClusterLanguage: langEnum=$langEnum for tag=$tag")
 
         return runCatching {
-            val iCar = carClass.getMethod("create", Context::class.java)
-                .invoke(null, context)
-                ?: return mapOf("ok" to false, "reason" to "car-create-null")
-
             // Path 3: IOtaSession
             val otaSession = runCatching {
                 iCar.javaClass.getMethod("getIOtaSession").invoke(iCar)
@@ -248,21 +280,54 @@ class SystemConfigController(
     }
 
     // -------------------------------------------------------------------------
-    // clusterSupported — probe AdaptAPI class presence
+    // clusterSupported / systemSupported — probe AdaptAPI class presence.
+    //
+    // Both language writes share the same capability question ("is the ecarx
+    // AdaptAPI present on this device") so both probes delegate to
+    // [isAdaptApiPresent]. Kept as two named methods (not one) because they
+    // answer two distinct Dart-side questions the picker UI gates on
+    // separately — a future firmware could plausibly expose one without the
+    // other even though today both are the same class-presence check.
     // -------------------------------------------------------------------------
 
     private fun isClusterSupported(): Boolean {
-        val available = runCatching {
-            Class.forName("com.ecarx.xui.adaptapi.car.Car")
-            true
-        }.getOrDefault(false)
+        val available = isAdaptApiPresent()
         Log.i(TAG, "clusterSupported: $available")
+        return available
+    }
+
+    private fun isSystemSupported(): Boolean {
+        val available = isAdaptApiPresent()
+        Log.i(TAG, "systemSupported: $available")
         return available
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private fun isAdaptApiPresent(): Boolean = runCatching {
+        Class.forName("com.ecarx.xui.adaptapi.car.Car")
+        true
+    }.getOrDefault(false)
+
+    /**
+     * Acquire the ecarx AdaptAPI `Car` instance via reflection, or null if the
+     * AdaptAPI class/instance is unavailable on this device (T1/T2 — no
+     * ecarx framework, e.g. stock Android or this emulator).
+     *
+     * Extracted from the Car.create() acquisition already proven for cluster
+     * language so [setSystemLanguage] and [setClusterLanguage] share the exact
+     * same acquisition path (Task 3) instead of two copies drifting apart.
+     */
+    private fun acquireCar(): Any? {
+        val carClass = runCatching {
+            Class.forName("com.ecarx.xui.adaptapi.car.Car")
+        }.getOrNull() ?: return null
+        return runCatching {
+            carClass.getMethod("create", Context::class.java).invoke(null, context)
+        }.getOrNull()
+    }
 
     /** Resolve the 37-language OTA enum for a given BCP-47 tag. */
     private fun resolveClusterLangEnum(tag: String): Int {
@@ -272,14 +337,4 @@ class SystemConfigController(
             ?: 11 // fallback: English_US
     }
 
-    /** Parse a BCP-47-ish tag to java.util.Locale.
-     *  Handles "en", "en-US", "ru-RU", "zh-CN". */
-    private fun parseLocaleTag(tag: String): Locale {
-        val parts = tag.replace("_", "-").split("-")
-        return when (parts.size) {
-            1    -> Locale(parts[0])
-            2    -> Locale(parts[0], parts[1])
-            else -> Locale(parts[0], parts[1], parts[2])
-        }
-    }
 }

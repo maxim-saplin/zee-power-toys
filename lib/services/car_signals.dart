@@ -6,6 +6,17 @@ abstract class CarSignals {
   Stream<CarSignalEvent> get events;
   CarSnapshot get snapshot;
 
+  /// Which car-signal source is actually live behind this port: 'adaptapi' |
+  /// 'simulated' (T2/T3 native — mirrors the native CarSignalsController's own
+  /// selectSource() decision, never re-derived here) or 'fake' (T1 desktop /
+  /// HUD isolate's local pure-Dart fake). Resolves once, shortly after
+  /// construction; the native decision does not change at runtime.
+  ///
+  /// This exists so the UI can tell the user whether they are looking at
+  /// demo data, an injected simulation, or a real car — the specific
+  /// "emulator vs. car" confusion this port used to leave unanswered.
+  Future<String> get sourceKind;
+
   /// Emit a synthetic [CarSignalEvent] through the real, unforced signal
   /// chain (Block 0026 — Developer Simulate screen). This is distinct from
   /// the Config Preview's demo override (`hud_preview.dart`): that scopes a
@@ -35,12 +46,7 @@ class BlinkerEvent extends CarSignalEvent {
 }
 
 class ChargeEvent extends CarSignalEvent {
-  const ChargeEvent({
-    required this.charging,
-    this.volts,
-    this.amps,
-    this.kw,
-  });
+  const ChargeEvent({required this.charging, this.volts, this.amps, this.kw});
   final bool charging;
   final double? volts;
   final double? amps;
@@ -99,25 +105,24 @@ class CarSnapshot {
     int? batteryPct,
     double? batteryTempC,
     PowerFlow? powerFlow,
-  }) =>
-      CarSnapshot(
-        speedKmh: speedKmh ?? this.speedKmh,
-        blinker: blinker ?? this.blinker,
-        charging: charging ?? this.charging,
-        chargeKw: chargeKw ?? this.chargeKw,
-        batteryPct: batteryPct ?? this.batteryPct,
-        batteryTempC: batteryTempC ?? this.batteryTempC,
-        powerFlow: powerFlow ?? this.powerFlow,
-      );
+  }) => CarSnapshot(
+    speedKmh: speedKmh ?? this.speedKmh,
+    blinker: blinker ?? this.blinker,
+    charging: charging ?? this.charging,
+    chargeKw: chargeKw ?? this.chargeKw,
+    batteryPct: batteryPct ?? this.batteryPct,
+    batteryTempC: batteryTempC ?? this.batteryTempC,
+    powerFlow: powerFlow ?? this.powerFlow,
+  );
 
   /// Serialise to JSON for the relay and the Feedback Loop readViewModel.
   Map<String, Object?> toJson() => <String, Object?>{
-        'speedKmh': speedKmh,
-        'blinker': blinker.name,
-        'charging': charging,
-        'chargeKw': chargeKw,
-        'batteryPct': batteryPct,
-        'batteryTempC': batteryTempC,
-        'powerFlow': powerFlow.name,
-      };
+    'speedKmh': speedKmh,
+    'blinker': blinker.name,
+    'charging': charging,
+    'chargeKw': chargeKw,
+    'batteryPct': batteryPct,
+    'batteryTempC': batteryTempC,
+    'powerFlow': powerFlow.name,
+  };
 }

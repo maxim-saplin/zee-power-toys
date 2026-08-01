@@ -7,10 +7,11 @@ import '../services/config_store.dart';
 
 /// Emissive HUD battery indicator (Steam-Deck-style) for the BATTERY slot.
 ///
-/// Renders a horizontal rounded-rectangle battery body + right-side terminal
-/// nub.  An inner fill bar is proportional to [batteryPctProvider].  A text
-/// label shows "NN%" to the right / below.  Temperature [batteryTempCProvider]
-/// is shown when [BatteryConfig.showTemp] is set.
+/// Renders a rounded-rectangle battery body + right-side terminal nub, an
+/// inner fill bar proportional to [batteryPctProvider], and a "NN%" text
+/// label stacked *below* the icon (not beside it — see the layout note on the
+/// `FittedBox` below for why). Temperature [batteryTempCProvider] is shown
+/// when [BatteryConfig.showTemp] is set.
 ///
 /// Low-battery colour ramp (mirrors Steam Deck UX):
 ///   ≥ 30 %  → [_kFillGreen]   (emissive green)
@@ -106,13 +107,41 @@ class BatteryWidget extends ConsumerWidget {
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
-      // FittedBox around the WHOLE panel (icon+pct row, temp row, charging
-      // stats row) — not just the icon row — so any combination of optional
-      // rows shrinks to fit the slot instead of overflowing it. The BATTERY
-      // slot is ~12% of Safe Area width (~98dp at the reference 820dp SA
-      // width at sizeScale=1.0), comfortable normally but tight once temp +
-      // charging-stats are both showing at a larger sizeScale or a small
-      // backing display.
+      // FittedBox around the WHOLE panel (icon, pct, temp, charging-stats) —
+      // kept as a safety net, not removed (Block 0026 fixed a real overflow
+      // this way: temp/charging-stats rows were unwrapped and a Column of
+      // all three could overflow the fixed BATTERY slot under tight
+      // constraints — see that Block's Reconciliation item 4). Once the
+      // panel's natural size exceeds the slot, FittedBox scales the whole
+      // thing down uniformly rather than crashing — that part of the
+      // contract must not regress (pinned in
+      // test/widgets/battery_widget_test.dart, "no overflow at max
+      // sizeScale with everything shown").
+      //
+      // What changed here: the layout *feeding* this FittedBox, to make the
+      // `sizeScale` slider (0.5–2.5) actually honest. Previously icon+pct sat
+      // in a Row beside each other; that row's natural width already
+      // exceeded the slot (~98 logical px at the reference Safe Area — ~12%
+      // of its width, see hud_root.dart) by sizeScale≈1.07, so FittedBox was
+      // scaling everything back down for roughly the top 75% of the slider's
+      // labelled range — moving the slider past its first quarter did almost
+      // nothing visible. The BATTERY slot is tall and narrow (~12% Safe Area
+      // width, ~60% of its height), so a side-by-side icon+text row is the
+      // wrong shape for it. Stacking icon → pct → temp → charging-stats
+      // vertically instead moves the binding constraint to whichever single
+      // line is widest (never the sum of two side-by-side elements), which
+      // roughly triples the genuinely-growing portion of the range: real
+      // growth up to sizeScale≈1.4 with temp+charging-stats both showing (the
+      // worst case, gated by the "NN kW" line), and out to sizeScale≈2.2 when
+      // charging stats aren't showing (gated by the "NN%" line instead) — see
+      // the measured breakpoints in test/widgets/battery_widget_test.dart.
+      //
+      // This still doesn't make the *entire* labelled 0.5–2.5 range honest in
+      // the worst case (temp + charging stats both on) — the slot is a hard
+      // physical constraint (see hud_root.dart:148-154) and no layout of this
+      // content fits an unbounded size into a fixed box. Narrowing the
+      // slider's own max to better match (e.g. ~1.5) would need a change in
+      // lib/screens/hud_settings_screen.dart, out of this Block's scope.
       child: FittedBox(
         alignment: Alignment.topRight,
         fit: BoxFit.scaleDown,
@@ -120,35 +149,35 @@ class BatteryWidget extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
-            // ---- Battery icon row ----
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                // The battery body + fill painted via CustomPaint.
-                CustomPaint(
-                  key: const ValueKey('battery-icon'),
-                  size: Size(bodyW + nubW, bodyH),
-                  painter: _BatteryPainter(
-                    fillFrac: fillFrac,
-                    fillColor: fillColor,
-                    outlineColor: _kOutline,
-                    bodyW: bodyW,
-                    bodyH: bodyH,
-                    nubW: nubW,
-                    nubH: nubH,
-                    // Draw a small lightning bolt inside the icon while charging.
-                    showBolt: isCharging,
-                  ),
-                ),
-                SizedBox(width: base * 0.25),
-                // Percentage text.
-                Text(
-                  pct != null ? '$pct%' : '--%',
-                  key: const ValueKey('battery-pct-text'),
-                  style: labelStyle,
-                ),
-              ],
+            // ---- Battery icon ----
+            // The battery body + fill painted via CustomPaint.
+            CustomPaint(
+              key: const ValueKey('battery-icon'),
+              size: Size(bodyW + nubW, bodyH),
+              painter: _BatteryPainter(
+                fillFrac: fillFrac,
+                fillColor: fillColor,
+                outlineColor: _kOutline,
+                bodyW: bodyW,
+                bodyH: bodyH,
+                nubW: nubW,
+                nubH: nubH,
+                // Charging bolt is gated on raw isCharging state alone, not
+                // on showChargingStats: the bolt communicates *that* the car
+                // is charging (state, always relevant), while the stats
+                // panel below is supplementary *detail* (kW) the user may
+                // choose to suppress independently. Turning the panel off
+                // should not also hide the fact that the car is plugged in.
+                showBolt: isCharging,
+              ),
+            ),
+
+            // ---- Percentage text ----
+            SizedBox(height: base * 0.12),
+            Text(
+              pct != null ? '$pct%' : '--%',
+              key: const ValueKey('battery-pct-text'),
+              style: labelStyle,
             ),
 
             // ---- Temperature row (optional) ----

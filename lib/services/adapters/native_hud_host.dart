@@ -23,9 +23,4 @@ class NativeHudHost implements HudHost {
   Future<void> hide() async {
     await _ch.invokeMethod<void>('hide');
   }
-
-  @override
-  // Safe Area is handled by the HUD Flutter isolate directly via the relay;
-  // no native action is required here.
-  Future<void> applySafeArea(Rect safeArea) async {}
 }

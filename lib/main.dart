@@ -9,6 +9,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'app/dhu_app.dart';
 import 'app/hud_app.dart';
 import 'debug/agent_extensions.dart';
+import 'providers/hud_geometry.dart';
 import 'providers/services.dart';
 import 'providers/usb_mode.dart';
 import 'relay/hub.dart';
@@ -77,19 +78,22 @@ Future<void> dhuMain(List<String> args) async {
   // On Android, the DHU engine hosts the native CarSignalsController.
   // NativeCarSignals subscribes to the EventChannel and calls start() on init.
   // On T1 desktop, the in-process FakeCarSignals is used as before.
-  final CarSignals carSignalsRaw =
-      (!kIsWeb && Platform.isAndroid) ? NativeCarSignals() : FakeCarSignals();
+  final CarSignals carSignalsRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativeCarSignals()
+      : FakeCarSignals();
 
   // On Android, the DHU drives the native MinimapView via NativeMinimapHost.
   // On T1 desktop the in-process FakeMinimapHost is used (no native surface).
-  final MinimapHost minimapHostRaw =
-      (!kIsWeb && Platform.isAndroid) ? NativeMinimapHost() : FakeMinimapHost();
+  final MinimapHost minimapHostRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativeMinimapHost()
+      : FakeMinimapHost();
 
   // On Android, use the NativeInstaller which communicates via the
   // zee/installer EventChannel/MethodChannel to download+install APKs.
   // On T1 desktop, FakeInstaller simulates the progress sequence.
-  final Installer installerRaw =
-      (!kIsWeb && Platform.isAndroid) ? NativeInstaller() : FakeInstaller();
+  final Installer installerRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativeInstaller()
+      : FakeInstaller();
 
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
@@ -109,14 +113,32 @@ Future<void> dhuMain(List<String> args) async {
 
   // On Android, NativeUsbMode talks to UsbModeController via zee/usb_mode.
   // On T1 desktop, FakeUsbMode provides writable in-memory state.
-  final UsbModePort usbModeRaw =
-      (!kIsWeb && Platform.isAndroid) ? NativeUsbMode() : FakeUsbMode();
+  final UsbModePort usbModeRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativeUsbMode()
+      : FakeUsbMode();
 
   // On Android, NativeHudHost wraps the zee/hud_lifecycle channel so toggling
   // hudEnabled tears down / re-spawns the HUD FlutterEngine (QA4-1, ADR 0001).
   // On T1 desktop FakeHudHost manages the desktop_multi_window second window.
-  final HudHost hudHostRaw =
-      (!kIsWeb && Platform.isAndroid) ? NativeHudHost() : FakeHudHost();
+  final HudHost hudHostRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativeHudHost()
+      : FakeHudHost();
+
+  // Explicit ProviderContainer (rather than a bare declarative ProviderScope)
+  // so hudGeometryProvider can be updated from the onHudReady stream listener
+  // below, which fires outside the widget tree/build phase — a plain
+  // ProviderScope gives no handle to write to a provider from there.
+  final container = ProviderContainer(
+    overrides: [
+      configStoreProvider.overrideWithValue(store),
+      carSignalsProvider.overrideWithValue(carSignalsRaw),
+      minimapHostProvider.overrideWithValue(minimapHostRaw),
+      hudHostProvider.overrideWithValue(hudHostRaw),
+      installerProvider.overrideWithValue(installerRaw),
+      systemConfigProvider.overrideWithValue(systemConfigRaw),
+      usbModeProvider.overrideWithValue(usbModeRaw),
+    ],
+  );
 
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
@@ -146,16 +168,17 @@ Future<void> dhuMain(List<String> args) async {
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
-  // display dimensions + dpi (e.g. 1280×720 @ 213 dpi on the emulator).
+  // display dimensions + dpi (e.g. 1024×576 @ 213 dpi on the emulator and the car).
   // Update _hudW/_hudH/_hudDpi and recompute the HudSafeArea fractions from
   // phase0 dp constants × real density so the Flutter overlay (battery/blinker)
   // uses the correct Safe Area for this display (not the baked-in T3 defaults).
   // Then re-apply minimap config with the real display metrics (QA1-2, QA1-4).
   if (minimapHostRaw is NativeMinimapHost) {
     minimapHostRaw.onHudReady.listen((dims) {
-      _hudW   = dims.$1;
-      _hudH   = dims.$2;
+      _hudW = dims.$1;
+      _hudH = dims.$2;
       _hudDpi = dims.$3.toInt();
+      _hudDisplayId = dims.$4;
       // Recompute HudSafeArea fractions from phase0 dp constants × actual density
       // and relay to the HUD Flutter overlay via the config store + relay.
       final fracs = computeHudSafeAreaFracs(
@@ -163,17 +186,29 @@ Future<void> dhuMain(List<String> args) async {
         displayH: _hudH,
         dpi: _hudDpi.toDouble(),
       );
-      store.setConfig(store.value.copyWith(
-        safeArea: store.value.safeArea.copyWith(
-          left:   fracs.left,
-          top:    fracs.top,
-          right:  fracs.right,
-          bottom: fracs.bottom,
+      store.setConfig(
+        store.value.copyWith(
+          safeArea: store.value.safeArea.copyWith(
+            left: fracs.left,
+            top: fracs.top,
+            right: fracs.right,
+            bottom: fracs.bottom,
+          ),
         ),
-      ));
+      );
       // setConfig fires store.changes → pushConfigToHud relay → HUD overlay updated.
       // _applyMinimapConfig will also be called via the store.changes listener above,
       // with updated _hudW/_hudH/_hudDpi already in place.
+
+      // Surface the real HUD geometry to ordinary app UI (not just the debug
+      // ext.zee.readViewModel bridge) so a screen can honestly report which
+      // display it is actually driving (Task 1 — signal-source/HUD honesty).
+      container.read(hudGeometryProvider.notifier).state = HudGeometryInfo(
+        displayId: _hudDisplayId,
+        w: _hudW.toInt(),
+        h: _hudH.toInt(),
+        dpi: _hudDpi,
+      );
     });
   }
 
@@ -194,21 +229,23 @@ Future<void> dhuMain(List<String> args) async {
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
     getBootState: (!kIsWeb && Platform.isAndroid) ? getBootStateAsync : null,
+    // Block 0027: the app reports its own HUD geometry + minimap ROI so the
+    // Feedback Loop never has to reimplement computeMinimapViewport() in
+    // Python and risk the two copies drifting apart. Only meaningful on the
+    // DHU surface (only dhuMain holds a NativeMinimapHost + these holders).
+    getHudGeometry: () => <String, Object?>{
+      'displayId': _hudDisplayId,
+      'w': _hudW.toInt(),
+      'h': _hudH.toInt(),
+      'dpi': _hudDpi,
+    },
+    getMinimapViewport: () => _lastMinimapBounds,
+    getMinimapNative: () => _lastMinimapNative,
+    onMinimapNativeResult: (r) => _lastMinimapNative = r,
   );
 
   runApp(
-    ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(carSignalsRaw),
-        minimapHostProvider.overrideWithValue(minimapHostRaw),
-        hudHostProvider.overrideWithValue(hudHostRaw),
-        installerProvider.overrideWithValue(installerRaw),
-        systemConfigProvider.overrideWithValue(systemConfigRaw),
-        usbModeProvider.overrideWithValue(usbModeRaw),
-      ],
-      child: const _DhuRoot(),
-    ),
+    UncontrolledProviderScope(container: container, child: const _DhuRoot()),
   );
 }
 
@@ -299,8 +336,7 @@ class _DhuRootState extends State<_DhuRoot> {
 /// True when running on a desktop platform (Linux/macOS/Windows).
 /// kIsWeb guard ensures Platform.isX calls are not made in a web context.
 bool get _isDesktop =>
-    !kIsWeb &&
-    (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
+    !kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows);
 
 // ---------------------------------------------------------------------------
 // MinimapHost config wiring — phase0 square viewport geometry (Block 0025).
@@ -316,13 +352,39 @@ double _hudW = 1024.0;
 double _hudH = 576.0;
 // ignore: prefer_final_fields
 int _hudDpi = 213; // Zeekr S2 / T2 emulator density; updated from onHudReady.
+// ignore: prefer_final_fields
+/// Logical Android display id the HUD Presentation lives on (Block 0027).
+/// Null until the first onHudReady (T1 desktop never reports one — no native
+/// Presentation there). Read by ext.zee.readViewModel's `hud` field so the
+/// Feedback Loop's native-composite capture never has to guess or hardcode
+/// displayId — the app is the source of truth for its own geometry.
+int? _hudDisplayId;
+
+/// Last minimap viewport [Rect] computed by [_applyMinimapConfig] (Block
+/// 0027) — the exact ROI the pixel verifier must crop to check the minimap,
+/// regardless of whether the minimap is currently enabled (the geometry is
+/// pure function of display metrics + preset, not of the enabled flag).
+/// Read by ext.zee.readViewModel's `viewport` field.
+Rect? _lastMinimapBounds;
+
+/// Last native gate result returned by [MinimapHost.enable] (either from the
+/// config-driven path below or a direct `ext.zee.minimap on=...` call — both
+/// funnel through the same holder). Read by ext.zee.readViewModel's
+/// `minimap.native` field so the Feedback Loop can see the native
+/// availability gate ("applied:true" | "unavailable" | "no-minimap")
+/// without a screenshot.
+String? _lastMinimapNative;
 
 /// Apply [cfg.minimap] to [host] using phase0's square viewport geometry.
 ///
 /// Bounds are computed from the empirical phase0 Safe Area dp constants ×
-/// real HUD display density — not from fraction-based config values.
-/// The SQUARE_LEFT placement (preset-sized square on the left of the Safe Area)
-/// ensures no collision with the battery widget on the right.
+/// real HUD display density, with the square's size fraction resolved from
+/// [MinimapConfig.resolvedSizeFraction] — the preset's fraction, or the
+/// manual Size-slider override in advanced mode (Task 2: the one continuous
+/// slider that genuinely changes this rect, replacing the old dead
+/// widthFrac/heightFrac sliders). The SQUARE_LEFT placement (square on the
+/// left of the Safe Area) ensures no collision with the battery widget on
+/// the right.
 ///
 /// Phase0 pattern: setBounds BEFORE enable so the filterWrapper is sized to
 /// the viewport rect before parkForYNavi triggers the YNavi surface start.
@@ -330,17 +392,32 @@ int _hudDpi = 213; // Zeekr S2 / T2 emulator density; updated from onHudReady.
 /// Called once on startup and on every config change (both paths are idempotent).
 void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   final mm = cfg.minimap;
+  // Compute the phase0 square viewport from dp constants × real density.
+  // Computed unconditionally (not gated on mm.enabled) so
+  // ext.zee.readViewModel.viewport always reports the ROI the minimap WOULD
+  // occupy — the Feedback Loop can crop it the moment minimap is enabled
+  // without waiting on a second config round-trip (Block 0027).
+  final bounds = computeMinimapViewport(
+    displayW: _hudW,
+    displayH: _hudH,
+    dpi: _hudDpi.toDouble(),
+    preset: mm.preset,
+    sizeFraction: mm.resolvedSizeFraction,
+  );
+  _lastMinimapBounds = bounds;
   if (mm.enabled) {
-    // Compute the phase0 square viewport from dp constants × real density.
-    final bounds = computeMinimapViewport(
-      displayW: _hudW,
-      displayH: _hudH,
-      dpi: _hudDpi.toDouble(),
-      preset: mm.preset,
-    );
     host.setBounds(bounds).catchError((_) {});
   }
-  host.enable(mm.enabled).catchError((_) {});
+  host
+      .enable(mm.enabled)
+      .then((r) => _lastMinimapNative = r)
+      .catchError((e) => _lastMinimapNative = 'error:$e');
+  // Look section (Task 1): push colour preset + brightness(threshold) +
+  // contrast to the native ColorMatrix filter. Unconditional and idempotent
+  // — like setBounds/enable above, `setMinimapParam` NOOP-logs on the native
+  // side when a param is already applied, so re-sending on every config
+  // change (including before YNavi is bound) is safe.
+  host.setParams(mm.looks.toParams()).catchError((_) {});
 }
 
 // ---------------------------------------------------------------------------
@@ -356,9 +433,16 @@ const _bootChannel = MethodChannel('zee/boot');
 /// Returns best-effort data; on channel failure returns an error map.
 Future<Map<String, Object?>> getBootStateAsync() async {
   try {
-    final result = await _bootChannel.invokeMapMethod<String, Object?>('getBootState');
-    return result ?? <String, Object?>{'fgsRunning': false, 'configReadOk': false};
+    final result = await _bootChannel.invokeMapMethod<String, Object?>(
+      'getBootState',
+    );
+    return result ??
+        <String, Object?>{'fgsRunning': false, 'configReadOk': false};
   } catch (e) {
-    return <String, Object?>{'error': '$e', 'fgsRunning': false, 'configReadOk': false};
+    return <String, Object?>{
+      'error': '$e',
+      'fgsRunning': false,
+      'configReadOk': false,
+    };
   }
 }

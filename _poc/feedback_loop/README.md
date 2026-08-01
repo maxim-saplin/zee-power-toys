@@ -25,6 +25,12 @@ on that project.
   # adb -s emulator-5554 shell settings put global overlay_display_devices null
   ```
 
+  **Historical:** `1280x720/213` is what this throwaway PoC used. The shipped
+  `zee-power-toys` app's real HUD geometry — confirmed on both the emulator and the
+  car — is **1024×576 @ 213dpi**; its tooling sets
+  `overlay_display_devices "1024x576/213"` instead (see `dev/zee_drive.py`,
+  `.agents/skills/drive-zee-app/SKILL.md`).
+
 - Host tooling: `adb` on `PATH`, and either Python 3.10+ with the `websockets`
   package, or `uv` (the script carries a PEP 723 block, so `./zee_drive.py …`
   runs under `uv` with no setup).

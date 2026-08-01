@@ -36,20 +36,32 @@ class _LanguageSettingsScreenState
   String? _systemResult;
   String? _clusterResult;
 
-  // Async cluster-supported flag; null = loading.
+  // Async cluster-supported / system-supported flags; null = loading.
   bool? _clusterSupported;
+  bool? _systemSupported;
 
   @override
   void initState() {
     super.initState();
-    _loadClusterSupported();
+    _loadCapabilities();
   }
 
-  Future<void> _loadClusterSupported() async {
+  // Loads both capability probes. They are deliberately separate methods on
+  // SystemConfig (Task 3) — today both just check for the ecarx AdaptAPI
+  // class, but they answer two distinct UI questions (is the System picker
+  // enabled vs. the Cluster picker), so a future firmware could plausibly
+  // expose one without the other.
+  Future<void> _loadCapabilities() async {
     final cfg = ref.read(systemConfigProvider);
-    final supported = await cfg.clusterSupported();
+    final results = await Future.wait(<Future<bool>>[
+      cfg.clusterSupported(),
+      cfg.systemSupported(),
+    ]);
     if (mounted) {
-      setState(() => _clusterSupported = supported);
+      setState(() {
+        _clusterSupported = results[0];
+        _systemSupported = results[1];
+      });
     }
   }
 
@@ -152,13 +164,12 @@ class _LanguageSettingsScreenState
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-              if (_clusterSupported == false ||
-                  _clusterSupported == null && true)
-                // Show hint when we already know system writes are unsupported
-                // (_clusterSupported false ≡ no AdaptAPI ≡ no CHANGE_CONFIGURATION).
-                // We key off clusterSupported as a proxy: if cluster is
-                // unavailable (no ecarx framework), system writes are also
-                // privileged + absent.
+              if (_systemSupported != true)
+                // Show hint while loading and when we know system writes are
+                // unsupported (Task 3: gated on the dedicated systemSupported()
+                // capability probe — is the ecarx AdaptAPI present — not on the
+                // ungrantable CHANGE_CONFIGURATION permission a prior version
+                // checked instead).
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Insets.lg,
@@ -178,9 +189,9 @@ class _LanguageSettingsScreenState
                 onChanged: (tag) {
                   if (tag != null) _setSystemLanguage(Locale(tag));
                 },
-                // System write requires CHANGE_CONFIGURATION — T3 only.
-                // Disable on emulator to make the constraint visible in the UI.
-                enabled: _clusterSupported == true,
+                // Disabled on capability (no AdaptAPI), not on an ungrantable
+                // permission — matches [_systemSupported] above.
+                enabled: _systemSupported == true,
                 keys: const _PickerKeys(
                   system: 'sys-lang-system',
                   en: 'sys-lang-en',

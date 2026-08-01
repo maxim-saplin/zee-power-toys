@@ -8,15 +8,21 @@ import '../system_config.dart';
 ///
 /// Communicates with the native [SystemConfigController] via:
 ///   MethodChannel "zee/system_config" — methods: systemLocale, setSystemLanguage,
-///                                        setClusterLanguage, clusterSupported.
+///                                        setClusterLanguage, clusterSupported,
+///                                        systemSupported.
 ///
 /// ── T3-only write paths (from phase0 ClusterLocaleProbe / SettingZeekrProbe) ──
 ///
 ///   setSystemLanguage:
-///     Calls android.app.ActivityManager.updateConfiguration() with a new
-///     Locale.  Requires android.permission.CHANGE_CONFIGURATION (signature-level
-///     on AOSP; granted to Zeekr system APKs). On the emulator or stock Android
-///     the native handler returns {ok:false, reason:"unsupported-on-device"}.
+///     Uses the same AdaptAPI/OTA mechanism as setClusterLanguage below
+///     (car.getIOtaSession().setSystemHMILanguage(langEnum), with an
+///     AdaptInternalManager fallback) — there is no persistent, system-wide
+///     locale write available to an unprivileged app, and the unprivileged
+///     in-process fallback a prior version of this method used was not
+///     persistent or system-wide (an illusion; see SystemConfigController's
+///     doc comment). Requires the ecarx AdaptAPI; absent on the emulator or
+///     stock Android → {ok:false, reason:"unsupported-on-device"}; present
+///     but denied at the privileged call → {ok:false, reason:"no-privilege"}.
 ///
 ///   setClusterLanguage (Path 1 — ICarFunction):
 ///     com.ecarx.xui.adaptapi.car.Car.create(ctx)
@@ -103,6 +109,16 @@ class NativeSystemConfig implements SystemConfig {
     }
   }
 
+  @override
+  Future<bool> systemSupported() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('systemSupported');
+      return result ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -128,7 +144,9 @@ class NativeSystemConfig implements SystemConfig {
 
   /// Parse the {ok, reason} map returned by the Kotlin handler.
   static LanguageSetResult _parseResult(Map<String, Object?>? raw) {
-    if (raw == null) return const LanguageSetResult(ok: false, reason: 'null-response');
+    if (raw == null) {
+      return const LanguageSetResult(ok: false, reason: 'null-response');
+    }
     final ok = raw['ok'] as bool? ?? false;
     final reason = raw['reason'] as String?;
     return LanguageSetResult(ok: ok, reason: reason);

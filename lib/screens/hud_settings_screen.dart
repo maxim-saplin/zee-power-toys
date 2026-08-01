@@ -13,14 +13,27 @@ import '../widgets/settings_layout.dart';
 ///
 /// Shows the [HudPreview] (same widget tree as the real HUD) over a grey
 /// background so any Safe-Area or layout change is immediately visible.
-/// Provides a Safe-Area inset slider, the debug hudBox toggle, a
-/// Blinker section (shape selector + size slider + position controls),
-/// and a Battery section (show/hide toggles + size slider).
-class HudSettingsScreen extends ConsumerWidget {
+/// Defaults to the Safe-Area letterbox view (what the driver actually sees);
+/// the "Full display" toggle switches to the secondary full-backing-display
+/// debug view with the Safe Area outlined. Provides a Safe-Area inset slider,
+/// the debug hudBox toggle, a Blinker section (shape selector + size slider +
+/// position controls), and a Battery section (show/hide toggles + size
+/// slider).
+class HudSettingsScreen extends ConsumerStatefulWidget {
   const HudSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HudSettingsScreen> createState() => _HudSettingsScreenState();
+}
+
+class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
+  // Preview-only debug toggle, not persisted config: switches the sticky
+  // preview between the default Safe-Area letterbox and the secondary
+  // full-backing-display debug view.
+  bool _fullDisplay = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final safeArea = ref.watch(safeAreaProvider);
     final blinkerCfg = ref.watch(blinkerConfigProvider);
@@ -45,7 +58,11 @@ class HudSettingsScreen extends ConsumerWidget {
             constraints: const BoxConstraints(maxHeight: 200),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(Radii.button),
-              child: const HudPreview(),
+              child: HudPreview(
+                mode: _fullDisplay
+                    ? HudPreviewMode.fullDisplay
+                    : HudPreviewMode.letterbox,
+              ),
             ),
           ),
 
@@ -60,6 +77,19 @@ class HudSettingsScreen extends ConsumerWidget {
                 SettingsSection(
                   title: l10n.sectionHud,
                   children: <Widget>[
+                    SettingsToggleRow(
+                      label: l10n.hudFullDisplayToggle,
+                      subtitle: Text(
+                        l10n.hudFullDisplayToggleSubtitle,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      control: Switch(
+                        key: const ValueKey('hud-full-display-toggle'),
+                        value: _fullDisplay,
+                        onChanged: (v) => setState(() => _fullDisplay = v),
+                      ),
+                    ),
+                    const SizedBox(height: Insets.md),
                     SettingsSlider(
                       label: l10n.safeAreaInset,
                       valueLabel: '${(currentInset * 100).toStringAsFixed(1)}%',
@@ -278,7 +308,7 @@ class HudSettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: Insets.md),
               SettingsSlider(
-                label: l10n.blinkerSize,
+                label: l10n.batterySize,
                 valueLabel: '${batteryCfg.sizeScale.toStringAsFixed(2)}×',
                 minLabel: '0.5×',
                 maxLabel: '2.5×',

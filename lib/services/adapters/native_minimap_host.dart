@@ -32,12 +32,19 @@ class NativeMinimapHost implements MinimapHost {
 
   // Non-broadcast: buffers events so hudReady is not lost if Dart startup is
   // slower than the native 1500ms HUD_SPAWN_DELAY (QA1-2).
-  final _hudReadyController = StreamController<(double, double, double)>();
+  final _hudReadyController =
+      StreamController<(double, double, double, int?)>();
 
   /// Fires once (or again on re-enable) with the actual HUD display
-  /// (width, height, dpi) in physical pixels / dpi, reported by native after
-  /// [setupHud()] completes.  The dpi is used for phase0 Safe-Area computation.
-  Stream<(double, double, double)> get onHudReady => _hudReadyController.stream;
+  /// (width, height, dpi, displayId) in physical pixels / dpi, reported by
+  /// native after [setupHud()] completes.  The dpi is used for phase0
+  /// Safe-Area computation. displayId (Block 0027) is the logical Android
+  /// display id the HUD Presentation lives on — the app is the source of
+  /// truth for this; it is surfaced to the Feedback Loop via
+  /// ext.zee.readViewModel so `adb exec-out screencap -d <displayId>` never
+  /// has to guess or hardcode it.
+  Stream<(double, double, double, int?)> get onHudReady =>
+      _hudReadyController.stream;
 
   NativeMinimapHost() {
     _guidanceStream = _guidanceCh
@@ -63,13 +70,15 @@ class NativeMinimapHost implements MinimapHost {
       final w   = (args?['w']   as num?)?.toDouble() ?? 1024.0;
       final h   = (args?['h']   as num?)?.toDouble() ??  576.0;
       final dpi = (args?['dpi'] as num?)?.toDouble() ??  213.0;
-      _hudReadyController.add((w, h, dpi));
+      final displayId = (args?['displayId'] as num?)?.toInt();
+      _hudReadyController.add((w, h, dpi, displayId));
     }
   }
 
   @override
-  Future<void> enable(bool on) async {
-    await _ch.invokeMethod<Object?>('setMinimap', {'enabled': on});
+  Future<String?> enable(bool on) async {
+    final r = await _ch.invokeMethod<Object?>('setMinimap', {'enabled': on});
+    return r as String?;
   }
 
   @override

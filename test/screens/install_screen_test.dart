@@ -1,45 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zee_power_toys/l10n/app_localizations.dart';
-import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/screens/install_screen.dart';
 import 'package:zee_power_toys/services/config_store.dart';
-import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
-import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
-import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
 import 'package:zee_power_toys/services/installer.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
+
+import '../support/harness.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 Widget _wrap(Widget child, ConfigStore store, FakeInstaller installer) =>
-    ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(FakeCarSignals()),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(installer),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: child,
-      ),
-    );
+    wrapWithProviders(child, store: store, installer: installer);
 
 Future<(SharedPrefsConfigStore, FakeInstaller)> _makeFixture() async {
   SharedPreferences.setMockInitialValues({});

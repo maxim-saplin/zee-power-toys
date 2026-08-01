@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/services.dart';
 import '../providers/usb_mode.dart';
 import '../services/usb_mode.dart';
 import '../theme/app_theme.dart';
@@ -22,6 +23,17 @@ class _UsbAdbScreenState extends ConsumerState<UsbAdbScreen> {
   String? _errorText;
 
   Future<void> _setUsbMode(UsbMode mode) async {
+    // Persist the "auto" preference to ConfigStore *first* and unconditionally
+    // — this is the one part of "auto" that actually works off-car (the boot
+    // shim's ConfigShim.readAutoUsbPeripheral reads this exact top-level key).
+    // Do this regardless of whether the native setUsbMode() write below
+    // succeeds, so the app's own honesty about "auto" never depends on a
+    // privileged write that this build cannot make (Task 2).
+    final store = ref.read(configStoreProvider);
+    await store.setConfig(
+      store.value.copyWith(autoUsbPeripheral: mode == UsbMode.auto),
+    );
+
     final port = ref.read(usbModeProvider);
     final result = await port.setUsbMode(mode);
     if (mounted) {
@@ -77,21 +89,26 @@ class _UsbAdbScreenState extends ConsumerState<UsbAdbScreen> {
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
-                  if (!usbPort.writable)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        Insets.lg,
-                        0,
-                        Insets.lg,
-                        Insets.sm,
-                      ),
-                      child: Text(
-                        l10n.usbPlatformSigningRequired,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.secondary,
-                        ),
+                  // Always shown (not gated on a failed write attempt first):
+                  // this build's lack of platform signing is a known, static
+                  // fact — no sharedUserId in the manifest, release signs with
+                  // the debug key — so the screen says so plainly up front
+                  // rather than only after the user discovers it the hard way
+                  // (Task 2 — "auto" honesty).
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Insets.lg,
+                      0,
+                      Insets.lg,
+                      Insets.sm,
+                    ),
+                    child: Text(
+                      l10n.usbPlatformSigningRequired,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.secondary,
                       ),
                     ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       Insets.lg,

@@ -25,7 +25,7 @@ _Avoid_: head unit, infotainment, IVI
 ### HUD content
 
 **Minimap**:
-The navigation map shown on the HUD. Drawn by YNavi into a surface we host — it is foreign content, not something we render. The viewport is a square confined to the Safe Area using phase0's geometry model (`squareSizeFraction=0.9`, `squarePaddingDp=31`, placement mode `SQUARE_LEFT`). On T2 (1280×720 @ 213dpi) this yields a 210×210px square at Rect(278, 263, 488, 473).
+The navigation map shown on the HUD. Drawn by YNavi into a surface we host — it is foreign content, not something we render. The viewport is a square confined to the Safe Area using phase0's geometry model (`squareSizeFraction=0.9`, `squarePaddingDp=31`, placement mode `SQUARE_LEFT`). At the real HUD geometry — **1024×576 @ 213dpi**, on both the T2 emulator and the T3 car — this yields a 210×210px square at `Rect.fromLTWH(150, 191, 210, 210)`.
 _Avoid_: map view, nav map
 
 **Blinker**:
@@ -91,8 +91,8 @@ One of three progressively more faithful environments the Feedback Loop runs in.
 _Avoid_: mode, environment, stage
 
 **T1 Desktop**:
-The macOS/Linux tier — pure-Dart fakes, no Android, fastest iteration. The UI-iteration workhorse.
-_Avoid_: fake tier, local
+The **Linux** desktop tier — pure-Dart fakes, no Android, fastest iteration. `dev/zee_run.py:152` hardcodes `flutter run -d linux`, and there is no `macos/` runner directory (only `linux/`), so T1 does not run on a macOS host. On macOS the fast loop is `flutter test`, and T2 is the truth tier there — T1 also runs against `FakeMinimapHost`, so it structurally cannot verify the Minimap on any host.
+_Avoid_: fake tier, local, "the macOS/Linux tier"
 
 **T2 Emulator**:
 The Android-emulator tier — real native plumbing driven by the native simulator. Validates the native edge without a car.

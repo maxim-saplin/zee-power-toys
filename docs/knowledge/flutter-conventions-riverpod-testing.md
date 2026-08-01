@@ -2,6 +2,21 @@
 
 # Flutter Conventions, Riverpod & Testing — Grounding Report
 
+> **This is a pre-implementation research snapshot, not living documentation of the
+> actual stack.** Several dependencies proposed below were never adopted — the real
+> `pubspec.yaml` dev_dependencies are only `flutter_test` and `flutter_lints`; the app
+> has no `go_router`, `logging`, `mockito`, `build_runner`, `freezed`, or
+> `riverpod_generator`/`riverpod_annotation`. Where this doc's proposal and `pubspec.yaml`
+> disagree, `pubspec.yaml` wins. Tracked as the "Conventions-doc dep snapshot" item in
+> [`docs/issues/BACKLOG.md`](../issues/BACKLOG.md).
+>
+> Named-but-never-built code also appears below and should not be copied: `DesktopHudHost`
+> (T1 uses `FakeHudHost`), `ZeeProviderObserver` / any `ProviderObserver` (the Feedback Loop
+> reads services directly — see the reconciliation note in
+> [ADR 0006](../adr/0006-riverpod-state-management.md)), and `pumpUntil` (deleted: it polled
+> wall-clock time, which never advances under `testWidgets`' FakeAsync). The real shared test
+> harness is [`test/support/harness.dart`](../../test/support/harness.dart).
+
 ## Source Base
 
 Primary reference: `/home/user/src/nothingness/` (Flutter media controller with mature test suite).
@@ -178,7 +193,7 @@ test/                     # mirrors lib/ structure
   widgets/
   screens/
   support/
-    pump_until.dart         # async condition helper (port from nothingness)
+    harness.dart            # real shared harness: wrapWithProviders/useMockPrefs/pumpHud
 
 integration_test/
   hud_blinker_test.dart
@@ -353,7 +368,7 @@ test/
   widgets/         # widget tests with MaterialApp wrapper + ProviderScope.overrides
   screens/         # full-screen widget tests
   support/
-    pump_until.dart   # async polling helper (port from nothingness)
+    harness.dart      # real shared harness: wrapWithProviders/useMockPrefs/pumpHud
 integration_test/    # cross-widget behavior on emulator/device (T2+)
 dev/                 # out-of-tree harness — NEVER imported by lib/
 ```
@@ -421,18 +436,37 @@ testWidgets('BlinkerWidget shows left arrow when blinker=left', (tester) async {
 });
 ```
 
-### pumpUntil helper (parallel-safe async)
+### Async stepping — explicit `tester.pump(Duration)`, not `pumpUntil`
 
-Port `test/support/pump_until.dart` from nothingness verbatim. `flutter test` runs one isolate per file in parallel; fixed `Future.delayed` budgets produce non-deterministic failures under load. `pumpUntil` returns as soon as the condition holds.
+An earlier draft of this doc recommended porting `test/support/pump_until.dart` from
+`nothingness` verbatim and using it "in all async unit tests". That file was written,
+found to be a trap, and **deleted**: it polled wall-clock time via `Future.delayed`,
+which under `testWidgets`'s `FakeAsync` clock never advances and never pumps a frame —
+it could not work as documented, and no test in this repo ever used it.
+
+The pattern the tests actually use: step the fake clock forward explicitly and let each
+`pump` render a frame —
 
 ```dart
-// test/support/pump_until.dart
-Future<void> pumpUntil(
-  bool Function() condition, {
-  Duration timeout = const Duration(seconds: 5),
-  Duration interval = const Duration(milliseconds: 1),
-}) async { ... }
+await tester.pump();                              // first frame
+await tester.pump(const Duration(milliseconds: 300));  // advance + settle an animation step
 ```
+
+See `test/widgets/hud_root_test.dart`'s BlinkerWidget group and
+`test/screens/settings_home_screen_test.dart`'s "HUD tile navigates to HudSettingsScreen"
+test for worked examples. Never call `tester.pumpAndSettle()` on a subtree containing
+`BlinkerWidget` — its repeating `AnimationController` never settles, so
+`pumpAndSettle()` spins until the test timeout.
+
+The real shared harness is `test/support/harness.dart`:
+- `wrapWithProviders(child, ...)` — the one `ProviderScope` shape every screen/widget
+  test needs (config store, car signals, minimap host, HUD host, installer, system
+  config fakes), wrapped in a `MaterialApp`.
+- `useMockPrefs()` — seeds `SharedPreferences.setMockInitialValues({})` so
+  `SharedPrefsConfigStore` never touches a platform channel.
+- `pumpHud(tester, child, {size, dpr})` — folds `setSurfaceSize` +
+  `addTearDown(reset)` + `pumpWidget` + a settling `pump()` into one call, for the
+  common case where nothing needs to happen between build and first frame.
 
 ### Mockito code generation
 
@@ -536,10 +570,14 @@ Schema: one key per config entry, JSON-encoded string values. Kotlin boot shim r
 - **What:** Deterministic outcome-map-based fake (outcomesByPath: Map<String, FakeLoadOutcome>) for integration tests. No call-tracking; just deterministic behavior with emitEnded/reset helpers.
 - **Reuse:** Port as FakeCarSignals for dev/main_test.dart integration entrypoint. Replace outcome map with event-emission helpers (emitSignal, emitBlinker, etc.).
 
-### pumpUntil
-- **Source:** `/home/user/src/nothingness/test/support/pump_until.dart`
-- **What:** Async polling helper that returns as soon as a condition holds (not on a wall-clock budget). Parallel-safe: flutter test runs one isolate per file concurrently, so fixed Future.delayed causes non-deterministic flaky failures.
-- **Reuse:** Copy verbatim to test/support/pump_until.dart. Use in all async unit tests instead of await Future.delayed + expect.
+### ~~pumpUntil~~ — removed, do not reintroduce
+- **What happened:** Ported from `nothingness` per an earlier draft of this doc, then
+  **deleted**. It polled wall-clock time via `Future.delayed`, which under
+  `testWidgets`'s `FakeAsync` clock never advances and never pumps a frame — it could
+  not work as documented, and nothing in this repo used it.
+- **Use instead:** `test/support/harness.dart` (`wrapWithProviders`, `useMockPrefs`,
+  `pumpHud`) plus explicit `await tester.pump(const Duration(...))` stepping. See
+  "Async stepping" above.
 
 ### AgentService (VM-service extensions)
 - **Source:** `/home/user/src/nothingness/dev/agent_service.dart`

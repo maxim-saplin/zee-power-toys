@@ -1,55 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:zee_power_toys/hud/battery_widget.dart';
 import 'package:zee_power_toys/hud/blinker_widget.dart';
 import 'package:zee_power_toys/hud/hud_root.dart';
-import 'package:zee_power_toys/l10n/app_localizations.dart';
-import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/services/car_signals.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
-import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_installer.dart';
-import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
-import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
-import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
+import 'package:zee_power_toys/services/minimap_viewport.dart';
 import 'package:zee_power_toys/widgets/hud_preview.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/harness.dart';
 
 void main() {
-  setUp(() {
-    // Prevent SharedPreferences from touching the filesystem in tests.
-    SharedPreferences.setMockInitialValues({});
-  });
-
-  /// Wraps [child] in a minimal ProviderScope with in-memory services.
-  Widget wrapWithProviders(
-    Widget child, {
-    AppConfig? config,
-    FakeCarSignals? signals,
-  }) {
-    final store = SharedPrefsConfigStore();
-    if (config != null) {
-      // Seed synchronously so the widget sees it on first build.
-      store.setConfig(config);
-    }
-    return ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(signals ?? FakeCarSignals()),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(FakeInstaller()),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: child,
-      ),
-    );
-  }
+  setUp(useMockPrefs);
 
   group('HudRoot', () {
     testWidgets('is backdrop-agnostic — paints no opaque background', (tester) async {
@@ -75,48 +38,47 @@ void main() {
       const sa = HudSafeArea(left: 0.05, top: 0.05, right: 0.95, bottom: 0.95);
       final config = AppConfig(safeArea: sa);
 
-      await tester.binding.setSurfaceSize(const Size(1024, 576));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(const HudRoot(), config: config));
-      await tester.pump();
+      await pumpHud(tester, wrapWithProviders(const HudRoot(), config: config));
 
       // Safe Area outer Positioned must exist and be within display bounds.
       // There is exactly one Positioned for the Safe Area clipping region.
       expect(find.byType(ClipRect), findsOneWidget);
     });
 
-    testWidgets('shows slot stubs — GUIDANCE, MINIMAP only in preview mode', (tester) async {
-      // BLINKER and BATTERY are real widgets; GUIDANCE and MINIMAP are preview-only stubs.
-      await tester.binding.setSurfaceSize(const Size(1024, 576));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets('there is no GUIDANCE slot — removed entirely, in any mode', (tester) async {
+      // Owner decision: Guidance and Minimap are not two features — the HUD
+      // shows the YNavi map, and there is no separate turn-by-turn overlay in
+      // scope. GUIDANCE (and its l10n string) is gone, not just hidden.
+      await pumpHud(tester, wrapWithProviders(const HudRoot(showSafeAreaBorder: false)));
+      expect(find.text('GUIDANCE'), findsNothing);
 
-      // Preview mode (showSafeAreaBorder=true): stubs are visible.
       await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
       await tester.pump();
-
-      expect(find.text('GUIDANCE'), findsOneWidget);
-      expect(find.text('MINIMAP'), findsOneWidget);
-      // BlinkerWidget replaced the BLINKER stub.
-      expect(find.byType(BlinkerWidget), findsOneWidget);
-      // BatteryWidget replaced the BATTERY stub (text 'BATTERY' is gone).
-      expect(find.text('BATTERY'), findsNothing);
+      expect(find.text('GUIDANCE'), findsNothing,
+          reason: 'GUIDANCE must not exist even in preview/debug mode — it was removed, not hidden');
     });
 
-    testWidgets('production HUD has no ghost stubs; preview has stubs; BLINKER+BATTERY always render', (tester) async {
-      // This test guards the core emissive-projector invariant:
-      // the production HUD must not emit GUIDANCE/MINIMAP rectangles onto the windshield,
-      // while the DHU preview shows them as layout aids.
-      await tester.binding.setSurfaceSize(const Size(1024, 576));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets('shows MINIMAP glyph only in preview mode', (tester) async {
+      // BLINKER and BATTERY are real widgets; MINIMAP is a preview-only
+      // schematic glyph stand-in for the real (natively-composited) Minimap.
+      await pumpHud(tester, wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
 
+      expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsOneWidget);
+      // BlinkerWidget and BatteryWidget are always the real widgets.
+      expect(find.byType(BlinkerWidget), findsOneWidget);
+      expect(find.byType(BatteryWidget), findsOneWidget);
+    });
+
+    testWidgets('production HUD has no ghost minimap glyph; preview has it; BLINKER+BATTERY always render', (tester) async {
+      // This test guards the core emissive-projector invariant: the
+      // production HUD must not emit a MINIMAP ghost rectangle onto the
+      // windshield (the real Minimap is composited natively by MinimapHost,
+      // never painted by Flutter), while the DHU preview shows the schematic
+      // glyph as a layout aid.
       // --- Production HUD (showSafeAreaBorder=false, the default) ---
-      await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: false)));
-      await tester.pump();
+      await pumpHud(tester, wrapWithProviders(const HudRoot(showSafeAreaBorder: false)));
 
-      expect(find.text('GUIDANCE'), findsNothing,
-          reason: 'Production HUD must not emit a GUIDANCE ghost rectangle');
-      expect(find.text('MINIMAP'), findsNothing,
+      expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsNothing,
           reason: 'Production HUD must not emit a MINIMAP ghost rectangle');
       // Real content always present.
       expect(find.byType(BlinkerWidget), findsOneWidget,
@@ -128,15 +90,59 @@ void main() {
       await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
       await tester.pump();
 
-      expect(find.text('GUIDANCE'), findsOneWidget,
-          reason: 'Preview shows GUIDANCE stub as a layout aid');
-      expect(find.text('MINIMAP'), findsOneWidget,
-          reason: 'Preview shows MINIMAP stub as a layout aid');
+      expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsOneWidget,
+          reason: 'Preview shows the MINIMAP glyph as a layout aid');
       // Real content still present in preview too.
       expect(find.byType(BlinkerWidget), findsOneWidget,
           reason: 'BLINKER must always render');
       expect(find.byType(BatteryWidget), findsOneWidget,
           reason: 'BATTERY must always render');
+    });
+
+    testWidgets('MINIMAP glyph rect equals minimapRectInSafeArea() scaled onto the Safe Area', (tester) async {
+      // Real HUD geometry (1024×576 @ 213dpi) — CONTEXT.md's Minimap entry —
+      // so the Safe Area's on-screen pixel size matches the runtime-verified
+      // rect exactly, letting this assertion be checked against real numbers.
+      const sa = HudSafeArea();
+      final config = AppConfig(safeArea: sa);
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudRoot(showSafeAreaBorder: true), config: config),
+        size: const Size(1024, 576),
+      );
+
+      final saWidthPx = (sa.right - sa.left) * 1024;
+      final saHeightPx = (sa.bottom - sa.top) * 576;
+      final saLeftPx = sa.left * 1024;
+      final saTopPx = sa.top * 576;
+
+      final rel = minimapRectInSafeArea(); // default preset: 'balanced'
+      final expectedLeft = saLeftPx + rel.left * saWidthPx;
+      final expectedTop = saTopPx + rel.top * saHeightPx;
+      final expectedWidth = rel.width * saWidthPx;
+      final expectedHeight = rel.height * saHeightPx;
+
+      final glyphFinder = find.byKey(const ValueKey('hud-minimap-glyph'));
+      final actualTopLeft = tester.getTopLeft(glyphFinder);
+      final actualSize = tester.getSize(glyphFinder);
+
+      expect(actualTopLeft.dx, closeTo(expectedLeft, 1.0),
+          reason: 'glyph left must match minimapRectInSafeArea() scaled onto the Safe Area');
+      expect(actualTopLeft.dy, closeTo(expectedTop, 1.0),
+          reason: 'glyph top must match minimapRectInSafeArea() scaled onto the Safe Area');
+      expect(actualSize.width, closeTo(expectedWidth, 1.0),
+          reason: 'glyph width must match minimapRectInSafeArea() scaled onto the Safe Area');
+      expect(actualSize.height, closeTo(expectedHeight, 1.0),
+          reason: 'glyph height must match minimapRectInSafeArea() scaled onto the Safe Area');
+      // Cross-check against the CONTEXT.md-documented, runtime-verified rect.
+      expect(actualTopLeft.dx, closeTo(150.0, 1.0),
+          reason: 'must match the runtime-confirmed Rect.fromLTWH(150, 191, 210, 210)');
+      expect(actualTopLeft.dy, closeTo(191.0, 1.0),
+          reason: 'must match the runtime-confirmed Rect.fromLTWH(150, 191, 210, 210)');
+      expect(actualSize.width, closeTo(210.0, 1.0),
+          reason: 'must match the runtime-confirmed Rect.fromLTWH(150, 191, 210, 210)');
+      expect(actualSize.height, closeTo(210.0, 1.0),
+          reason: 'must match the runtime-confirmed Rect.fromLTWH(150, 191, 210, 210)');
     });
 
     testWidgets('Safe Area border absent when showSafeAreaBorder=false', (tester) async {
@@ -168,34 +174,38 @@ void main() {
 
   group('HudPreview', () {
     testWidgets('renders HudRoot — same widget class, not a mock', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(const HudPreview()));
-      await tester.pump();
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
 
       // HudPreview must embed a HudRoot (ADR 0001 — cannot drift).
       expect(find.byType(HudRoot), findsOneWidget);
     });
 
-    testWidgets('preview has correct aspect ratio widget', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(const HudPreview()));
-      await tester.pump();
+    testWidgets('default (letterbox) preview aspect ratio is the Safe Area — 616/175 ≈ 3.52:1', (tester) async {
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
 
       expect(find.byType(AspectRatio), findsOneWidget);
       final ar = tester.widget<AspectRatio>(find.byType(AspectRatio));
-      expect(ar.aspectRatio, closeTo(1024 / 576, 0.001));
+      // 616/175 is the Safe Area's own dp aspect ratio (phase0 constants); the
+      // default HudSafeArea fractions were derived from exactly those dp
+      // values at the real HUD's 1024×576 geometry, so the two must agree.
+      expect(ar.aspectRatio, closeTo(616 / 175, 0.01 * (616 / 175)),
+          reason: 'Primary preview must show the Safe Area letterbox, not the full backing display');
+    });
+
+    testWidgets('fullDisplay mode preview aspect ratio is the full backing display — 1024/576', (tester) async {
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudPreview(mode: HudPreviewMode.fullDisplay)),
+        size: const Size(800, 600),
+      );
+
+      final ar = tester.widget<AspectRatio>(find.byType(AspectRatio));
+      expect(ar.aspectRatio, closeTo(1024 / 576, 0.001),
+          reason: 'Secondary debug view must show the whole backing display');
     });
 
     testWidgets('preview draws the Safe Area outline itself', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(const HudPreview()));
-      await tester.pump();
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
 
       // The preview draws a bright cyan Safe-Area outline (alpha 0.6) over the HudRoot.
       // HudRoot inside HudPreview also draws its own dimmer internal border (alpha 0.35),
@@ -211,11 +221,7 @@ void main() {
     });
 
     testWidgets('grey ground plane is present behind HudRoot', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(const HudPreview()));
-      await tester.pump();
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
 
       // First ColoredBox in HudPreview is the grey ground.
       final boxes = tester.widgetList<ColoredBox>(find.byType(ColoredBox));
@@ -224,6 +230,90 @@ void main() {
         isTrue,
         reason: 'Expected a grey ground-plane ColoredBox in HudPreview',
       );
+    });
+
+    testWidgets('shows visible blinker + battery content with no CarSignal injected (Block 0026 demo override)', (tester) async {
+      // No signals emitted at all — HudPreview's _demoSignalOverrides must
+      // force a visible hazard blinker (both marks) and a plausible charging
+      // battery reading regardless.
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
+
+      expect(find.byKey(const ValueKey('blinker-mark-left')), findsOneWidget,
+          reason: 'demo override forces hazard — left mark must be visible with no signal injected');
+      expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget,
+          reason: 'demo override forces hazard — right mark must be visible with no signal injected');
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget,
+          reason: 'battery content must render with no signal injected');
+      expect(find.byKey(const ValueKey('charging-kw-text')), findsOneWidget,
+          reason: 'demo override forces charging=true — the kW panel must be visible');
+    });
+
+    testWidgets('letterbox content (blinker marks) is actually visible inside the rendered preview box — not squashed/clipped away', (tester) async {
+      // Regression guard for a real bug caught only by rendering an actual
+      // PNG: an earlier version of HudPreview's letterbox transform clipped
+      // content at its UNSCALED (real-HUD-pixel) size before the fit-to-box
+      // scale was applied, rendering an empty grey box with only the badge
+      // visible. Every find.byKey(...) tree-presence test (like the one
+      // above) still passed throughout, because none of them checked WHERE
+      // the widget actually painted — only that it existed in the tree.
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudPreview(), scaffold: true),
+        size: const Size(1200, 500),
+      );
+
+      final previewRect = tester.getRect(find.byType(HudPreview));
+      final leftMarkRect = tester.getRect(find.byKey(const ValueKey('blinker-mark-left')));
+      final rightMarkRect = tester.getRect(find.byKey(const ValueKey('blinker-mark-right')));
+
+      expect(previewRect.overlaps(leftMarkRect), isTrue,
+          reason: 'left blinker mark must be painted inside the preview box, not clipped away');
+      expect(previewRect.overlaps(rightMarkRect), isTrue,
+          reason: 'right blinker mark must be painted inside the preview box, not clipped away');
+
+      // The two marks sit near the Safe Area's own left/right edges — they
+      // must be spread across most of the letterbox width, not collapsed
+      // together (which is what the unscaled-clip bug produced: a near-empty
+      // box with content squeezed into a sliver near one corner).
+      final spread = (rightMarkRect.center.dx - leftMarkRect.center.dx).abs();
+      expect(spread, greaterThan(previewRect.width * 0.5),
+          reason: 'blinker marks must span most of the letterbox width');
+    });
+
+    testWidgets('badge renders by default (PREVIEW · DEMO)', (tester) async {
+      await pumpHud(tester, wrapWithProviders(const HudPreview()), size: const Size(800, 600));
+
+      expect(find.byKey(const ValueKey('hud-preview-badge')), findsOneWidget);
+      expect(find.text('PREVIEW · DEMO'), findsOneWidget);
+    });
+
+    testWidgets('badge absent when badge=none', (tester) async {
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudPreview(badge: HudPreviewBadge.none)),
+        size: const Size(800, 600),
+      );
+
+      expect(find.byKey(const ValueKey('hud-preview-badge')), findsNothing);
+    });
+
+    testWidgets('badge shows LIVE · SIMULATED when badge=liveSimulated', (tester) async {
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudPreview(badge: HudPreviewBadge.liveSimulated)),
+        size: const Size(800, 600),
+      );
+
+      expect(find.text('LIVE · SIMULATED'), findsOneWidget);
+    });
+
+    testWidgets('badge never renders on the real HUD surface (HudRoot alone)', (tester) async {
+      // HudPreview's badge is not part of HudRoot at all — HudRoot is what
+      // the real HUD Presentation paints, and it has no concept of a badge.
+      await pumpHud(tester, wrapWithProviders(const HudRoot()));
+
+      expect(find.byKey(const ValueKey('hud-preview-badge')), findsNothing);
+      expect(find.text('PREVIEW · DEMO'), findsNothing);
     });
   });
 
@@ -354,14 +444,14 @@ void main() {
   group('BlinkerWidget', () {
     testWidgets('off state renders nothing', (tester) async {
       final signals = FakeCarSignals();
-      await tester.binding.setSurfaceSize(const Size(400, 200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(
-        const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
-        signals: signals,
-      ));
-      await tester.pump();
+      await pumpHud(
+        tester,
+        wrapWithProviders(
+          const SizedBox(width: 400, height: 200, child: BlinkerWidget()),
+          signals: signals,
+        ),
+        size: const Size(400, 200),
+      );
 
       // Off → SizedBox.shrink() — no mark keys present.
       expect(find.byKey(const ValueKey('blinker-mark-left')), findsNothing);

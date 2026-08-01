@@ -103,6 +103,19 @@ abstract final class AppTheme {
         ),
       ),
 
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accent,
+        inactiveTrackColor: AppColors.surfaceContainerHigh,
+        thumbColor: AppColors.accent,
+        overlayColor: AppColors.accent.withValues(alpha: 0.12),
+        // The value is already shown inline by [SettingsSlider] above the
+        // track (always visible, never clipped) — the M3 value-indicator
+        // bubble is pure redundancy and, at the DHU's 3.0x scale, overflows
+        // the screen near the track ends. Suppress it here so no future
+        // slider (discrete or continuous) can reintroduce the balloon.
+        showValueIndicator: ShowValueIndicator.never,
+      ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accent,

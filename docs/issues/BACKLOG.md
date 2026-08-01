@@ -84,7 +84,24 @@ See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-tes
 Non-blocking polish noted so it is never invisible. None gate on-car (T3) testing.
 - ~~**Minimap surface confinement**~~ → **resolved as [Block 0025](0025-minimap-safe-area-confinement.md)** — `filterWrapper` sized to viewport rect; phase0 dp-constant geometry; `setBounds`-before-`enable` ordering. Proof: `shots/redo/t2-hud-minimap-confined.png`.
 - **Installer dedup automated test** (QA5-9 / 0017 §3) — Robolectric double-trigger guard for the native installer; logic is in place, the regression test is not.
-- **Per-tier VM-URI files** (QA3-5) — `dev/zee_run.py` writes a single `/tmp/zee_vm_uri.txt`, so a T2 launch shadows a live T1 session; split into `/tmp/zee_vm_uri_{t1,t2}.txt` for parallel sessions (today: run one tier at a time, or set `ZEE_VM_URI` explicitly).
+- ~~**Per-tier VM-URI files**~~ (QA3-5) → **resolved 2026-08-01** — `/tmp/zee_vm_uri_{tier}.txt` plus a `getVersion` liveness probe that unlinks a stale file and falls through instead of hanging on the RPC timeout.
+
+#### Minimap zoom & label scale — **upstream, not fixable here** (2026-08-01)
+The map renders far too close: at the 210x210 viewport a single street label plus its Cyrillic
+second line occupies roughly a third of the frame, and labels clip at the viewport edge.
+
+Measured conclusions, so this is not re-litigated:
+- **Neither runtime lever moves the zoom.** `bufScale` changes only render resolution/anti-aliasing;
+  `dpiScale` has no effect anywhere from 0.8x to 4x, including through a full `stop()`/`start()` cold
+  re-bind that guarantees a fresh `onSurfaceAvailable`. The CarApp surfaces we bind to
+  (`AppManager`/`NavigationManager`) expose no camera or zoom control.
+- The one concrete lever is **`ZEEAPP_MAP_SCALE_PERCENT` (=130), a compile-time flag in the separate
+  `ynavi-zee` mod repo.** Fixing the zoom means rebuilding and republishing that APK.
+- **Do not "fix" the label clipping by over-rendering into a larger buffer and centre-cropping.**
+  Clipping at a viewport edge is normal for any cropped map view. Centre-cropping shows *less*
+  geographic area at the same pixel scale while labels stay the same size — it makes the real problem
+  (over-zoom) worse in exchange for removing a normal artifact. Rejected deliberately, not overlooked.
 - **FGS auto-start in dev** (QA4-7) — the foreground service starts only via `BootReceiver`, so `bootState.fgsRunning` is always `false` under `flutter run`; a `TEST_BOOT` hook in `zee_run.py up` would exercise it.
 - **Behaviour-boundary test cleanups** (QA5-12/13) — `native_car_signals_test` asserts `snapshot.*` internals and `hud_root_test` pins `AspectRatio` type; prefer the event stream / rendered bounds.
 - **Conventions-doc dep snapshot** (QA5-11) — `docs/knowledge/flutter-conventions-riverpod-testing.md` lists illustrative deps (`go_router`, `logging`, `mockito`, `build_runner`) the app deliberately does not use.
+- **System-language OTA write — T3-only verification** (Block 0015 follow-up) — `SystemConfigController.setSystemLanguage` now routes through the AdaptAPI/OTA path (`IOtaSession.setSystemHMILanguage`, with an `AdaptInternalManager` fallback) instead of the previous in-process resource-configuration mutation that reported success without actually changing anything persistent or system-wide. T1/T2 correctly report `unsupported-on-device` (no AdaptAPI) via a dedicated `systemSupported()` capability probe, replacing the old ungrantable-permission gate. **Whether the OTA call actually changes the car's system language has not been runtime-verified anywhere but T3** — it may still fail there this wave without platform signing (no `sharedUserId` in the manifest; release signs with the debug key). Do not accrete further fallback mechanisms to paper over this gap; confirm on-car instead.

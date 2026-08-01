@@ -1,10 +1,16 @@
 // Tests for Block 0013 — Minimap configuration UI.
+// Updated for the "three knobs, not ten" Block: replaced widthFrac/heightFrac
+// with a single sizeFraction, replaced themeFollow removal with MinimapLooks
+// (colorPreset/contrast/threshold — the Look section).
 //
 // Covers:
 //   • MinimapConfig round-trip JSON serialization and defaults
 //   • enable gated by ynaviAvailable=false (FakeMinimapHost default)
-//   • themeFollow 'auto' round-trip and resolution logic
+//   • MinimapLooks defaults, copyWith, JSON round-trip, toParams wire format
+//   • MinimapConfig.resolvedSizeFraction (preset vs. advanced manual override)
 //   • AppConfig round-trip with minimap nested config
+//   • Backward-compat: an old persisted JSON with widthFrac/heightFrac/
+//     themeFollow still loads without throwing
 //   • ARB parity: every new l10n key exists in both EN and RU generated classes
 
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +19,7 @@ import 'package:zee_power_toys/l10n/app_localizations_en.dart';
 import 'package:zee_power_toys/l10n/app_localizations_ru.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
+import 'package:zee_power_toys/services/minimap_viewport.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
@@ -24,9 +31,8 @@ void main() {
       expect(cfg.enabled, isFalse);
       expect(cfg.preset, equals('balanced'));
       expect(cfg.advanced, isFalse);
-      expect(cfg.widthFrac, isNull);
-      expect(cfg.heightFrac, isNull);
-      expect(cfg.themeFollow, equals('auto'));
+      expect(cfg.sizeFraction, isNull);
+      expect(cfg.looks, equals(const MinimapLooks()));
     });
 
     test('round-trip through JSON — defaults', () {
@@ -40,65 +46,147 @@ void main() {
         enabled: true,
         preset: 'large',
         advanced: true,
-        widthFrac: 0.4,
-        heightFrac: 0.35,
-        themeFollow: 'dark',
+        sizeFraction: 0.42,
+        looks: MinimapLooks(colorPreset: 'cyan', contrast: 4.0, threshold: 180),
       );
       final restored = MinimapConfig.fromJson(src.toJson());
       expect(restored.enabled, isTrue);
       expect(restored.preset, equals('large'));
       expect(restored.advanced, isTrue);
-      expect(restored.widthFrac, closeTo(0.4, 0.001));
-      expect(restored.heightFrac, closeTo(0.35, 0.001));
-      expect(restored.themeFollow, equals('dark'));
+      expect(restored.sizeFraction, closeTo(0.42, 0.001));
+      expect(restored.looks.colorPreset, equals('cyan'));
+      expect(restored.looks.contrast, closeTo(4.0, 0.001));
+      expect(restored.looks.threshold, closeTo(180, 0.001));
     });
 
     test('fromJson defaults when keys absent', () {
       final cfg = MinimapConfig.fromJson(<String, Object?>{});
       expect(cfg.enabled, isFalse);
       expect(cfg.preset, equals('balanced'));
-      expect(cfg.themeFollow, equals('auto'));
+      expect(cfg.looks, equals(const MinimapLooks()));
     });
 
     test('copyWith only updates specified fields', () {
       const src = MinimapConfig(enabled: true, preset: 'compact');
-      final copy = src.copyWith(themeFollow: 'dark');
+      final copy = src.copyWith(
+        looks: const MinimapLooks(colorPreset: 'amber'),
+      );
       expect(copy.enabled, isTrue);
       expect(copy.preset, equals('compact'));
-      expect(copy.themeFollow, equals('dark'));
+      expect(copy.looks.colorPreset, equals('amber'));
     });
 
-    test('copyWith can null widthFrac/heightFrac', () {
-      const src = MinimapConfig(widthFrac: 0.5, heightFrac: 0.4);
+    test('copyWith can null sizeFraction', () {
+      const src = MinimapConfig(sizeFraction: 0.5);
       // Pass explicit null via sentinel.
-      final copy = src.copyWith(
-        widthFrac: null,
-        heightFrac: null,
-      );
-      expect(copy.widthFrac, isNull);
-      expect(copy.heightFrac, isNull);
+      final copy = src.copyWith(sizeFraction: null);
+      expect(copy.sizeFraction, isNull);
     });
 
     test('equality and hashCode', () {
-      const a = MinimapConfig(enabled: true, themeFollow: 'dark');
-      const b = MinimapConfig(enabled: true, themeFollow: 'dark');
-      const c = MinimapConfig(enabled: false, themeFollow: 'dark');
+      const a = MinimapConfig(enabled: true, sizeFraction: 0.5);
+      const b = MinimapConfig(enabled: true, sizeFraction: 0.5);
+      const c = MinimapConfig(enabled: false, sizeFraction: 0.5);
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a.hashCode, equals(b.hashCode));
     });
+  });
 
-    // themeFollow 'auto' → the resolved brightness depends on system; we can
-    // only test the config preserves the 'auto' token and that the screen would
-    // use MediaQuery to resolve it.  Here we just confirm round-trip fidelity.
-    test('themeFollow=auto round-trip', () {
-      const src = MinimapConfig(themeFollow: 'auto');
-      expect(MinimapConfig.fromJson(src.toJson()).themeFollow, equals('auto'));
+  // ---------------------------------------------------------------------------
+  // MinimapConfig.resolvedSizeFraction — replaces the old resolvedFracs.
+  // ---------------------------------------------------------------------------
+  group('MinimapConfig.resolvedSizeFraction', () {
+    test('non-advanced: resolves via hudPresetSizeFraction(preset)', () {
+      const cfg = MinimapConfig();
+      expect(
+        cfg.resolvedSizeFraction,
+        equals(hudPresetSizeFraction('balanced')),
+      );
     });
 
-    test('themeFollow=light round-trip', () {
-      const src = MinimapConfig(themeFollow: 'light');
-      expect(MinimapConfig.fromJson(src.toJson()).themeFollow, equals('light'));
+    test('non-advanced with a stale manual sizeFraction still uses preset', () {
+      const cfg = MinimapConfig(preset: 'compact', sizeFraction: 0.99);
+      expect(
+        cfg.resolvedSizeFraction,
+        equals(hudPresetSizeFraction('compact')),
+        reason:
+            'advanced=false must ignore sizeFraction even when one is set '
+            '(the old resolvedFracs contract for widthFrac/heightFrac)',
+      );
+    });
+
+    test('advanced + manual sizeFraction overrides the preset', () {
+      const cfg = MinimapConfig(advanced: true, sizeFraction: 0.55);
+      expect(cfg.resolvedSizeFraction, closeTo(0.55, 0.001));
+    });
+
+    test('advanced without a manual sizeFraction falls back to preset', () {
+      const cfg = MinimapConfig(advanced: true, preset: 'large');
+      expect(cfg.resolvedSizeFraction, equals(hudPresetSizeFraction('large')));
+    });
+
+    test('manual sizeFraction is clamped to [0.1, 1.0]', () {
+      const tooBig = MinimapConfig(advanced: true, sizeFraction: 5.0);
+      const tooSmall = MinimapConfig(advanced: true, sizeFraction: -1.0);
+      expect(tooBig.resolvedSizeFraction, equals(1.0));
+      expect(tooSmall.resolvedSizeFraction, equals(0.1));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // MinimapLooks — the Look section's three native colour-filter knobs.
+  // ---------------------------------------------------------------------------
+  group('MinimapLooks', () {
+    test('defaults match the measured-good native values', () {
+      const looks = MinimapLooks();
+      expect(looks.colorPreset, equals('green-yellow'));
+      expect(looks.contrast, equals(3.5));
+      expect(looks.threshold, equals(165.0));
+    });
+
+    test('copyWith only updates specified fields', () {
+      const src = MinimapLooks(colorPreset: 'white', contrast: 2.5);
+      final copy = src.copyWith(threshold: 200);
+      expect(copy.colorPreset, equals('white'));
+      expect(copy.contrast, equals(2.5));
+      expect(copy.threshold, equals(200.0));
+    });
+
+    test('round-trip through JSON', () {
+      const src = MinimapLooks(
+        colorPreset: 'amber',
+        contrast: 4.2,
+        threshold: 180,
+      );
+      final restored = MinimapLooks.fromJson(src.toJson());
+      expect(restored, equals(src));
+    });
+
+    test('fromJson defaults when keys absent', () {
+      final looks = MinimapLooks.fromJson(<String, Object?>{});
+      expect(looks, equals(const MinimapLooks()));
+    });
+
+    test('toParams forwards the exact wire keys setMinimapParam expects', () {
+      const looks = MinimapLooks(
+        colorPreset: 'cyan',
+        contrast: 2.0,
+        threshold: 140,
+      );
+      final params = looks.toParams();
+      expect(params['preset'], equals('cyan'));
+      expect(params['contrast'], equals(2.0));
+      expect(params['threshold'], equals(140.0));
+    });
+
+    test('equality and hashCode', () {
+      const a = MinimapLooks(colorPreset: 'white');
+      const b = MinimapLooks(colorPreset: 'white');
+      const c = MinimapLooks(colorPreset: 'amber');
+      expect(a, equals(b));
+      expect(a, isNot(equals(c)));
+      expect(a.hashCode, equals(b.hashCode));
     });
   });
 
@@ -109,7 +197,7 @@ void main() {
     test('default AppConfig has minimap with enabled=false', () {
       const cfg = AppConfig();
       expect(cfg.minimap.enabled, isFalse);
-      expect(cfg.minimap.themeFollow, equals('auto'));
+      expect(cfg.minimap.looks, equals(const MinimapLooks()));
     });
 
     test('round-trip preserves minimap', () {
@@ -117,13 +205,13 @@ void main() {
         minimap: MinimapConfig(
           enabled: true,
           preset: 'compact',
-          themeFollow: 'dark',
+          looks: MinimapLooks(colorPreset: 'white'),
         ),
       );
       final restored = AppConfig.fromJson(src.toJson());
       expect(restored.minimap.enabled, isTrue);
       expect(restored.minimap.preset, equals('compact'));
-      expect(restored.minimap.themeFollow, equals('dark'));
+      expect(restored.minimap.looks.colorPreset, equals('white'));
     });
 
     test('fromJson with absent minimap key uses defaults', () {
@@ -133,11 +221,61 @@ void main() {
 
     test('copyWith minimap does not affect other fields', () {
       const src = AppConfig(locale: 'ru');
-      final copy = src.copyWith(
-        minimap: const MinimapConfig(enabled: true),
-      );
+      final copy = src.copyWith(minimap: const MinimapConfig(enabled: true));
       expect(copy.locale, equals('ru'));
       expect(copy.minimap.enabled, isTrue);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Backward compatibility: old persisted configs must keep loading.
+  // ---------------------------------------------------------------------------
+  group('AppConfig backward-compat load (removed keys)', () {
+    test(
+      'old JSON with widthFrac/heightFrac/themeFollow loads without throwing',
+      () {
+        final oldJson = <String, Object?>{
+          'hudEnabled': true,
+          'minimap': <String, Object?>{
+            'enabled': true,
+            'preset': 'large',
+            'advanced': true,
+            // Removed keys — must be silently ignored, not crash fromJson.
+            'widthFrac': 0.42,
+            'heightFrac': 0.37,
+            'themeFollow': 'dark',
+          },
+        };
+
+        final cfg = AppConfig.fromJson(oldJson);
+
+        expect(cfg.minimap.enabled, isTrue);
+        expect(cfg.minimap.preset, equals('large'));
+        expect(cfg.minimap.advanced, isTrue);
+        // The removed keys leave no trace: sizeFraction stays unset, so
+        // resolvedSizeFraction falls back to the (advanced) preset's fraction.
+        expect(cfg.minimap.sizeFraction, isNull);
+        expect(
+          cfg.minimap.resolvedSizeFraction,
+          equals(hudPresetSizeFraction('large')),
+        );
+        expect(cfg.minimap.looks, equals(const MinimapLooks()));
+      },
+    );
+
+    test('re-serializing an old-JSON-loaded config drops the dead keys', () {
+      final oldJson = <String, Object?>{
+        'minimap': <String, Object?>{
+          'widthFrac': 0.5,
+          'heightFrac': 0.5,
+          'themeFollow': 'light',
+        },
+      };
+      final cfg = AppConfig.fromJson(oldJson);
+      final rewritten = cfg.toJson()['minimap'] as Map<String, Object?>;
+      expect(rewritten.containsKey('widthFrac'), isFalse);
+      expect(rewritten.containsKey('heightFrac'), isFalse);
+      expect(rewritten.containsKey('themeFollow'), isFalse);
     });
   });
 
@@ -156,16 +294,22 @@ void main() {
       expect(await host.isYnaviAvailable(), isTrue);
     });
 
-    test('ynaviAvailable=false: enabling config does not reflect in host.lastEnabled=true intent', () async {
-      // Simulates the UI guard: when ynaviAvailable=false, the switch is disabled.
-      // We test the host itself stays untouched.
-      final host = FakeMinimapHost(); // ynaviAvailable=false by default
-      final available = await host.isYnaviAvailable();
-      expect(available, isFalse,
-          reason: 'toggle should be disabled when not available');
-      // The UI would not call host.enable(true) in this state.
-      expect(host.lastEnabled, isNull);
-    });
+    test(
+      'ynaviAvailable=false: enabling config does not reflect in host.lastEnabled=true intent',
+      () async {
+        // Simulates the UI guard: when ynaviAvailable=false, the switch is disabled.
+        // We test the host itself stays untouched.
+        final host = FakeMinimapHost(); // ynaviAvailable=false by default
+        final available = await host.isYnaviAvailable();
+        expect(
+          available,
+          isFalse,
+          reason: 'toggle should be disabled when not available',
+        );
+        // The UI would not call host.enable(true) in this state.
+        expect(host.lastEnabled, isNull);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -225,99 +369,49 @@ void main() {
       expect(ru.minimapAdvanced, isNotEmpty);
     });
 
-    test('minimapWidth', () {
-      expect(en.minimapWidth, isNotEmpty);
-      expect(ru.minimapWidth, isNotEmpty);
+    test('minimapSize', () {
+      expect(en.minimapSize, isNotEmpty);
+      expect(ru.minimapSize, isNotEmpty);
     });
 
-    test('minimapHeight', () {
-      expect(en.minimapHeight, isNotEmpty);
-      expect(ru.minimapHeight, isNotEmpty);
+    test('minimapLookSection', () {
+      expect(en.minimapLookSection, isNotEmpty);
+      expect(ru.minimapLookSection, isNotEmpty);
     });
 
-    test('minimapThemeSection', () {
-      expect(en.minimapThemeSection, isNotEmpty);
-      expect(ru.minimapThemeSection, isNotEmpty);
+    test('minimapLookPreset', () {
+      expect(en.minimapLookPreset, isNotEmpty);
+      expect(ru.minimapLookPreset, isNotEmpty);
     });
 
-    test('minimapThemeAuto', () {
-      expect(en.minimapThemeAuto, isNotEmpty);
-      expect(ru.minimapThemeAuto, isNotEmpty);
+    test('minimapLookPresetGreenYellow', () {
+      expect(en.minimapLookPresetGreenYellow, isNotEmpty);
+      expect(ru.minimapLookPresetGreenYellow, isNotEmpty);
     });
 
-    test('minimapThemeDark', () {
-      expect(en.minimapThemeDark, isNotEmpty);
-      expect(ru.minimapThemeDark, isNotEmpty);
+    test('minimapLookPresetWhite', () {
+      expect(en.minimapLookPresetWhite, isNotEmpty);
+      expect(ru.minimapLookPresetWhite, isNotEmpty);
     });
 
-    test('minimapThemeLight', () {
-      expect(en.minimapThemeLight, isNotEmpty);
-      expect(ru.minimapThemeLight, isNotEmpty);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // MinimapConfig.presetFractions / resolvedFracs (Block 0020 minimap wiring)
-  // ---------------------------------------------------------------------------
-  group('MinimapConfig preset fractions', () {
-    test('presetFractions map contains all three presets', () {
-      expect(MinimapConfig.presetFractions, contains('compact'));
-      expect(MinimapConfig.presetFractions, contains('balanced'));
-      expect(MinimapConfig.presetFractions, contains('large'));
+    test('minimapLookPresetAmber', () {
+      expect(en.minimapLookPresetAmber, isNotEmpty);
+      expect(ru.minimapLookPresetAmber, isNotEmpty);
     });
 
-    test('resolvedFracs — compact preset', () {
-      const cfg = MinimapConfig(preset: 'compact');
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(MinimapConfig.presetFractions['compact']!.$1));
-      expect(fracs.$2, equals(MinimapConfig.presetFractions['compact']!.$2));
+    test('minimapLookPresetCyan', () {
+      expect(en.minimapLookPresetCyan, isNotEmpty);
+      expect(ru.minimapLookPresetCyan, isNotEmpty);
     });
 
-    test('resolvedFracs — balanced preset (default)', () {
-      const cfg = MinimapConfig();
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(MinimapConfig.presetFractions['balanced']!.$1));
-      expect(fracs.$2, equals(MinimapConfig.presetFractions['balanced']!.$2));
+    test('minimapLookBrightness', () {
+      expect(en.minimapLookBrightness, isNotEmpty);
+      expect(ru.minimapLookBrightness, isNotEmpty);
     });
 
-    test('resolvedFracs — large preset', () {
-      const cfg = MinimapConfig(preset: 'large');
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(MinimapConfig.presetFractions['large']!.$1));
-      expect(fracs.$2, equals(MinimapConfig.presetFractions['large']!.$2));
-    });
-
-    test('resolvedFracs — advanced mode uses manual fracs', () {
-      const cfg = MinimapConfig(
-        advanced: true,
-        widthFrac: 0.45,
-        heightFrac: 0.75,
-      );
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(0.45));
-      expect(fracs.$2, equals(0.75));
-    });
-
-    test('resolvedFracs — advanced without fracs falls back to preset', () {
-      const cfg = MinimapConfig(advanced: true, preset: 'large');
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(MinimapConfig.presetFractions['large']!.$1));
-    });
-
-    test('resolvedFracs — unknown preset falls back to balanced', () {
-      const cfg = MinimapConfig(preset: 'unknown-preset');
-      final fracs = cfg.resolvedFracs;
-      expect(fracs.$1, equals(MinimapConfig.presetFractions['balanced']!.$1));
-      expect(fracs.$2, equals(MinimapConfig.presetFractions['balanced']!.$2));
-    });
-
-    test('fracs are in valid 0..1 range', () {
-      for (final entry in MinimapConfig.presetFractions.entries) {
-        expect(entry.value.$1, inInclusiveRange(0.0, 1.0),
-            reason: '${entry.key} widthFrac out of range');
-        expect(entry.value.$2, inInclusiveRange(0.0, 1.0),
-            reason: '${entry.key} heightFrac out of range');
-      }
+    test('minimapLookContrast', () {
+      expect(en.minimapLookContrast, isNotEmpty);
+      expect(ru.minimapLookContrast, isNotEmpty);
     });
   });
 }

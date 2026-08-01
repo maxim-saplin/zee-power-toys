@@ -140,6 +140,48 @@ abstract class AppLocalizations {
   /// **'Diagnostics'**
   String get diagnosticsTitle;
 
+  /// Diagnostics: Signal source section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Signal source'**
+  String get diagSectionSource;
+
+  /// Diagnostics: signal source row label
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get diagSignalSource;
+
+  /// Signal source: native AdaptAPI (real car signals)
+  ///
+  /// In en, this message translates to:
+  /// **'AdaptAPI (car)'**
+  String get diagSignalSourceAdaptApi;
+
+  /// Signal source: native simulator fallback, no AdaptAPI
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated (emulator)'**
+  String get diagSignalSourceSimulated;
+
+  /// Signal source: T1 pure-Dart fake
+  ///
+  /// In en, this message translates to:
+  /// **'Fake (desktop)'**
+  String get diagSignalSourceFake;
+
+  /// Signal source: not yet resolved or a decode error
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get diagSignalSourceUnknown;
+
+  /// Diagnostics: HUD backing-display geometry row label
+  ///
+  /// In en, this message translates to:
+  /// **'HUD display'**
+  String get diagHudDisplay;
+
   /// Diagnostics: Motion section heading
   ///
   /// In en, this message translates to:
@@ -494,6 +536,12 @@ abstract class AppLocalizations {
   /// **'Show charging stats (while charging)'**
   String get showChargingStats;
 
+  /// Battery size slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get batterySize;
+
   /// Safe Area readout heading
   ///
   /// In en, this message translates to:
@@ -533,7 +581,7 @@ abstract class AppLocalizations {
   /// Minimap settings section subtitle
   ///
   /// In en, this message translates to:
-  /// **'YNavi minimap, presets, dark/light'**
+  /// **'YNavi minimap, size, colour look'**
   String get sectionMinimapSubtitle;
 
   /// Minimap settings screen app-bar title
@@ -590,41 +638,59 @@ abstract class AppLocalizations {
   /// **'Advanced'**
   String get minimapAdvanced;
 
-  /// Minimap manual width slider label
+  /// Minimap manual size slider label
   ///
   /// In en, this message translates to:
-  /// **'Width (fraction of safe area)'**
-  String get minimapWidth;
+  /// **'Size (fraction of safe area)'**
+  String get minimapSize;
 
-  /// Minimap manual height slider label
+  /// Minimap Look section heading (colour preset, brightness, contrast)
   ///
   /// In en, this message translates to:
-  /// **'Height (fraction of safe area)'**
-  String get minimapHeight;
+  /// **'Look'**
+  String get minimapLookSection;
 
-  /// Minimap theme section heading
+  /// Minimap colour preset selector label
   ///
   /// In en, this message translates to:
-  /// **'Theme'**
-  String get minimapThemeSection;
+  /// **'Colour preset'**
+  String get minimapLookPreset;
 
-  /// Minimap theme: follow system brightness
+  /// Minimap colour preset: green-yellow
   ///
   /// In en, this message translates to:
-  /// **'System (auto)'**
-  String get minimapThemeAuto;
+  /// **'Green-yellow'**
+  String get minimapLookPresetGreenYellow;
 
-  /// Minimap theme: force dark palette
+  /// Minimap colour preset: white
   ///
   /// In en, this message translates to:
-  /// **'Dark'**
-  String get minimapThemeDark;
+  /// **'White'**
+  String get minimapLookPresetWhite;
 
-  /// Minimap theme: force light palette
+  /// Minimap colour preset: amber
   ///
   /// In en, this message translates to:
-  /// **'Light'**
-  String get minimapThemeLight;
+  /// **'Amber'**
+  String get minimapLookPresetAmber;
+
+  /// Minimap colour preset: cyan
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get minimapLookPresetCyan;
+
+  /// Minimap brightness slider label (backed by the native threshold param)
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get minimapLookBrightness;
+
+  /// Minimap contrast slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Contrast'**
+  String get minimapLookContrast;
 
   /// USB/ADB settings section label
   ///
@@ -668,23 +734,41 @@ abstract class AppLocalizations {
   /// **'Current'**
   String get usbCurrentMode;
 
-  /// Hint shown when USB mode write requires platform signing (T3 only)
+  /// Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved
   ///
   /// In en, this message translates to:
-  /// **'Requires platform signing — available on the car'**
+  /// **'Actually changing the USB mode requires platform (system) signing, which this build does not have — on the emulator or the car. Your selection is saved, but the USB role itself will not change until the app is platform-signed.'**
   String get usbPlatformSigningRequired;
 
-  /// HUD preview slot stub label: navigation guidance
-  ///
-  /// In en, this message translates to:
-  /// **'GUIDANCE'**
-  String get hudSlotGuidance;
-
-  /// HUD preview slot stub label: YNavi minimap
+  /// Accessibility label for the HUD minimap slot's schematic glyph (a11y only — no visible on-screen text)
   ///
   /// In en, this message translates to:
   /// **'MINIMAP'**
   String get hudSlotMinimap;
+
+  /// HUD settings screen: toggle between the Safe-Area letterbox preview (default) and the full backing-display debug view
+  ///
+  /// In en, this message translates to:
+  /// **'Full display'**
+  String get hudFullDisplayToggle;
+
+  /// Subtitle explaining the full-display debug toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show the whole backing display, with the Safe Area outlined (debug)'**
+  String get hudFullDisplayToggleSubtitle;
+
+  /// HudPreview mode badge: Config Preview with forced demo CarSignal state
+  ///
+  /// In en, this message translates to:
+  /// **'PREVIEW · DEMO'**
+  String get hudPreviewBadgeDemo;
+
+  /// HudPreview mode badge: Simulate screen's live preview driven by the real (unforced) CarSignal chain
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE · SIMULATED'**
+  String get hudPreviewBadgeLive;
 
   /// Caption shown below the preset row when advanced mode overrides it
   ///

@@ -14,6 +14,17 @@ We want a rich, fast-iterating UI (hot reload, a single state-management stack) 
 
 **Consequences:**
 - The HUD preview stops being a separate mock — it is the same Flutter widget subtree rendered in a window/region, so it cannot drift from the real HUD.
+
+  > **Reconciliation (2026-07-31, recovery wave):** true in structure, but it drifted anyway in three ways
+  > that "same subtree" does not protect against, all now fixed. (1) The preview framed the whole 1024×576
+  > backing display rather than the 616×175 dp Safe Area the driver actually sees. (2) `HudRoot` positions
+  > slots in *fractions* while `BlinkerWidget`/`BatteryWidget` size their marks in *absolute dp*, so a small
+  > preview box exaggerated mark size ~2.9× — the preview is now laid out at real HUD pixel size and scaled
+  > down as a whole. (3) The Minimap slot invented its own geometry instead of using
+  > `computeMinimapViewport()`, so it showed the wrong size *and* position. **The Minimap can never appear in
+  > the preview for real**: it is foreign native content on the HUD's own display (the exception in this
+  > ADR), so the preview draws a schematic glyph at the true computed rect. Sharing a widget subtree
+  > guarantees the *widgets* match; it does not guarantee the *framing, scale, or foreign content* do.
 - A transparent Flutter surface over the map requires the TextureView-backed renderer (`FlutterTextureView`) — PoC-validated on the emulator; still confirm on-car.
 - Two engines cost memory (~80 MB delta in the debug PoC, ~268 MB total; lower in release as `FlutterEngineGroup` shares VM/snapshot/GPU context). The HUD engine runs only while the HUD is active.
 - If the 2nd-engine cost ever outweighs the benefit, the fallback lever is native HUD overlays (Flutter only on the DHU) — at the cost of reintroducing preview/real drift this ADR exists to kill.

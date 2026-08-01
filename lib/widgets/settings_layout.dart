@@ -134,7 +134,14 @@ class SettingsSlider extends StatelessWidget {
         ),
         Row(
           children: <Widget>[
-            Text(minLabel, style: theme.textTheme.bodySmall),
+            Flexible(
+              child: Text(
+                minLabel,
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
             Expanded(
               child: Slider(
                 key: sliderKey,
@@ -142,11 +149,18 @@ class SettingsSlider extends StatelessWidget {
                 max: max,
                 divisions: divisions,
                 value: value,
-                label: valueLabel,
                 onChanged: onChanged,
               ),
             ),
-            Text(maxLabel, style: theme.textTheme.bodySmall),
+            Flexible(
+              child: Text(
+                maxLabel,
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                textAlign: TextAlign.end,
+              ),
+            ),
           ],
         ),
       ],

@@ -67,6 +67,17 @@ class YNaviCarAppHost(
     /** Called on the main thread when navigation starts (true) or ends (false). */
     var onNavState: ((Boolean) -> Unit)? = null
 
+    /**
+     * Called on the main thread when [bindToNavigationCarApp] synchronously fails
+     * (bindService returns false — YNavi missing/disabled/crashed at bind time).
+     * Wired by MainActivity to force the MinimapView back to INVISIBLE — the
+     * "or the host fails to start" half of the native availability gate
+     * (isYnaviAvailable() covers the "not installed" half at call time; this
+     * covers a bind that was accepted by isYnaviAvailable()'s static check but
+     * fails in practice).
+     */
+    var onBindFailed: (() -> Unit)? = null
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------
@@ -231,6 +242,9 @@ class YNaviCarAppHost(
             false
         }
         Log.i(TAG, "bindService result=$isBound")
+        if (!isBound) {
+            mainHandler.post { onBindFailed?.invoke() }
+        }
     }
 
     // -------------------------------------------------------------------------

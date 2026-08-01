@@ -35,6 +35,16 @@ import '../services/usb_mode.dart';
 /// and readViewModel includes {systemLocale, clusterSupported} (Block 0015).
 /// [usbMode] is optional; when provided, ext.zee.setUsbMode is registered
 /// and readViewModel includes {usbMode, usbWritable} (Block 0016).
+/// [getHudGeometry] is optional; when provided, readViewModel includes a
+/// `hud` map ({displayId, w, h, dpi}) — the real HUD display geometry as
+/// last reported by native's onHudReady (Block 0027). Only meaningful on the
+/// DHU surface, which owns the NativeMinimapHost that receives that callback.
+/// [getMinimapViewport] is optional; when provided, readViewModel includes a
+/// `viewport` map ({x, y, w, h}) — the minimap ROI computed by
+/// computeMinimapViewport() in lib/main.dart. The app is the source of truth
+/// for this geometry so the Feedback Loop never has to reimplement it and
+/// risk the two copies drifting apart (the exact failure mode that let a
+/// minimap regression ship undetected — docs/issues/0009-minimap-under-layer.md:39).
 void registerZeeExtensions({
   required String surface,
   required ConfigStore store,
@@ -46,6 +56,15 @@ void registerZeeExtensions({
   Installer? installer,
   SystemConfig? systemConfig,
   UsbModePort? usbMode,
+  Map<String, Object?> Function()? getHudGeometry,
+  Rect? Function()? getMinimapViewport,
+  // [getMinimapNative] surfaces the last native `setMinimap` gate result
+  // ("applied:true" | "unavailable" | "no-minimap") in readViewModel's
+  // `minimap.native` field. [onMinimapNativeResult] lets the direct
+  // `ext.zee.minimap on=...` path (below) feed that same holder so
+  // readViewModel stays consistent regardless of which path enabled it.
+  String? Function()? getMinimapNative,
+  void Function(String?)? onMinimapNativeResult,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -73,10 +92,6 @@ void registerZeeExtensions({
     final bl = store.value.blinker;
     final bat = store.value.battery;
     final mm = store.value.minimap;
-    // resolvedBrightness: we cannot call MediaQuery here (no BuildContext),
-    // so we report the configured preference.  'auto' means "follow system";
-    // UI consumers resolve the actual brightness at render time.
-    final resolvedBrightness = mm.themeFollow; // 'auto'|'dark'|'light'
     // ynaviAvailable is queried from the minimapHost if present; otherwise null.
     final bool? ynaviAvailable = minimapHost != null
         ? await minimapHost.isYnaviAvailable()
@@ -85,13 +100,21 @@ void registerZeeExtensions({
     // On T1 FakeSystemConfig returns a fixed locale and false/true for clusterSupported.
     // On T2 NativeSystemConfig reads the real Android locale and probes AdaptAPI.
     final String? systemLocaleTag = systemConfig?.systemLocale.toLanguageTag();
-    final bool? clusterSupported =
-        systemConfig != null ? await systemConfig.clusterSupported() : null;
+    final bool? clusterSupported = systemConfig != null
+        ? await systemConfig.clusterSupported()
+        : null;
+    // signalSource: 'adaptapi' | 'simulated' | 'fake' — which CarSignals
+    // source is actually live (Task 1). Mirrors the native
+    // CarSignalsController's own selectSource() decision; never re-derived
+    // here. Null when no CarSignals was provided at all (shouldn't happen on
+    // a registered surface, but the extension must never throw).
+    final String? signalSource = await carSignals?.sourceKind;
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
         // locale: null = follow system; 'en'/'ru' = explicit override.
         'locale': store.value.locale,
+        'signalSource': signalSource,
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
           'state': snap?.blinker.name ?? BlinkerState.off.name,
@@ -109,22 +132,47 @@ void registerZeeExtensions({
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
-        // activeSlots: only slots with real rendered content on the production HUD.
-        // plannedSlots: slots reserved for future Blocks (stubs shown in preview only).
+        // activeSlots: slots with real rendered content on the production HUD.
+        // The minimap is native (a TextureView beneath the transparent Flutter
+        // overlay), so it is active but is NOT visible to `ext.zee.shot` —
+        // only to `feedback_loop.py shot --layer native`.
+        //
+        // plannedSlots is now always empty. It used to advertise
+        // ['guidance', 'minimap'] — the minimap long after it had shipped, and
+        // guidance for a slot that has since been removed outright (the HUD
+        // shows the YNavi map; there is no separate turn-by-turn overlay in
+        // scope). Kept as an empty list for wire compatibility.
         'safeArea': sa.toJson(),
-        'activeSlots': <String>['blinker', 'battery'],
-        'plannedSlots': <String>['guidance', 'minimap'],
+        'activeSlots': <String>['blinker', 'battery', 'minimap'],
+        'plannedSlots': const <String>[],
         // Minimap config + live YNavi availability for the Feedback Loop.
         'minimap': <String, Object?>{
           'enabled': mm.enabled,
           'preset': mm.preset,
           'advanced': mm.advanced,
-          if (mm.widthFrac != null) 'widthFrac': mm.widthFrac,
-          if (mm.heightFrac != null) 'heightFrac': mm.heightFrac,
-          'themeFollow': mm.themeFollow,
+          if (mm.sizeFraction != null) 'sizeFraction': mm.sizeFraction,
+          'resolvedSizeFraction': mm.resolvedSizeFraction,
+          'looks': mm.looks.toJson(),
           'ynaviAvailable': ynaviAvailable,
-          'resolvedBrightness': resolvedBrightness,
+          // Native setMinimap gate result — see [getMinimapNative] above.
+          'native': getMinimapNative != null ? getMinimapNative() : null,
         },
+        // Block 0027: the app's own HUD display geometry + minimap ROI — the
+        // native composite verifier (shot --layer native) crops exactly this
+        // rect instead of guessing/reimplementing computeMinimapViewport().
+        // Null (both keys, or the whole 'hud' map) when neither callback was
+        // provided (e.g. the HUD surface, or T1 desktop before hudReady fires).
+        'hud': getHudGeometry != null ? getHudGeometry() : null,
+        'viewport': () {
+          final r = getMinimapViewport != null ? getMinimapViewport() : null;
+          if (r == null) return null;
+          return <String, Object?>{
+            'x': r.left,
+            'y': r.top,
+            'w': r.width,
+            'h': r.height,
+          };
+        }(),
         // Install state — last/current install progress for the Feedback Loop.
         // Populated once ext.zee.install is called; null until first install.
         'install': Map<String, Object?>.from(
@@ -145,7 +193,7 @@ void registerZeeExtensions({
     );
   });
 
-    // setConfig — supports hudEnabled, safeArea, blinker, battery.
+  // setConfig — supports hudEnabled, safeArea, blinker, battery.
   // safeArea param: JSON-encoded object string e.g. '{"left":0.1,"top":0.3,...}'
   // or individual edge keys: safeLeft, safeTop, safeRight, safeBottom.
   developer.registerExtension('ext.zee.setConfig', (method, params) async {
@@ -174,7 +222,10 @@ void registerZeeExtensions({
     final saTop = double.tryParse(params['safeTop'] ?? '');
     final saRight = double.tryParse(params['safeRight'] ?? '');
     final saBottom = double.tryParse(params['safeBottom'] ?? '');
-    if (saLeft != null || saTop != null || saRight != null || saBottom != null) {
+    if (saLeft != null ||
+        saTop != null ||
+        saRight != null ||
+        saBottom != null) {
       next = next.copyWith(
         safeArea: sa.copyWith(
           left: saLeft,
@@ -216,9 +267,7 @@ void registerZeeExtensions({
       final bat = next.battery;
       next = next.copyWith(
         battery: bat.copyWith(
-          showBattery: rawBatteryShow != null
-              ? rawBatteryShow == 'true'
-              : null,
+          showBattery: rawBatteryShow != null ? rawBatteryShow == 'true' : null,
           showTemp: rawTempShow != null ? rawTempShow == 'true' : null,
           showChargingStats: rawChargingShow != null
               ? rawChargingShow == 'true'
@@ -231,19 +280,13 @@ void registerZeeExtensions({
     // locale: en|ru|system  (system → null, clears the override)
     final rawLocale = params['locale'];
     if (rawLocale != null) {
-      next = next.copyWith(
-        locale: rawLocale == 'system' ? null : rawLocale,
-      );
+      next = next.copyWith(locale: rawLocale == 'system' ? null : rawLocale);
     }
 
-    // Minimap config: minimapEnabled=true|false, minimapPreset=compact|balanced|large,
-    // minimapTheme=auto|dark|light.
+    // Minimap config: minimapEnabled=true|false, minimapPreset=compact|balanced|large.
     final rawMinimapEnabled = params['minimapEnabled'];
     final rawMinimapPreset = params['minimapPreset'];
-    final rawMinimapTheme = params['minimapTheme'];
-    if (rawMinimapEnabled != null ||
-        rawMinimapPreset != null ||
-        rawMinimapTheme != null) {
+    if (rawMinimapEnabled != null || rawMinimapPreset != null) {
       final mm = next.minimap;
       next = next.copyWith(
         minimap: mm.copyWith(
@@ -251,7 +294,6 @@ void registerZeeExtensions({
               ? rawMinimapEnabled == 'true'
               : null,
           preset: rawMinimapPreset,
-          themeFollow: rawMinimapTheme,
         ),
       );
     }
@@ -310,7 +352,9 @@ void registerZeeExtensions({
           );
 
         case 'cluster':
-          final result = await systemConfig.setClusterLanguage(ui.Locale(value));
+          final result = await systemConfig.setClusterLanguage(
+            ui.Locale(value),
+          );
           return developer.ServiceExtensionResponse.result(
             jsonEncode(<String, Object?>{
               'surface': surface,
@@ -322,8 +366,10 @@ void registerZeeExtensions({
           );
 
         default:
-          return _extError('ext.zee.setLanguage: unknown scope "$scope"; '
-              'expected app|system|cluster');
+          return _extError(
+            'ext.zee.setLanguage: unknown scope "$scope"; '
+            'expected app|system|cluster',
+          );
       }
     });
   }
@@ -351,6 +397,14 @@ void registerZeeExtensions({
           'expected peripheral|host|auto',
         );
       }
+      // Persist the "auto" preference to ConfigStore regardless of whether
+      // the native write below succeeds — same honesty split as the
+      // UsbAdbScreen UI path (Task 2): the top-level autoUsbPeripheral flag
+      // is what BootReceiver/ConfigShim actually read on boot, independent
+      // of the privileged persist.usb.mode write this build cannot make.
+      await store.setConfig(
+        store.value.copyWith(autoUsbPeripheral: mode == UsbMode.auto),
+      );
       final result = await usbMode.setUsbMode(mode);
       return developer.ServiceExtensionResponse.result(
         jsonEncode(<String, Object?>{
@@ -360,6 +414,7 @@ void registerZeeExtensions({
           if (result.reason != null) 'reason': result.reason,
           'usbMode': usbMode.currentMode.name,
           'usbWritable': usbMode.writable,
+          'autoUsbPeripheral': store.value.autoUsbPeripheral,
         }),
       );
     });
@@ -371,51 +426,51 @@ void registerZeeExtensions({
   // the two surfaces. Always target surface=dhu (or ADB broadcast on T2/T3).
   if (surface == 'dhu') {
     developer.registerExtension('ext.zee.inject', (method, params) async {
-    final fake = carSignals is FakeCarSignals ? carSignals : null;
-    if (fake == null) {
-      return _extError(
-        'ext.zee.inject not available on this surface '
-        '(use ADB broadcast on T2: adb shell am broadcast -a com.zeepowertoys.SIMULATE)',
-      );
-    }
-    final kind = params['kind'];
-    try {
-      switch (kind) {
-        case 'speed':
-          final kmh = int.parse(params['value'] ?? '0');
-          fake.emitSpeed(kmh);
-        case 'blinker':
-          final state = BlinkerState.values.byName(params['value'] ?? 'off');
-          fake.emitBlinker(state);
-        case 'charge':
-          final charging = (params['charging'] ?? 'false') == 'true';
-          final kw = double.tryParse(params['kw'] ?? '');
-          final volts = double.tryParse(params['volts'] ?? '');
-          final amps = double.tryParse(params['amps'] ?? '');
-          fake.emitCharge(
-            charging: charging,
-            kw: kw,
-            volts: volts,
-            amps: amps,
-          );
-        case 'battery':
-          final levelPct = int.parse(params['levelPct'] ?? '0');
-          final tempC = double.parse(params['tempC'] ?? '0');
-          fake.emitBattery(levelPct: levelPct, tempC: tempC);
-        case 'powerFlow':
-          final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
-          fake.emitPowerFlow(flow);
-        default:
-          return _extError(
-            'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow',
-          );
+      final fake = carSignals is FakeCarSignals ? carSignals : null;
+      if (fake == null) {
+        return _extError(
+          'ext.zee.inject not available on this surface '
+          '(use ADB broadcast on T2: adb shell am broadcast -a com.zeepowertoys.SIMULATE)',
+        );
       }
-    } catch (e) {
-      return _extError('inject error: $e');
-    }
-    return developer.ServiceExtensionResponse.result(
-      jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
-    );
+      final kind = params['kind'];
+      try {
+        switch (kind) {
+          case 'speed':
+            final kmh = int.parse(params['value'] ?? '0');
+            fake.emitSpeed(kmh);
+          case 'blinker':
+            final state = BlinkerState.values.byName(params['value'] ?? 'off');
+            fake.emitBlinker(state);
+          case 'charge':
+            final charging = (params['charging'] ?? 'false') == 'true';
+            final kw = double.tryParse(params['kw'] ?? '');
+            final volts = double.tryParse(params['volts'] ?? '');
+            final amps = double.tryParse(params['amps'] ?? '');
+            fake.emitCharge(
+              charging: charging,
+              kw: kw,
+              volts: volts,
+              amps: amps,
+            );
+          case 'battery':
+            final levelPct = int.parse(params['levelPct'] ?? '0');
+            final tempC = double.parse(params['tempC'] ?? '0');
+            fake.emitBattery(levelPct: levelPct, tempC: tempC);
+          case 'powerFlow':
+            final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
+            fake.emitPowerFlow(flow);
+          default:
+            return _extError(
+              'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow',
+            );
+        }
+      } catch (e) {
+        return _extError('inject error: $e');
+      }
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
+      );
     }); // end ext.zee.inject
   } // end if (surface == 'dhu')
 
@@ -518,8 +573,10 @@ void registerZeeExtensions({
     developer.registerExtension('ext.zee.minimap', (method, params) async {
       try {
         final onParam = params['on'];
+        String? nativeResult;
         if (onParam != null) {
-          await minimapHost.enable(onParam == 'true');
+          nativeResult = await minimapHost.enable(onParam == 'true');
+          onMinimapNativeResult?.call(nativeResult);
         }
         final x = double.tryParse(params['x'] ?? '');
         final y = double.tryParse(params['y'] ?? '');
@@ -538,6 +595,9 @@ void registerZeeExtensions({
             'surface': surface,
             'minimap': 'ok',
             'on': onParam,
+            // `?` drops the entry when the native gate returned nothing
+            // (e.g. the fake host off-car), matching the previous if-null form.
+            'result': ?nativeResult,
           }),
         );
       } catch (e) {
@@ -583,8 +643,8 @@ void registerZeeExtensions({
         );
       }
 
-      final targetLabel = target ??
-          '${params['repo']}/${params['branch']}/${params['path']}';
+      final targetLabel =
+          target ?? '${params['repo']}/${params['branch']}/${params['path']}';
 
       // Reset and update the holder's map in-place (not reassignment) so the
       // readViewModel closure always reads through the same reference.
@@ -594,28 +654,30 @@ void registerZeeExtensions({
         ..addAll(<String, Object?>{'target': targetLabel, 'started': true});
 
       // Subscribe to the install stream; update state on each event.
-      installer.install(asset).listen(
-        (InstallProgress p) {
-          state
-            ..clear()
-            ..addAll(<String, Object?>{
-              'target': targetLabel,
-              'phase': p.phase.name,
-              'fraction': p.fraction,
-              if (p.message != null) 'message': p.message,
-            });
-        },
-        onError: (Object err) {
-          state
-            ..clear()
-            ..addAll(<String, Object?>{
-              'target': targetLabel,
-              'phase': 'failed',
-              'fraction': 0.0,
-              'message': err.toString(),
-            });
-        },
-      );
+      installer
+          .install(asset)
+          .listen(
+            (InstallProgress p) {
+              state
+                ..clear()
+                ..addAll(<String, Object?>{
+                  'target': targetLabel,
+                  'phase': p.phase.name,
+                  'fraction': p.fraction,
+                  if (p.message != null) 'message': p.message,
+                });
+            },
+            onError: (Object err) {
+              state
+                ..clear()
+                ..addAll(<String, Object?>{
+                  'target': targetLabel,
+                  'phase': 'failed',
+                  'fraction': 0.0,
+                  'message': err.toString(),
+                });
+            },
+          );
 
       return developer.ServiceExtensionResponse.result(
         jsonEncode(<String, Object?>{
@@ -631,13 +693,15 @@ void registerZeeExtensions({
   // queries the native ZeeForegroundService state.  On other surfaces (T1,
   // HUD isolate) the response is best-effort from the config store alone.
   developer.registerExtension('ext.zee.bootState', (method, params) async {
-    final Map<String, Object?> native =
-        getBootState != null ? await getBootState() : <String, Object?>{};
+    final Map<String, Object?> native = getBootState != null
+        ? await getBootState()
+        : <String, Object?>{};
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
         'hudEnabled': store.value.hudEnabled,
-        'configReadOk': true, // store is loaded by the time extensions are registered
+        'configReadOk':
+            true, // store is loaded by the time extensions are registered
         ...native,
       }),
     );
@@ -657,6 +721,7 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'blinker': store.value.blinker.toJson(),
       'battery': store.value.battery.toJson(),
       'minimap': store.value.minimap.toJson(),
+      'autoUsbPeripheral': store.value.autoUsbPeripheral,
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>
@@ -732,18 +797,14 @@ VoidCallback? _onTapOf(Element el) {
 /// Invoke the first `onTap` found in [root] itself or its subtree; returns true if one fired.
 /// includeSelf=true ensures keyed GestureDetectors (the matched element IS the detector)
 /// are invoked directly without needing an inner descendant.
-bool _invokeOnTapInSubtree(Element root) => _walkSubtree(
-  root,
-  (el) {
-    final onTap = _onTapOf(el);
-    if (onTap != null) {
-      onTap();
-      return true;
-    }
-    return false;
-  },
-  includeSelf: true,
-);
+bool _invokeOnTapInSubtree(Element root) => _walkSubtree(root, (el) {
+  final onTap = _onTapOf(el);
+  if (onTap != null) {
+    onTap();
+    return true;
+  }
+  return false;
+}, includeSelf: true);
 
 /// Invoke the first `onTap` on [element] itself, then its ancestors, then its
 /// subtree; returns true if one fired.

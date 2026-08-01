@@ -60,22 +60,12 @@ final ynaviAvailableProvider = FutureProvider<bool>((ref) async {
   return host.isYnaviAvailable();
 });
 
-/// Resolved HUD brightness: when themeFollow='auto' this follows the system
-/// brightness at the time of the last config read (cannot watch
-/// MediaQuery from a plain Provider — UI consumers resolve it with
-/// MediaQuery.platformBrightnessOf(context) when they need the live value).
-///
-/// This provider exposes the configured preference string so widgets can
-/// quickly derive the effective brightness without re-reading the full config.
-/// Values: 'auto' | 'dark' | 'light'.
-final hudThemeFollowProvider = Provider<String>((ref) {
-  final async = ref.watch(appConfigProvider);
-  return async.when(
-    data: (cfg) => cfg.minimap.themeFollow,
-    loading: () => ref.watch(configStoreProvider).value.minimap.themeFollow,
-    error: (e, _) => ref.watch(configStoreProvider).value.minimap.themeFollow,
-  );
-});
+// `hudThemeFollowProvider` (exposing MinimapConfig.themeFollow) used to live
+// here. Deleted along with the field it read — see the removal rationale in
+// MinimapConfig's doc comment (lib/services/config_store.dart): the control
+// had no truthful native destination (Block 0021 pins YNavi's night mode
+// permanently; a light HUD contradicts the emissive-projector rule in
+// CONTEXT.md), so it was deleted outright rather than left half-wired.
 
 /// Whether the HUD engine should be spawned.
 ///

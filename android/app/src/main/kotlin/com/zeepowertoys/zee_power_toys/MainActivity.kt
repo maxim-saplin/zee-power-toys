@@ -2,14 +2,11 @@ package com.zeepowertoys.zee_power_toys
 
 import android.app.Presentation
 import android.content.Context
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
-import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.Shader
 import android.graphics.SurfaceTexture
 import android.hardware.display.DisplayManager
 import android.os.Bundle
@@ -41,7 +38,6 @@ import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import kotlin.math.sin
 
 // Two-engine host for T2 (Android).
 //
@@ -62,9 +58,16 @@ import kotlin.math.sin
 //
 // Minimap under-layer (Block 0009, ADR 0001 exception):
 //   The HUD Presentation uses a FrameLayout with a native MinimapView (TextureView,
-//   green-yellow ColorMatrix filter) UNDER a transparent FlutterTextureView overlay.
+//   parametric ColorMatrix filter) UNDER a transparent FlutterTextureView overlay.
 //   The zee/minimap MethodChannel is registered on the DHU engine (primary) so
 //   the DHU Dart isolate drives the native Minimap surface.
+//
+//   MinimapView carries NO placeholder content of its own (the animated rainbow
+//   gradient render thread was removed — it violated the emissive-black-only
+//   HUD rule when YNavi was absent). Availability is gated natively, in
+//   setMinimap(): when YNavi is not installed/detectable the view is left/set
+//   INVISIBLE and "unavailable" is returned to Dart — Dart's own enable(true)
+//   call can never single-handedly put content on the surface.
 class MainActivity : FlutterActivity() {
 
     companion object {
@@ -109,6 +112,13 @@ class MainActivity : FlutterActivity() {
 
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
+
+    // Mutable filter + zoom parameters — single source of truth for the HUD
+    // ColorMatrix paint and the YNavi oversample/dpi levers. Rebuilt into a
+    // fresh Paint by applyFilter() / a fresh surface config by
+    // resizeYNaviSurface() on every setMinimapParam call — no rebuild, no
+    // re-bind required to retune (Task 2).
+    private var minimapParams = MinimapParams()
 
     // YNavi CarApp host — binds to YNavi and feeds the MinimapView surface.
     // Null when YNavi is unavailable or the minimap is disabled.
@@ -246,7 +256,7 @@ class MainActivity : FlutterActivity() {
         if (display == null) {
             // Graceful degradation: DHU keeps running, HUD simply absent.
             Log.w(TAG, "setupHud: no secondary display found — HUD engine not started. " +
-                "Run: adb shell settings put global overlay_display_devices \"1280x720/213\"")
+                "Run: adb shell settings put global overlay_display_devices \"1024x576/213\"")
             return
         }
         Log.i(TAG, "setupHud: secondary display id=${display.displayId} name=${display.name}")
@@ -302,7 +312,7 @@ class MainActivity : FlutterActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ))
             mm.filterWrapper = filterWrapper
-            filterWrapper.setLayerType(View.LAYER_TYPE_HARDWARE, createHudFilterPaint())
+            applyFilter()
             root.addView(filterWrapper, FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -328,6 +338,13 @@ class MainActivity : FlutterActivity() {
                 host.onNavState = { active ->
                     Log.i(TAG, "YNavi navigation active=$active")
                 }
+                // Native gate (Task 1), async half: if the bind itself fails despite
+                // isYnaviAvailable() passing its static check, force the surface back
+                // dark rather than leaving it VISIBLE with nothing ever drawn into it.
+                host.onBindFailed = {
+                    minimapView?.visibility = View.INVISIBLE
+                    Log.w(TAG, "YNavi bind failed — MinimapView forced INVISIBLE")
+                }
             }
 
             // Layer 2 (top): transparent Flutter overlay.
@@ -351,10 +368,19 @@ class MainActivity : FlutterActivity() {
             // Notify DHU Dart of the actual HUD display dimensions (QA1-2, QA1-4).
             // This fires hudReady in NativeMinimapHost which re-applies minimap config
             // with the real 1280×720 metrics (not the hardcoded 1024×576 fallback).
+            // displayId is included (Block 0027) so the Feedback Loop's readViewModel
+            // can report which logical display `adb exec-out screencap -d <id>` must
+            // target for the native composite capture — the app is the source of
+            // truth for its own HUD geometry, not a Python reimplementation of it.
             val hudDm = DisplayMetrics().also { display.getMetrics(it) }
             dhuMinimapChannel?.invokeMethod(
                 "hudReady",
-                mapOf("w" to hudDm.widthPixels, "h" to hudDm.heightPixels, "dpi" to hudDm.densityDpi)
+                mapOf(
+                    "w" to hudDm.widthPixels,
+                    "h" to hudDm.heightPixels,
+                    "dpi" to hudDm.densityDpi,
+                    "displayId" to display.displayId,
+                )
             )
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
@@ -373,7 +399,6 @@ class MainActivity : FlutterActivity() {
             val host = yNaviCarAppHost
             if (host != null && host.isActive) host.stop()
             v.pendingYNaviStart = false
-            v.pauseRendering()   // now also stops the render thread (QA4-4)
             minimapView = null
         }
         yNaviCarAppHost = null
@@ -389,37 +414,91 @@ class MainActivity : FlutterActivity() {
     }
 
     // -------------------------------------------------------------------------
+    // HUD filter + zoom parameters — single mutable holder (Task 2).
+    //
+    // History of this default within the Block (all three measured on T2, not
+    // guessed):
+    //
+    // 1. White(2)/hueAngle=290/threshold=150 — phase0's documented numbers,
+    //    ported verbatim. REJECTED: leaves a visible navy background glow.
+    //    hueAngle=290 sits between two ColorMatrix primaries (240/blue,
+    //    0/red), so the hue-passthrough formula below gives BOTH the R and B
+    //    rows a large fractional identity-contrast weight instead of cleanly
+    //    zeroing one of them — the background never fully crushes.
+    // 2. White(2)/hueAngle=290/threshold=225 — raising threshold crushed the
+    //    glow to genuine black, but the surviving roads render as dim navy.
+    //    On an emissive projector dim-blue reads as near-invisible, not a
+    //    "mark" — REJECTED for insufficient brightness, even though the
+    //    background-black part of the fix was correct and is kept below.
+    // 3. Green(0)/hueAngle=120/huePass=1.0, threshold swept 150-245 —
+    //    REJECTED: this build's YNavi night-theme road colour is blue, not
+    //    green, so there is no strong green content to rescue. Depending on
+    //    threshold this either floods bright green over unrelated green
+    //    polygon fills (parks — huePass doesn't distinguish "a road that
+    //    happens to be green" from "a park that happens to be green") at low
+    //    threshold, or crushes the (non-green) roads into invisibility along
+    //    with the background at high threshold. Content-dependent and never
+    //    hits "black background AND bright roads" simultaneously in testing.
+    // 4. Green(0)/huePass=0.0 (hue-passthrough OFF), contrast=3.5,
+    //    threshold=165 — THE FIX. huePass=0 means hueAngle is irrelevant: the
+    //    whole image becomes a pure monochrome-tint threshold render (uniform
+    //    green-yellow tint on whatever survives contrast+threshold), so it
+    //    no longer depends on matching the source content's real hue at all
+    //    — sidesteps the wrong-dominant-colour and park-flooding problems
+    //    from options 1-3 entirely. Matches the character of the known-good
+    //    `shots/redo/t2-hud-final-readable.png` reference. Measured
+    //    blackFrac=0.9255 (target was >=0.80) with unmistakably bright neon
+    //    green roads/labels, confirmed by eye.
+    // -------------------------------------------------------------------------
+    data class MinimapParams(
+        var contrast: Float = 3.5f,
+        var threshold: Int = 165,
+        var preset: Int = 0,        // 0=green-yellow (default), 1=cyan, 2=white, 3=amber, 4=red
+        var saturation: Float = 0f,
+        var brightness: Int = -20,
+        var invert: Boolean = false,
+        // 0.0 = hue-passthrough OFF (pure monochrome tint) — see history
+        // above for why this, not a nonzero value, is the correct default.
+        var huePass: Float = 0.0f,
+        var hueAngle: Int = 120,   // irrelevant while huePass=0.0; kept as the
+                                   // green-yellow axis in case huePass is ever
+                                   // raised again for a specific hue rescue.
+        // Oversample factor: SurfaceTexture buffer is viewport-size × bufScale;
+        // measured to affect render resolution/AA only — NOT the geographic
+        // area YNavi shows (see resizeYNaviSurface doc). Left at phase0's
+        // value; raising it further showed no additional benefit in testing.
+        var bufScale: Float = 2.0f,
+        // Multiplier on the dpi reported to YNavi's SurfaceContainer.
+        // Measured across 0.8x-4.0x (both via live resizeYNaviSurface() calls
+        // AND via a full stop/start cold-bind so a fresh onSurfaceAvailable
+        // is guaranteed): no observable zoom effect at any point in that
+        // range on this build. Left at neutral 1.0 — see MainActivity.kt's
+        // resizeYNaviSurface doc and the Block's report for the full
+        // measurement writeup; this is NOT a working zoom-out lever here.
+        var dpiScale: Float = 1.0f,
+    )
+
+    // -------------------------------------------------------------------------
     // HUD filter — parametric ColorMatrix with hue passthrough.
     // Ported from phase0 CarAppHostService.createHudFilterPaint (hud-presentation-host.md §7).
-    // Defaults: contrast=3.0, threshold=150, preset=0 (green-yellow), saturation=0 (fully
-    // monochrome-tinted), brightness=-20, huePass=1.0, hueAngle=120 (green).
-    // threshold=150 maps pixels darker than ~150/255 to BLACK → dark emissive background.
-    // huePass=1.0 + hueAngle=120 keeps green/yellow map features in color; all else → mono.
+    // threshold maps pixels darker than ~threshold/255 to BLACK → dark emissive background.
+    // huePass + hueAngle keeps only the chosen hue in colour; all else → mono.
     // -------------------------------------------------------------------------
 
-    private fun createHudFilterPaint(
-        contrast: Float = 3.0f,
-        threshold: Int = 150,
-        preset: Int = 0,         // 0=green-yellow (default), 1=cyan, 2=white, 3=amber, 4=red
-        saturation: Float = 0f,
-        brightness: Int = -20,
-        invert: Boolean = false,
-        huePass: Float = 1.0f,
-        hueAngle: Int = 120,     // degrees: 0=red, 60=yellow, 120=green, 180=cyan, 240=blue
-    ): Paint {
-        val (tR, tG, tB) = when (preset) {
+    private fun createHudFilterPaint(p: MinimapParams): Paint {
+        val (tR, tG, tB) = when (p.preset) {
             1 -> Triple(0.1f, 0.9f, 1.0f)    // cyan
             2 -> Triple(1.0f, 1.0f, 1.0f)    // white
             3 -> Triple(1.0f, 0.75f, 0.0f)   // amber
             4 -> Triple(1.0f, 0.15f, 0.0f)   // red
-            else -> Triple(0.7f, 1.0f, 0.1f) // green-yellow (preset=0, default)
+            else -> Triple(0.7f, 1.0f, 0.1f) // green-yellow (preset=0)
         }
-        val c = contrast
-        val t = -threshold.toFloat()
-        val s = saturation.coerceIn(0f, 1f)
+        val c = p.contrast
+        val t = -p.threshold.toFloat()
+        val s = p.saturation.coerceIn(0f, 1f)
         val ms = 1f - s   // monochrome weight
-        val b = brightness.toFloat()
-        val hp = huePass.coerceIn(0f, 1f)
+        val b = p.brightness.toFloat()
+        val hp = p.huePass.coerceIn(0f, 1f)
         val lr = 0.3f; val lg = 0.6f; val lb = 0.1f
 
         // Base coefficients per output channel (monochrome-tint + saturation blend).
@@ -431,10 +510,11 @@ class MainActivity : FlutterActivity() {
         val bOff = ms * t * tB + s * t + b
 
         // Per-channel hue passthrough: triangle peaking at each channel's primary hue
-        // (R=0°, G=120°, B=240°), 120° half-width.  At huePass=1.0 + hueAngle=120 the
-        // green channel row is replaced by identity-contrast, keeping map road colours
-        // green/yellow while the dark background is zeroed by the threshold.
-        val angle = (hueAngle % 360).toFloat()
+        // (R=0°, G=120°, B=240°), 120° half-width.  At huePass=1.0 the row for the
+        // channel nearest hueAngle is replaced by identity-contrast, keeping that
+        // hue's map features in colour while the dark background is zeroed by
+        // the threshold.
+        val angle = (p.hueAngle % 360).toFloat()
         fun hueWeight(primary: Float): Float {
             val d = Math.abs(((angle - primary + 180f) % 360f) - 180f)
             return (1f - d / 120f).coerceIn(0f, 1f)
@@ -450,7 +530,7 @@ class MainActivity : FlutterActivity() {
             0f,                         0f,                          0f,                          1f, 0f,
         ))
 
-        if (invert) {
+        if (p.invert) {
             val inv = ColorMatrix(floatArrayOf(
                 -1f, 0f,  0f,  0f, 255f,
                  0f, -1f, 0f,  0f, 255f,
@@ -460,6 +540,67 @@ class MainActivity : FlutterActivity() {
             cm.preConcat(inv)
         }
         return Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
+    }
+
+    /**
+     * Rebuild the ColorMatrix Paint from the current [minimapParams] and re-apply
+     * it to filterWrapper's hardware layer. This is the entire "retune without a
+     * rebuild" path for the filter-affecting params (Task 2): no new Paint object
+     * identity is needed elsewhere, no surface renegotiation — just a fresh
+     * LAYER_TYPE_HARDWARE paint + invalidate.
+     */
+    private fun applyFilter() {
+        val fw = minimapView?.filterWrapper ?: return
+        fw.setLayerType(View.LAYER_TYPE_HARDWARE, createHudFilterPaint(minimapParams))
+        fw.invalidate()
+    }
+
+    /**
+     * Re-negotiate the YNavi surface's buffer size + reported dpi from the
+     * current [minimapParams] zoom levers (or explicit overrides). This is the
+     * fix for the live bug where setMinimapBounds resized the filterWrapper but
+     * left YNavi rendering into a stale buffer (YNaviCarAppHost.updateSurface
+     * had zero callers before this Block). NOOP when no YNavi host is active —
+     * the levers still take effect the next time start() runs.
+     *
+     * Known limitation (measured, not fixed in this Block): this goes through
+     * [YNaviCarAppHost.updateSurface] -> [IAppHostStub.onSurfaceReady], which
+     * re-dispatches `ISurfaceCallback.onSurfaceAvailable` — the SAME callback
+     * as the original bind, not the CarApp library's `onSurfaceChanged`. A
+     * well-behaved SurfaceCallback consumer expects `onSurfaceAvailable`
+     * exactly once per surface lifetime, so a second call may be silently
+     * ignored. Measured effect: sweeping bufScale/dpiScale over a wide range
+     * via this path (and even via a full stop()/start() cold rebind, which
+     * DOES call onSurfaceAvailable exactly once for a fresh session) produced
+     * no visible zoom change on this build — see the Block's report. Fixing
+     * this for real would mean adding a genuine `onSurfaceChanged` dispatch to
+     * IAppHostStub/ICarHostStub; out of scope here since the dpi/buf levers
+     * were not shown to control zoom at all, cold-start included.
+     */
+    private fun resizeYNaviSurface(
+        viewportW: Int,
+        viewportH: Int,
+        bufWOverride: Int? = null,
+        bufHOverride: Int? = null,
+        dpiOverride: Int? = null,
+    ) {
+        val v = minimapView ?: return
+        val host = yNaviCarAppHost
+        if (host == null || !host.isActive) {
+            Log.i(TAG, "resizeYNaviSurface: no active YNavi host — skip (viewport=${viewportW}x$viewportH)")
+            return
+        }
+        val st = v.surfaceTexture
+        if (st == null) {
+            Log.w(TAG, "resizeYNaviSurface: no SurfaceTexture yet — skip")
+            return
+        }
+        val bufW = (bufWOverride ?: (viewportW * minimapParams.bufScale).toInt()).coerceAtLeast(1)
+        val bufH = (bufHOverride ?: (viewportH * minimapParams.bufScale).toInt()).coerceAtLeast(1)
+        val dpi = (dpiOverride ?: (hudDensityDpi() * minimapParams.dpiScale).toInt()).coerceAtLeast(1)
+        st.setDefaultBufferSize(bufW, bufH)
+        host.updateSurface(Surface(st), bufW, bufH, dpi)
+        Log.i(TAG, "resizeYNaviSurface: buf=${bufW}x${bufH} dpi=$dpi viewport=${viewportW}x$viewportH")
     }
 
     // -------------------------------------------------------------------------
@@ -487,58 +628,57 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "setMinimap" -> {
                     val enabled = call.argument<Boolean>("enabled") ?: true
-                    // Visibility is managed idempotently, but the YNavi host lifecycle
-                    // is driven by the enabled + host-active state, INDEPENDENT of whether
-                    // the View visibility happened to change. On startup the MinimapView
-                    // defaults to VISIBLE, so gating host.start() behind a visibility
-                    // transition would NOOP setMinimap(true) and never bind YNavi.
-                    val want = if (enabled) View.VISIBLE else View.INVISIBLE
-                    if (v.visibility != want) v.visibility = want
-
                     if (enabled) {
+                        // Native availability gate (Task 1): this is the ONLY place that
+                        // decides whether the surface may show content. Dart's enable(true)
+                        // alone can never bypass it — ext.zee.minimap calls through here too.
                         val host = yNaviCarAppHost
-                        if (host != null && isYnaviAvailable()) {
-                            if (host.isActive) {
-                                // YNavi already hosting — nothing to (re)start.
-                                Log.i(TAG, "setMinimap(true): YNavi host already active — NOOP")
-                            } else {
-                                // Hand the MinimapView surface over to YNavi.
-                                // If the surface is already available, start immediately;
-                                // otherwise onSurfaceTextureAvailable starts on availability.
-                                // Park the placeholder render loop and hand the surface to YNavi.
-                                    // parkForYNavi() stops the render thread, sets
-                                    // pendingYNaviStart=true, and removes/re-adds the view to
-                                    // trigger a full TextureView lifecycle cycle that frees
-                                    // the api=2 Canvas producer and creates a fresh
-                                    // GL-attached SurfaceTexture.  host.start() is called
-                                    // from startYNaviOnSurfaceReady() when
-                                    // onSurfaceTextureAvailable fires — NOT here.
-                                    v.parkForYNavi()
-                                    Log.i(TAG, "setMinimap(true): parkForYNavi called — YNavi start deferred to onSurfaceTextureAvailable")
-                            }
-                        } else {
-                            // YNavi unavailable — fall back to placeholder render loop.
-                            v.resumeRendering()
-                            Log.i(TAG, "setMinimap(true): YNavi unavailable — placeholder resumed")
+                        val available = host != null && isYnaviAvailable()
+                        if (!available) {
+                            if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                            Log.i(TAG, "setMinimap(true): YNavi unavailable — native gate APPLIED, view INVISIBLE")
+                            result.success("unavailable")
+                            return@post
                         }
+                        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+                        if (host!!.isActive) {
+                            // YNavi already hosting — nothing to (re)start.
+                            Log.i(TAG, "setMinimap(true): YNavi host already active — NOOP")
+                        } else {
+                            // Hand the MinimapView surface over to YNavi.
+                            // parkForYNavi() removes/re-adds the view to trigger a full
+                            // TextureView lifecycle cycle that frees any stale producer and
+                            // creates a fresh GL-attached SurfaceTexture.  host.start() is
+                            // called from startYNaviOnSurfaceReady() when
+                            // onSurfaceTextureAvailable fires — NOT here.
+                            v.parkForYNavi()
+                            Log.i(TAG, "setMinimap(true): parkForYNavi called — YNavi start deferred to onSurfaceTextureAvailable")
+                        }
+                        Log.i(TAG, "setMinimap(true): APPLIED")
+                        result.success("applied:true")
                     } else {
-                        // Disable: stop YNavi host (if running) and park placeholder.
+                        if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
                         val host = yNaviCarAppHost
                         if (host != null && host.isActive) {
                             host.stop()
                             Log.i(TAG, "setMinimap(false): YNavi host stopped")
                         }
                         v.pendingYNaviStart = false
-                        v.pauseRendering()  // view is INVISIBLE; keep loop parked
+                        Log.i(TAG, "setMinimap(false): APPLIED")
+                        result.success("applied:false")
                     }
-                    Log.i(TAG, "setMinimap($enabled): APPLIED")
-                    result.success("applied:$enabled")
                 }
                 "setMinimapBounds" -> {
                     val x = call.argument<Int>("x") ?: 0
                     val y = call.argument<Int>("y") ?: 0
                     val w = call.argument<Int>("w") ?: FrameLayout.LayoutParams.MATCH_PARENT
                     val h = call.argument<Int>("h") ?: FrameLayout.LayoutParams.MATCH_PARENT
+                    // Optional explicit overrides for the YNavi buffer/dpi — normally
+                    // omitted, in which case they are derived from minimapParams
+                    // (bufScale/dpiScale) × the new viewport size.
+                    val bufW = (call.argument<Any?>("bufW") as? Number)?.toInt()
+                    val bufH = (call.argument<Any?>("bufH") as? Number)?.toInt()
+                    val dpiArg = (call.argument<Any?>("dpi") as? Number)?.toInt()
                     // Phase0 model (hud-presentation-host.md §5): size the filterWrapper
                     // to the viewport rect, NOT the MinimapView.  The filterWrapper carries
                     // the LAYER_TYPE_HARDWARE ColorMatrix filter; sizing it to the square
@@ -560,19 +700,67 @@ class MainActivity : FlutterActivity() {
                         }
                         v.requestLayout()
                     }
+                    // Live-bug fix: a bounds change (e.g. preset switch) must re-negotiate
+                    // the YNavi surface too, or YNavi keeps rendering into a stale buffer
+                    // sized for the OLD viewport (updateSurface previously had zero callers).
+                    resizeYNaviSurface(w, h, bufW, bufH, dpiArg)
                     result.success("bounds:$x,$y,$w,$h")
                 }
                 "setMinimapParam" -> {
                     val key = call.argument<String>("key") ?: ""
-                    if (key == "hue") {
-                        val value = (call.argument<Double>("value") ?: 0.0).toFloat()
-                        v.baseHue = ((value % 360f) + 360f) % 360f
-                        Log.i(TAG, "setMinimapParam(hue=${v.baseHue}): APPLIED")
-                        result.success("hue:${v.baseHue}")
-                    } else {
+                    val raw = call.argument<Any?>("value")
+                    fun asFloat(): Float? = when (raw) {
+                        is Number -> raw.toFloat()
+                        is String -> raw.toFloatOrNull()
+                        else -> null
+                    }
+                    fun asInt(): Int? = when (raw) {
+                        is Number -> raw.toInt()
+                        is String -> raw.toIntOrNull() ?: raw.toFloatOrNull()?.toInt()
+                        else -> null
+                    }
+                    fun asBool(): Boolean? = when (raw) {
+                        is Boolean -> raw
+                        is Number -> raw.toInt() != 0
+                        is String -> raw.toBooleanStrictOrNull() ?: (raw == "1")
+                        else -> null
+                    }
+                    // preset also accepts a name (driving convenience: `minimap key=preset value=white`).
+                    fun presetIndexFromName(): Int? = (raw as? String)?.lowercase()?.let {
+                        when (it) {
+                            "green", "green-yellow", "greenyellow" -> 0
+                            "cyan" -> 1
+                            "white" -> 2
+                            "amber" -> 3
+                            "red" -> 4
+                            else -> null
+                        }
+                    }
+                    var recognized = true
+                    when (key) {
+                        "contrast"   -> asFloat()?.let { minimapParams.contrast = it }
+                        "threshold"  -> asInt()?.let { minimapParams.threshold = it }
+                        "preset"     -> (asInt() ?: presetIndexFromName())?.let { minimapParams.preset = it }
+                        "saturation" -> asFloat()?.let { minimapParams.saturation = it }
+                        "brightness" -> asInt()?.let { minimapParams.brightness = it }
+                        "invert"     -> asBool()?.let { minimapParams.invert = it }
+                        "huePass"    -> asFloat()?.let { minimapParams.huePass = it }
+                        "hueAngle"   -> asInt()?.let { minimapParams.hueAngle = it }
+                        "bufScale"   -> asFloat()?.let { minimapParams.bufScale = it }
+                        "dpiScale"   -> asFloat()?.let { minimapParams.dpiScale = it }
+                        else -> recognized = false
+                    }
+                    if (!recognized) {
                         Log.i(TAG, "setMinimapParam($key): ignored")
                         result.success("ignored:$key")
+                        return@post
                     }
+                    when (key) {
+                        "bufScale", "dpiScale" -> resizeYNaviSurface(v.width, v.height)
+                        else -> applyFilter()
+                    }
+                    Log.i(TAG, "setMinimapParam($key=$raw): APPLIED -> $minimapParams")
+                    result.success("applied:$key")
                 }
                 else -> result.notImplemented()
             }
@@ -607,18 +795,24 @@ class MainActivity : FlutterActivity() {
     internal fun startYNaviOnSurfaceReady(surface: SurfaceTexture, width: Int, height: Int) {
         val host = yNaviCarAppHost ?: return
         if (isYnaviAvailable()) {
-            val dpi = hudDensityDpi()
-            // Oversample the buffer at 2× (minimapScale=0.5): tells YNavi to render
-            // a larger map area which the compositor scales down to viewport size,
-            // giving a zoom-out effect for better readability (phase0 §6 pattern).
-            val bufW = width * 2
-            val bufH = height * 2
+            // Oversample the buffer by minimapParams.bufScale: tells YNavi to render
+            // a larger map area which the compositor scales down to viewport size.
+            // dpiScale is the crisper zoom lever — it changes ground-per-pixel at
+            // YNavi's render time instead of just downscaling the oversampled bitmap
+            // (Task 2/Task 3 — see MinimapParams doc for the measured defaults).
+            val dpi = (hudDensityDpi() * minimapParams.dpiScale).toInt().coerceAtLeast(1)
+            val bufW = (width * minimapParams.bufScale).toInt().coerceAtLeast(1)
+            val bufH = (height * minimapParams.bufScale).toInt().coerceAtLeast(1)
             surface.setDefaultBufferSize(bufW, bufH)
             host.start(Surface(surface), bufW, bufH, dpi)
             Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height buf=${bufW}x${bufH} dpi=$dpi")
         } else {
-            minimapView?.resumeRendering()
-            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi unavailable — placeholder resumed")
+            // Native gate (Task 1): this path should not normally be reached —
+            // setMinimap() already refuses to parkForYNavi() when YNavi is
+            // unavailable — but defensively keep the view dark rather than
+            // falling back to the removed placeholder render loop.
+            minimapView?.visibility = View.INVISIBLE
+            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi unavailable — view kept INVISIBLE (no placeholder)")
         }
     }
 
@@ -700,26 +894,25 @@ class MainActivity : FlutterActivity() {
 }
 
 // -----------------------------------------------------------------------------
-// MinimapView — native animated TextureView placeholder for the map under-layer.
+// MinimapView — native TextureView hosting the YNavi map under-layer.
 //
-// Draws a moving gradient + circle on a dedicated render thread (~60 fps).
-// The green-yellow HUD-readability ColorMatrix filter is applied via
-// setLayerType(LAYER_TYPE_HARDWARE, filterPaint) on the VIEW ITSELF here because
-// we control the drawing; the PoC applies it on a filterWrapper FrameLayout
-// parent only when using an external SurfaceTexture (e.g. YNavi) that bypasses
-// View invalidation.  For our own lockCanvas loop the direct approach works.
+// Carries NO content of its own: it is a pure surface handed to YNavi's EGL
+// renderer. (Until this Block it drew an animated rainbow-gradient placeholder
+// on a dedicated render thread — that violated the emissive-black-only HUD
+// rule whenever YNavi was absent, and was deleted along with the render
+// thread, its sleep-based frame pacing, and resumeRendering()/pauseRendering(). The native
+// availability gate now lives entirely in MainActivity.handleMinimap's
+// setMinimap branch: when YNavi is unavailable the view is simply left/set
+// INVISIBLE and no SurfaceTexture content is ever produced.)
 //
-// When YNavi is available:
-//   - parkForYNavi()  : stops the placeholder render loop; YNavi owns the surface.
-//   - pendingYNaviStart: set true when setMinimap(true) is called before the
-//     SurfaceTexture is ready; onSurfaceTextureAvailable calls back to MainActivity
-//     to start the YNavi host when the surface finally exists.
-//   - On YNavi disconnect / minimap disable: resumeRendering() restores the
-//     placeholder so devices without the mod still show something.
+// The parametric HUD ColorMatrix filter is applied on filterWrapper (the
+// FrameLayout parent), never on this TextureView directly — setLayerType on
+// the TextureView itself does NOT filter SurfaceTexture content from an
+// external EGL renderer (hud-presentation-host.md §7).
 //
-// Color-filter values (preset 1 "Green-yellow" from hud-presentation-host.md):
-//   filterPreset=0 → tR=0.7, tG=1.0, tB=0.1; contrast=3.0; threshold=-150;
-//   brightness=-20; saturation=0 (full monochrome-tint).
+//   pendingYNaviStart: set true by parkForYNavi() before the detach/re-attach
+//     cycle; onSurfaceTextureAvailable calls back to MainActivity to start
+//     the YNavi host once the fresh GL-attached SurfaceTexture exists.
 // -----------------------------------------------------------------------------
 class MinimapView(context: android.content.Context) :
     TextureView(context), TextureView.SurfaceTextureListener {
@@ -735,85 +928,25 @@ class MinimapView(context: android.content.Context) :
      */
     var filterWrapper: FrameLayout? = null
 
-    @Volatile var baseHue: Float = 120f // green-yellow hue
-    @Volatile private var running = false
-    private var renderThread: Thread? = null
-
-    // Pause/resume lock — the render loop waits here while paused.
-    private val pauseLock = Object()
-    @Volatile private var paused = false
-
     /**
      * Set to true when setMinimap(enabled=true) is received but the SurfaceTexture
      * is not yet available. onSurfaceTextureAvailable will call back to start YNavi.
      */
     @Volatile var pendingYNaviStart: Boolean = false
 
-    /** Stop the render loop (called when the minimap is hidden or the HUD engine is torn down).
-     *
-     * QA4-4: terminates the thread instead of just parking it, so no thread
-     * stays alive when the minimap is disabled (ADR 0001 efficiency).
-     * resumeRendering() detects renderThread==null and calls startRenderLoop() to restart.
-     */
-    fun pauseRendering() {
-        running = false
-        paused  = true
-        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if waiting
-        renderThread?.interrupt()
-        try { renderThread?.join(500) } catch (_: InterruptedException) {}
-        renderThread = null
-        Log.i("ZEE", "MinimapView: render loop STOPPED (pauseRendering)")
-    }
-
-    /** Resume the render loop (called when the minimap is shown). */
-    fun resumeRendering() {
-        // GOAL 2: Never resume while YNavi host is active (strict exclusive ownership).
-        val host = (context as? MainActivity)?.yNaviCarAppHost
-        if (host?.isActive == true) {
-            Log.w("ZEE", "MinimapView: resumeRendering BLOCKED — YNavi host is ACTIVE (exclusive surface)")
-            return
-        }
-        // Re-apply the hardware layer before the render loop resumes drawing.
-        paused = false
-        if (!running || renderThread == null) {
-            // Thread was stopped by parkForYNavi(); restart it.
-            startRenderLoop()
-            Log.i("ZEE", "MinimapView: render loop RESUMED (restarted)")
-        } else {
-            synchronized(pauseLock) { pauseLock.notifyAll() }
-            Log.i("ZEE", "MinimapView: render loop RESUMED")
-        }
-    }
-
     /**
-     * Park the render loop for YNavi surface ownership.
-     * Unlike pauseRendering(), this does NOT resume later unless YNavi disconnects.
-     *
-     * Stops the render thread entirely and removes the LAYER_TYPE_HARDWARE before
-     * yielding the surface.  The canvas render loop holds the SurfaceTexture's
-     * producer slot with api=2 (CPU), which prevents YNavi from connecting its EGL
-     * renderer (api=1).  Without stopping the thread first, YNavi receives the
-     * surface but eglCreateWindowSurface fails with "already connected (cur=2 req=1)".
+     * Force a full TextureView lifecycle cycle (detach/re-attach) so YNavi gets a
+     * fresh GL-attached SurfaceTexture. Load-bearing: without this cycle a stale
+     * producer can be left on the old SurfaceTexture and YNavi's
+     * eglCreateWindowSurface fails with "already connected (cur=2 req=1)".
      */
     fun parkForYNavi() {
-        Log.i("ZEE", "MinimapView: parkForYNavi ENTER running=$running paused=$paused thread=${renderThread != null}")
-        // Stop the render thread so it releases any api=2 (Canvas) producer hold.
-        running = false
-        paused = true  // belt-and-suspenders: prevent re-entry if loop re-checks
-        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if waiting
-        renderThread?.interrupt()
-        try {
-            // Block until the render thread actually exits (max 500ms timeout).
-            renderThread?.join(500)
-        } catch (_: InterruptedException) {}
-        renderThread = null
+        Log.i("ZEE", "MinimapView: parkForYNavi ENTER")
         // CRITICAL: Signal YNavi start for when the surface becomes available.
         // This is set BEFORE the detach/re-attach so it is in place when
         // onSurfaceTextureAvailable fires on the re-attach.
         pendingYNaviStart = true
-        // Disconnect api=2 by forcing a full TextureView lifecycle cycle:
         //   removeView()  → onDetachedFromWindow()  → mSurface.release()
-        //                   (api=2 producer slot on old SurfaceTexture is freed)
         //   addView()     → onAttachedToWindow()  → new hardware layer created
         //                 → new GL-attached SurfaceTexture allocated internally
         //                 → onSurfaceTextureAvailable() fires
@@ -822,18 +955,15 @@ class MinimapView(context: android.content.Context) :
         // SurfaceTexture(false) (detached mode) does NOT work: GL attachment is
         // asynchronous and producers fail with
         // "SurfaceTexture is not attached to a View" until it completes.
-        // setSurfaceTexture() with LAYER_TYPE_NONE also fails: mLayer is destroyed
-        // before the swap so mLayer.setSurfaceTexture(freshSt) is never called.
         val pg = parent as? ViewGroup
         if (pg != null) {
             val idx = pg.indexOfChild(this)
             val lp = layoutParams
             pg.removeView(this)         // onDetachedFromWindow → mSurface.release()
             pg.post { pg.addView(this, idx, lp) }  // re-attach → fresh GL-attached SurfaceTexture
-            Log.i("ZEE", "MinimapView: render loop PARKED (thread exited; view detached for fresh GL-attached SurfaceTexture)")
+            Log.i("ZEE", "MinimapView: parkForYNavi — view detached for fresh GL-attached SurfaceTexture")
         } else {
             Log.w("ZEE", "MinimapView: parkForYNavi — no parent ViewGroup; pendingYNaviStart=true only")
-            Log.i("ZEE", "MinimapView: render loop PARKED (thread exited; no parent, YNavi start deferred)")
         }
     }
 
@@ -842,9 +972,6 @@ class MinimapView(context: android.content.Context) :
         // the filterWrapper parent's hardware layer handles compositing.
         isOpaque = false
         surfaceTextureListener = this
-        // Filter is applied by filterWrapper (FrameLayout parent) via LAYER_TYPE_HARDWARE.
-        // Setting it on the TextureView directly does NOT filter SurfaceTexture content
-        // from YNavi's EGL renderer — the wrapper pattern is mandatory (hud-presentation-host.md §7).
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
@@ -852,70 +979,16 @@ class MinimapView(context: android.content.Context) :
             pendingYNaviStart = false
             // Delegate to MainActivity to start the YNavi host on the main thread.
             (mainActivity ?: context as? MainActivity)?.startYNaviOnSurfaceReady(surface, width, height)
-                ?: run {
-                    // Fallback: no activity reference (e.g. Presentation context);
-                    // start the placeholder instead.
-                    startRenderLoop()
-                }
-        } else {
-            startRenderLoop()
         }
-    }
-
-    private fun startRenderLoop() {
-        running = true
-        renderThread = Thread {
-            var phase = 0f
-            while (running) {
-                // Pause gate: park here while the minimap is hidden or YNavi owns the surface.
-                if (paused) {
-                    synchronized(pauseLock) {
-                        while (paused && running) {
-                            try { pauseLock.wait() } catch (_: InterruptedException) { break }
-                        }
-                    }
-                    if (!running) break
-                }
-                val canvas: Canvas = try { lockCanvas() } catch (_: Throwable) { null } ?: continue
-                try {
-                    phase = (phase + 3f) % 360f
-                    val w = canvas.width.toFloat()
-                    val h = canvas.height.toFloat()
-                    // Animated background gradient — base hue shifts with phase.
-                    val c1 = Color.HSVToColor(floatArrayOf((baseHue + phase) % 360f, 0.7f, 0.85f))
-                    val c2 = Color.HSVToColor(floatArrayOf((baseHue + phase + 120f) % 360f, 0.7f, 0.5f))
-                    val bg = Paint().apply {
-                        shader = LinearGradient(0f, 0f, w, h, c1, c2, Shader.TileMode.CLAMP)
-                    }
-                    canvas.drawRect(0f, 0f, w, h, bg)
-                    // Moving circle — represents a map marker.
-                    val cx = w * (0.5f + 0.4f * sin(Math.toRadians(phase.toDouble())).toFloat())
-                    canvas.drawCircle(cx, h * 0.5f, h * 0.14f,
-                        Paint().apply { color = Color.WHITE; isAntiAlias = true })
-                    // Label so the filter effect is visually obvious.
-                    canvas.drawText("MINIMAP (native)", 16f, h * 0.18f,
-                        Paint().apply { color = Color.BLACK; textSize = h * 0.12f; isAntiAlias = true })
-                } finally {
-                    unlockCanvasAndPost(canvas)
-                    // Notify the parent hardware layer that a new placeholder frame is
-                    // ready. TextureView's own invalidation does not propagate through a
-                    // LAYER_TYPE_HARDWARE parent (same staleness reason as onSurfaceTextureUpdated).
-                    filterWrapper?.postInvalidate()
-                }
-                try { Thread.sleep(33) } catch (_: InterruptedException) { break }  // ~30fps placeholder (QA4-6)
-            }
-        }.also { it.start() }
+        // No placeholder fallback: YNavi absence is gated natively in
+        // MainActivity.handleMinimap's setMinimap branch BEFORE parkForYNavi is
+        // ever called, so pendingYNaviStart is simply false and this surface is
+        // never drawn into — the view stays INVISIBLE, reading as pure black.
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
 
-    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-        running = false
-        synchronized(pauseLock) { pauseLock.notifyAll() }  // wake if paused
-        renderThread?.interrupt()
-        renderThread = null
-        return true
-    }
+    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
         // Hardware layer on filterWrapper caches its output; TextureView SurfaceTexture

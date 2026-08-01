@@ -30,6 +30,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diagnosticsTitle => 'Diagnostics';
 
   @override
+  String get diagSectionSource => 'Signal source';
+
+  @override
+  String get diagSignalSource => 'Source';
+
+  @override
+  String get diagSignalSourceAdaptApi => 'AdaptAPI (car)';
+
+  @override
+  String get diagSignalSourceSimulated => 'Simulated (emulator)';
+
+  @override
+  String get diagSignalSourceFake => 'Fake (desktop)';
+
+  @override
+  String get diagSignalSourceUnknown => 'Unknown';
+
+  @override
+  String get diagHudDisplay => 'HUD display';
+
+  @override
   String get diagSectionMotion => 'Motion';
 
   @override
@@ -209,6 +230,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showChargingStats => 'Show charging stats (while charging)';
 
   @override
+  String get batterySize => 'Size';
+
+  @override
   String get safeAreaSection => 'Safe Area (fractions)';
 
   @override
@@ -227,7 +251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionMinimap => 'Minimap';
 
   @override
-  String get sectionMinimapSubtitle => 'YNavi minimap, presets, dark/light';
+  String get sectionMinimapSubtitle => 'YNavi minimap, size, colour look';
 
   @override
   String get minimapTitle => 'Minimap';
@@ -258,22 +282,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get minimapAdvanced => 'Advanced';
 
   @override
-  String get minimapWidth => 'Width (fraction of safe area)';
+  String get minimapSize => 'Size (fraction of safe area)';
 
   @override
-  String get minimapHeight => 'Height (fraction of safe area)';
+  String get minimapLookSection => 'Look';
 
   @override
-  String get minimapThemeSection => 'Theme';
+  String get minimapLookPreset => 'Colour preset';
 
   @override
-  String get minimapThemeAuto => 'System (auto)';
+  String get minimapLookPresetGreenYellow => 'Green-yellow';
 
   @override
-  String get minimapThemeDark => 'Dark';
+  String get minimapLookPresetWhite => 'White';
 
   @override
-  String get minimapThemeLight => 'Light';
+  String get minimapLookPresetAmber => 'Amber';
+
+  @override
+  String get minimapLookPresetCyan => 'Cyan';
+
+  @override
+  String get minimapLookBrightness => 'Brightness';
+
+  @override
+  String get minimapLookContrast => 'Contrast';
 
   @override
   String get sectionUsbAdb => 'USB / ADB';
@@ -298,13 +331,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usbPlatformSigningRequired =>
-      'Requires platform signing — available on the car';
-
-  @override
-  String get hudSlotGuidance => 'GUIDANCE';
+      'Actually changing the USB mode requires platform (system) signing, which this build does not have — on the emulator or the car. Your selection is saved, but the USB role itself will not change until the app is platform-signed.';
 
   @override
   String get hudSlotMinimap => 'MINIMAP';
+
+  @override
+  String get hudFullDisplayToggle => 'Full display';
+
+  @override
+  String get hudFullDisplayToggleSubtitle =>
+      'Show the whole backing display, with the Safe Area outlined (debug)';
+
+  @override
+  String get hudPreviewBadgeDemo => 'PREVIEW · DEMO';
+
+  @override
+  String get hudPreviewBadgeLive => 'LIVE · SIMULATED';
 
   @override
   String get minimapPresetDisabledHint => 'Custom dimensions active';

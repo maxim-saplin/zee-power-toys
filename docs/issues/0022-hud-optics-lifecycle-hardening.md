@@ -33,7 +33,10 @@ the Presentation window.  Black pixels emit no light; the projector renders them
 transparent.
 
 **QA1-2 BLOCKER** — Minimap bounds used hardcoded `_kHudW=1024, _kHudH=576` but the
-real HUD display is 1280×720 (→ map mispositioned, undersized, possibly outside Safe Area)  
+T2 emulator's HUD display was set to 1280×720 at the time (→ map mispositioned, undersized,
+possibly outside Safe Area). **Historical:** the emulator overlay was later corrected to
+1024×576/213 to match the real HUD (emulator and car alike) — see `CONTEXT.md`'s Minimap
+entry; the `_hudW`/`_hudH` fix below is dimension-agnostic and unaffected.  
 FIX:
 - `_kHudW`/`_kHudH` constants replaced by mutable `_hudW`/`_hudH` (default 1024×576).
 - `setupHud()` invokes `hudReady({w,h,dpi})` on the DHU `zee/minimap` MethodChannel
@@ -49,7 +52,8 @@ dropped; map initialised MATCH_PARENT then corrected on first config relay
 FIX: same `hudReady` re-apply path as QA1-2 (setupHud completion → Dart re-apply) ensures
 the minimap has correct bounds as soon as the Presentation is live.
 
-**QA1-7 NIT** — Battery slot right edge only ~9px inside Safe Area on 1280×720  
+**QA1-7 NIT** — Battery slot right edge only ~9px inside Safe Area on 1280×720 (historical
+emulator overlay value; see QA1-2 note above)  
 FIX: `hud_root.dart` battery `Positioned.right` changed from `saWidth * 0.008` to
 `saWidth * 0.04` (matching the blinker's `sidePadFrac = 0.04`).
 
@@ -98,7 +102,8 @@ FIX: changed to `Thread.sleep(33)` (~30fps).
 Inherits [PRINCIPLES.md](../PRINCIPLES.md).
 
 - [x] **Runtime-confirmed on T2** — HUD screenshot shows black background + minimap inside
-  Safe Area at correct 1280×720 bounds; battery readable inside Safe Area.
+  Safe Area at correct 1280×720 bounds (historical emulator overlay value at the time;
+  see QA1-2 note above); battery readable inside Safe Area.
   Screenshots in `/tmp/fixA/`.
 - [x] Group 2 verified: `hudEnabled=false` → HUD engine/Presentation threads gone;
   `hudEnabled=true` → HUD re-spawns and renders correctly.

@@ -17,6 +17,11 @@ class FakeCarSignals implements CarSignals {
   @override
   CarSnapshot get snapshot => _snapshot;
 
+  /// Always 'fake' — this is the T1/off-car pure-Dart fake; there is no
+  /// native source to auto-select behind it.
+  @override
+  Future<String> get sourceKind async => 'fake';
+
   /// Block 0026 Developer Simulate screen: identical mechanics to [relay] —
   /// update the snapshot and push the event — since on T1 "simulate" and
   /// "the live signal chain" are the same fake stream.
@@ -44,7 +49,9 @@ class FakeCarSignals implements CarSignals {
     double? kw,
   }) {
     _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
-    _ctrl.add(ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw));
+    _ctrl.add(
+      ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw),
+    );
   }
 
   void emitBattery({required int levelPct, required double tempC}) {
@@ -67,7 +74,10 @@ class FakeCarSignals implements CarSignals {
       case ChargeEvent(:final charging, :final kw):
         _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
       case BatteryEvent(:final levelPct, :final tempC):
-        _snapshot = _snapshot.copyWith(batteryPct: levelPct, batteryTempC: tempC);
+        _snapshot = _snapshot.copyWith(
+          batteryPct: levelPct,
+          batteryTempC: tempC,
+        );
       case PowerFlowEvent(:final flow):
         _snapshot = _snapshot.copyWith(powerFlow: flow);
     }

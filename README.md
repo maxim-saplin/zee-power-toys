@@ -16,7 +16,7 @@ AdaptAPI, YNavi, boot). The system is a set of **services** (`CarSignals`, `Conf
 `MinimapHost`, `HudHost`, …) exposed as ports; per environment only the *host* swaps — Dart
 fakes off-car, real native adapters on-car (ADR 0002/0003). Riverpod injects them (ADR 0006).
 Everything is built and verified through a **dual-channel Feedback Loop** across three Tiers
-— T1 Desktop (Linux/macOS), T2 Emulator, T3 Car (ADR 0004) — block by block (ADR 0007).
+— T1 Desktop (Linux-only), T2 Emulator, T3 Car (ADR 0004) — block by block (ADR 0007).
 
 ## Layout
 
@@ -32,15 +32,23 @@ Everything is built and verified through a **dual-channel Feedback Loop** across
 
 ## Running (T1 Desktop)
 
+T1 is **Linux-only** — `dev/zee_run.py:152` hardcodes `flutter run -d linux`, and there is no
+`macos/` runner directory (only `linux/`), so this will not launch on a macOS host. On macOS,
+use `flutter test` for the fast loop, and treat T2 (Android emulator) as the truth tier for
+anything touching the native edge — T1 also runs against `FakeMinimapHost`, so it structurally
+cannot verify the Minimap on any host.
+
 ```bash
-uv run dev/zee_run.py up        # brings up DHU + HUD (two engines), waits until drivable
+uv run dev/zee_run.py up        # Linux host only — brings up DHU + HUD (two engines), waits until drivable
 # then drive it headlessly (see the drive-zee-app skill):
 uv run dev/feedback_loop.py whoami-all
 ```
 
 ## Status
 
-**MVP complete + QA-hardened** — all 23 Blocks (foundation + features + the QA-hardening sweep
-0018–0023) are runtime-confirmed (T1, and T2 where the native edge is involved), driven + read
-through the Feedback Loop. Finalizing for on-car (T3) testing. See
-[`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.
+**MVP feature-complete, T1/T2 runtime-confirmed** — 26 Blocks
+([`docs/issues/0001`](docs/issues/0001-walking-skeleton.md)–[`0026`](docs/issues/0026-hud-preview-vs-live-simulate-split.md))
+are runtime-confirmed on T1 and, where the native edge is involved, T2 (the Android emulator),
+driven + read through the Feedback Loop; `flutter test` passes 261 tests. **The app has never
+run on T3 (the real car)** — the tier ADR 0004 itself names as the source of truth for fidelity.
+See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.
