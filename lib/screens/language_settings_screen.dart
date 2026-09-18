@@ -184,21 +184,22 @@ class _LanguageSettingsScreenState
                     ),
                   ),
                 ),
-              _LanguagePicker(
-                selectedTag: systemLocale.languageCode,
-                onChanged: (tag) {
-                  if (tag != null) _setSystemLanguage(Locale(tag));
-                },
-                // Disabled on capability (no AdaptAPI), not on an ungrantable
-                // permission — matches [_systemSupported] above.
-                enabled: _systemSupported == true,
-                keys: const _PickerKeys(
-                  system: 'sys-lang-system',
-                  en: 'sys-lang-en',
-                  ru: 'sys-lang-ru',
+              // F5: when unsupported, omit radios entirely — a disabled group
+              // with English pre-selected reads as a fake choice on T1.
+              if (_systemSupported == true)
+                _LanguagePicker(
+                  selectedTag: systemLocale.languageCode,
+                  onChanged: (tag) {
+                    if (tag != null) _setSystemLanguage(Locale(tag));
+                  },
+                  enabled: true,
+                  keys: const _PickerKeys(
+                    system: 'sys-lang-system',
+                    en: 'sys-lang-en',
+                    ru: 'sys-lang-ru',
+                  ),
+                  showSystemOption: false,
                 ),
-                showSystemOption: false,
-              ),
               if (_systemResult != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -246,19 +247,22 @@ class _LanguageSettingsScreenState
                   padding: EdgeInsets.all(Insets.lg),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-              _LanguagePicker(
-                selectedTag: null, // cluster has no persistent local state
-                onChanged: (tag) {
-                  if (tag != null) _setClusterLanguage(Locale(tag));
-                },
-                enabled: clusterSupported == true,
-                keys: const _PickerKeys(
-                  system: 'cluster-lang-system',
-                  en: 'cluster-lang-en',
-                  ru: 'cluster-lang-ru',
+              // F5: radios only when AdaptAPI is present — no empty/disabled
+              // radio group that looks choosable on T1 desktop.
+              if (clusterSupported == true)
+                _LanguagePicker(
+                  selectedTag: null, // cluster has no persistent local state
+                  onChanged: (tag) {
+                    if (tag != null) _setClusterLanguage(Locale(tag));
+                  },
+                  enabled: true,
+                  keys: const _PickerKeys(
+                    system: 'cluster-lang-system',
+                    en: 'cluster-lang-en',
+                    ru: 'cluster-lang-ru',
+                  ),
+                  showSystemOption: false,
                 ),
-                showSystemOption: false,
-              ),
               if (_clusterResult != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(

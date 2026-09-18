@@ -45,6 +45,26 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
     _batteryPct = (snap.batteryPct ?? 72).toDouble();
     _batteryTemp = snap.batteryTempC ?? 24.0;
     _speed = (snap.speedKmh ?? 0).toDouble();
+    // F1: sliders advertise defaults even when the live chain is empty —
+    // seed those values once so LIVE preview / HUD pixels match the controls
+    // on first paint (otherwise battery reads `--%` while the slider says 72%).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _seedDisplayedDefaultsIfEmpty(snap);
+    });
+  }
+
+  /// Push slider-displayed battery defaults into CarSignals when nothing has
+  /// been injected yet. Does not invent charging/speed — those controls already
+  /// start honest (charging toggle reads live; speed is not painted on HUD).
+  void _seedDisplayedDefaultsIfEmpty(CarSnapshot snap) {
+    if (snap.batteryPct != null && snap.batteryTempC != null) return;
+    ref.read(carSignalsProvider).simulate(
+          BatteryEvent(
+            levelPct: _batteryPct.round(),
+            tempC: _batteryTemp,
+          ),
+        );
   }
 
   @override

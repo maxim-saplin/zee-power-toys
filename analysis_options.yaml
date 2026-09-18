@@ -5,6 +5,9 @@ analyzer:
     - '**/*.g.dart'
     - '**/*.freezed.dart'
     - '_poc/**'
+    - build/**
+    - android/**
+    - linux/**
 
 linter:
   rules:

@@ -67,6 +67,14 @@ class BatteryWidget extends ConsumerWidget {
     final charging = ref.watch(chargingProvider);    // bool?
     final kw = ref.watch(chargeKwProvider);          // double?
 
+    // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
+    // `--°C`) when no battery/charge signal has arrived yet. Empty black is
+    // fine; a hollow outline that looks broken is not.
+    final isCharging = charging == true;
+    if (pct == null && tempC == null && !isCharging) {
+      return const SizedBox.shrink();
+    }
+
     // Base unit: everything scales from this.
     // At sizeScale=1.0 the icon is 40×20 logical pixels — compact for the
     // top-right corner while legible on the 1024×576 HUD.
@@ -89,7 +97,6 @@ class BatteryWidget extends ConsumerWidget {
       fillColor = _kFillRed;
     }
 
-    final isCharging = charging == true;
     final showStats = isCharging && cfg.showChargingStats;
 
     final labelStyle = TextStyle(

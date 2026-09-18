@@ -102,6 +102,43 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryWidget', () {
+    testWidgets('F2: idle (null pct/temp, not charging) renders nothing', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      expect(find.text('--%'), findsNothing);
+      expect(find.text('--°C'), findsNothing);
+    });
+
+    testWidgets('F2: charging with null pct still shows chrome (bolt/kW)', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitCharge(charging: true, kw: 7.4);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
+    });
+
     testWidgets('showBattery=false renders nothing', (tester) async {
       final config = AppConfig(
         battery: const BatteryConfig(showBattery: false),

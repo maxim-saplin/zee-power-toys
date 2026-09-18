@@ -58,15 +58,29 @@ void main() {
           reason: 'GUIDANCE must not exist even in preview/debug mode — it was removed, not hidden');
     });
 
-    testWidgets('shows MINIMAP glyph only in preview mode', (tester) async {
+    testWidgets('shows MINIMAP glyph only in preview mode when minimap enabled', (tester) async {
       // BLINKER and BATTERY are real widgets; MINIMAP is a preview-only
       // schematic glyph stand-in for the real (natively-composited) Minimap.
-      await pumpHud(tester, wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
+      // F4: glyph requires minimapEnabled — default is off.
+      const cfg = AppConfig(minimap: MinimapConfig(enabled: true));
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudRoot(showSafeAreaBorder: true), config: cfg),
+      );
 
       expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsOneWidget);
       // BlinkerWidget and BatteryWidget are always the real widgets.
       expect(find.byType(BlinkerWidget), findsOneWidget);
       expect(find.byType(BatteryWidget), findsOneWidget);
+    });
+
+    testWidgets('preview omits MINIMAP glyph when minimap disabled (F4)', (tester) async {
+      await pumpHud(
+        tester,
+        wrapWithProviders(const HudRoot(showSafeAreaBorder: true)),
+      );
+      expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsNothing,
+          reason: 'stub must not show when minimapEnabled=false');
     });
 
     testWidgets('production HUD has no ghost minimap glyph; preview has it; BLINKER+BATTERY always render', (tester) async {
@@ -86,12 +100,15 @@ void main() {
       expect(find.byType(BatteryWidget), findsOneWidget,
           reason: 'BATTERY must always render');
 
-      // --- DHU preview (showSafeAreaBorder=true) ---
-      await tester.pumpWidget(wrapWithProviders(const HudRoot(showSafeAreaBorder: true)));
+      // --- DHU preview (showSafeAreaBorder=true, minimap enabled) ---
+      const previewCfg = AppConfig(minimap: MinimapConfig(enabled: true));
+      await tester.pumpWidget(
+        wrapWithProviders(const HudRoot(showSafeAreaBorder: true), config: previewCfg),
+      );
       await tester.pump();
 
       expect(find.byKey(const ValueKey('hud-minimap-glyph')), findsOneWidget,
-          reason: 'Preview shows the MINIMAP glyph as a layout aid');
+          reason: 'Preview shows the MINIMAP glyph as a layout aid when enabled');
       // Real content still present in preview too.
       expect(find.byType(BlinkerWidget), findsOneWidget,
           reason: 'BLINKER must always render');
@@ -104,7 +121,10 @@ void main() {
       // so the Safe Area's on-screen pixel size matches the runtime-verified
       // rect exactly, letting this assertion be checked against real numbers.
       const sa = HudSafeArea();
-      final config = AppConfig(safeArea: sa);
+      final config = AppConfig(
+        safeArea: sa,
+        minimap: const MinimapConfig(enabled: true),
+      );
       await pumpHud(
         tester,
         wrapWithProviders(const HudRoot(showSafeAreaBorder: true), config: config),
