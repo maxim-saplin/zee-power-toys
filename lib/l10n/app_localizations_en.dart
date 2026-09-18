@@ -230,6 +230,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showChargingStats => 'Show charging stats (while charging)';
 
   @override
+  String get batteryContentMode => 'Content';
+
+  @override
+  String get batteryContentBoth => 'Both';
+
+  @override
+  String get batteryContentIconOnly => 'Icon';
+
+  @override
+  String get batteryContentTextOnly => 'Text';
+
+  @override
+  String get batteryStyle => 'Look';
+
+  @override
+  String get batteryStyleOutline => 'Outline';
+
+  @override
+  String get batteryStyleFilled => 'Blocks';
+
+  @override
+  String get batteryStylePctInside => '% inside';
+
+  @override
   String get batterySize => 'Size';
 
   @override

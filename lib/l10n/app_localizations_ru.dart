@@ -230,6 +230,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get showChargingStats => 'Показывать данные зарядки (при зарядке)';
 
   @override
+  String get batteryContentMode => 'Содержимое';
+
+  @override
+  String get batteryContentBoth => 'Оба';
+
+  @override
+  String get batteryContentIconOnly => 'Значок';
+
+  @override
+  String get batteryContentTextOnly => 'Текст';
+
+  @override
+  String get batteryStyle => 'Вид';
+
+  @override
+  String get batteryStyleOutline => 'Контур';
+
+  @override
+  String get batteryStyleFilled => 'Блоки';
+
+  @override
+  String get batteryStylePctInside => '% внутри';
+
+  @override
   String get batterySize => 'Размер';
 
   @override

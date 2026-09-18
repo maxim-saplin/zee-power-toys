@@ -129,6 +129,8 @@ void registerZeeExtensions({
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
           'showChargingStats': bat.showChargingStats,
+          'contentMode': bat.contentMode.name,
+          'style': bat.style.name,
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.

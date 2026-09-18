@@ -220,6 +220,31 @@
   "showChargingStats": "Show charging stats (while charging)",
   "@showChargingStats": { "description": "Toggle: show charging stats panel" },
 
+
+  "batteryContentMode": "Content",
+  "@batteryContentMode": { "description": "Battery content mode label" },
+
+  "batteryContentBoth": "Both",
+  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
+
+  "batteryContentIconOnly": "Icon",
+  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
+
+  "batteryContentTextOnly": "Text",
+  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
+
+  "batteryStyle": "Look",
+  "@batteryStyle": { "description": "Battery pack style label" },
+
+  "batteryStyleOutline": "Outline",
+  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
+
+  "batteryStyleFilled": "Blocks",
+  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
+
+  "batteryStylePctInside": "% inside",
+  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
+
   "batterySize": "Size",
   "@batterySize": { "description": "Battery size slider label" },
 

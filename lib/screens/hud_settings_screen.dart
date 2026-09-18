@@ -282,6 +282,154 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: Insets.md),
+              Text(
+                l10n.batteryContentMode,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: Insets.sm),
+              SegmentedButton<BatteryContentMode>(
+                segments: <ButtonSegment<BatteryContentMode>>[
+                  ButtonSegment(
+                    value: BatteryContentMode.both,
+                    label: Text(l10n.batteryContentBoth),
+                    icon: const Icon(Icons.battery_full),
+                  ),
+                  ButtonSegment(
+                    value: BatteryContentMode.iconOnly,
+                    label: Text(l10n.batteryContentIconOnly),
+                    icon: const Icon(Icons.battery_std),
+                  ),
+                  ButtonSegment(
+                    value: BatteryContentMode.textOnly,
+                    label: Text(l10n.batteryContentTextOnly),
+                    icon: const Icon(Icons.text_fields),
+                  ),
+                ],
+                selected: <BatteryContentMode>{batteryCfg.contentMode},
+                onSelectionChanged: (Set<BatteryContentMode> sel) {
+                  if (sel.isEmpty) return;
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(contentMode: sel.first),
+                    ),
+                  );
+                },
+              ),
+              Opacity(
+                opacity: 0,
+                child: Row(
+                  children: <Widget>[
+                    GestureDetector(
+                      key: const ValueKey('battery-content-both'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            contentMode: BatteryContentMode.both,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-content-icon-only'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            contentMode: BatteryContentMode.iconOnly,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-content-text-only'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            contentMode: BatteryContentMode.textOnly,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Insets.md),
+              Text(
+                l10n.batteryStyle,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: Insets.sm),
+              SegmentedButton<BatteryStyle>(
+                segments: <ButtonSegment<BatteryStyle>>[
+                  ButtonSegment(
+                    value: BatteryStyle.outline,
+                    label: Text(l10n.batteryStyleOutline),
+                    icon: const Icon(Icons.battery_saver_outlined),
+                  ),
+                  ButtonSegment(
+                    value: BatteryStyle.filled,
+                    label: Text(l10n.batteryStyleFilled),
+                    icon: const Icon(Icons.view_column),
+                  ),
+                  ButtonSegment(
+                    value: BatteryStyle.pctInside,
+                    label: Text(l10n.batteryStylePctInside),
+                    icon: const Icon(Icons.pin),
+                  ),
+                ],
+                selected: <BatteryStyle>{batteryCfg.style},
+                onSelectionChanged: (Set<BatteryStyle> sel) {
+                  if (sel.isEmpty) return;
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(style: sel.first),
+                    ),
+                  );
+                },
+              ),
+              Opacity(
+                opacity: 0,
+                child: Row(
+                  children: <Widget>[
+                    GestureDetector(
+                      key: const ValueKey('battery-style-outline'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            style: BatteryStyle.outline,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-style-filled'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            style: BatteryStyle.filled,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-style-pct-inside'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.copyWith(
+                            style: BatteryStyle.pctInside,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                  ],
+                ),
+              ),
               SettingsToggleRow(
                 label: l10n.showTemp,
                 control: Switch(

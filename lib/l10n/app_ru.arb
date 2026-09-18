@@ -220,6 +220,31 @@
   "showChargingStats": "Показывать данные зарядки (при зарядке)",
   "@showChargingStats": { "description": "Toggle: show charging stats panel" },
 
+
+  "batteryContentMode": "Содержимое",
+  "@batteryContentMode": { "description": "Battery content mode label" },
+
+  "batteryContentBoth": "Оба",
+  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
+
+  "batteryContentIconOnly": "Значок",
+  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
+
+  "batteryContentTextOnly": "Текст",
+  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
+
+  "batteryStyle": "Вид",
+  "@batteryStyle": { "description": "Battery pack style label" },
+
+  "batteryStyleOutline": "Контур",
+  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
+
+  "batteryStyleFilled": "Блоки",
+  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
+
+  "batteryStylePctInside": "% внутри",
+  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
+
   "batterySize": "Размер",
   "@batterySize": { "description": "Battery size slider label" },
 

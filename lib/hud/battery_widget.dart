@@ -5,13 +5,17 @@ import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
 
-/// Emissive HUD battery indicator (Steam-Deck-style) for the BATTERY slot.
+/// Emissive HUD battery indicator for the BATTERY slot.
 ///
-/// Renders a rounded-rectangle battery body + right-side terminal nub, an
-/// inner fill bar proportional to [batteryPctProvider], and a "NN%" text
-/// label stacked *below* the icon (not beside it — see the layout note on the
-/// `FittedBox` below for why). Temperature [batteryTempCProvider] is shown
-/// when [BatteryConfig.showTemp] is set.
+/// Renders a battery pack (style-dependent) and/or a "NN%" text label per
+/// [BatteryConfig.contentMode] / [BatteryConfig.style]. Temperature
+/// [batteryTempCProvider] is shown when [BatteryConfig.showTemp] is set.
+///
+/// Pack styles ([BatteryStyle]):
+///   outline   — Steam-Deck outline + continuous fill + nub (default)
+///   filled    — 5 segment bars inside the pack
+///   pctInside — continuous fill with % text painted inside the pack
+///               (no duplicate % below when content includes the icon)
 ///
 /// Low-battery colour ramp (mirrors Steam Deck UX):
 ///   ≥ 30 %  → [_kFillGreen]   (emissive green)
@@ -62,10 +66,10 @@ class BatteryWidget extends ConsumerWidget {
     // showBattery=false → render absolutely nothing (0 pixels).
     if (!cfg.showBattery) return const SizedBox.shrink();
 
-    final pct = ref.watch(batteryPctProvider);       // int? 0-100
-    final tempC = ref.watch(batteryTempCProvider);   // double? °C
-    final charging = ref.watch(chargingProvider);    // bool?
-    final kw = ref.watch(chargeKwProvider);          // double?
+    final pct = ref.watch(batteryPctProvider); // int? 0-100
+    final tempC = ref.watch(batteryTempCProvider); // double? °C
+    final charging = ref.watch(chargingProvider); // bool?
+    final kw = ref.watch(chargeKwProvider); // double?
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
@@ -79,10 +83,10 @@ class BatteryWidget extends ConsumerWidget {
     // At sizeScale=1.0 the icon is 40×20 logical pixels — compact for the
     // top-right corner while legible on the 1024×576 HUD.
     final base = 20.0 * cfg.sizeScale;
-    final bodyW = base * 2.0;   // width of the battery body
-    final bodyH = base;          // height of the battery body
-    final nubW = base * 0.15;   // terminal nub width
-    final nubH = base * 0.40;   // terminal nub height
+    final bodyW = base * 2.0; // width of the battery body
+    final bodyH = base; // height of the battery body
+    final nubW = base * 0.15; // terminal nub width
+    final nubH = base * 0.40; // terminal nub height
 
     // Fill level (0.0–1.0); null → show empty shell.
     final fillFrac = (pct != null) ? (pct.clamp(0, 100) / 100.0) : 0.0;
@@ -98,6 +102,14 @@ class BatteryWidget extends ConsumerWidget {
     }
 
     final showStats = isCharging && cfg.showChargingStats;
+    final showIcon = cfg.contentMode != BatteryContentMode.textOnly;
+    // Separate % below the pack: shown for both/textOnly, but suppressed when
+    // pctInside paints the % inside the pack and the icon is visible (avoid
+    // duplicating the label).
+    final pctInsidePack =
+        showIcon && cfg.style == BatteryStyle.pctInside;
+    final showPctBelow = cfg.contentMode != BatteryContentMode.iconOnly &&
+        !pctInsidePack;
 
     final labelStyle = TextStyle(
       color: _kTextPrimary,
@@ -110,45 +122,25 @@ class BatteryWidget extends ConsumerWidget {
       fontSize: base * 0.45,
       height: 1.0,
     );
+    final inlinePctStyle = TextStyle(
+      color: _kTextPrimary,
+      fontSize: bodyH * 0.48,
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+      shadows: const <Shadow>[
+        Shadow(color: Color(0xFF000000), blurRadius: 2),
+      ],
+    );
+
+    final pctLabel = pct != null ? '$pct%' : '--%';
 
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
       // FittedBox around the WHOLE panel (icon, pct, temp, charging-stats) —
       // kept as a safety net, not removed (Block 0026 fixed a real overflow
-      // this way: temp/charging-stats rows were unwrapped and a Column of
-      // all three could overflow the fixed BATTERY slot under tight
-      // constraints — see that Block's Reconciliation item 4). Once the
-      // panel's natural size exceeds the slot, FittedBox scales the whole
-      // thing down uniformly rather than crashing — that part of the
-      // contract must not regress (pinned in
-      // test/widgets/battery_widget_test.dart, "no overflow at max
-      // sizeScale with everything shown").
-      //
-      // What changed here: the layout *feeding* this FittedBox, to make the
-      // `sizeScale` slider (0.5–2.5) actually honest. Previously icon+pct sat
-      // in a Row beside each other; that row's natural width already
-      // exceeded the slot (~98 logical px at the reference Safe Area — ~12%
-      // of its width, see hud_root.dart) by sizeScale≈1.07, so FittedBox was
-      // scaling everything back down for roughly the top 75% of the slider's
-      // labelled range — moving the slider past its first quarter did almost
-      // nothing visible. The BATTERY slot is tall and narrow (~12% Safe Area
-      // width, ~60% of its height), so a side-by-side icon+text row is the
-      // wrong shape for it. Stacking icon → pct → temp → charging-stats
-      // vertically instead moves the binding constraint to whichever single
-      // line is widest (never the sum of two side-by-side elements), which
-      // roughly triples the genuinely-growing portion of the range: real
-      // growth up to sizeScale≈1.4 with temp+charging-stats both showing (the
-      // worst case, gated by the "NN kW" line), and out to sizeScale≈2.2 when
-      // charging stats aren't showing (gated by the "NN%" line instead) — see
-      // the measured breakpoints in test/widgets/battery_widget_test.dart.
-      //
-      // This still doesn't make the *entire* labelled 0.5–2.5 range honest in
-      // the worst case (temp + charging stats both on) — the slot is a hard
-      // physical constraint (see hud_root.dart:148-154) and no layout of this
-      // content fits an unbounded size into a fixed box. Narrowing the
-      // slider's own max to better match (e.g. ~1.5) would need a change in
-      // lib/screens/hud_settings_screen.dart, out of this Block's scope.
+      // this way). See prior layout notes: vertical stack so sizeScale remains
+      // honest against the tall-narrow BATTERY slot.
       child: FittedBox(
         alignment: Alignment.topRight,
         fit: BoxFit.scaleDown,
@@ -156,44 +148,67 @@ class BatteryWidget extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
-            // ---- Battery icon ----
-            // The battery body + fill painted via CustomPaint.
-            CustomPaint(
-              key: const ValueKey('battery-icon'),
-              size: Size(bodyW + nubW, bodyH),
-              painter: _BatteryPainter(
-                fillFrac: fillFrac,
-                fillColor: fillColor,
-                outlineColor: _kOutline,
-                bodyW: bodyW,
-                bodyH: bodyH,
-                nubW: nubW,
-                nubH: nubH,
-                // Charging bolt is gated on raw isCharging state alone, not
-                // on showChargingStats: the bolt communicates *that* the car
-                // is charging (state, always relevant), while the stats
-                // panel below is supplementary *detail* (kW) the user may
-                // choose to suppress independently. Turning the panel off
-                // should not also hide the fact that the car is plugged in.
-                showBolt: isCharging,
+            // ---- Battery icon (pack) ----
+            if (showIcon)
+              SizedBox(
+                key: const ValueKey('battery-icon'),
+                width: bodyW + nubW,
+                height: bodyH,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: <Widget>[
+                    CustomPaint(
+                      size: Size(bodyW + nubW, bodyH),
+                      painter: _BatteryPainter(
+                        fillFrac: fillFrac,
+                        fillColor: fillColor,
+                        outlineColor: _kOutline,
+                        bodyW: bodyW,
+                        bodyH: bodyH,
+                        nubW: nubW,
+                        nubH: nubH,
+                        style: cfg.style,
+                        // Charging bolt is gated on raw isCharging state alone,
+                        // not on showChargingStats: the bolt communicates
+                        // *that* the car is charging; the stats panel below is
+                        // supplementary detail the user may suppress.
+                        showBolt: isCharging,
+                      ),
+                    ),
+                    if (pctInsidePack)
+                      Positioned(
+                        left: 0,
+                        width: bodyW,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: Text(
+                            pctLabel,
+                            key: const ValueKey('battery-inline-pct'),
+                            style: inlinePctStyle,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
 
-            // ---- Percentage text ----
-            SizedBox(height: base * 0.12),
-            Text(
-              pct != null ? '$pct%' : '--%',
-              key: const ValueKey('battery-pct-text'),
-              style: labelStyle,
-            ),
+            // ---- Percentage text (below pack, when not painted inside) ----
+            if (showPctBelow) ...<Widget>[
+              if (showIcon) SizedBox(height: base * 0.12),
+              Text(
+                pctLabel,
+                key: const ValueKey('battery-pct-text'),
+                style: labelStyle,
+              ),
+            ],
 
             // ---- Temperature row (optional) ----
             if (cfg.showTemp) ...<Widget>[
               SizedBox(height: base * 0.18),
               Text(
-                tempC != null
-                    ? '${tempC.toStringAsFixed(0)}°C'
-                    : '--°C',
+                tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
                 key: const ValueKey('battery-temp-text'),
                 style: tempStyle,
               ),
@@ -218,15 +233,13 @@ class BatteryWidget extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Battery icon painter — Steam-Deck-style.
+// Battery icon painter — style-dependent pack look.
 // ---------------------------------------------------------------------------
 
-/// Paints the battery body: rounded rectangle outline + proportional fill bar
-/// + terminal nub on the right + optional lightning bolt while charging.
-///
-/// Design mirrors the Steam Deck battery icon: clean rounded rectangle, filled
-/// from the left, thin nub on the right (positive terminal).  No segments —
-/// smooth gradient fill reads better at small HUD sizes.
+/// Paints the battery body per [BatteryStyle]:
+/// - [BatteryStyle.outline]: rounded outline + continuous fill + nub + bolt
+/// - [BatteryStyle.filled]: outline + 5 segment bars + nub + bolt
+/// - [BatteryStyle.pctInside]: same as outline (inline % is a Text overlay)
 class _BatteryPainter extends CustomPainter {
   const _BatteryPainter({
     required this.fillFrac,
@@ -236,6 +249,7 @@ class _BatteryPainter extends CustomPainter {
     required this.bodyH,
     required this.nubW,
     required this.nubH,
+    required this.style,
     this.showBolt = false,
   });
 
@@ -246,7 +260,10 @@ class _BatteryPainter extends CustomPainter {
   final double bodyH;
   final double nubW;
   final double nubH;
+  final BatteryStyle style;
   final bool showBolt;
+
+  static const int _kSegmentCount = 5;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -276,24 +293,54 @@ class _BatteryPainter extends CustomPainter {
     );
     canvas.drawRRect(nubRect, nubPaint);
 
-    // ---- Fill bar ----
-    if (fillFrac > 0) {
-      final innerPad = strokeW + bodyH * 0.08;
-      final innerW = bodyW - innerPad * 2;
-      final innerH = bodyH - innerPad * 2;
-      final fillW = innerW * fillFrac;
+    final innerPad = strokeW + bodyH * 0.08;
+    final innerW = bodyW - innerPad * 2;
+    final innerH = bodyH - innerPad * 2;
 
-      if (fillW > 0 && innerH > 0) {
-        final fillRadius = Radius.circular(radius * 0.5);
+    if (style == BatteryStyle.filled) {
+      // ---- Segmented bars ----
+      if (innerW > 0 && innerH > 0) {
+        final gap = innerW * 0.06;
+        final segW =
+            (innerW - gap * (_kSegmentCount - 1)) / _kSegmentCount;
+        final lit = (fillFrac * _kSegmentCount).ceil().clamp(0, _kSegmentCount);
         final fillPaint = Paint()
           ..color = fillColor
           ..style = PaintingStyle.fill;
-        final fillRect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(innerPad, innerPad, fillW, innerH),
-          fillRadius,
-        );
+        final emptyPaint = Paint()
+          ..color = outlineColor.withValues(alpha: 0.25)
+          ..style = PaintingStyle.fill;
+        final segRadius = Radius.circular(radius * 0.35);
+        canvas.save();
         canvas.clipRRect(bodyRect.deflate(strokeW / 2));
-        canvas.drawRRect(fillRect, fillPaint);
+        for (var i = 0; i < _kSegmentCount; i++) {
+          final x = innerPad + i * (segW + gap);
+          final rect = RRect.fromRectAndRadius(
+            Rect.fromLTWH(x, innerPad, segW, innerH),
+            segRadius,
+          );
+          canvas.drawRRect(rect, i < lit ? fillPaint : emptyPaint);
+        }
+        canvas.restore();
+      }
+    } else {
+      // ---- Continuous fill (outline + pctInside) ----
+      if (fillFrac > 0 && innerW > 0 && innerH > 0) {
+        final fillW = innerW * fillFrac;
+        if (fillW > 0) {
+          final fillRadius = Radius.circular(radius * 0.5);
+          final fillPaint = Paint()
+            ..color = fillColor
+            ..style = PaintingStyle.fill;
+          final fillRect = RRect.fromRectAndRadius(
+            Rect.fromLTWH(innerPad, innerPad, fillW, innerH),
+            fillRadius,
+          );
+          canvas.save();
+          canvas.clipRRect(bodyRect.deflate(strokeW / 2));
+          canvas.drawRRect(fillRect, fillPaint);
+          canvas.restore();
+        }
       }
     }
 
@@ -323,7 +370,8 @@ class _BatteryPainter extends CustomPainter {
       old.fillFrac != fillFrac ||
       old.fillColor != fillColor ||
       old.showBolt != showBolt ||
-      old.outlineColor != outlineColor;
+      old.outlineColor != outlineColor ||
+      old.style != style;
 }
 
 // ---------------------------------------------------------------------------

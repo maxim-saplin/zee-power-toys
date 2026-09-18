@@ -536,6 +536,54 @@ abstract class AppLocalizations {
   /// **'Show charging stats (while charging)'**
   String get showChargingStats;
 
+  /// Battery content mode label
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get batteryContentMode;
+
+  /// Battery content: icon + percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get batteryContentBoth;
+
+  /// Battery content: icon only
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get batteryContentIconOnly;
+
+  /// Battery content: percentage text only
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get batteryContentTextOnly;
+
+  /// Battery pack style label
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get batteryStyle;
+
+  /// Battery style: Steam Deck outline
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get batteryStyleOutline;
+
+  /// Battery style: segmented blocks
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks'**
+  String get batteryStyleFilled;
+
+  /// Battery style: percentage inside pack
+  ///
+  /// In en, this message translates to:
+  /// **'% inside'**
+  String get batteryStylePctInside;
+
   /// Battery size slider label
   ///
   /// In en, this message translates to:

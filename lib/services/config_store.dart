@@ -211,22 +211,41 @@ class MinimapConfig {
       Object.hash(enabled, preset, advanced, sizeFraction, looks);
 }
 
+/// What parts of the battery mark to show (icon pack vs percentage label).
+///
+/// `both`     — pack + percentage (default).
+/// `iconOnly` — pack only (no separate % label below; [BatteryStyle.pctInside]
+///              still paints % inside the pack).
+/// `textOnly` — percentage label only (no pack icon).
+enum BatteryContentMode { both, iconOnly, textOnly }
+
+/// Visual look of the battery pack icon.
+///
+/// `outline`   — Steam-Deck outline + continuous fill + nub (default / current).
+/// `filled`    — segmented bars (4–5 blocks) inside the pack outline.
+/// `pctInside` — continuous fill with percentage text painted inside the pack
+///               (suppresses the separate % below when content includes icon).
+enum BatteryStyle { outline, filled, pctInside }
+
 /// Battery widget appearance config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// sizeScale = 1.0.  The charging stats panel is show-while-charging — it
-/// appears automatically when the car reports charging and is hidden otherwise
-/// (app policy per ADR 0003); showChargingStats merely lets the user suppress
-/// the panel entirely if they prefer.
+/// contentMode = both, style = outline, sizeScale = 1.0.  The charging stats
+/// panel is show-while-charging — it appears automatically when the car
+/// reports charging and is hidden otherwise (app policy per ADR 0003);
+/// showChargingStats merely lets the user suppress the panel entirely if they
+/// prefer.
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
     this.sizeScale = 1.0,
+    this.contentMode = BatteryContentMode.both,
+    this.style = BatteryStyle.outline,
   });
 
-  /// Whether to render the battery icon and percentage at all.
+  /// Whether to render the battery indicator at all.
   final bool showBattery;
 
   /// Whether to show the battery temperature readout next to the icon.
@@ -240,16 +259,26 @@ class BatteryConfig {
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
 
+  /// Icon vs text content mode (pack / percentage / both).
+  final BatteryContentMode contentMode;
+
+  /// Pack visual style (outline / filled segments / % inside).
+  final BatteryStyle style;
+
   BatteryConfig copyWith({
     bool? showBattery,
     bool? showTemp,
     bool? showChargingStats,
     double? sizeScale,
+    BatteryContentMode? contentMode,
+    BatteryStyle? style,
   }) => BatteryConfig(
     showBattery: showBattery ?? this.showBattery,
     showTemp: showTemp ?? this.showTemp,
     showChargingStats: showChargingStats ?? this.showChargingStats,
     sizeScale: sizeScale ?? this.sizeScale,
+    contentMode: contentMode ?? this.contentMode,
+    style: style ?? this.style,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -257,14 +286,34 @@ class BatteryConfig {
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'sizeScale': sizeScale,
+    'contentMode': contentMode.name,
+    'style': style.name,
   };
 
-  factory BatteryConfig.fromJson(Map<String, Object?> json) => BatteryConfig(
-    showBattery: json['showBattery'] as bool? ?? true,
-    showTemp: json['showTemp'] as bool? ?? true,
-    showChargingStats: json['showChargingStats'] as bool? ?? true,
-    sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
-  );
+  factory BatteryConfig.fromJson(Map<String, Object?> json) {
+    final modeName = json['contentMode'] as String?;
+    final contentMode = modeName != null
+        ? BatteryContentMode.values.firstWhere(
+            (e) => e.name == modeName,
+            orElse: () => BatteryContentMode.both,
+          )
+        : BatteryContentMode.both;
+    final styleName = json['style'] as String?;
+    final style = styleName != null
+        ? BatteryStyle.values.firstWhere(
+            (e) => e.name == styleName,
+            orElse: () => BatteryStyle.outline,
+          )
+        : BatteryStyle.outline;
+    return BatteryConfig(
+      showBattery: json['showBattery'] as bool? ?? true,
+      showTemp: json['showTemp'] as bool? ?? true,
+      showChargingStats: json['showChargingStats'] as bool? ?? true,
+      sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
+      contentMode: contentMode,
+      style: style,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -272,11 +321,19 @@ class BatteryConfig {
       other.showBattery == showBattery &&
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
-      other.sizeScale == sizeScale;
+      other.sizeScale == sizeScale &&
+      other.contentMode == contentMode &&
+      other.style == style;
 
   @override
-  int get hashCode =>
-      Object.hash(showBattery, showTemp, showChargingStats, sizeScale);
+  int get hashCode => Object.hash(
+    showBattery,
+    showTemp,
+    showChargingStats,
+    sizeScale,
+    contentMode,
+    style,
+  );
 }
 
 /// Shape of the blinker indicator rendered in the HUD BLINKER slot.
