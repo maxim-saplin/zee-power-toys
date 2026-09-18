@@ -69,6 +69,9 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
           // ─── Scrollable controls ─────────────────────────────────────────
           Expanded(
             child: ListView(
+              // Keep battery/blinker agent keys built below the fold for FL.
+              // ignore: deprecated_member_use
+              cacheExtent: 4000,
               padding: const EdgeInsets.all(Insets.lg),
               children: <Widget>[
                 // ----------------------------------------------------------------
