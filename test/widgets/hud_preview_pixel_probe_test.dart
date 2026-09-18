@@ -57,7 +57,9 @@ Future<void> _savePng(
   await tester.runAsync(() async {
     final image = await boundary.toImage(pixelRatio: 1.0);
     final bd = await image.toByteData(format: ui.ImageByteFormat.png);
-    File(path).writeAsBytesSync(bd!.buffer.asUint8List());
+    final file = File(path);
+    file.parent.createSync(recursive: true);
+    file.writeAsBytesSync(bd!.buffer.asUint8List());
   });
 }
 
