@@ -42,7 +42,7 @@ Subcommands
                       this point) — the pgid kill alone leaves the app
                       process running on the device.
 
-T1 (default) — `flutter run -d linux`
+T1 (default) — `flutter run -d linux` (or `-d macos` on Darwin)
   Writes flutter run stdout/stderr to $ZEE_RUN_LOG (default /tmp/zee_run_t1.log).
   No adb involved.  VM URI is discovered from that log file.
   PID is stored in /tmp/zee_run_t1.pid for `down`.
@@ -369,7 +369,11 @@ def cmd_up(tier: str, self_heal: bool = True) -> int:
 
     # --- build flutter run command ---------------------------------------------
     if tier == "t1":
-        cmd = ["flutter", "run", "-d", "linux"]
+        # T1 is pure-Dart fakes on desktop. Linux historically; macOS once
+        # macos/ + desktop_multi_window MainFlutterWindow wiring exist.
+        import platform as _platform
+        t1_device = "macos" if _platform.system() == "Darwin" else "linux"
+        cmd = ["flutter", "run", "-d", t1_device]
     else:
         cmd = ["flutter", "run", "-d", _z.DEFAULT_SERIAL]
 
