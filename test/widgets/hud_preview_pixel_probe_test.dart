@@ -103,7 +103,7 @@ void main() {
       await _savePng(
         tester,
         boundaryKey,
-        '/workspace/zee/screenshots/t1_config_preview_t0.png',
+        '${Directory.systemTemp.path}/zee_pixel_probe/t1_config_preview_t0.png',
       );
 
       // Advance into the OFF half-cycle (450ms half). Keys stay in tree;
@@ -114,7 +114,7 @@ void main() {
       await _savePng(
         tester,
         boundaryKey,
-        '/workspace/zee/screenshots/t1_config_preview_toff.png',
+        '${Directory.systemTemp.path}/zee_pixel_probe/t1_config_preview_toff.png',
       );
 
       // Keys still present during OFF (the false-green Block 0026 relied on).
