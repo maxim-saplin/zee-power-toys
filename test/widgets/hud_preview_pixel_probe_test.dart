@@ -16,8 +16,6 @@ import 'package:zee_power_toys/widgets/hud_preview.dart';
 
 import '../support/harness.dart';
 
-const _kAmber = Color(0xFFFFC107);
-
 int _countAmber(Uint8List rgba, int width, int height) {
   var n = 0;
   for (var i = 0; i < rgba.length; i += 4) {

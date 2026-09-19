@@ -659,7 +659,7 @@ void registerZeeExtensions({
             return developer.ServiceExtensionResponse.result(
               jsonEncode(<String, Object?>{
                 'ok': false,
-                'error': "need >=2 pack cams (got ${cams.length})",
+                'error': 'need >=2 pack cams (got ${cams.length})',
                 'camCount': cams.length,
               }),
             );
