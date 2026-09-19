@@ -549,4 +549,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamStaleDays => 'Устарел через (дней)';
+
+  @override
+  String get sectionAbout => 'О приложении';
+
+  @override
+  String get sectionAboutSubtitle => 'Версия и источники данных';
+
+  @override
+  String get aboutTitle => 'О приложении';
+
+  @override
+  String get aboutAppSection => 'Приложение';
+
+  @override
+  String get aboutAppName => 'Zee Power Toys';
+
+  @override
+  String get aboutVersion => 'Версия';
+
+  @override
+  String get aboutCreditsSection => 'Благодарности';
+
+  @override
+  String get aboutSpeedcamCreditTitle => 'Камеры / картоданные';
+
+  @override
+  String get aboutSpeedcamCreditBody =>
+      'Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).';
 }

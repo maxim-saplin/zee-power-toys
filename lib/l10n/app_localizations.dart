@@ -1159,6 +1159,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stale after (days)'**
   String get speedcamStaleDays;
+
+  /// Home tile — About
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get sectionAbout;
+
+  /// About tile subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Version and data credits'**
+  String get sectionAboutSubtitle;
+
+  /// About screen title
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutTitle;
+
+  /// About app section
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get aboutAppSection;
+
+  /// Product name on About
+  ///
+  /// In en, this message translates to:
+  /// **'Zee Power Toys'**
+  String get aboutAppName;
+
+  /// Version label
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// Credits section
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get aboutCreditsSection;
+
+  /// Speedcam credit title
+  ///
+  /// In en, this message translates to:
+  /// **'Speedcam / map data'**
+  String get aboutSpeedcamCreditTitle;
+
+  /// OSM ODbL credit for Speedcam
+  ///
+  /// In en, this message translates to:
+  /// **'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).'**
+  String get aboutSpeedcamCreditBody;
 }
 
 class _AppLocalizationsDelegate

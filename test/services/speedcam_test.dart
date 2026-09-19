@@ -45,7 +45,8 @@ void main() {
     });
 
     test('approach inside 500m flips insideApproach + bearing', () async {
-      final cam = svc.snapshot.cams.first;
+      // Prefer fail-open / on-route facing — cams.first (NE) is muted for N heading.
+      final cam = svc.snapshot.cams.firstWhere((c) => c.id == 'by-sample-2');
       await svc.approachCam(cam, distanceM: 200);
       final d = svc.snapshot.danger!;
       expect(d.cam.id, cam.id);
@@ -55,7 +56,7 @@ void main() {
     });
 
     test('approach outside 500m is not insideApproach', () async {
-      final cam = svc.snapshot.cams.first;
+      final cam = svc.snapshot.cams.firstWhere((c) => c.id == 'by-sample-2');
       await svc.approachCam(cam, distanceM: 800);
       final d = svc.snapshot.danger!;
       expect(d.insideApproach, isFalse);

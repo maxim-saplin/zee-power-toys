@@ -102,6 +102,11 @@ Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](
 
 Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
 
+### Quality + publish
+
+| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | in-progress (A+B+E+D tipped; C=QA) |
+| [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | blocked-by 0043 |
+
 ### Speedcam follow-up
 
 | [0036](0036-speedcam-drive-sim.md) | Simulated drive polyline through pack cams | ready-for-agent |

@@ -8,6 +8,7 @@ analyzer:
     - build/**
     - android/**
     - linux/**
+    - macos/**
 
 linter:
   rules:

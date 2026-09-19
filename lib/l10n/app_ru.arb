@@ -519,5 +519,25 @@
   "speedcamRefreshIfStale": "Если устарел",
   "@speedcamRefreshIfStale": { "description": "Auto refresh when older than N days" },
   "speedcamStaleDays": "Устарел через (дней)",
-  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" }
+  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" },
+
+  "sectionAbout": "О приложении",
+  "@sectionAbout": { "description": "Home tile — About" },
+  "sectionAboutSubtitle": "Версия и источники данных",
+  "@sectionAboutSubtitle": { "description": "About tile subtitle" },
+  "aboutTitle": "О приложении",
+  "@aboutTitle": { "description": "About screen title" },
+  "aboutAppSection": "Приложение",
+  "@aboutAppSection": { "description": "About app section" },
+  "aboutAppName": "Zee Power Toys",
+  "@aboutAppName": { "description": "Product name on About" },
+  "aboutVersion": "Версия",
+  "@aboutVersion": { "description": "Version label" },
+  "aboutCreditsSection": "Благодарности",
+  "@aboutCreditsSection": { "description": "Credits section" },
+  "aboutSpeedcamCreditTitle": "Камеры / картоданные",
+  "@aboutSpeedcamCreditTitle": { "description": "Speedcam credit title" },
+  "aboutSpeedcamCreditBody": "Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).",
+  "@aboutSpeedcamCreditBody": { "description": "OSM ODbL credit for Speedcam" }
+
 }

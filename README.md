@@ -42,11 +42,19 @@ uv run dev/zee_run.py up        # Linux host only — brings up DHU + HUD (two e
 uv run dev/feedback_loop.py whoami-all
 ```
 
+
+## Credits
+
+**Speedcam** locations come from [OpenStreetMap](https://www.openstreetmap.org/)
+(© OpenStreetMap contributors), available under the
+[Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
+
 ## Status
 
-**MVP feature-complete, T1/T2 runtime-confirmed** — 26 Blocks
-([`docs/issues/0001`](docs/issues/0001-walking-skeleton.md)–[`0026`](docs/issues/0026-hud-preview-vs-live-simulate-split.md))
-are runtime-confirmed on T1 and, where the native edge is involved, T2 (the Android emulator),
-driven + read through the Feedback Loop; `flutter test` passes 261 tests. **The app has never
-run on T3 (the real car)** — the tier ADR 0004 itself names as the source of truth for fidelity.
-See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md) for the live board.
+**Feature board through Speedcam** — Blocks 0001–0026 plus Speedcam
+0029–0042 (pack → proximity → HUD/DHU radar → Demo → Alien fidelity) are
+T1/T2 runtime-confirmed where QA cut them; tip of record for Speedcam
+multi-cam HUD relay is `956d6b8` (chore HEAD may be newer). `flutter analyze`
+clean; run `flutter test` for the current count. **T3 (car) fidelity still
+the source of truth** (ADR 0004) — do not treat T1/T2 alone as windshield-final.
+See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md). Speedcam OSM credit: below.

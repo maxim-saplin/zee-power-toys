@@ -519,5 +519,25 @@
   "speedcamRefreshIfStale": "If stale",
   "@speedcamRefreshIfStale": { "description": "Auto refresh when older than N days" },
   "speedcamStaleDays": "Stale after (days)",
-  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" }
+  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" },
+
+  "sectionAbout": "About",
+  "@sectionAbout": { "description": "Home tile — About" },
+  "sectionAboutSubtitle": "Version and data credits",
+  "@sectionAboutSubtitle": { "description": "About tile subtitle" },
+  "aboutTitle": "About",
+  "@aboutTitle": { "description": "About screen title" },
+  "aboutAppSection": "App",
+  "@aboutAppSection": { "description": "About app section" },
+  "aboutAppName": "Zee Power Toys",
+  "@aboutAppName": { "description": "Product name on About" },
+  "aboutVersion": "Version",
+  "@aboutVersion": { "description": "Version label" },
+  "aboutCreditsSection": "Credits",
+  "@aboutCreditsSection": { "description": "Credits section" },
+  "aboutSpeedcamCreditTitle": "Speedcam / map data",
+  "@aboutSpeedcamCreditTitle": { "description": "Speedcam credit title" },
+  "aboutSpeedcamCreditBody": "Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).",
+  "@aboutSpeedcamCreditBody": { "description": "OSM ODbL credit for Speedcam" }
+
 }

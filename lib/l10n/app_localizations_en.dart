@@ -548,4 +548,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamStaleDays => 'Stale after (days)';
+
+  @override
+  String get sectionAbout => 'About';
+
+  @override
+  String get sectionAboutSubtitle => 'Version and data credits';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String get aboutAppSection => 'App';
+
+  @override
+  String get aboutAppName => 'Zee Power Toys';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutCreditsSection => 'Credits';
+
+  @override
+  String get aboutSpeedcamCreditTitle => 'Speedcam / map data';
+
+  @override
+  String get aboutSpeedcamCreditBody =>
+      'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).';
 }

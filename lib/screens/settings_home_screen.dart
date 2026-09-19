@@ -18,6 +18,7 @@ import 'language_settings_screen.dart';
 import 'minimap_settings_screen.dart';
 import 'speedcam_settings_screen.dart';
 import 'simulate_screen.dart';
+import 'about_screen.dart';
 import 'usb_adb_screen.dart';
 
 /// DHU home — two-column landing (Block 0027).
@@ -416,6 +417,19 @@ class _SectionsColumn extends StatelessWidget {
                   context,
                   MaterialPageRoute<void>(
                     builder: (_) => const InstallScreen(),
+                  ),
+                ),
+              ),
+              const _TileDivider(),
+              _SectionTile(
+                key: const ValueKey('nav-about'),
+                icon: Icons.info_outline,
+                title: l10n.sectionAbout,
+                subtitle: l10n.sectionAboutSubtitle,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AboutScreen(),
                   ),
                 ),
               ),
