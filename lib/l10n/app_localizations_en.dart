@@ -230,6 +230,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showChargingStats => 'Show charging stats (while charging)';
 
   @override
+  String get batteryContentMode => 'Content';
+
+  @override
+  String get batteryContentBoth => 'Both';
+
+  @override
+  String get batteryContentIconOnly => 'Icon';
+
+  @override
+  String get batteryContentTextOnly => 'Text';
+
+  @override
+  String get batteryStyle => 'Look';
+
+  @override
+  String get batteryStyleOutline => 'Outline';
+
+  @override
+  String get batteryStyleFilled => 'Blocks';
+
+  @override
+  String get batteryStylePctInside => '% inside';
+
+  @override
   String get batterySize => 'Size';
 
   @override
@@ -289,6 +313,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minimapLookPreset => 'Colour preset';
+
+  @override
+  String get minimapLookPresetDefault => 'Default';
 
   @override
   String get minimapLookPresetGreenYellow => 'Green-yellow';
@@ -394,4 +421,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get simulateSpeedLabel => 'Speed';
+
+  @override
+  String get homeTitle => 'Zee Power Toys';
+
+  @override
+  String get homeWelcomeTitle => 'Welcome';
+
+  @override
+  String get homeWelcomeBody =>
+      'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.';
+
+  @override
+  String get homeCompanionsTitle => 'Companion apps';
+
+  @override
+  String get homeSectionsTitle => 'Sections';
+
+  @override
+  String get homeStatusInstalled => 'Installed';
+
+  @override
+  String get homeStatusMissing => 'Missing';
+
+  @override
+  String get homeStatusUnknown => 'Unknown';
+
+  @override
+  String get homeInstallAction => 'Install';
+
+  @override
+  String get minimapContentScale => 'Map density';
+
+  @override
+  String get minimapContentScaleHint =>
+      'Lower = more map area (phase0 default 0.5)';
 }

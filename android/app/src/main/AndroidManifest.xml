@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sharedUserId="android.uid.system">
 
     <!-- Boot auto-launch (Block 0010) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -18,6 +19,9 @@
          source are remembered.  On emulators without this setting the system
          will show the dialog; the download itself always completes. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Silent YNavi restart (phase0 BootActions.restartYNavi) — system/signature on DHU. -->
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
     <!-- YNavi CarApp host permissions (Block YNavi / YNaviCarAppHost).
          TEMPLATE_RENDERER: system/signature permission pre-granted on Zeekr OS;

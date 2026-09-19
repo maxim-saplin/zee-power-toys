@@ -4,6 +4,7 @@ import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/hud_host.dart';
 import '../services/installer.dart';
+import '../services/package_status.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 
@@ -27,6 +28,10 @@ final hudHostProvider = Provider<HudHost>((ref) {
 });
 
 final installerProvider = Provider<Installer>((ref) {
+  throw UnimplementedError('inject via ProviderScope.overrides');
+});
+
+final packageStatusProvider = Provider<PackageStatus>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });
 

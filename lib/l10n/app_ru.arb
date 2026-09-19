@@ -220,6 +220,31 @@
   "showChargingStats": "Показывать данные зарядки (при зарядке)",
   "@showChargingStats": { "description": "Toggle: show charging stats panel" },
 
+
+  "batteryContentMode": "Содержимое",
+  "@batteryContentMode": { "description": "Battery content mode label" },
+
+  "batteryContentBoth": "Оба",
+  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
+
+  "batteryContentIconOnly": "Значок",
+  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
+
+  "batteryContentTextOnly": "Текст",
+  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
+
+  "batteryStyle": "Вид",
+  "@batteryStyle": { "description": "Battery pack style label" },
+
+  "batteryStyleOutline": "Контур",
+  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
+
+  "batteryStyleFilled": "Блоки",
+  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
+
+  "batteryStylePctInside": "% внутри",
+  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
+
   "batterySize": "Размер",
   "@batterySize": { "description": "Battery size slider label" },
 
@@ -279,6 +304,9 @@
 
   "minimapLookPreset": "Цветовой пресет",
   "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
+
+  "minimapLookPresetDefault": "По умолчанию",
+  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
 
   "minimapLookPresetGreenYellow": "Зелёно-жёлтый",
   "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
@@ -380,5 +408,39 @@
   "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
 
   "simulateSpeedLabel": "Скорость",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
+
+  "homeTitle": "Zee Power Toys",
+  "@homeTitle": { "description": "DHU home app-bar title" },
+
+  "homeWelcomeTitle": "Добро пожаловать",
+  "@homeWelcomeTitle": { "description": "Welcome column heading" },
+
+  "homeWelcomeBody": "HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.",
+  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
+
+  "homeCompanionsTitle": "Сопутствующие приложения",
+  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
+
+  "homeSectionsTitle": "Разделы",
+  "@homeSectionsTitle": { "description": "Sections column heading" },
+
+  "homeStatusInstalled": "Установлено",
+  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
+
+  "homeStatusMissing": "Нет",
+  "@homeStatusMissing": { "description": "Companion APK status: missing" },
+
+  "homeStatusUnknown": "Неизвестно",
+  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
+
+  "homeInstallAction": "Установить",
+  "@homeInstallAction": { "description": "Install companion APK button on home" },
+
+  "minimapContentScale": "Плотность карты",
+  "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
+
+  "minimapContentScaleHint": "Меньше = больше области карты (по умолчанию 0.5)",
+  "@minimapContentScaleHint": { "description": "Hint under map density slider" }
+
 }

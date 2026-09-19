@@ -237,7 +237,7 @@ void main() {
       expect(find.text('Available on the car only'), findsWidgets);
     });
 
-    testWidgets('System picker does not call setSystemLanguage when unsupported', (tester) async {
+    testWidgets('F5: System radios absent when unsupported (no fake selection)', (tester) async {
       final store = await _makeStore();
       final sysConfig = FakeSystemConfig(unsupported: true);
       await tester.pumpWidget(
@@ -245,14 +245,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('sys-lang-ru')));
-      await tester.pumpAndSettle();
-
-      // No call should have been made to setSystemLanguage.
+      expect(find.byKey(const ValueKey('sys-lang-en')), findsNothing);
+      expect(find.byKey(const ValueKey('sys-lang-ru')), findsNothing);
       expect(sysConfig.lastSystemLanguage, isNull);
     });
 
-    testWidgets('Cluster picker does not call setClusterLanguage when unsupported', (tester) async {
+    testWidgets('F5: Cluster radios absent when unsupported', (tester) async {
       final store = await _makeStore();
       final sysConfig = FakeSystemConfig(unsupported: true);
       await tester.pumpWidget(
@@ -260,17 +258,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Scroll to ensure the cluster section is visible.
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('cluster-lang-ru')),
-        200,
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const ValueKey('cluster-lang-ru')));
-      await tester.pumpAndSettle();
-
-      // No call should have been made to setClusterLanguage.
+      expect(find.byKey(const ValueKey('cluster-lang-en')), findsNothing);
+      expect(find.byKey(const ValueKey('cluster-lang-ru')), findsNothing);
       expect(sysConfig.lastClusterLanguage, isNull);
     });
 

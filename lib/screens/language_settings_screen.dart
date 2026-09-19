@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
@@ -35,6 +36,7 @@ class _LanguageSettingsScreenState
   // Last result strings — shown below the picker; null until first tap.
   String? _systemResult;
   String? _clusterResult;
+  String? _ynaviResult;
 
   // Async cluster-supported / system-supported flags; null = loading.
   bool? _clusterSupported;
@@ -100,6 +102,39 @@ class _LanguageSettingsScreenState
       setState(() {
         _clusterResult = result.ok ? null : result.reason;
       });
+    }
+  }
+
+  // ── Boot remediations (T3 manual taps) ───────────────────────────────────
+
+  Future<void> _restartYNavi() async {
+    setState(() => _ynaviResult = 'Restarting…');
+    try {
+      const ch = MethodChannel('zee/boot');
+      final map = await ch.invokeMapMethod<String, Object?>('restartYNavi');
+      final ok = map?['ok'] == true;
+      if (mounted) {
+        setState(() => _ynaviResult = ok ? 'YNavi force-stopped' : 'Restart failed');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _ynaviResult = 'Error: $e');
+    }
+  }
+
+  Future<void> _pushClusterLocaleEnglish() async {
+    setState(() => _ynaviResult = 'Pushing locale…');
+    try {
+      const ch = MethodChannel('zee/boot');
+      final map =
+          await ch.invokeMapMethod<String, Object?>('pushClusterLocaleEnglish');
+      final ok = map?['ok'] == true;
+      if (mounted) {
+        setState(
+          () => _ynaviResult = ok ? 'Cluster locale → English' : 'Locale push failed',
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _ynaviResult = 'Error: $e');
     }
   }
 
@@ -184,21 +219,22 @@ class _LanguageSettingsScreenState
                     ),
                   ),
                 ),
-              _LanguagePicker(
-                selectedTag: systemLocale.languageCode,
-                onChanged: (tag) {
-                  if (tag != null) _setSystemLanguage(Locale(tag));
-                },
-                // Disabled on capability (no AdaptAPI), not on an ungrantable
-                // permission — matches [_systemSupported] above.
-                enabled: _systemSupported == true,
-                keys: const _PickerKeys(
-                  system: 'sys-lang-system',
-                  en: 'sys-lang-en',
-                  ru: 'sys-lang-ru',
+              // F5: when unsupported, omit radios entirely — a disabled group
+              // with English pre-selected reads as a fake choice on T1.
+              if (_systemSupported == true)
+                _LanguagePicker(
+                  selectedTag: systemLocale.languageCode,
+                  onChanged: (tag) {
+                    if (tag != null) _setSystemLanguage(Locale(tag));
+                  },
+                  enabled: true,
+                  keys: const _PickerKeys(
+                    system: 'sys-lang-system',
+                    en: 'sys-lang-en',
+                    ru: 'sys-lang-ru',
+                  ),
+                  showSystemOption: false,
                 ),
-                showSystemOption: false,
-              ),
               if (_systemResult != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -246,19 +282,22 @@ class _LanguageSettingsScreenState
                   padding: EdgeInsets.all(Insets.lg),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-              _LanguagePicker(
-                selectedTag: null, // cluster has no persistent local state
-                onChanged: (tag) {
-                  if (tag != null) _setClusterLanguage(Locale(tag));
-                },
-                enabled: clusterSupported == true,
-                keys: const _PickerKeys(
-                  system: 'cluster-lang-system',
-                  en: 'cluster-lang-en',
-                  ru: 'cluster-lang-ru',
+              // F5: radios only when AdaptAPI is present — no empty/disabled
+              // radio group that looks choosable on T1 desktop.
+              if (clusterSupported == true)
+                _LanguagePicker(
+                  selectedTag: null, // cluster has no persistent local state
+                  onChanged: (tag) {
+                    if (tag != null) _setClusterLanguage(Locale(tag));
+                  },
+                  enabled: true,
+                  keys: const _PickerKeys(
+                    system: 'cluster-lang-system',
+                    en: 'cluster-lang-en',
+                    ru: 'cluster-lang-ru',
+                  ),
+                  showSystemOption: false,
                 ),
-                showSystemOption: false,
-              ),
               if (_clusterResult != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -274,6 +313,34 @@ class _LanguageSettingsScreenState
                     ),
                   ),
                 ),
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
+          // ──────────────────────────────────────────────────────────────
+          // Section 4 — Boot remediations (T3 manual)
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: 'Boot remediations',
+            padded: false,
+            children: <Widget>[
+              ListTile(
+                key: const ValueKey('btn-restart-ynavi'),
+                title: const Text('Restart YNavi'),
+                subtitle: Text(
+                  _ynaviResult ?? 'Force-stop YNavi (phase0 silent restart)',
+                ),
+                trailing: const Icon(Icons.refresh),
+                onTap: _restartYNavi,
+              ),
+              ListTile(
+                key: const ValueKey('btn-push-cluster-en'),
+                title: const Text('Push cluster locale → English'),
+                subtitle: const Text('Same AdaptAPI write as boot remediation'),
+                trailing: const Icon(Icons.language),
+                onTap: _pushClusterLocaleEnglish,
+              ),
             ],
           ),
         ],

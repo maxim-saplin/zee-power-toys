@@ -220,6 +220,31 @@
   "showChargingStats": "Show charging stats (while charging)",
   "@showChargingStats": { "description": "Toggle: show charging stats panel" },
 
+
+  "batteryContentMode": "Content",
+  "@batteryContentMode": { "description": "Battery content mode label" },
+
+  "batteryContentBoth": "Both",
+  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
+
+  "batteryContentIconOnly": "Icon",
+  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
+
+  "batteryContentTextOnly": "Text",
+  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
+
+  "batteryStyle": "Look",
+  "@batteryStyle": { "description": "Battery pack style label" },
+
+  "batteryStyleOutline": "Outline",
+  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
+
+  "batteryStyleFilled": "Blocks",
+  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
+
+  "batteryStylePctInside": "% inside",
+  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
+
   "batterySize": "Size",
   "@batterySize": { "description": "Battery size slider label" },
 
@@ -279,6 +304,9 @@
 
   "minimapLookPreset": "Colour preset",
   "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
+
+  "minimapLookPresetDefault": "Default",
+  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
 
   "minimapLookPresetGreenYellow": "Green-yellow",
   "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
@@ -380,5 +408,39 @@
   "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
 
   "simulateSpeedLabel": "Speed",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
+
+  "homeTitle": "Zee Power Toys",
+  "@homeTitle": { "description": "DHU home app-bar title" },
+
+  "homeWelcomeTitle": "Welcome",
+  "@homeWelcomeTitle": { "description": "Welcome column heading" },
+
+  "homeWelcomeBody": "HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.",
+  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
+
+  "homeCompanionsTitle": "Companion apps",
+  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
+
+  "homeSectionsTitle": "Sections",
+  "@homeSectionsTitle": { "description": "Sections column heading" },
+
+  "homeStatusInstalled": "Installed",
+  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
+
+  "homeStatusMissing": "Missing",
+  "@homeStatusMissing": { "description": "Companion APK status: missing" },
+
+  "homeStatusUnknown": "Unknown",
+  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
+
+  "homeInstallAction": "Install",
+  "@homeInstallAction": { "description": "Install companion APK button on home" },
+
+  "minimapContentScale": "Map density",
+  "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
+
+  "minimapContentScaleHint": "Lower = more map area (phase0 default 0.5)",
+  "@minimapContentScaleHint": { "description": "Hint under map density slider" }
+
 }

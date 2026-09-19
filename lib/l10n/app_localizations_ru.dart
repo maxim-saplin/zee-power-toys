@@ -230,6 +230,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get showChargingStats => 'Показывать данные зарядки (при зарядке)';
 
   @override
+  String get batteryContentMode => 'Содержимое';
+
+  @override
+  String get batteryContentBoth => 'Оба';
+
+  @override
+  String get batteryContentIconOnly => 'Значок';
+
+  @override
+  String get batteryContentTextOnly => 'Текст';
+
+  @override
+  String get batteryStyle => 'Вид';
+
+  @override
+  String get batteryStyleOutline => 'Контур';
+
+  @override
+  String get batteryStyleFilled => 'Блоки';
+
+  @override
+  String get batteryStylePctInside => '% внутри';
+
+  @override
   String get batterySize => 'Размер';
 
   @override
@@ -289,6 +313,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get minimapLookPreset => 'Цветовой пресет';
+
+  @override
+  String get minimapLookPresetDefault => 'По умолчанию';
 
   @override
   String get minimapLookPresetGreenYellow => 'Зелёно-жёлтый';
@@ -395,4 +422,39 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get simulateSpeedLabel => 'Скорость';
+
+  @override
+  String get homeTitle => 'Zee Power Toys';
+
+  @override
+  String get homeWelcomeTitle => 'Добро пожаловать';
+
+  @override
+  String get homeWelcomeBody =>
+      'HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.';
+
+  @override
+  String get homeCompanionsTitle => 'Сопутствующие приложения';
+
+  @override
+  String get homeSectionsTitle => 'Разделы';
+
+  @override
+  String get homeStatusInstalled => 'Установлено';
+
+  @override
+  String get homeStatusMissing => 'Нет';
+
+  @override
+  String get homeStatusUnknown => 'Неизвестно';
+
+  @override
+  String get homeInstallAction => 'Установить';
+
+  @override
+  String get minimapContentScale => 'Плотность карты';
+
+  @override
+  String get minimapContentScaleHint =>
+      'Меньше = больше области карты (по умолчанию 0.5)';
 }

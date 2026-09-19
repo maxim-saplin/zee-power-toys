@@ -236,10 +236,28 @@ class HudPreview extends ConsumerWidget {
                             if (forceDemoSignals)
                               ProviderScope(
                                 overrides: _demoSignalOverrides,
-                                child: const HudRoot(showSafeAreaBorder: true),
+                                // forceBlinkOn: demo hazard must stay lit —
+                                // BlinkerWidget still runs the 450ms on/off
+                                // cadence even when state is forced, so without
+                                // this the Config Preview goes fully dark on
+                                // the off half-cycle (keys remain; amber ink
+                                // does not).
+                                child: const HudRoot(
+                                  showSafeAreaBorder: true,
+                                  forceBlinkOn: true,
+                                ),
                               )
                             else
-                              const HudRoot(showSafeAreaBorder: true),
+                              // LIVE · SIMULATED (Developer Simulate): still
+                              // forceBlinkOn so the in-DHU preview stays
+                              // readable across the blink off-half. Real HUD
+                              // isolate (HudRoot default, no forceBlinkOn)
+                              // keeps genuine cadence. forceDemoSignals stays
+                              // false — live CarSignals, not demo overrides.
+                              const HudRoot(
+                                showSafeAreaBorder: true,
+                                forceBlinkOn: true,
+                              ),
 
                             // Safe Area outline — always drawn (over HudRoot) so
                             // it is visible even when HudRoot's own internal

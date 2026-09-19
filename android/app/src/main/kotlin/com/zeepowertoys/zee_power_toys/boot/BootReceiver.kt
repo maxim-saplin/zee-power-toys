@@ -69,6 +69,10 @@ class BootReceiver : BroadcastReceiver() {
         // emulator the subsequent setUsbMode("0") will fail with requires-platform-signing;
         // that failure is caught inside UsbModeController and logged — never crashes.
         applyAutoUsbPeripheral(context)
+
+        // Phase0 remediations: cluster locale → English + YNavi Doze whitelist.
+        // Manual YNavi restart is exposed via zee/boot MethodChannel (not automatic).
+        BootRemediation.runOnBootAsync(context)
     }
 
     // -------------------------------------------------------------------------

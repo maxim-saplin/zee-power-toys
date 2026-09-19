@@ -37,9 +37,20 @@ import 'blinker_widget.dart';
 /// MINIMAP slot glyph (debug aids; disabled in production, enabled in the DHU
 /// preview).
 class HudRoot extends ConsumerWidget {
-  const HudRoot({super.key, this.showSafeAreaBorder = false});
+  const HudRoot({
+    super.key,
+    this.showSafeAreaBorder = false,
+    this.forceBlinkOn,
+  });
 
   final bool showSafeAreaBorder;
+
+  /// When non-null, forwarded to [BlinkerWidget.forceBlinkOn]. Used by the
+  /// DHU Config Preview (`HudPreview` with `forceDemoSignals`) so demo hazard
+  /// marks stay lit instead of extinguishing on the blink off-half — otherwise
+  /// a glance or screenshot during the off-phase shows an empty preview even
+  /// though `blinkerProvider` is correctly overridden to hazard.
+  final bool? forceBlinkOn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,6 +82,7 @@ class HudRoot extends ConsumerWidget {
                     saWidth: saWidth,
                     saHeight: saHeight,
                     showStubs: showSafeAreaBorder,
+                    forceBlinkOn: forceBlinkOn,
                   ),
                 ),
               ),
@@ -119,11 +131,13 @@ class _HudSlots extends ConsumerWidget {
     required this.saWidth,
     required this.saHeight,
     required this.showStubs,
+    this.forceBlinkOn,
   });
 
   final double saWidth;
   final double saHeight;
   final bool showStubs;
+  final bool? forceBlinkOn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -146,8 +160,8 @@ class _HudSlots extends ConsumerWidget {
         // BLINKER — full Safe Area layer (lowest z-order).
         // BlinkerWidget positions marks at left/right edges via Positioned inside
         // its own Stack, so hazard shows both simultaneously.
-        const Positioned.fill(
-          child: BlinkerWidget(),
+        Positioned.fill(
+          child: BlinkerWidget(forceBlinkOn: forceBlinkOn),
         ),
 
         // BATTERY — top-right corner (Steam-Deck-style battery + temp + charging stats).
@@ -164,8 +178,9 @@ class _HudSlots extends ConsumerWidget {
         // MINIMAP — real geometry via minimapRectInSafeArea (SQUARE_LEFT,
         // vertically centred, side = safeH × preset fraction) — same model
         // MinimapHost applies natively, so the debug glyph sits exactly where
-        // the real Minimap would.
-        if (showStubs)
+        // the real Minimap would. F4: omit when minimap is disabled — the stub
+        // must not pretend to be content while Minimap is off.
+        if (showStubs && minimapCfg.enabled)
           Positioned(
             key: const ValueKey('hud-minimap-glyph'),
             left: minimapRect.left * saWidth,

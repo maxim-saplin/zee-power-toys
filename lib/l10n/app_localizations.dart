@@ -536,6 +536,54 @@ abstract class AppLocalizations {
   /// **'Show charging stats (while charging)'**
   String get showChargingStats;
 
+  /// Battery content mode label
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get batteryContentMode;
+
+  /// Battery content: icon + percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get batteryContentBoth;
+
+  /// Battery content: icon only
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get batteryContentIconOnly;
+
+  /// Battery content: percentage text only
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get batteryContentTextOnly;
+
+  /// Battery pack style label
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get batteryStyle;
+
+  /// Battery style: Steam Deck outline
+  ///
+  /// In en, this message translates to:
+  /// **'Outline'**
+  String get batteryStyleOutline;
+
+  /// Battery style: segmented blocks
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks'**
+  String get batteryStyleFilled;
+
+  /// Battery style: percentage inside pack
+  ///
+  /// In en, this message translates to:
+  /// **'% inside'**
+  String get batteryStylePctInside;
+
   /// Battery size slider label
   ///
   /// In en, this message translates to:
@@ -655,6 +703,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Colour preset'**
   String get minimapLookPreset;
+
+  /// Phase0 White look bundle (hue pass keeps yellow cursor)
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get minimapLookPresetDefault;
 
   /// Minimap colour preset: green-yellow
   ///
@@ -859,6 +913,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speed'**
   String get simulateSpeedLabel;
+
+  /// DHU home app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Zee Power Toys'**
+  String get homeTitle;
+
+  /// Welcome column heading
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get homeWelcomeTitle;
+
+  /// Short product intro on the home welcome column
+  ///
+  /// In en, this message translates to:
+  /// **'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.'**
+  String get homeWelcomeBody;
+
+  /// Companion APK status section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Companion apps'**
+  String get homeCompanionsTitle;
+
+  /// Sections column heading
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get homeSectionsTitle;
+
+  /// Companion APK status: installed
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get homeStatusInstalled;
+
+  /// Companion APK status: missing
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get homeStatusMissing;
+
+  /// Companion APK status: unknown (desktop / probe failed)
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get homeStatusUnknown;
+
+  /// Install companion APK button on home
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get homeInstallAction;
+
+  /// Phase0 minimapScale — lower shows more map in the square
+  ///
+  /// In en, this message translates to:
+  /// **'Map density'**
+  String get minimapContentScale;
+
+  /// Hint under map density slider
+  ///
+  /// In en, this message translates to:
+  /// **'Lower = more map area (phase0 default 0.5)'**
+  String get minimapContentScaleHint;
 }
 
 class _AppLocalizationsDelegate

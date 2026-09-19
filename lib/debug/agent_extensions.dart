@@ -129,6 +129,8 @@ void registerZeeExtensions({
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
           'showChargingStats': bat.showChargingStats,
+          'contentMode': bat.contentMode.name,
+          'style': bat.style.name,
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
@@ -255,16 +257,36 @@ void registerZeeExtensions({
     }
 
     // Battery config: batteryShow=true|false, tempShow=..., chargingShow=...,
-    // batterySize=<double>.
+    // batterySize=<double>, batteryContentMode=both|iconOnly|textOnly,
+    // batteryStyle=outline|filled|pctInside (also accepts contentMode/style aliases).
     final rawBatteryShow = params['batteryShow'];
     final rawTempShow = params['tempShow'];
     final rawChargingShow = params['chargingShow'];
     final rawBatterySize = params['batterySize'];
+    final rawBatteryContentMode =
+        params['batteryContentMode'] ?? params['contentMode'];
+    final rawBatteryStyle = params['batteryStyle'] ?? params['style'];
     if (rawBatteryShow != null ||
         rawTempShow != null ||
         rawChargingShow != null ||
-        rawBatterySize != null) {
+        rawBatterySize != null ||
+        rawBatteryContentMode != null ||
+        rawBatteryStyle != null) {
       final bat = next.battery;
+      BatteryContentMode? contentMode;
+      if (rawBatteryContentMode != null) {
+        contentMode = BatteryContentMode.values.firstWhere(
+          (e) => e.name == rawBatteryContentMode,
+          orElse: () => bat.contentMode,
+        );
+      }
+      BatteryStyle? style;
+      if (rawBatteryStyle != null) {
+        style = BatteryStyle.values.firstWhere(
+          (e) => e.name == rawBatteryStyle,
+          orElse: () => bat.style,
+        );
+      }
       next = next.copyWith(
         battery: bat.copyWith(
           showBattery: rawBatteryShow != null ? rawBatteryShow == 'true' : null,
@@ -273,6 +295,8 @@ void registerZeeExtensions({
               ? rawChargingShow == 'true'
               : null,
           sizeScale: double.tryParse(rawBatterySize ?? ''),
+          contentMode: contentMode,
+          style: style,
         ),
       );
     }
@@ -490,6 +514,18 @@ void registerZeeExtensions({
           'error': 'no widget found with key "$keyValue"',
         }),
       );
+    }
+
+    // Scroll ListView/off-screen keyed widgets into view so agent keys below
+    // the fold (e.g. battery-content-*) are tappable on HUD Settings.
+    try {
+      await Scrollable.ensureVisible(
+        element,
+        duration: Duration.zero,
+        alignment: 0.1,
+      );
+    } catch (_) {
+      // Not in a scrollable — fine.
     }
 
     // Prefer a descendant callback walk (catches GestureDetector/InkResponse

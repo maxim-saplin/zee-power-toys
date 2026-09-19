@@ -32,11 +32,9 @@ Everything is built and verified through a **dual-channel Feedback Loop** across
 
 ## Running (T1 Desktop)
 
-T1 is **Linux-only** — `dev/zee_run.py:152` hardcodes `flutter run -d linux`, and there is no
-`macos/` runner directory (only `linux/`), so this will not launch on a macOS host. On macOS,
-use `flutter test` for the fast loop, and treat T2 (Android emulator) as the truth tier for
-anything touching the native edge — T1 also runs against `FakeMinimapHost`, so it structurally
-cannot verify the Minimap on any host.
+T1 is **desktop** — `dev/zee_run.py up` runs `flutter run -d linux` on Linux, or `-d macos` on
+Darwin (requires the `macos/` runner + `desktop_multi_window` window-created callback). T1 uses
+`FakeMinimapHost`, so it structurally cannot verify the Minimap on any host — use T2 for that.
 
 ```bash
 uv run dev/zee_run.py up        # Linux host only — brings up DHU + HUD (two engines), waits until drivable

@@ -27,3 +27,5 @@ Formalized spike outcomes with mechanism, signing requirement, implementation pa
 
 The `ext.zee.*` surface contract every driveable surface must implement, the two-channel routing table per tier, and the surface-resolution rule:
 [feedback-loop-contract.md](../feedback-loop-contract.md)
+
+- [T3 first run](./t3-first-run.md) — freeze tip, disable phase0, install, fidelity cut

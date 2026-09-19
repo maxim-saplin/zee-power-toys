@@ -6,77 +6,147 @@ import 'minimap_viewport.dart' show hudPresetSizeFraction;
 // MinimapLooks
 // ---------------------------------------------------------------------------
 
-/// Native colour-filter parameters applied to the YNavi minimap render.
-///
-/// Mirrors a hand-picked subset of MainActivity.kt's `MinimapParams` — the
-/// native holder behind `setMinimapParam` — chosen for being the only three
-/// knobs that (a) have a genuinely visible, honestly-nameable effect and (b)
-/// are worth a permanent UI slot (PRINCIPLES.md #1, "every option must earn
-/// its place"). The rest of `MinimapParams` (`saturation`, native `brightness`,
-/// `invert`, `huePass`, `hueAngle`, `bufScale`, `dpiScale`) stays reachable
-/// only via `ext.zee.minimap key=... value=...` — still runtime-drivable
-/// (#3), just not surfaced as a permanent control (#1). In particular
-/// `huePass` is intentionally left at its native default of 0.0 (pure
-/// monochrome tint) — see `MainActivity.kt`'s `MinimapParams` doc: hue
-/// passthrough was tried and rejected (floods on map content sharing the
-/// pass hue), so [colorPreset] is the sole colour control and `hueAngle` is
-/// moot at huePass=0.
-///
-/// Defaults are the values measured good on the real HUD (MainActivity.kt's
-/// `MinimapParams` defaults / "THE FIX" history comment): green-yellow tint,
-/// contrast=3.5, threshold=165 — chosen so an untouched install gets the
-/// good look without opening this screen.
 class MinimapLooks {
   const MinimapLooks({
-    this.colorPreset = 'green-yellow',
-    this.contrast = 3.5,
-    this.threshold = 165.0,
+    this.colorPreset = 'default',
+    this.contrast = 3.0,
+    this.threshold = 150.0,
+    this.brightness = -20,
+    this.huePass = 1.0,
+    this.hueAngle = 290,
   });
 
-  /// Native `preset` param token: 'green-yellow' | 'white' | 'amber' | 'cyan'.
-  /// Forwarded verbatim to `setParams` — `MainActivity.kt`'s
-  /// `presetIndexFromName()` accepts these exact string tokens directly, so
-  /// no local index mapping is needed on the Dart side.
+  /// UI / persisted look token:
+  /// - `default` — phase0 White bundle (tint white + huePass 1 / hueAngle 290)
+  /// - `white` — mono white tint (huePass 0)
+  /// - `green-yellow` | `amber` | `cyan` — phase0 COLOR_PRESETS with hue pass
   final String colorPreset;
 
-  /// Forwarded as the native `contrast` param.
   final double contrast;
 
-  /// Forwarded as the native `threshold` param. Named "Brightness" in the UI
-  /// because that is the user-visible effect: a HIGHER threshold crushes MORE
-  /// of the source image to black (a darker background, more "crushed"), not
-  /// a literal brightness multiplier — see `_applyMinimapConfig`/the settings
-  /// screen for the honest label.
+  /// Filter threshold (UI label "Brightness" — higher crushes more to black).
   final double threshold;
+
+  /// Native filter brightness offset (phase0 White uses -20).
+  final int brightness;
+
+  /// 0 = mono tint; 1 = phase0 hue passthrough (keeps YNavi yellow cursor/roads).
+  final double huePass;
+
+  /// Hue passthrough angle (phase0 White = 290).
+  final int hueAngle;
+
+  /// Named look bundles matching phase0 HudSettings.COLOR_PRESETS (+ mono White).
+  factory MinimapLooks.bundle(String name) {
+    switch (name) {
+      case 'default':
+        // phase0 COLOR_PRESETS[0] White
+        return const MinimapLooks(
+          colorPreset: 'default',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 290,
+        );
+      case 'white':
+        // Mono white — useful as an option; not phase0 parity.
+        return const MinimapLooks(
+          colorPreset: 'white',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 0.0,
+          hueAngle: 290,
+        );
+      case 'green-yellow':
+        return const MinimapLooks(
+          colorPreset: 'green-yellow',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 120,
+        );
+      case 'cyan':
+        return const MinimapLooks(
+          colorPreset: 'cyan',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 180,
+        );
+      case 'amber':
+        return const MinimapLooks(
+          colorPreset: 'amber',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 60,
+        );
+      default:
+        return MinimapLooks.bundle('default');
+    }
+  }
+
+  /// Native ColorMatrix tint token (never `default` — maps to white).
+  String get nativePreset =>
+      colorPreset == 'default' ? 'white' : colorPreset;
 
   MinimapLooks copyWith({
     String? colorPreset,
     double? contrast,
     double? threshold,
+    int? brightness,
+    double? huePass,
+    int? hueAngle,
   }) => MinimapLooks(
     colorPreset: colorPreset ?? this.colorPreset,
     contrast: contrast ?? this.contrast,
     threshold: threshold ?? this.threshold,
+    brightness: brightness ?? this.brightness,
+    huePass: huePass ?? this.huePass,
+    hueAngle: hueAngle ?? this.hueAngle,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'colorPreset': colorPreset,
     'contrast': contrast,
     'threshold': threshold,
+    'brightness': brightness,
+    'huePass': huePass,
+    'hueAngle': hueAngle,
   };
 
-  factory MinimapLooks.fromJson(Map<String, Object?> json) => MinimapLooks(
-    colorPreset: json['colorPreset'] as String? ?? 'green-yellow',
-    contrast: (json['contrast'] as num?)?.toDouble() ?? 3.5,
-    threshold: (json['threshold'] as num?)?.toDouble() ?? 165.0,
-  );
+  factory MinimapLooks.fromJson(Map<String, Object?> json) {
+    final name = json['colorPreset'] as String? ?? 'default';
+    // Old installs that only stored tint+contrast+threshold: if they claimed
+    // white without huePass, treat as mono white; missing keys → phase0 default.
+    if (!json.containsKey('huePass') && !json.containsKey('hueAngle')) {
+      if (name == 'white') return MinimapLooks.bundle('white');
+      if (name == 'default' || name == 'green-yellow' || name == 'cyan' || name == 'amber') {
+        return MinimapLooks.bundle(name);
+      }
+    }
+    return MinimapLooks(
+      colorPreset: name,
+      contrast: (json['contrast'] as num?)?.toDouble() ?? 3.0,
+      threshold: (json['threshold'] as num?)?.toDouble() ?? 150.0,
+      brightness: (json['brightness'] as num?)?.toInt() ?? -20,
+      huePass: (json['huePass'] as num?)?.toDouble() ?? 1.0,
+      hueAngle: (json['hueAngle'] as num?)?.toInt() ?? 290,
+    );
+  }
 
-  /// Wire-format params map for [MinimapHost.setParams] — the exact keys
-  /// `setMinimapParam` reads natively (`preset`/`contrast`/`threshold`).
   Map<String, Object?> toParams() => <String, Object?>{
-    'preset': colorPreset,
+    'preset': nativePreset,
     'contrast': contrast,
     'threshold': threshold,
+    'brightness': brightness,
+    'huePass': huePass,
+    'hueAngle': hueAngle,
   };
 
   @override
@@ -84,10 +154,14 @@ class MinimapLooks {
       other is MinimapLooks &&
       other.colorPreset == colorPreset &&
       other.contrast == contrast &&
-      other.threshold == threshold;
+      other.threshold == threshold &&
+      other.brightness == brightness &&
+      other.huePass == huePass &&
+      other.hueAngle == hueAngle;
 
   @override
-  int get hashCode => Object.hash(colorPreset, contrast, threshold);
+  int get hashCode =>
+      Object.hash(colorPreset, contrast, threshold, brightness, huePass, hueAngle);
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +194,7 @@ class MinimapConfig {
     this.preset = 'balanced',
     this.advanced = false,
     this.sizeFraction,
+    this.contentScale = 0.5,
     this.looks = const MinimapLooks(),
   });
 
@@ -142,6 +217,12 @@ class MinimapConfig {
   /// this Block exists to remove. See [resolvedSizeFraction].
   final double? sizeFraction;
 
+  /// Phase0 `minimapScale`: map content density inside the square (0.3–1.0).
+  /// Lower = more map area in the same viewport (buffer = viewport / scale).
+  /// Default 0.5 matches phase0 HudSettings. Forwarded as native `bufScale`
+  /// (= 1 / contentScale) with a cold YNavi rebind on change.
+  final double contentScale;
+
   /// Native colour-filter parameters (Look section: colour preset,
   /// brightness, contrast). See [MinimapLooks].
   final MinimapLooks looks;
@@ -150,11 +231,12 @@ class MinimapConfig {
   /// (see `computeMinimapViewport` in minimap_viewport.dart, called from
   /// `_applyMinimapConfig` in main.dart).
   ///
-  /// In advanced mode with a manual [sizeFraction] set, returns that value
-  /// clamped to [0.1, 1.0]. Otherwise returns [hudPresetSizeFraction] for
-  /// [preset].
+  /// When [sizeFraction] is set (preset shortcuts write it too), that value
+  /// wins — clamped to [0.1, 1.0]. Otherwise [hudPresetSizeFraction]([preset]).
+  /// (Previously gated on [advanced], which made the Size slider a no-op after
+  /// we removed the Advanced ExpansionTile.)
   double get resolvedSizeFraction {
-    if (advanced && sizeFraction != null) {
+    if (sizeFraction != null) {
       return sizeFraction!.clamp(0.1, 1.0);
     }
     return hudPresetSizeFraction(preset);
@@ -165,6 +247,7 @@ class MinimapConfig {
     String? preset,
     bool? advanced,
     Object? sizeFraction = _unset,
+    double? contentScale,
     MinimapLooks? looks,
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
@@ -173,6 +256,7 @@ class MinimapConfig {
     sizeFraction: identical(sizeFraction, _unset)
         ? this.sizeFraction
         : sizeFraction as double?,
+    contentScale: contentScale ?? this.contentScale,
     looks: looks ?? this.looks,
   );
 
@@ -181,6 +265,7 @@ class MinimapConfig {
     'preset': preset,
     'advanced': advanced,
     if (sizeFraction != null) 'sizeFraction': sizeFraction,
+    'contentScale': contentScale,
     'looks': looks.toJson(),
   };
 
@@ -189,6 +274,7 @@ class MinimapConfig {
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
+    contentScale: (json['contentScale'] as num?)?.toDouble() ?? 0.5,
     // Unknown/removed keys (widthFrac, heightFrac, themeFollow from older
     // persisted configs) are simply never read here — fromJson tolerates
     // extra keys in the map by construction, so old installs keep loading.
@@ -204,29 +290,49 @@ class MinimapConfig {
       other.preset == preset &&
       other.advanced == advanced &&
       other.sizeFraction == sizeFraction &&
+      other.contentScale == contentScale &&
       other.looks == looks;
 
   @override
   int get hashCode =>
-      Object.hash(enabled, preset, advanced, sizeFraction, looks);
+      Object.hash(enabled, preset, advanced, sizeFraction, contentScale, looks);
 }
+
+/// What parts of the battery mark to show (icon pack vs percentage label).
+///
+/// `both`     — pack + percentage (default).
+/// `iconOnly` — pack only (no separate % label below; [BatteryStyle.pctInside]
+///              still paints % inside the pack).
+/// `textOnly` — percentage label only (no pack icon).
+enum BatteryContentMode { both, iconOnly, textOnly }
+
+/// Visual look of the battery pack icon.
+///
+/// `outline`   — Steam-Deck outline + continuous fill + nub (default / current).
+/// `filled`    — segmented bars (4–5 blocks) inside the pack outline.
+/// `pctInside` — continuous fill with percentage text painted inside the pack
+///               (suppresses the separate % below when content includes icon).
+enum BatteryStyle { outline, filled, pctInside }
 
 /// Battery widget appearance config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// sizeScale = 1.0.  The charging stats panel is show-while-charging — it
-/// appears automatically when the car reports charging and is hidden otherwise
-/// (app policy per ADR 0003); showChargingStats merely lets the user suppress
-/// the panel entirely if they prefer.
+/// contentMode = both, style = outline, sizeScale = 1.0.  The charging stats
+/// panel is show-while-charging — it appears automatically when the car
+/// reports charging and is hidden otherwise (app policy per ADR 0003);
+/// showChargingStats merely lets the user suppress the panel entirely if they
+/// prefer.
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
     this.sizeScale = 1.0,
+    this.contentMode = BatteryContentMode.both,
+    this.style = BatteryStyle.outline,
   });
 
-  /// Whether to render the battery icon and percentage at all.
+  /// Whether to render the battery indicator at all.
   final bool showBattery;
 
   /// Whether to show the battery temperature readout next to the icon.
@@ -240,16 +346,26 @@ class BatteryConfig {
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
 
+  /// Icon vs text content mode (pack / percentage / both).
+  final BatteryContentMode contentMode;
+
+  /// Pack visual style (outline / filled segments / % inside).
+  final BatteryStyle style;
+
   BatteryConfig copyWith({
     bool? showBattery,
     bool? showTemp,
     bool? showChargingStats,
     double? sizeScale,
+    BatteryContentMode? contentMode,
+    BatteryStyle? style,
   }) => BatteryConfig(
     showBattery: showBattery ?? this.showBattery,
     showTemp: showTemp ?? this.showTemp,
     showChargingStats: showChargingStats ?? this.showChargingStats,
     sizeScale: sizeScale ?? this.sizeScale,
+    contentMode: contentMode ?? this.contentMode,
+    style: style ?? this.style,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -257,14 +373,34 @@ class BatteryConfig {
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'sizeScale': sizeScale,
+    'contentMode': contentMode.name,
+    'style': style.name,
   };
 
-  factory BatteryConfig.fromJson(Map<String, Object?> json) => BatteryConfig(
-    showBattery: json['showBattery'] as bool? ?? true,
-    showTemp: json['showTemp'] as bool? ?? true,
-    showChargingStats: json['showChargingStats'] as bool? ?? true,
-    sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
-  );
+  factory BatteryConfig.fromJson(Map<String, Object?> json) {
+    final modeName = json['contentMode'] as String?;
+    final contentMode = modeName != null
+        ? BatteryContentMode.values.firstWhere(
+            (e) => e.name == modeName,
+            orElse: () => BatteryContentMode.both,
+          )
+        : BatteryContentMode.both;
+    final styleName = json['style'] as String?;
+    final style = styleName != null
+        ? BatteryStyle.values.firstWhere(
+            (e) => e.name == styleName,
+            orElse: () => BatteryStyle.outline,
+          )
+        : BatteryStyle.outline;
+    return BatteryConfig(
+      showBattery: json['showBattery'] as bool? ?? true,
+      showTemp: json['showTemp'] as bool? ?? true,
+      showChargingStats: json['showChargingStats'] as bool? ?? true,
+      sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
+      contentMode: contentMode,
+      style: style,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -272,11 +408,19 @@ class BatteryConfig {
       other.showBattery == showBattery &&
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
-      other.sizeScale == sizeScale;
+      other.sizeScale == sizeScale &&
+      other.contentMode == contentMode &&
+      other.style == style;
 
   @override
-  int get hashCode =>
-      Object.hash(showBattery, showTemp, showChargingStats, sizeScale);
+  int get hashCode => Object.hash(
+    showBattery,
+    showTemp,
+    showChargingStats,
+    sizeScale,
+    contentMode,
+    style,
+  );
 }
 
 /// Shape of the blinker indicator rendered in the HUD BLINKER slot.
@@ -307,6 +451,7 @@ class BlinkerConfig {
     this.sizeScale = 1.0,
     this.sidePadFrac = 0.04,
     this.vertFrac = 0.50,
+    this.horizBiasFrac = 0.0,
   });
 
   final BlinkerShape shape;
@@ -323,16 +468,22 @@ class BlinkerConfig {
   /// slot height (0 = top, 1 = bottom).
   final double vertFrac;
 
+  /// Horizontal bias as a fraction of slot width (−0.25…0.25). Positive shifts
+  /// both marks toward the right (left pad grows, right pad shrinks).
+  final double horizBiasFrac;
+
   BlinkerConfig copyWith({
     BlinkerShape? shape,
     double? sizeScale,
     double? sidePadFrac,
     double? vertFrac,
+    double? horizBiasFrac,
   }) => BlinkerConfig(
     shape: shape ?? this.shape,
     sizeScale: sizeScale ?? this.sizeScale,
     sidePadFrac: sidePadFrac ?? this.sidePadFrac,
     vertFrac: vertFrac ?? this.vertFrac,
+    horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -340,6 +491,7 @@ class BlinkerConfig {
     'sizeScale': sizeScale,
     'sidePadFrac': sidePadFrac,
     'vertFrac': vertFrac,
+    'horizBiasFrac': horizBiasFrac,
   };
 
   factory BlinkerConfig.fromJson(Map<String, Object?> json) {
@@ -355,6 +507,7 @@ class BlinkerConfig {
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
       vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.50,
+      horizBiasFrac: (json['horizBiasFrac'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -364,10 +517,12 @@ class BlinkerConfig {
       other.shape == shape &&
       other.sizeScale == sizeScale &&
       other.sidePadFrac == sidePadFrac &&
-      other.vertFrac == vertFrac;
+      other.vertFrac == vertFrac &&
+      other.horizBiasFrac == horizBiasFrac;
 
   @override
-  int get hashCode => Object.hash(shape, sizeScale, sidePadFrac, vertFrac);
+  int get hashCode =>
+      Object.hash(shape, sizeScale, sidePadFrac, vertFrac, horizBiasFrac);
 }
 
 /// The sub-rectangle of the HUD's backing display that is optically visible

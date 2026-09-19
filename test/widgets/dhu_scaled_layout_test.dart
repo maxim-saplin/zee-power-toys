@@ -4,16 +4,16 @@ import 'package:zee_power_toys/widgets/dhu_scaled_layout.dart';
 
 void main() {
   group('dhuSmartScale — automotive low-DPI heuristic', () {
-    test('Zeekr DHU (2560 logical @ dpr 1.0) → clamped 3.0', () {
-      expect(dhuSmartScale(2560, 1.0), 3.0); // 2560/800 = 3.2 → clamp 3.0
+    test('Zeekr DHU (2560 logical @ dpr 1.0) → clamped 2.43', () {
+      expect(dhuSmartScale(2560, 1.0), 2.43); // 2560/800 = 3.2 → clamp 2.43
     });
 
     test('exactly at the automotive width threshold (1600 @ dpr 1.0) → 2.0', () {
       expect(dhuSmartScale(1600, 1.0), 2.0);
     });
 
-    test('mid-range automotive width (2000 @ dpr 1.0) → 2.5', () {
-      expect(dhuSmartScale(2000, 1.0), closeTo(2.5, 1e-9));
+    test('mid-range automotive width (2000 @ dpr 1.0) → 2.43 (clamped)', () {
+      expect(dhuSmartScale(2000, 1.0), 2.43); // 2.5 → clamp 2.43
     });
 
     test('just below the automotive width (1599) → 1.0 (no scaling)', () {
@@ -28,8 +28,8 @@ void main() {
       expect(dhuSmartScale(2560, 2.0), 1.0);
     });
 
-    test('scale is clamped to a 3.0 ceiling', () {
-      expect(dhuSmartScale(3200, 1.0), 3.0); // 4.0 → clamp 3.0
+    test('scale is clamped to a 2.43 ceiling', () {
+      expect(dhuSmartScale(3200, 1.0), 2.43); // 4.0 → clamp 2.43
     });
 
     test('non-positive / non-finite widths guard to 1.0', () {
@@ -58,9 +58,9 @@ void main() {
         ),
       );
 
-      // 2560 logical / 3.0 scale ≈ 853 logical px presented to the child.
+      // 2560 logical / 2.43 scale ≈ 948 logical px presented to the child.
       expect(childLogicalWidth, isNotNull);
-      expect(childLogicalWidth!, closeTo(2560 / 3.0, 1.0));
+      expect(childLogicalWidth!, closeTo(2560 / 2.43, 1.0));
     });
 
     testWidgets('non-automotive surface passes the child through unscaled', (tester) async {

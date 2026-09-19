@@ -16,12 +16,14 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0', () {
+    test('defaults are all-on, sizeScale 1.0, outline+both', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
       expect(cfg.showChargingStats, isTrue);
       expect(cfg.sizeScale, 1.0);
+      expect(cfg.contentMode, BatteryContentMode.both);
+      expect(cfg.style, BatteryStyle.outline);
     });
 
     test('round-trips through JSON', () {
@@ -30,6 +32,8 @@ void main() {
         showTemp: true,
         showChargingStats: false,
         sizeScale: 1.5,
+        contentMode: BatteryContentMode.iconOnly,
+        style: BatteryStyle.pctInside,
       );
       final json = cfg.toJson();
       final cfg2 = BatteryConfig.fromJson(json);
@@ -102,6 +106,43 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryWidget', () {
+    testWidgets('F2: idle (null pct/temp, not charging) renders nothing', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      expect(find.text('--%'), findsNothing);
+      expect(find.text('--°C'), findsNothing);
+    });
+
+    testWidgets('F2: charging with null pct still shows chrome (bolt/kW)', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitCharge(charging: true, kw: 7.4);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
+    });
+
     testWidgets('showBattery=false renders nothing', (tester) async {
       final config = AppConfig(
         battery: const BatteryConfig(showBattery: false),
@@ -336,6 +377,106 @@ void main() {
       expect(find.byKey(const ValueKey('charging-stats')), findsNothing);
     });
   });
+
+    testWidgets('textOnly: no icon key, pct text present', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig(contentMode: BatteryContentMode.textOnly),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 64, tempC: 22.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
+      expect(find.text('64%'), findsOneWidget);
+    });
+
+    testWidgets('iconOnly + outline: icon present, no pct text', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig(
+          contentMode: BatteryContentMode.iconOnly,
+          style: BatteryStyle.outline,
+        ),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 55, tempC: 21.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsNothing);
+      expect(find.text('55%'), findsNothing);
+    });
+
+    testWidgets('pctInside + both: inline ink, no duplicate pct below',
+        (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig(
+          contentMode: BatteryContentMode.both,
+          style: BatteryStyle.pctInside,
+        ),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 88, tempC: 23.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      expect(find.text('88%'), findsOneWidget);
+    });
+
+    testWidgets('filled style still paints icon', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig(style: BatteryStyle.filled),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 40, tempC: 20.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
+    });
 
   // ---------------------------------------------------------------------------
   // Size-slider honesty (battery-widget-honest-range).
