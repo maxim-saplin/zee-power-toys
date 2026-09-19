@@ -105,6 +105,39 @@ class _LanguageSettingsScreenState
     }
   }
 
+  // ── Boot remediations (T3 manual taps) ───────────────────────────────────
+
+  Future<void> _restartYNavi() async {
+    setState(() => _ynaviResult = 'Restarting…');
+    try {
+      const ch = MethodChannel('zee/boot');
+      final map = await ch.invokeMapMethod<String, Object?>('restartYNavi');
+      final ok = map?['ok'] == true;
+      if (mounted) {
+        setState(() => _ynaviResult = ok ? 'YNavi force-stopped' : 'Restart failed');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _ynaviResult = 'Error: $e');
+    }
+  }
+
+  Future<void> _pushClusterLocaleEnglish() async {
+    setState(() => _ynaviResult = 'Pushing locale…');
+    try {
+      const ch = MethodChannel('zee/boot');
+      final map =
+          await ch.invokeMapMethod<String, Object?>('pushClusterLocaleEnglish');
+      final ok = map?['ok'] == true;
+      if (mounted) {
+        setState(
+          () => _ynaviResult = ok ? 'Cluster locale → English' : 'Locale push failed',
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _ynaviResult = 'Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -282,6 +315,34 @@ class _LanguageSettingsScreenState
                 ),
             ],
           ),
+
+          const SizedBox(height: Insets.xl),
+
+          // ──────────────────────────────────────────────────────────────
+          // Section 4 — Boot remediations (T3 manual)
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: 'Boot remediations',
+            padded: false,
+            children: <Widget>[
+              ListTile(
+                key: const ValueKey('btn-restart-ynavi'),
+                title: const Text('Restart YNavi'),
+                subtitle: Text(
+                  _ynaviResult ?? 'Force-stop YNavi (phase0 silent restart)',
+                ),
+                trailing: const Icon(Icons.refresh),
+                onTap: _restartYNavi,
+              ),
+              ListTile(
+                key: const ValueKey('btn-push-cluster-en'),
+                title: const Text('Push cluster locale → English'),
+                subtitle: const Text('Same AdaptAPI write as boot remediation'),
+                trailing: const Icon(Icons.language),
+                onTap: _pushClusterLocaleEnglish,
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -348,54 +409,6 @@ class _LanguagePicker extends ConsumerWidget {
             title: Text(l10n.languageRussian),
             value: 'ru',
           ),
-
-          const SizedBox(height: Insets.xl),
-          SettingsSection(
-            title: 'Boot remediations',
-            children: <Widget>[
-              ListTile(
-                key: const ValueKey('btn-restart-ynavi'),
-                title: const Text('Restart YNavi'),
-                subtitle: Text(_ynaviResult ?? 'Force-stop YNavi (phase0 silent restart)'),
-                trailing: const Icon(Icons.refresh),
-                onTap: () async {
-                  setState(() => _ynaviResult = 'Restarting…');
-                  try {
-                    const ch = MethodChannel('zee/boot');
-                    final map = await ch.invokeMapMethod<String, Object?>('restartYNavi');
-                    final ok = map?['ok'] == true;
-                    if (mounted) {
-                      setState(() => _ynaviResult = ok ? 'YNavi force-stopped' : 'Restart failed');
-                    }
-                  } catch (e) {
-                    if (mounted) setState(() => _ynaviResult = 'Error: $e');
-                  }
-                },
-              ),
-              ListTile(
-                key: const ValueKey('btn-push-cluster-en'),
-                title: const Text('Push cluster locale → English'),
-                subtitle: const Text('Same AdaptAPI write as boot remediation'),
-                trailing: const Icon(Icons.language),
-                onTap: () async {
-                  setState(() => _ynaviResult = 'Pushing locale…');
-                  try {
-                    const ch = MethodChannel('zee/boot');
-                    final map = await ch
-                        .invokeMapMethod<String, Object?>('pushClusterLocaleEnglish');
-                    final ok = map?['ok'] == true;
-                    if (mounted) {
-                      setState(() =>
-                          _ynaviResult = ok ? 'Cluster locale → English' : 'Locale push failed');
-                    }
-                  } catch (e) {
-                    if (mounted) setState(() => _ynaviResult = 'Error: $e');
-                  }
-                },
-              ),
-            ],
-          ),
-
         ],
       ),
     );
