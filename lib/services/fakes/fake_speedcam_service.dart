@@ -52,7 +52,7 @@ class FakeSpeedcamService implements SpeedcamService {
     ), // Vitebsk-ish
   ];
 
-  final List<SpeedcamPoint> _cams;
+  List<SpeedcamPoint> _cams;
   final double approachRadiusM;
   final StreamController<SpeedcamSnapshot> _ctrl;
 
@@ -88,6 +88,33 @@ class FakeSpeedcamService implements SpeedcamService {
   Future<void> reloadFromPack() async {
     // Fake owns embedded samples; no pack.
     _emit();
+  }
+
+  @override
+  void applyRelaySnapshot(SpeedcamSnapshot snapshot) {
+    _enabled = snapshot.enabled;
+    _host = snapshot.host;
+    if (snapshot.cams.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(snapshot.cams);
+    } else if (snapshot.danger != null) {
+      _cams = List<SpeedcamPoint>.unmodifiable([snapshot.danger!.cam]);
+    }
+    // Prefer relayed danger as-is (bearing/distance already computed on DHU).
+    _snapshot = SpeedcamSnapshot(
+      enabled: snapshot.enabled,
+      cams: snapshot.enabled
+          ? (snapshot.cams.isNotEmpty
+              ? snapshot.cams
+              : (snapshot.danger != null
+                  ? [snapshot.danger!.cam]
+                  : _cams))
+          : const <SpeedcamPoint>[],
+      host: snapshot.host,
+      danger: snapshot.enabled ? snapshot.danger : null,
+      approachRadiusM: snapshot.approachRadiusM,
+      camSource: snapshot.camSource,
+    );
+    _ctrl.add(_snapshot);
   }
 
   /// Test/FL helper: place host [distanceM] due north of [cam] (approx).

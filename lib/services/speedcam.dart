@@ -67,6 +67,14 @@ class SpeedcamHostPose {
         if (speedKmh != null) 'speedKmh': speedKmh,
         if (headingDeg != null) 'headingDeg': headingDeg,
       };
+
+  factory SpeedcamHostPose.fromJson(Map<String, Object?> json) =>
+      SpeedcamHostPose(
+        lat: (json['lat'] as num).toDouble(),
+        lon: (json['lon'] as num).toDouble(),
+        speedKmh: (json['speedKmh'] as num?)?.toDouble(),
+        headingDeg: (json['headingDeg'] as num?)?.toDouble(),
+      );
 }
 
 /// Nearest cam with distance + bearing; [insideApproach] when ≤ radius.
@@ -91,6 +99,15 @@ class SpeedcamDanger {
         'bearingDeg': bearingDeg,
         'insideApproach': insideApproach,
       };
+
+  factory SpeedcamDanger.fromJson(Map<String, Object?> json) => SpeedcamDanger(
+        cam: SpeedcamPoint.fromJson(
+          Map<String, Object?>.from(json['cam']! as Map),
+        ),
+        distanceM: (json['distanceM'] as num).toDouble(),
+        bearingDeg: (json['bearingDeg'] as num).toDouble(),
+        insideApproach: json['insideApproach'] as bool? ?? false,
+      );
 }
 
 /// Snapshot for dumpState / readViewModel.
@@ -123,6 +140,35 @@ class SpeedcamSnapshot {
         'danger': danger?.toJson(),
         'approachRadiusM': approachRadiusM,
       };
+
+  /// Compact envelope for DHU→HUD relay (danger drives the CRT; cams truncated).
+  Map<String, Object?> toRelayJson() => <String, Object?>{
+        'enabled': enabled,
+        'camSource': camSource,
+        'approachRadiusM': approachRadiusM,
+        'host': host?.toJson(),
+        'danger': danger?.toJson(),
+        // Include danger cam only — HUD does not need the full pack.
+        if (danger != null) 'cams': <Object?>[danger!.cam.toJson()],
+      };
+
+  factory SpeedcamSnapshot.fromJson(Map<String, Object?> json) {
+    final camsRaw = json['cams'] as List<dynamic>? ?? const [];
+    return SpeedcamSnapshot(
+      enabled: json['enabled'] as bool? ?? false,
+      cams: camsRaw
+          .map((e) => SpeedcamPoint.fromJson(Map<String, Object?>.from(e as Map)))
+          .toList(),
+      host: json['host'] is Map
+          ? SpeedcamHostPose.fromJson(Map<String, Object?>.from(json['host']! as Map))
+          : null,
+      danger: json['danger'] is Map
+          ? SpeedcamDanger.fromJson(Map<String, Object?>.from(json['danger']! as Map))
+          : null,
+      approachRadiusM: (json['approachRadiusM'] as num?)?.toDouble() ?? 500,
+      camSource: json['camSource'] as String? ?? 'none',
+    );
+  }
 }
 
 /// Great-circle distance in metres (WGS84 sphere).
@@ -184,4 +230,7 @@ abstract class SpeedcamService {
 
   /// Reload cams from the wired pack store (no-op if none).
   Future<void> reloadFromPack();
+
+  /// HUD isolate: apply a DHU-relayed snapshot (ADR 0003 — events only).
+  void applyRelaySnapshot(SpeedcamSnapshot snapshot);
 }

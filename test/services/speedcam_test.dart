@@ -109,4 +109,52 @@ void main() {
       pack.dispose();
     });
   });
+
+
+  group('SpeedcamSnapshot relay', () {
+    test('toRelayJson / fromJson preserves danger for HUD CRT', () {
+      const cam = SpeedcamPoint(id: 'osm-1', lat: 53.9, lon: 27.5, maxspeed: 60);
+      final danger = SpeedcamDanger(
+        cam: cam,
+        distanceM: 200,
+        bearingDeg: 45,
+        insideApproach: true,
+      );
+      final snap = SpeedcamSnapshot(
+        enabled: true,
+        cams: const [cam],
+        host: const SpeedcamHostPose(lat: 53.898, lon: 27.5),
+        danger: danger,
+        camSource: 'pack',
+      );
+      final round = SpeedcamSnapshot.fromJson(
+        Map<String, Object?>.from(snap.toRelayJson()),
+      );
+      expect(round.camSource, 'pack');
+      expect(round.danger!.insideApproach, isTrue);
+      expect(round.danger!.distanceM, 200);
+      expect(round.danger!.bearingDeg, 45);
+      expect(round.danger!.cam.id, 'osm-1');
+    });
+
+    test('Fake applyRelaySnapshot surfaces danger', () {
+      final svc = FakeSpeedcamService();
+      final cam = const SpeedcamPoint(id: 'osm-99', lat: 53.91, lon: 27.56);
+      svc.applyRelaySnapshot(SpeedcamSnapshot(
+        enabled: true,
+        cams: [cam],
+        danger: SpeedcamDanger(
+          cam: cam,
+          distanceM: 180,
+          bearingDeg: 10,
+          insideApproach: true,
+        ),
+        camSource: 'pack',
+      ));
+      expect(svc.snapshot.camSource, 'pack');
+      expect(svc.snapshot.danger!.cam.id, 'osm-99');
+      expect(svc.snapshot.danger!.insideApproach, isTrue);
+      svc.dispose();
+    });
+  });
 }

@@ -27,6 +27,7 @@ import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
 import 'services/default_speedcam_service.dart';
+import 'services/fakes/fake_speedcam_service.dart';
 import 'services/fakes/fake_speedcam_pack_store.dart';
 import 'services/speedcam_pack_store.dart';
 import 'services/fakes/fake_minimap_host.dart';
@@ -245,6 +246,8 @@ Future<void> dhuMain(List<String> args) async {
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
   carSignalsRaw.events.listen(pushCarSignalToHud);
+  // Speedcam (0033): DHU owns pack+pose; HUD paints CRT from relay.
+  speedcamRaw.snapshots.listen(pushSpeedcamToHud);
 
   registerZeeExtensions(
     surface: 'dhu',
@@ -290,8 +293,9 @@ void hudMain(List<String> args) {
   // ADR 0003: each isolate has its own FakeCarSignals; the DHU one is the source.
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
+  // HUD Speedcam is a relay sink — pack+pose live on DHU (ADR 0003).
+  final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
-  final speedcam = DefaultSpeedcamService(packStore: speedcamPack);
 
   registerZeeExtensions(
     surface: 'hud',
@@ -307,6 +311,7 @@ void hudMain(List<String> args) {
     listenForRelay(
       onConfig: (cfg) => store.setConfig(cfg),
       onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
+      onSpeedcam: speedcam.applyRelaySnapshot,
     );
   });
 

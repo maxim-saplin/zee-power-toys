@@ -60,6 +60,31 @@ class DefaultSpeedcamService implements SpeedcamService {
   }
 
   @override
+  void applyRelaySnapshot(SpeedcamSnapshot snapshot) {
+    _enabled = snapshot.enabled;
+    _host = snapshot.host;
+    if (snapshot.cams.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(snapshot.cams);
+    } else if (snapshot.danger != null) {
+      _cams = List<SpeedcamPoint>.unmodifiable([snapshot.danger!.cam]);
+    }
+    _camSource = snapshot.camSource;
+    _snapshot = SpeedcamSnapshot(
+      enabled: snapshot.enabled,
+      cams: snapshot.enabled
+          ? (_cams.isNotEmpty
+              ? _cams
+              : (snapshot.danger != null ? [snapshot.danger!.cam] : const []))
+          : const <SpeedcamPoint>[],
+      host: snapshot.host,
+      danger: snapshot.enabled ? snapshot.danger : null,
+      approachRadiusM: snapshot.approachRadiusM,
+      camSource: snapshot.camSource,
+    );
+    _ctrl.add(_snapshot);
+  }
+
+  @override
   Future<void> reloadFromPack() async {
     final cams = await _pack.loadCams(packId);
     if (cams.isNotEmpty) {

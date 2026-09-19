@@ -25,3 +25,7 @@ HUD **right-side** Alien/CRT green radar driven by pack proximity (bearing + dis
 
 ## Notes
 DHU large radar + config = 0034. Sound = 0035.
+
+## Fix tip (post-dc8e220)
+Live HUD CRT needs DHU→HUD `speedcam` relay (same as CarSignals). HUD isolate is a relay sink (`FakeSpeedcamService.applyRelaySnapshot`); pack+pose stay on DHU.
+
