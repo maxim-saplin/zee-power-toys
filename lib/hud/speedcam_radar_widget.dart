@@ -77,11 +77,24 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
 
     final blips = <SpeedcamRadarBlip>[];
     if (forceDemoDanger != null) {
+      // On-route contact bright; a couple of in-range cams dim (preview parity).
       blips.add(SpeedcamRadarBlip(
         bearingDeg: forceDemoDanger!.bearingDeg,
         distanceM: forceDemoDanger!.distanceM,
         highlight: true,
         maxspeed: forceDemoDanger!.cam.maxspeed,
+      ));
+      blips.add(const SpeedcamRadarBlip(
+        bearingDeg: -35,
+        distanceM: 380,
+        highlight: false,
+        maxspeed: 70,
+      ));
+      blips.add(const SpeedcamRadarBlip(
+        bearingDeg: 55,
+        distanceM: 520,
+        highlight: false,
+        maxspeed: 50,
       ));
     } else if (snap.host != null) {
       for (final cam in snap.cams) {
@@ -101,7 +114,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
             cam.lon,
           ),
           distanceM: d,
-          highlight: isDanger && danger.insideApproach,
+          highlight: isDanger,
           maxspeed: cam.maxspeed,
         ));
       }
@@ -199,6 +212,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
             key: ValueKey(lookKey),
             painter: _AlienWedgePainter(
               sweepT: controller.value,
+              blinkT: controller.value,
               blips: blips,
               displayRadiusM: range,
               approachRadiusM: 500,
@@ -318,6 +332,7 @@ double alienBlipAlphaForDistanceM(
 class _AlienWedgePainter extends CustomPainter {
   _AlienWedgePainter({
     required this.sweepT,
+    required this.blinkT,
     required this.blips,
     required this.displayRadiusM,
     required this.approachRadiusM,
@@ -326,6 +341,7 @@ class _AlienWedgePainter extends CustomPainter {
   });
 
   final double sweepT;
+  final double blinkT;
   final List<SpeedcamRadarBlip> blips;
   final double displayRadiusM;
   final double approachRadiusM;
@@ -447,10 +463,10 @@ class _AlienWedgePainter extends CustomPainter {
     // Expanding rings — hard-clipped to fan (no bloom bleed outside).
     canvas.saveLayer(bounds, Paint());
     canvas.clipPath(wedgePath, doAntiAlias: true);
-    for (var i = 0; i < 3; i++) {
-      final phase = (sweepT + i / 3.0) % 1.0;
-      final rr = r * phase;
-      if (rr < 4 || rr > r) continue;
+    // Single expanding wave — slightly bolder (Maxim).
+    final phase = sweepT % 1.0;
+    final rr = r * phase;
+    if (rr >= 4 && rr <= r) {
       final fade = (1.0 - phase);
       canvas.drawArc(
         Rect.fromCircle(center: c, radius: rr),
@@ -459,10 +475,10 @@ class _AlienWedgePainter extends CustomPainter {
         false,
         Paint()
           ..color = SpeedcamRadarWidget.phosphorGlow.withValues(
-            alpha: 0.18 + 0.55 * fade,
+            alpha: 0.25 + 0.6 * fade,
           )
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0 + 1.8 * fade,
+          ..strokeWidth = 3.2 + 1.4 * fade,
       );
     }
     canvas.restore(); // end wedge clip layer
@@ -516,22 +532,37 @@ class _AlienWedgePainter extends CustomPainter {
         displayRadiusM: displayRadiusM,
         highlight: b.highlight,
       );
-      final alpha = alienBlipAlphaForDistanceM(
-        b.distanceM,
-        displayRadiusM: displayRadiusM,
-      );
+      // Route / on-course = bright; other in-range cams = dim.
+      final baseA = b.highlight
+          ? alienBlipAlphaForDistanceM(
+              b.distanceM,
+              displayRadiusM: displayRadiusM,
+            )
+          : (alienBlipAlphaForDistanceM(
+                    b.distanceM,
+                    displayRadiusM: displayRadiusM,
+                  ) *
+                  0.35)
+              .clamp(0.18, 0.45);
+      // Slight blink on all dots.
+      final blink = 0.72 + 0.28 * (0.5 + 0.5 * math.sin(blinkT * math.pi * 2 * 2));
+      final alpha = (baseA * blink).clamp(0.12, 1.0);
+      final glowA = b.highlight ? alpha * 0.4 : alpha * 0.2;
       canvas.drawCircle(
         p,
-        rad + 2.2,
+        rad + (b.highlight ? 2.4 : 1.4),
         Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.35)
+          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: glowA)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
       canvas.drawCircle(
         p,
-        rad,
+        b.highlight ? rad : rad * 0.85,
         Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha),
+          ..color = (b.highlight
+                  ? SpeedcamRadarWidget.phosphorGlow
+                  : SpeedcamRadarWidget.phosphor)
+              .withValues(alpha: alpha),
       );
     }
 
@@ -583,6 +614,7 @@ class _AlienWedgePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _AlienWedgePainter old) =>
       old.sweepT != sweepT ||
+      old.blinkT != blinkT ||
       old.blips != blips ||
       old.displayRadiusM != displayRadiusM ||
       old.readoutM != readoutM ||
