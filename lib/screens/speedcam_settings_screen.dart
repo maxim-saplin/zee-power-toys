@@ -10,7 +10,7 @@ import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
 
-/// Speedcam settings — radar, harvest policy, local pack DB (0031/0034/0037).
+/// Speedcam settings — harvest/DB first (0037), then radar (0034).
 class SpeedcamSettingsScreen extends ConsumerStatefulWidget {
   const SpeedcamSettingsScreen({super.key});
 
@@ -27,6 +27,9 @@ class _SpeedcamSettingsScreenState
   bool _busy = false;
   String? _policyNote;
 
+  SpeedcamConfig get _speedcamCfg =>
+      ref.read(configStoreProvider).value.speedcam;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +38,7 @@ class _SpeedcamSettingsScreenState
 
   Future<void> _bootstrap() async {
     await _reloadLocal();
-    await _applyRefreshPolicy();
+    await _applyRefreshPolicy(reason: 'open');
   }
 
   Future<void> _reloadLocal() async {
@@ -49,17 +52,25 @@ class _SpeedcamSettingsScreenState
     });
   }
 
-  Future<void> _applyRefreshPolicy() async {
-    final sc = ref.read(speedcamConfigProvider);
-    if (sc.refreshPolicy != SpeedcamRefreshPolicy.ifStale) return;
+  Future<void> _applyRefreshPolicy({required String reason}) async {
+    final sc = _speedcamCfg;
+    if (sc.refreshPolicy != SpeedcamRefreshPolicy.ifStale) {
+      if (!mounted) return;
+      setState(() {
+        _policyNote = 'Policy: manual only (no auto-refresh on $reason)';
+      });
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
-      _policyNote = null;
+      _policyNote = 'Checking freshness…';
     });
     try {
       final store = ref.read(speedcamPackStoreProvider);
       final before = await store.current(SpeedcamPackIds.by);
+      final wasStale = before == null ||
+          before.isStale(afterDays: sc.staleAfterDays);
       final meta = await store.refreshIfNeeded(
         packId: SpeedcamPackIds.by,
         ifStale: true,
@@ -78,15 +89,20 @@ class _SpeedcamSettingsScreenState
         _meta = meta;
         _sampleCams = cams.take(12).toList();
         _busy = false;
-        _policyNote = refreshed
-            ? 'Refreshed (stale or missing)'
-            : 'Pack still fresh (< ${sc.staleAfterDays}d)';
+        if (refreshed) {
+          _policyNote =
+              'Auto-refreshed on $reason (was ${wasStale ? 'stale/missing' : 'updated'})';
+        } else {
+          _policyNote =
+              'Pack fresh on $reason (< ${sc.staleAfterDays}d) — no fetch';
+        }
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = '$e';
         _busy = false;
+        _policyNote = 'Auto-refresh failed on $reason';
       });
     }
   }
@@ -118,10 +134,17 @@ class _SpeedcamSettingsScreenState
     }
   }
 
-  Future<void> _patchSpeedcam(SpeedcamConfig Function(SpeedcamConfig) fn) async {
+  Future<void> _patchSpeedcam(
+    SpeedcamConfig Function(SpeedcamConfig) fn, {
+    bool applyPolicy = false,
+  }) async {
     final store = ref.read(configStoreProvider);
     final cfg = store.value;
-    await store.setConfig(cfg.copyWith(speedcam: fn(cfg.speedcam)));
+    final next = fn(cfg.speedcam);
+    await store.setConfig(cfg.copyWith(speedcam: next));
+    if (applyPolicy && next.refreshPolicy == SpeedcamRefreshPolicy.ifStale) {
+      await _applyRefreshPolicy(reason: 'policy-change');
+    }
   }
 
   @override
@@ -142,58 +165,10 @@ class _SpeedcamSettingsScreenState
     return Scaffold(
       appBar: AppBar(title: Text(l10n.speedcamTitle)),
       body: ListView(
+        key: const ValueKey('speedcam-settings-scroll'),
         padding: const EdgeInsets.all(16),
         children: [
-          SettingsSection(
-            title: l10n.speedcamRadarSection,
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(color: Colors.black),
-                  child: SpeedcamRadarWidget(
-                    variant: SpeedcamRadarVariant.dhuLarge,
-                    alwaysShow: true,
-                    displayRadiusM: sc.dhuRangeM,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                key: const ValueKey('speedcam-hud-radar'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamHudRadarEnable),
-                value: sc.hudRadarEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(hudRadarEnabled: v),
-                ),
-              ),
-              SwitchListTile(
-                key: const ValueKey('speedcam-sound'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamSoundEnable),
-                value: sc.soundEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(soundEnabled: v),
-                ),
-              ),
-              SettingsSlider(
-                label: l10n.speedcamDhuRange,
-                valueLabel: '${sc.dhuRangeM.round()} m',
-                minLabel: '500',
-                maxLabel: '3000',
-                sliderKey: const ValueKey('speedcam-dhu-range'),
-                min: 500,
-                max: 3000,
-                divisions: 25,
-                value: sc.dhuRangeM.clamp(500, 3000),
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(dhuRangeM: v),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // DB + harvest FIRST (above the fold) — PDM/QA bar for 0037.
           SettingsSection(
             title: l10n.speedcamDbSection,
             children: [
@@ -260,7 +235,10 @@ class _SpeedcamSettingsScreenState
           SettingsSection(
             title: l10n.speedcamHarvestSection,
             children: [
-              Text(l10n.speedcamRefreshPolicy, style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                l10n.speedcamRefreshPolicy,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 8),
               SegmentedButton<SpeedcamRefreshPolicy>(
                 key: const ValueKey('speedcam-refresh-policy'),
@@ -277,7 +255,10 @@ class _SpeedcamSettingsScreenState
                 selected: {sc.refreshPolicy},
                 onSelectionChanged: (sel) {
                   if (sel.isEmpty) return;
-                  _patchSpeedcam((c) => c.copyWith(refreshPolicy: sel.first));
+                  _patchSpeedcam(
+                    (c) => c.copyWith(refreshPolicy: sel.first),
+                    applyPolicy: true,
+                  );
                 },
               ),
               if (sc.refreshPolicy == SpeedcamRefreshPolicy.ifStale) ...[
@@ -300,12 +281,18 @@ class _SpeedcamSettingsScreenState
               if (_policyNote != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(_policyNote!, key: const ValueKey('speedcam-policy-note')),
+                  child: Text(
+                    _policyNote!,
+                    key: const ValueKey('speedcam-policy-note'),
+                  ),
                 ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
                 ),
               const SizedBox(height: 12),
               FilledButton(
@@ -313,6 +300,56 @@ class _SpeedcamSettingsScreenState
                 onPressed: _busy ? null : _update,
                 child: Text(
                   _busy ? l10n.speedcamPackUpdating : l10n.speedcamPackUpdate,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SettingsSection(
+            title: l10n.speedcamRadarSection,
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(color: Colors.black),
+                  child: SpeedcamRadarWidget(
+                    variant: SpeedcamRadarVariant.dhuLarge,
+                    alwaysShow: true,
+                    displayRadiusM: sc.dhuRangeM,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                key: const ValueKey('speedcam-hud-radar'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamHudRadarEnable),
+                value: sc.hudRadarEnabled,
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(hudRadarEnabled: v),
+                ),
+              ),
+              SwitchListTile(
+                key: const ValueKey('speedcam-sound'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamSoundEnable),
+                value: sc.soundEnabled,
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(soundEnabled: v),
+                ),
+              ),
+              SettingsSlider(
+                label: l10n.speedcamDhuRange,
+                valueLabel: '${sc.dhuRangeM.round()} m',
+                minLabel: '500',
+                maxLabel: '3000',
+                sliderKey: const ValueKey('speedcam-dhu-range'),
+                min: 500,
+                max: 3000,
+                divisions: 25,
+                value: sc.dhuRangeM.clamp(500, 3000),
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(dhuRangeM: v),
                 ),
               ),
             ],
