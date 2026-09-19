@@ -105,6 +105,8 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 ### Speedcam follow-up
 
 | [0036](0036-speedcam-drive-sim.md) | Simulated drive polyline through pack cams | ready-for-agent |
+| [0037](0037-speedcam-harvest-db-ui.md) | Harvest refresh policy + DHU local DB state | backlog |
+| [0038](0038-speedcam-heading-facing.md) | Host heading + opposite-facing mute | backlog |
 
 ### Out of scope (post-MVP, architecture-ready)
 
