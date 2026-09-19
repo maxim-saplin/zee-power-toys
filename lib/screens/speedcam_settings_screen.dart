@@ -48,7 +48,7 @@ class _SpeedcamSettingsScreenState
     if (!mounted) return;
     setState(() {
       _meta = meta;
-      _sampleCams = cams.take(12).toList();
+      _sampleCams = cams.take(3).toList();
     });
   }
 
@@ -87,7 +87,7 @@ class _SpeedcamSettingsScreenState
           (meta != null && meta.fetchedAt != before.fetchedAt);
       setState(() {
         _meta = meta;
-        _sampleCams = cams.take(12).toList();
+        _sampleCams = cams.take(3).toList();
         _busy = false;
         if (refreshed) {
           _policyNote =
@@ -121,7 +121,7 @@ class _SpeedcamSettingsScreenState
       if (!mounted) return;
       setState(() {
         _meta = meta;
-        _sampleCams = cams.take(12).toList();
+        _sampleCams = cams.take(3).toList();
         _busy = false;
         _policyNote = 'Manual update ok';
       });
@@ -210,25 +210,6 @@ class _SpeedcamSettingsScreenState
                 title: Text(l10n.speedcamDbCount),
                 subtitle: Text('${meta?.camCount ?? 0}'),
               ),
-              if (_sampleCams.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.speedcamDbSample,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                ..._sampleCams.map(
-                  (c) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(c.id),
-                    subtitle: Text(
-                      '${c.lat.toStringAsFixed(4)}, ${c.lon.toStringAsFixed(4)}'
-                      '${c.maxspeed != null ? ' · ${c.maxspeed}' : ''}'
-                      '${c.direction != null ? ' · ${c.direction}' : ''}',
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
           const SizedBox(height: 16),
@@ -304,6 +285,26 @@ class _SpeedcamSettingsScreenState
               ),
             ],
           ),
+          if (_sampleCams.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            SettingsSection(
+              title: l10n.speedcamDbSample,
+              children: [
+                ..._sampleCams.map(
+                  (c) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(c.id),
+                    subtitle: Text(
+                      '${c.lat.toStringAsFixed(4)}, ${c.lon.toStringAsFixed(4)}'
+                      '${c.maxspeed != null ? ' · ${c.maxspeed}' : ''}'
+                      '${c.direction != null ? ' · ${c.direction}' : ''}',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           SettingsSection(
             title: l10n.speedcamRadarSection,
