@@ -30,7 +30,7 @@ class DhuApp extends ConsumerWidget {
       // builder so descendants see the correct post-scale logical dimensions.
       //
       // DhuScaledLayout: for the DHU's 2560×1600 @ 160 dpi (dpr ≈ 1.0) display
-      // the auto scale factor is 2.43, making the UI premium-large and crisp.
+      // the auto scale factor is 2.19, making the UI premium-large and crisp.
       // On smaller / normal-DPI screens (tests, desktop T1) scale ≈ 1.0 and
       // the widget is a transparent pass-through (no overhead).
       //
