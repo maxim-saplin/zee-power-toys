@@ -242,9 +242,12 @@ class HudPreview extends ConsumerWidget {
                                 // this the Config Preview goes fully dark on
                                 // the off half-cycle (keys remain; amber ink
                                 // does not).
+                                // forceDemoSpeedcam: Alien/CRT radar demo blip
+                                // without FL inject (0033).
                                 child: const HudRoot(
                                   showSafeAreaBorder: true,
                                   forceBlinkOn: true,
+                                  forceDemoSpeedcam: true,
                                 ),
                               )
                             else

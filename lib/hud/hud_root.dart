@@ -7,6 +7,7 @@ import '../services/config_store.dart';
 import '../services/minimap_viewport.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
+import 'speedcam_radar_widget.dart';
 
 /// The root of the HUD widget subtree.
 ///
@@ -41,6 +42,7 @@ class HudRoot extends ConsumerWidget {
     super.key,
     this.showSafeAreaBorder = false,
     this.forceBlinkOn,
+    this.forceDemoSpeedcam = false,
   });
 
   final bool showSafeAreaBorder;
@@ -51,6 +53,10 @@ class HudRoot extends ConsumerWidget {
   /// a glance or screenshot during the off-phase shows an empty preview even
   /// though `blinkerProvider` is correctly overridden to hazard.
   final bool? forceBlinkOn;
+
+  /// When true, [SpeedcamRadarWidget] paints [SpeedcamRadarWidget.demoDanger]
+  /// so Config Preview shows the CRT radar without FL inject.
+  final bool forceDemoSpeedcam;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,6 +89,7 @@ class HudRoot extends ConsumerWidget {
                     saHeight: saHeight,
                     showStubs: showSafeAreaBorder,
                     forceBlinkOn: forceBlinkOn,
+                    forceDemoSpeedcam: forceDemoSpeedcam,
                   ),
                 ),
               ),
@@ -132,12 +139,14 @@ class _HudSlots extends ConsumerWidget {
     required this.saHeight,
     required this.showStubs,
     this.forceBlinkOn,
+    this.forceDemoSpeedcam = false,
   });
 
   final double saWidth;
   final double saHeight;
   final bool showStubs;
   final bool? forceBlinkOn;
+  final bool forceDemoSpeedcam;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -173,6 +182,19 @@ class _HudSlots extends ConsumerWidget {
           width: batteryW,
           height: upperH,
           child: const BatteryWidget(),
+        ),
+
+        // SPEEDCAM RADAR — right mid (Alien/CRT), below battery; idle = empty.
+        Positioned(
+          right: saWidth * 0.02,
+          top: saHeight * 0.28,
+          width: saWidth * 0.22,
+          height: saHeight * 0.55,
+          child: SpeedcamRadarWidget(
+            forceDemoDanger: forceDemoSpeedcam
+                ? SpeedcamRadarWidget.demoDanger
+                : null,
+          ),
         ),
 
         // MINIMAP — real geometry via minimapRectInSafeArea (SQUARE_LEFT,
