@@ -485,4 +485,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamPackUpdating => 'Updating…';
+
+  @override
+  String get speedcamRadarSection => 'Radar';
+
+  @override
+  String get speedcamHudRadarEnable => 'Show radar on HUD';
+
+  @override
+  String get speedcamDhuRange => 'DHU radar range';
 }

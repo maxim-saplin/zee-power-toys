@@ -80,3 +80,13 @@ final hudEnabledProvider = Provider<bool>((ref) {
     error: (e, _) => ref.watch(configStoreProvider).value.hudEnabled,
   );
 });
+
+final speedcamConfigProvider = Provider<SpeedcamConfig>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.speedcam,
+    loading: () => ref.watch(configStoreProvider).value.speedcam,
+    error: (e, _) => ref.watch(configStoreProvider).value.speedcam,
+  );
+});
+

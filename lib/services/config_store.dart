@@ -607,6 +607,49 @@ class HudSafeArea {
   int get hashCode => Object.hash(left, top, right, bottom);
 }
 
+
+/// Speedcam HUD/DHU radar appearance (0034).
+class SpeedcamConfig {
+  const SpeedcamConfig({
+    this.hudRadarEnabled = true,
+    this.dhuRangeM = 2000,
+  });
+
+  /// Paint CRT on the HUD windshield when approaching.
+  final bool hudRadarEnabled;
+
+  /// DHU large-radar display radius in metres (zoom-out; approach stays 500 m).
+  final double dhuRangeM;
+
+  SpeedcamConfig copyWith({
+    bool? hudRadarEnabled,
+    double? dhuRangeM,
+  }) =>
+      SpeedcamConfig(
+        hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
+        dhuRangeM: dhuRangeM ?? this.dhuRangeM,
+      );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'hudRadarEnabled': hudRadarEnabled,
+        'dhuRangeM': dhuRangeM,
+      };
+
+  factory SpeedcamConfig.fromJson(Map<String, Object?> json) => SpeedcamConfig(
+        hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
+        dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is SpeedcamConfig &&
+      other.hudRadarEnabled == hudRadarEnabled &&
+      other.dhuRangeM == dhuRangeM;
+
+  @override
+  int get hashCode => Object.hash(hudRadarEnabled, dhuRangeM);
+}
+
 /// Minimal app configuration.
 /// Plain JSON serialization so the native boot shim can read it.
 class AppConfig {
@@ -616,6 +659,7 @@ class AppConfig {
     this.blinker = const BlinkerConfig(),
     this.battery = const BatteryConfig(),
     this.minimap = const MinimapConfig(),
+    this.speedcam = const SpeedcamConfig(),
     this.locale,
     this.autoUsbPeripheral = false,
   });
@@ -638,6 +682,9 @@ class AppConfig {
 
   /// YNavi minimap configuration (enable, preset, theme-follow, advanced dims).
   final MinimapConfig minimap;
+
+  /// Speedcam radar (HUD enable + DHU zoom range).
+  final SpeedcamConfig speedcam;
 
   /// UI language override: null = follow system locale; 'en' or 'ru' = explicit
   /// override.  Stored as a plain string so the JSON round-trip is trivial and
@@ -663,6 +710,7 @@ class AppConfig {
     BlinkerConfig? blinker,
     BatteryConfig? battery,
     MinimapConfig? minimap,
+    SpeedcamConfig? speedcam,
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
     Object? locale = _unset,
     bool? autoUsbPeripheral,
@@ -672,6 +720,7 @@ class AppConfig {
     blinker: blinker ?? this.blinker,
     battery: battery ?? this.battery,
     minimap: minimap ?? this.minimap,
+    speedcam: speedcam ?? this.speedcam,
     locale: identical(locale, _unset) ? this.locale : locale as String?,
     autoUsbPeripheral: autoUsbPeripheral ?? this.autoUsbPeripheral,
   );
@@ -682,6 +731,7 @@ class AppConfig {
     'blinker': blinker.toJson(),
     'battery': battery.toJson(),
     'minimap': minimap.toJson(),
+    'speedcam': speedcam.toJson(),
     if (locale != null) 'locale': locale,
     'autoUsbPeripheral': autoUsbPeripheral,
   };
@@ -700,6 +750,9 @@ class AppConfig {
     minimap: json['minimap'] is Map<String, Object?>
         ? MinimapConfig.fromJson(json['minimap']! as Map<String, Object?>)
         : const MinimapConfig(),
+    speedcam: json['speedcam'] is Map<String, Object?>
+        ? SpeedcamConfig.fromJson(json['speedcam']! as Map<String, Object?>)
+        : const SpeedcamConfig(),
     locale: json['locale'] as String?,
     autoUsbPeripheral: json['autoUsbPeripheral'] as bool? ?? false,
   );
@@ -716,6 +769,7 @@ class AppConfig {
       other.blinker == blinker &&
       other.battery == battery &&
       other.minimap == minimap &&
+      other.speedcam == speedcam &&
       other.locale == locale &&
       other.autoUsbPeripheral == autoUsbPeripheral;
 
@@ -726,6 +780,7 @@ class AppConfig {
     blinker,
     battery,
     minimap,
+    speedcam,
     locale,
     autoUsbPeripheral,
   );

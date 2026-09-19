@@ -473,5 +473,13 @@
   "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
 
   "speedcamPackUpdating": "Обновление…",
-  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" }
+  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" },
+"speedcamRadarSection": "Радар",
+  "@speedcamRadarSection": { "description": "DHU speedcam radar section" },
+
+  "speedcamHudRadarEnable": "Радар на HUD",
+  "@speedcamHudRadarEnable": { "description": "Toggle CRT on windshield HUD" },
+
+  "speedcamDhuRange": "Дальность радара DHU",
+  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" }
 }

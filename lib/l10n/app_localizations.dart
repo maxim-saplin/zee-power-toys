@@ -1033,6 +1033,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updating…'**
   String get speedcamPackUpdating;
+
+  /// DHU speedcam radar section
+  ///
+  /// In en, this message translates to:
+  /// **'Radar'**
+  String get speedcamRadarSection;
+
+  /// Toggle CRT on windshield HUD
+  ///
+  /// In en, this message translates to:
+  /// **'Show radar on HUD'**
+  String get speedcamHudRadarEnable;
+
+  /// Zoom-out display radius metres
+  ///
+  /// In en, this message translates to:
+  /// **'DHU radar range'**
+  String get speedcamDhuRange;
 }
 
 class _AppLocalizationsDelegate

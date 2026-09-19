@@ -473,5 +473,13 @@
   "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
 
   "speedcamPackUpdating": "Updating…",
-  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" }
+  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" },
+"speedcamRadarSection": "Radar",
+  "@speedcamRadarSection": { "description": "DHU speedcam radar section" },
+
+  "speedcamHudRadarEnable": "Show radar on HUD",
+  "@speedcamHudRadarEnable": { "description": "Toggle CRT on windshield HUD" },
+
+  "speedcamDhuRange": "DHU radar range",
+  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" }
 }
