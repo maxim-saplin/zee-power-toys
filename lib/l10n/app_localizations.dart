@@ -979,6 +979,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lower = more map area (phase0 default 0.5)'**
   String get minimapContentScaleHint;
+
+  /// Speedcam settings section label
+  ///
+  /// In en, this message translates to:
+  /// **'Speedcam'**
+  String get sectionSpeedcam;
+
+  /// Speedcam settings section subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'OSM packs, approach alerts'**
+  String get sectionSpeedcamSubtitle;
+
+  /// Speedcam settings screen app-bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Speedcam'**
+  String get speedcamTitle;
+
+  /// Speedcam pack section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Region pack'**
+  String get speedcamPackSection;
+
+  /// BY OSM pack label
+  ///
+  /// In en, this message translates to:
+  /// **'Belarus (BY)'**
+  String get speedcamPackBy;
+
+  /// Shown when no BY pack on disk
+  ///
+  /// In en, this message translates to:
+  /// **'No pack cached — tap Update'**
+  String get speedcamPackMissing;
+
+  /// Cached pack status line
+  ///
+  /// In en, this message translates to:
+  /// **'{count} cams · fetched {when}'**
+  String speedcamPackStatus(int count, String when);
+
+  /// Manual Overpass download button
+  ///
+  /// In en, this message translates to:
+  /// **'Update pack'**
+  String get speedcamPackUpdate;
+
+  /// Busy label while pack downloads
+  ///
+  /// In en, this message translates to:
+  /// **'Updating…'**
+  String get speedcamPackUpdating;
 }
 
 class _AppLocalizationsDelegate

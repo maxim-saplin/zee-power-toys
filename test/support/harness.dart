@@ -31,6 +31,7 @@ import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_service.dart';
+import 'package:zee_power_toys/services/fakes/fake_speedcam_pack_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
 import 'package:zee_power_toys/services/installer.dart';
@@ -108,6 +109,7 @@ Widget wrapWithProviders(
       installerProvider.overrideWithValue(installer ?? FakeInstaller()),
       packageStatusProvider.overrideWithValue(FakePackageStatus()),
       speedcamServiceProvider.overrideWithValue(FakeSpeedcamService()),
+      speedcamPackStoreProvider.overrideWithValue(FakeSpeedcamPackStore()),
       systemConfigProvider.overrideWithValue(systemConfig ?? FakeSystemConfig()),
       if (usbMode != null) usbModeProvider.overrideWithValue(usbMode),
     ],

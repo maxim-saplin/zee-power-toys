@@ -457,4 +457,33 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get minimapContentScaleHint =>
       'Меньше = больше области карты (по умолчанию 0.5)';
+
+  @override
+  String get sectionSpeedcam => 'Камеры';
+
+  @override
+  String get sectionSpeedcamSubtitle => 'OSM-пакеты, приближение';
+
+  @override
+  String get speedcamTitle => 'Камеры';
+
+  @override
+  String get speedcamPackSection => 'Региональный пакет';
+
+  @override
+  String get speedcamPackBy => 'Беларусь (BY)';
+
+  @override
+  String get speedcamPackMissing => 'Пакета нет — нажмите Обновить';
+
+  @override
+  String speedcamPackStatus(int count, String when) {
+    return '$count кам. · $when';
+  }
+
+  @override
+  String get speedcamPackUpdate => 'Обновить пакет';
+
+  @override
+  String get speedcamPackUpdating => 'Обновление…';
 }

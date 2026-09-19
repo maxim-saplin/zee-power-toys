@@ -1,6 +1,7 @@
-import 'dart:io' show Platform;
+import 'dart:io' show Directory, Platform;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,8 @@ import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
 import 'services/fakes/fake_speedcam_service.dart';
+import 'services/fakes/fake_speedcam_pack_store.dart';
+import 'services/speedcam_pack_store.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
@@ -104,8 +107,18 @@ Future<void> dhuMain(List<String> args) async {
       ? NativePackageStatus()
       : FakePackageStatus();
 
-  // Speedcam (0030): Fake with embedded BY sample until native/OSM pack lands.
+  // Speedcam (0030): Fake with embedded BY sample until proximity uses packs.
   final SpeedcamService speedcamRaw = FakeSpeedcamService();
+
+  // Speedcam packs (0031): file cache on device/desktop; Fake on web.
+  final SpeedcamPackStore speedcamPackRaw;
+  if (kIsWeb) {
+    speedcamPackRaw = FakeSpeedcamPackStore();
+  } else {
+    final support = await getApplicationSupportDirectory();
+    final root = Directory('${support.path}/speedcam_packs');
+    speedcamPackRaw = FileSpeedcamPackStore(root: root);
+  }
 
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
@@ -149,6 +162,7 @@ Future<void> dhuMain(List<String> args) async {
       installerProvider.overrideWithValue(installerRaw),
       packageStatusProvider.overrideWithValue(packageStatusRaw),
       speedcamServiceProvider.overrideWithValue(speedcamRaw),
+      speedcamPackStoreProvider.overrideWithValue(speedcamPackRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],
@@ -240,6 +254,7 @@ Future<void> dhuMain(List<String> args) async {
     systemConfig: systemConfigRaw,
     usbMode: usbModeRaw,
     speedcam: speedcamRaw,
+    speedcamPack: speedcamPackRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
@@ -274,6 +289,7 @@ void hudMain(List<String> args) {
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
   final speedcam = FakeSpeedcamService();
+  final speedcamPack = FakeSpeedcamPackStore();
 
   registerZeeExtensions(
     surface: 'hud',
@@ -281,6 +297,7 @@ void hudMain(List<String> args) {
     shotKey: hudShotKey,
     carSignals: carSignals,
     speedcam: speedcam,
+    speedcamPack: speedcamPack,
   );
 
   // Seed from persisted prefs, then arm the relay listener.
@@ -301,6 +318,7 @@ void hudMain(List<String> args) {
         installerProvider.overrideWithValue(FakeInstaller()),
         packageStatusProvider.overrideWithValue(FakePackageStatus()),
         speedcamServiceProvider.overrideWithValue(speedcam),
+        speedcamPackStoreProvider.overrideWithValue(speedcamPack),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],

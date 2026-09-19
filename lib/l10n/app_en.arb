@@ -441,6 +441,37 @@
   "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
 
   "minimapContentScaleHint": "Lower = more map area (phase0 default 0.5)",
-  "@minimapContentScaleHint": { "description": "Hint under map density slider" }
+  "@minimapContentScaleHint": { "description": "Hint under map density slider" },
+"sectionSpeedcam": "Speedcam",
+  "@sectionSpeedcam": { "description": "Speedcam settings section label" },
 
+  "sectionSpeedcamSubtitle": "OSM packs, approach alerts",
+  "@sectionSpeedcamSubtitle": { "description": "Speedcam settings section subtitle" },
+
+  "speedcamTitle": "Speedcam",
+  "@speedcamTitle": { "description": "Speedcam settings screen app-bar title" },
+
+  "speedcamPackSection": "Region pack",
+  "@speedcamPackSection": { "description": "Speedcam pack section heading" },
+
+  "speedcamPackBy": "Belarus (BY)",
+  "@speedcamPackBy": { "description": "BY OSM pack label" },
+
+  "speedcamPackMissing": "No pack cached — tap Update",
+  "@speedcamPackMissing": { "description": "Shown when no BY pack on disk" },
+
+  "speedcamPackStatus": "{count} cams · fetched {when}",
+  "@speedcamPackStatus": {
+    "description": "Cached pack status line",
+    "placeholders": {
+      "count": { "type": "int" },
+      "when": { "type": "String" }
+    }
+  },
+
+  "speedcamPackUpdate": "Update pack",
+  "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
+
+  "speedcamPackUpdating": "Updating…",
+  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" }
 }

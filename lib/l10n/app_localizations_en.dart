@@ -456,4 +456,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get minimapContentScaleHint =>
       'Lower = more map area (phase0 default 0.5)';
+
+  @override
+  String get sectionSpeedcam => 'Speedcam';
+
+  @override
+  String get sectionSpeedcamSubtitle => 'OSM packs, approach alerts';
+
+  @override
+  String get speedcamTitle => 'Speedcam';
+
+  @override
+  String get speedcamPackSection => 'Region pack';
+
+  @override
+  String get speedcamPackBy => 'Belarus (BY)';
+
+  @override
+  String get speedcamPackMissing => 'No pack cached — tap Update';
+
+  @override
+  String speedcamPackStatus(int count, String when) {
+    return '$count cams · fetched $when';
+  }
+
+  @override
+  String get speedcamPackUpdate => 'Update pack';
+
+  @override
+  String get speedcamPackUpdating => 'Updating…';
 }

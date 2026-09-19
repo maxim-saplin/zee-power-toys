@@ -14,6 +14,7 @@ import '../services/fakes/fake_car_signals.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/speedcam.dart';
+import '../services/speedcam_pack_store.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 import '../services/usb_mode.dart';
@@ -67,6 +68,7 @@ void registerZeeExtensions({
   String? Function()? getMinimapNative,
   void Function(String?)? onMinimapNativeResult,
   SpeedcamService? speedcam,
+  SpeedcamPackStore? speedcamPack,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -111,6 +113,8 @@ void registerZeeExtensions({
     // here. Null when no CarSignals was provided at all (shouldn't happen on
     // a registered surface, but the extension must never throw).
     final String? signalSource = await carSignals?.sourceKind;
+    final SpeedcamPackMeta? packMeta =
+        await speedcamPack?.current(SpeedcamPackIds.by);
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -118,6 +122,7 @@ void registerZeeExtensions({
         'locale': store.value.locale,
         'signalSource': signalSource,
         'speedcam': speedcam?.snapshot.toJson(),
+        'speedcamPack': packMeta?.toJson(),
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
           'state': snap?.blinker.name ?? BlinkerState.off.name,
@@ -553,6 +558,30 @@ void registerZeeExtensions({
             lon: cam.lon,
             speedKmh: double.tryParse(params['speedKmh'] ?? ''),
           ));
+        case 'packStatus':
+          final meta = await speedcamPack?.current(SpeedcamPackIds.by);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'speedcamPack': meta?.toJson(),
+            }),
+          );
+        case 'packUpdate':
+          if (speedcamPack == null) {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'speedcamPack not available',
+              }),
+            );
+          }
+          final meta = await speedcamPack.updatePack(SpeedcamPackIds.by);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'speedcamPack': meta.toJson(),
+            }),
+          );
         case 'snapshot':
           break;
         default:

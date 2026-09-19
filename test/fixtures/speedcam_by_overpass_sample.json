@@ -1,0 +1,7 @@
+{
+  "elements": [
+    {"type":"node","id":1,"lat":53.9045,"lon":27.5615,"tags":{"highway":"speed_camera","maxspeed":"60","direction":"NE"}},
+    {"type":"node","id":2,"lat":53.9100,"lon":27.5800,"tags":{"highway":"speed_camera","maxspeed":"70"}},
+    {"type":"node","id":3,"lat":52.0975,"lon":23.7340,"tags":{"highway":"speed_camera","maxspeed":"60"}}
+  ]
+}

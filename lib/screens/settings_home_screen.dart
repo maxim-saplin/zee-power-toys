@@ -16,6 +16,7 @@ import 'hud_settings_screen.dart';
 import 'install_screen.dart';
 import 'language_settings_screen.dart';
 import 'minimap_settings_screen.dart';
+import 'speedcam_settings_screen.dart';
 import 'simulate_screen.dart';
 import 'usb_adb_screen.dart';
 
@@ -363,6 +364,19 @@ class _SectionsColumn extends StatelessWidget {
                   context,
                   MaterialPageRoute<void>(
                     builder: (_) => const MinimapSettingsScreen(),
+                  ),
+                ),
+              ),
+              const _TileDivider(),
+              _SectionTile(
+                key: const ValueKey('nav-speedcam'),
+                icon: Icons.speed_outlined,
+                title: l10n.sectionSpeedcam,
+                subtitle: l10n.sectionSpeedcamSubtitle,
+                onTap: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SpeedcamSettingsScreen(),
                   ),
                 ),
               ),

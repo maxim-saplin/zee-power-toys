@@ -441,6 +441,37 @@
   "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
 
   "minimapContentScaleHint": "Меньше = больше области карты (по умолчанию 0.5)",
-  "@minimapContentScaleHint": { "description": "Hint under map density slider" }
+  "@minimapContentScaleHint": { "description": "Hint under map density slider" },
+"sectionSpeedcam": "Камеры",
+  "@sectionSpeedcam": { "description": "Speedcam settings section label" },
 
+  "sectionSpeedcamSubtitle": "OSM-пакеты, приближение",
+  "@sectionSpeedcamSubtitle": { "description": "Speedcam settings section subtitle" },
+
+  "speedcamTitle": "Камеры",
+  "@speedcamTitle": { "description": "Speedcam settings screen app-bar title" },
+
+  "speedcamPackSection": "Региональный пакет",
+  "@speedcamPackSection": { "description": "Speedcam pack section heading" },
+
+  "speedcamPackBy": "Беларусь (BY)",
+  "@speedcamPackBy": { "description": "BY OSM pack label" },
+
+  "speedcamPackMissing": "Пакета нет — нажмите Обновить",
+  "@speedcamPackMissing": { "description": "Shown when no BY pack on disk" },
+
+  "speedcamPackStatus": "{count} кам. · {when}",
+  "@speedcamPackStatus": {
+    "description": "Cached pack status line",
+    "placeholders": {
+      "count": { "type": "int" },
+      "when": { "type": "String" }
+    }
+  },
+
+  "speedcamPackUpdate": "Обновить пакет",
+  "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
+
+  "speedcamPackUpdating": "Обновление…",
+  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" }
 }

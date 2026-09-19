@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: in-progress
 labels: [hud, speedcam, osm]
 created: 2026-09-19
 satisfies: HUD · Speedcam
@@ -17,9 +17,9 @@ Parent: [0029](0029-speedcam-osm-epic.md).
 `SpeedcamPackStore`: Overpass query for first pack **BY bbox** `(51.2,23.1)–(56.2,32.8)` — nodes `highway=speed_camera` (+ maxspeed/direction when present). Persist JSON under app cache with version/timestamp. Manual **Update** in DHU (no background spam). Validate + replace atomically.
 
 ## Definition of Done
-- [ ] Download → cache → load round-trip on T1 (network allowed) or recorded fixture if Overpass flaky
-- [ ] Fake/offline path if offline
-- [ ] DHU affordance: pack status + Update button (can live on Speedcam settings stub)
+- [x] Download → cache → load round-trip on T1 (network allowed) or recorded fixture if Overpass flaky
+- [x] Fake/offline path if offline
+- [x] DHU affordance: pack status + Update button (can live on Speedcam settings stub)
 - [ ] Runtime-confirmed — artifact: pack file + cam count in dumpState
 
 ## Notes
