@@ -105,30 +105,24 @@ void main() {
       );
     });
 
-    test('non-advanced with a stale manual sizeFraction still uses preset', () {
+    test('sizeFraction overrides preset when set', () {
       const cfg = MinimapConfig(preset: 'compact', sizeFraction: 0.99);
-      expect(
-        cfg.resolvedSizeFraction,
-        equals(hudPresetSizeFraction('compact')),
-        reason:
-            'advanced=false must ignore sizeFraction even when one is set '
-            '(the old resolvedFracs contract for widthFrac/heightFrac)',
-      );
+      expect(cfg.resolvedSizeFraction, closeTo(0.99, 0.001));
     });
 
-    test('advanced + manual sizeFraction overrides the preset', () {
-      const cfg = MinimapConfig(advanced: true, sizeFraction: 0.55);
+    test('manual sizeFraction overrides the preset name', () {
+      const cfg = MinimapConfig(sizeFraction: 0.55);
       expect(cfg.resolvedSizeFraction, closeTo(0.55, 0.001));
     });
 
-    test('advanced without a manual sizeFraction falls back to preset', () {
-      const cfg = MinimapConfig(advanced: true, preset: 'large');
+    test('without sizeFraction falls back to preset', () {
+      const cfg = MinimapConfig(preset: 'large');
       expect(cfg.resolvedSizeFraction, equals(hudPresetSizeFraction('large')));
     });
 
     test('manual sizeFraction is clamped to [0.1, 1.0]', () {
-      const tooBig = MinimapConfig(advanced: true, sizeFraction: 5.0);
-      const tooSmall = MinimapConfig(advanced: true, sizeFraction: -1.0);
+      const tooBig = MinimapConfig(sizeFraction: 5.0);
+      const tooSmall = MinimapConfig(sizeFraction: -1.0);
       expect(tooBig.resolvedSizeFraction, equals(1.0));
       expect(tooSmall.resolvedSizeFraction, equals(0.1));
     });

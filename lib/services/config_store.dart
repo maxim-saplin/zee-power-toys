@@ -150,11 +150,12 @@ class MinimapConfig {
   /// (see `computeMinimapViewport` in minimap_viewport.dart, called from
   /// `_applyMinimapConfig` in main.dart).
   ///
-  /// In advanced mode with a manual [sizeFraction] set, returns that value
-  /// clamped to [0.1, 1.0]. Otherwise returns [hudPresetSizeFraction] for
-  /// [preset].
+  /// When [sizeFraction] is set (preset shortcuts write it too), that value
+  /// wins — clamped to [0.1, 1.0]. Otherwise [hudPresetSizeFraction]([preset]).
+  /// (Previously gated on [advanced], which made the Size slider a no-op after
+  /// we removed the Advanced ExpansionTile.)
   double get resolvedSizeFraction {
-    if (advanced && sizeFraction != null) {
+    if (sizeFraction != null) {
       return sizeFraction!.clamp(0.1, 1.0);
     }
     return hudPresetSizeFraction(preset);
