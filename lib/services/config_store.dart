@@ -610,6 +610,13 @@ class HudSafeArea {
 
 /// Speedcam HUD/DHU radar appearance (0034).
 /// When to re-fetch the OSM pack from Overpass (0037).
+enum SpeedcamRadarLook {
+  /// Clean HUD-first: distance + bearing, no CRT cosplay.
+  defaultLook,
+  /// Motion-tracker CRT wedge + range ping (fun mode).
+  alien,
+}
+
 enum SpeedcamRefreshPolicy {
   /// Only when the user taps Update.
   manualOnly,
@@ -623,11 +630,12 @@ class SpeedcamConfig {
     this.hudRadarEnabled = true,
     this.dhuRangeM = 2000,
     this.soundEnabled = true,
+    this.radarLook = SpeedcamRadarLook.defaultLook,
     this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
     this.staleAfterDays = 7,
   });
 
-  /// Paint CRT on the HUD windshield when approaching.
+  /// Paint radar on the HUD windshield when enabled (idle frame OK).
   final bool hudRadarEnabled;
 
   /// DHU large-radar display radius in metres (zoom-out; approach stays 500 m).
@@ -635,6 +643,9 @@ class SpeedcamConfig {
 
   /// Play approach sting when [insideApproach] flips true.
   final bool soundEnabled;
+
+  /// Visual language: Default (HUD-clean) vs Alien (motion-tracker CRT).
+  final SpeedcamRadarLook radarLook;
 
   /// Harvest / cache refresh policy.
   final SpeedcamRefreshPolicy refreshPolicy;
@@ -646,6 +657,7 @@ class SpeedcamConfig {
     bool? hudRadarEnabled,
     double? dhuRangeM,
     bool? soundEnabled,
+    SpeedcamRadarLook? radarLook,
     SpeedcamRefreshPolicy? refreshPolicy,
     int? staleAfterDays,
   }) =>
@@ -653,6 +665,7 @@ class SpeedcamConfig {
         hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
         dhuRangeM: dhuRangeM ?? this.dhuRangeM,
         soundEnabled: soundEnabled ?? this.soundEnabled,
+        radarLook: radarLook ?? this.radarLook,
         refreshPolicy: refreshPolicy ?? this.refreshPolicy,
         staleAfterDays: staleAfterDays ?? this.staleAfterDays,
       );
@@ -661,6 +674,7 @@ class SpeedcamConfig {
         'hudRadarEnabled': hudRadarEnabled,
         'dhuRangeM': dhuRangeM,
         'soundEnabled': soundEnabled,
+        'radarLook': radarLook.name,
         'refreshPolicy': refreshPolicy.name,
         'staleAfterDays': staleAfterDays,
       };
@@ -671,10 +685,16 @@ class SpeedcamConfig {
       (e) => e.name == policyName,
       orElse: () => SpeedcamRefreshPolicy.manualOnly,
     );
+    final lookName = json['radarLook'] as String?;
+    final look = SpeedcamRadarLook.values.firstWhere(
+      (e) => e.name == lookName || (lookName == 'default' && e == SpeedcamRadarLook.defaultLook),
+      orElse: () => SpeedcamRadarLook.defaultLook,
+    );
     return SpeedcamConfig(
       hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
       dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
       soundEnabled: json['soundEnabled'] as bool? ?? true,
+      radarLook: look,
       refreshPolicy: policy,
       staleAfterDays: (json['staleAfterDays'] as num?)?.toInt() ?? 7,
     );
@@ -686,6 +706,7 @@ class SpeedcamConfig {
       other.hudRadarEnabled == hudRadarEnabled &&
       other.dhuRangeM == dhuRangeM &&
       other.soundEnabled == soundEnabled &&
+      other.radarLook == radarLook &&
       other.refreshPolicy == refreshPolicy &&
       other.staleAfterDays == staleAfterDays;
 
@@ -694,6 +715,7 @@ class SpeedcamConfig {
         hudRadarEnabled,
         dhuRangeM,
         soundEnabled,
+        radarLook,
         refreshPolicy,
         staleAfterDays,
       );

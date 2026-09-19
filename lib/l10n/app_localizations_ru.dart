@@ -500,6 +500,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamSoundEnable => 'Звук приближения';
 
   @override
+  String get speedcamRadarLook => 'Вид радара';
+
+  @override
+  String get speedcamRadarLookDefault => 'Обычный';
+
+  @override
+  String get speedcamRadarLookAlien => 'Alien';
+
+  @override
   String get speedcamDbSection => 'Локальный пакет / БД';
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/screens/speedcam_settings_screen.dart';
+import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 import '../support/harness.dart';
@@ -11,6 +12,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final store = SharedPrefsConfigStore();
     await store.load();
+    await store.setConfig(store.value.copyWith(
+      speedcam: store.value.speedcam.copyWith(
+        radarLook: SpeedcamRadarLook.alien,
+      ),
+    ));
 
     await tester.binding.setSurfaceSize(const Size(800, 600));
     addTearDown(() => tester.binding.setSurfaceSize(null));

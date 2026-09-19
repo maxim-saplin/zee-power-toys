@@ -31,3 +31,4 @@ flutter:
   generate: true
   assets:
     - assets/sounds/speedcam_sting.wav
+    - assets/sounds/speedcam_alien_ping.wav

@@ -207,6 +207,29 @@ class _SpeedcamSettingsScreenState
                   (c) => c.copyWith(hudRadarEnabled: v),
                 ),
               ),
+              Text(
+                l10n.speedcamRadarLook,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<SpeedcamRadarLook>(
+                key: const ValueKey('speedcam-radar-look'),
+                segments: [
+                  ButtonSegment(
+                    value: SpeedcamRadarLook.defaultLook,
+                    label: Text(l10n.speedcamRadarLookDefault),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamRadarLook.alien,
+                    label: Text(l10n.speedcamRadarLookAlien),
+                  ),
+                ],
+                selected: {sc.radarLook},
+                onSelectionChanged: (sel) {
+                  if (sel.isEmpty) return;
+                  _patchSpeedcam((c) => c.copyWith(radarLook: sel.first));
+                },
+              ),
               SwitchListTile(
                 key: const ValueKey('speedcam-sound'),
                 contentPadding: EdgeInsets.zero,

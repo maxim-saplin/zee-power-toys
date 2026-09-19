@@ -5,9 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../providers/config.dart';
 import '../providers/services.dart';
 import '../providers/speedcam.dart';
+import '../services/config_store.dart';
 import '../services/speedcam_alert.dart';
+import '../services/speedcam_alien_ping.dart';
 
-/// Listens to pack proximity and fires the approach sting on enter (0035).
+/// Approach sting (0035) + Alien range ping loop (0040).
 class SpeedcamAlertBinder extends HookConsumerWidget {
   const SpeedcamAlertBinder({super.key, required this.child});
 
@@ -16,17 +18,38 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final alert = ref.watch(speedcamAlertProvider);
-    final soundOn = ref.watch(speedcamConfigProvider).soundEnabled;
+    final cfg = ref.watch(speedcamConfigProvider);
     final danger = ref.watch(speedcamDangerProvider);
 
     final arm = useMemoized(() => SpeedcamApproachArm(alert: alert), [alert]);
-    arm.enabled = soundOn;
+    final ping = useMemoized(() => SpeedcamAlienPingLoop(alert: alert), [alert]);
+    arm.enabled = cfg.soundEnabled;
 
     useEffect(() {
       final inside = danger?.insideApproach ?? false;
       arm.onInsideApproach(inside);
       return null;
-    }, [danger?.insideApproach, danger?.cam.id, soundOn]);
+    }, [danger?.insideApproach, danger?.cam.id, cfg.soundEnabled]);
+
+    useEffect(() {
+      ping.update(
+        enabled: cfg.soundEnabled,
+        alienLook: cfg.radarLook == SpeedcamRadarLook.alien,
+        insideApproach: danger?.insideApproach ?? false,
+        distanceM: danger?.distanceM,
+      );
+      return null;
+    }, [
+      cfg.soundEnabled,
+      cfg.radarLook,
+      danger?.insideApproach,
+      danger?.distanceM,
+      danger?.cam.id,
+    ]);
+
+    useEffect(() {
+      return ping.dispose;
+    }, [ping]);
 
     return child;
   }

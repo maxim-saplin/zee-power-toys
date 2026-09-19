@@ -10,6 +10,7 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
 
   final AudioPlayer _player;
   static const asset = 'sounds/speedcam_sting.wav';
+  static const pingAsset = 'sounds/speedcam_alien_ping.wav';
 
   @override
   Future<void> playSting() async {
@@ -18,6 +19,16 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
       await _player.play(AssetSource(asset));
     } catch (e) {
       debugPrint('speedcam sting failed: $e');
+    }
+  }
+
+  @override
+  Future<void> playAlienPing() async {
+    try {
+      await _player.stop();
+      await _player.play(AssetSource(pingAsset));
+    } catch (e) {
+      debugPrint('speedcam alien ping failed: $e');
     }
   }
 

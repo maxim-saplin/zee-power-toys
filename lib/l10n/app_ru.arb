@@ -484,6 +484,13 @@
   "@speedcamDhuRange": { "description": "Zoom-out display radius metres" },
 "speedcamSoundEnable": "Звук приближения",
   "@speedcamSoundEnable": { "description": "Toggle sting on insideApproach enter" },
+
+"speedcamRadarLook": "Вид радара",
+  "@speedcamRadarLook": { "description": "Speedcam radar visual look picker" },
+"speedcamRadarLookDefault": "Обычный",
+  "@speedcamRadarLookDefault": { "description": "Default HUD-clean radar look" },
+"speedcamRadarLookAlien": "Alien",
+  "@speedcamRadarLookAlien": { "description": "Alien motion-tracker radar look" },
 "speedcamDbSection": "Локальный пакет / БД",
   "@speedcamDbSection": { "description": "DHU local speedcam pack state" },
   "speedcamDbRegion": "Регион",

@@ -126,6 +126,12 @@ void registerZeeExtensions({
         'signalSource': signalSource,
         'speedcam': speedcam?.snapshot.toJson(),
         'speedcamPack': packMeta?.toJson(),
+        'speedcamConfig': <String, Object?>{
+          'hudRadarEnabled': store.value.speedcam.hudRadarEnabled,
+          'radarLook': store.value.speedcam.radarLook.name,
+          'soundEnabled': store.value.speedcam.soundEnabled,
+          'dhuRangeM': store.value.speedcam.dhuRangeM,
+        },
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
           'state': snap?.blinker.name ?? BlinkerState.off.name,

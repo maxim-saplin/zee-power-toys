@@ -484,6 +484,13 @@
   "@speedcamDhuRange": { "description": "Zoom-out display radius metres" },
 "speedcamSoundEnable": "Approach alert sound",
   "@speedcamSoundEnable": { "description": "Toggle sting on insideApproach enter" },
+
+"speedcamRadarLook": "Radar look",
+  "@speedcamRadarLook": { "description": "Speedcam radar visual look picker" },
+"speedcamRadarLookDefault": "Default",
+  "@speedcamRadarLookDefault": { "description": "Default HUD-clean radar look" },
+"speedcamRadarLookAlien": "Alien",
+  "@speedcamRadarLookAlien": { "description": "Alien motion-tracker radar look" },
 "speedcamDbSection": "Local pack / DB",
   "@speedcamDbSection": { "description": "DHU local speedcam pack state" },
   "speedcamDbRegion": "Region",

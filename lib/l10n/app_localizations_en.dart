@@ -499,6 +499,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamSoundEnable => 'Approach alert sound';
 
   @override
+  String get speedcamRadarLook => 'Radar look';
+
+  @override
+  String get speedcamRadarLookDefault => 'Default';
+
+  @override
+  String get speedcamRadarLookAlien => 'Alien';
+
+  @override
   String get speedcamDbSection => 'Local pack / DB';
 
   @override

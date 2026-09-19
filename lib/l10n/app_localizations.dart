@@ -1058,6 +1058,24 @@ abstract class AppLocalizations {
   /// **'Approach alert sound'**
   String get speedcamSoundEnable;
 
+  /// Speedcam radar visual look picker
+  ///
+  /// In en, this message translates to:
+  /// **'Radar look'**
+  String get speedcamRadarLook;
+
+  /// Default HUD-clean radar look
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get speedcamRadarLookDefault;
+
+  /// Alien motion-tracker radar look
+  ///
+  /// In en, this message translates to:
+  /// **'Alien'**
+  String get speedcamRadarLookAlien;
+
   /// DHU local speedcam pack state
   ///
   /// In en, this message translates to:
