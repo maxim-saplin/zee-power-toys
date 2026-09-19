@@ -104,6 +104,7 @@ Widget wrapWithProviders(
       minimapHostProvider.overrideWithValue(FakeMinimapHost()),
       hudHostProvider.overrideWithValue(FakeHudHost()),
       installerProvider.overrideWithValue(installer ?? FakeInstaller()),
+      packageStatusProvider.overrideWithValue(FakePackageStatus()),
       systemConfigProvider.overrideWithValue(systemConfig ?? FakeSystemConfig()),
       if (usbMode != null) usbModeProvider.overrideWithValue(usbMode),
     ],

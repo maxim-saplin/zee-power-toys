@@ -405,5 +405,32 @@
   "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
 
   "simulateSpeedLabel": "Speed",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
+
+  "homeTitle": "Zee Power Toys",
+  "@homeTitle": { "description": "DHU home app-bar title" },
+
+  "homeWelcomeTitle": "Welcome",
+  "@homeWelcomeTitle": { "description": "Welcome column heading" },
+
+  "homeWelcomeBody": "HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.",
+  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
+
+  "homeCompanionsTitle": "Companion apps",
+  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
+
+  "homeSectionsTitle": "Sections",
+  "@homeSectionsTitle": { "description": "Sections column heading" },
+
+  "homeStatusInstalled": "Installed",
+  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
+
+  "homeStatusMissing": "Missing",
+  "@homeStatusMissing": { "description": "Companion APK status: missing" },
+
+  "homeStatusUnknown": "Unknown",
+  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
+
+  "homeInstallAction": "Install",
+  "@homeInstallAction": { "description": "Install companion APK button on home" }
 }

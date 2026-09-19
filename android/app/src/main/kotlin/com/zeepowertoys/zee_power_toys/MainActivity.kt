@@ -28,6 +28,7 @@ import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
+import com.zeepowertoys.zee_power_toys.install.PackageStatusController
 import com.zeepowertoys.zee_power_toys.usb.UsbModeController
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterActivity
@@ -106,6 +107,7 @@ class MainActivity : FlutterActivity() {
 
     // Installer native bridge — DHU engine only (Block 0014).
     private var installerController: InstallerController? = null
+    private var packageStatusController: PackageStatusController? = null
 
     // SystemConfig native bridge — DHU engine only (Block 0015).
     private var systemConfigController: SystemConfigController? = null
@@ -239,6 +241,7 @@ class MainActivity : FlutterActivity() {
         // Construct InstallerController on the DHU engine messenger (Block 0014).
         // Registers zee/installer MethodChannel and zee/installer/events EventChannel.
         installerController = InstallerController(this, flutterEngine.dartExecutor.binaryMessenger)
+        packageStatusController = PackageStatusController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Construct SystemConfigController on the DHU engine messenger (Block 0015).
         // Registers zee/system_config MethodChannel for systemLocale read + guarded writes.

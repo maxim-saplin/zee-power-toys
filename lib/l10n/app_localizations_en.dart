@@ -418,4 +418,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get simulateSpeedLabel => 'Speed';
+
+  @override
+  String get homeTitle => 'Zee Power Toys';
+
+  @override
+  String get homeWelcomeTitle => 'Welcome';
+
+  @override
+  String get homeWelcomeBody =>
+      'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.';
+
+  @override
+  String get homeCompanionsTitle => 'Companion apps';
+
+  @override
+  String get homeSectionsTitle => 'Sections';
+
+  @override
+  String get homeStatusInstalled => 'Installed';
+
+  @override
+  String get homeStatusMissing => 'Missing';
+
+  @override
+  String get homeStatusUnknown => 'Unknown';
+
+  @override
+  String get homeInstallAction => 'Install';
 }

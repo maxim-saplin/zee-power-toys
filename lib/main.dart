@@ -16,6 +16,7 @@ import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
 import 'services/adapters/native_hud_host.dart';
 import 'services/adapters/native_installer.dart';
+import 'services/adapters/native_package_status.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/adapters/native_system_config.dart';
 import 'services/adapters/native_usb_mode.dart';
@@ -23,12 +24,14 @@ import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
+import 'services/fakes/fake_package_status.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
 import 'services/config_store.dart';
 import 'services/hud_host.dart';
 import 'services/installer.dart';
+import 'services/package_status.dart';
 import 'services/minimap_host.dart';
 import 'services/minimap_viewport.dart';
 import 'services/shared_prefs_config_store.dart';
@@ -95,6 +98,10 @@ Future<void> dhuMain(List<String> args) async {
       ? NativeInstaller()
       : FakeInstaller();
 
+  final PackageStatus packageStatusRaw = (!kIsWeb && Platform.isAndroid)
+      ? NativePackageStatus()
+      : FakePackageStatus();
+
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
   // On T1 desktop, FakeSystemConfig provides in-memory state.
@@ -135,6 +142,7 @@ Future<void> dhuMain(List<String> args) async {
       minimapHostProvider.overrideWithValue(minimapHostRaw),
       hudHostProvider.overrideWithValue(hudHostRaw),
       installerProvider.overrideWithValue(installerRaw),
+      packageStatusProvider.overrideWithValue(packageStatusRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],
@@ -282,6 +290,7 @@ void hudMain(List<String> args) {
         minimapHostProvider.overrideWithValue(FakeMinimapHost()),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
+        packageStatusProvider.overrideWithValue(FakePackageStatus()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],

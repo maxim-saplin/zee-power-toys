@@ -405,5 +405,32 @@
   "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
 
   "simulateSpeedLabel": "Скорость",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" }
+  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
+
+  "homeTitle": "Zee Power Toys",
+  "@homeTitle": { "description": "DHU home app-bar title" },
+
+  "homeWelcomeTitle": "Добро пожаловать",
+  "@homeWelcomeTitle": { "description": "Welcome column heading" },
+
+  "homeWelcomeBody": "HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.",
+  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
+
+  "homeCompanionsTitle": "Сопутствующие приложения",
+  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
+
+  "homeSectionsTitle": "Разделы",
+  "@homeSectionsTitle": { "description": "Sections column heading" },
+
+  "homeStatusInstalled": "Установлено",
+  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
+
+  "homeStatusMissing": "Нет",
+  "@homeStatusMissing": { "description": "Companion APK status: missing" },
+
+  "homeStatusUnknown": "Неизвестно",
+  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
+
+  "homeInstallAction": "Установить",
+  "@homeInstallAction": { "description": "Install companion APK button on home" }
 }
