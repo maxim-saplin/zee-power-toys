@@ -10,6 +10,7 @@ import '../services/config_store.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
+import '../services/fakes/fake_speedcam_service.dart';
 
 /// Speedcam settings — harvest/DB first (0037), then radar (0034).
 class SpeedcamSettingsScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,7 @@ class _SpeedcamSettingsScreenState
   List<SpeedcamPoint> _sampleCams = const [];
   String? _error;
   bool _busy = false;
+  bool _demoActive = false;
   String? _policyNote;
 
   SpeedcamConfig get _speedcamCfg =>
@@ -135,6 +137,33 @@ class _SpeedcamSettingsScreenState
     }
   }
 
+
+  Future<void> _startHudDemo() async {
+    final svc = ref.read(speedcamServiceProvider);
+    final cams = svc.snapshot.cams.isNotEmpty
+        ? svc.snapshot.cams
+        : FakeSpeedcamService.kFakeBySampleCams;
+    // Prefer a cam with unknown facing so 0038 mute cannot hide the demo.
+    final cam = cams.firstWhere(
+      (c) => c.direction == null || c.direction!.trim().isEmpty,
+      orElse: () => cams.first,
+    );
+    // 200 m south; heading null → facing filter fail-open (demo must show).
+    final dLat = 200 / 111320.0;
+    await svc.setHostPose(SpeedcamHostPose(
+      lat: cam.lat - dLat,
+      lon: cam.lon,
+      speedKmh: 50,
+    ));
+    if (mounted) setState(() => _demoActive = true);
+  }
+
+  Future<void> _stopHudDemo() async {
+    final svc = ref.read(speedcamServiceProvider);
+    await svc.clearHostPose();
+    if (mounted) setState(() => _demoActive = false);
+  }
+
   Future<void> _patchSpeedcam(
     SpeedcamConfig Function(SpeedcamConfig) fn, {
     bool applyPolicy = false,
@@ -238,6 +267,26 @@ class _SpeedcamSettingsScreenState
                 onChanged: (v) => _patchSpeedcam(
                   (c) => c.copyWith(soundEnabled: v),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      key: const ValueKey('speedcam-hud-demo'),
+                      onPressed: _demoActive ? null : _startHudDemo,
+                      child: Text(l10n.speedcamHudDemo),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const ValueKey('speedcam-hud-demo-stop'),
+                      onPressed: _demoActive ? _stopHudDemo : null,
+                      child: Text(l10n.speedcamHudDemoStop),
+                    ),
+                  ),
+                ],
               ),
               SettingsSlider(
                 label: l10n.speedcamDhuRange,

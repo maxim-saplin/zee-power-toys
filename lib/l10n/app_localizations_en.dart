@@ -508,6 +508,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamRadarLookAlien => 'Alien';
 
   @override
+  String get speedcamHudDemo => 'Demo on HUD';
+
+  @override
+  String get speedcamHudDemoStop => 'Stop demo';
+
+  @override
   String get speedcamDbSection => 'Local pack / DB';
 
   @override

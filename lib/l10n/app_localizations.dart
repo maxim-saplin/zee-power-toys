@@ -1076,6 +1076,18 @@ abstract class AppLocalizations {
   /// **'Alien'**
   String get speedcamRadarLookAlien;
 
+  /// Force approach demo onto live HUD
+  ///
+  /// In en, this message translates to:
+  /// **'Demo on HUD'**
+  String get speedcamHudDemo;
+
+  /// Clear HUD speedcam demo approach
+  ///
+  /// In en, this message translates to:
+  /// **'Stop demo'**
+  String get speedcamHudDemoStop;
+
   /// DHU local speedcam pack state
   ///
   /// In en, this message translates to:

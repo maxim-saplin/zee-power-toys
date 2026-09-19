@@ -491,6 +491,11 @@
   "@speedcamRadarLookDefault": { "description": "Default HUD-clean radar look" },
 "speedcamRadarLookAlien": "Alien",
   "@speedcamRadarLookAlien": { "description": "Alien motion-tracker radar look" },
+
+"speedcamHudDemo": "Демо на HUD",
+  "@speedcamHudDemo": { "description": "Force approach demo onto live HUD" },
+"speedcamHudDemoStop": "Стоп демо",
+  "@speedcamHudDemoStop": { "description": "Clear HUD speedcam demo approach" },
 "speedcamDbSection": "Локальный пакет / БД",
   "@speedcamDbSection": { "description": "DHU local speedcam pack state" },
   "speedcamDbRegion": "Регион",
