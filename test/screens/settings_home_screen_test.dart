@@ -15,6 +15,15 @@ import '../support/harness.dart';
 /// renders HudPreview which subscribes to carSignals/config providers.
 Widget _wrap(Widget child, ConfigStore store) => wrapWithProviders(child, store: store);
 
+
+Future<void> _pumpHome(WidgetTester tester, Widget home) async {
+  await tester.binding.setSurfaceSize(const Size(1100, 1400));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(home);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+}
+
 Future<SharedPrefsConfigStore> _makeStore([AppConfig cfg = const AppConfig()]) async {
   SharedPreferences.setMockInitialValues({});
   final store = SharedPrefsConfigStore();
@@ -29,24 +38,29 @@ Future<SharedPrefsConfigStore> _makeStore([AppConfig cfg = const AppConfig()]) a
 
 void main() {
   group('SettingsHomeScreen', () {
-    testWidgets('renders four section tiles', (tester) async {
+    testWidgets('renders welcome + section tiles', (tester) async {
       final store = await _makeStore();
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
+      await tester.pump(const Duration(milliseconds: 50));
 
-      // All four section titles appear (English default).
-      expect(find.text('HUD'), findsOneWidget);
-      expect(find.text('Diagnostics'), findsOneWidget);
-      expect(find.text('Language'), findsOneWidget);
-      expect(find.text('Install'), findsOneWidget);
+      expect(find.text('Welcome'), findsOneWidget);
+      expect(find.byKey(const ValueKey('companion-launcher')), findsOneWidget);
+      expect(find.byKey(const ValueKey('companion-ynavi')), findsOneWidget);
+      expect(find.text('Sections'), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-hud')), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-diagnostics')), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-language')), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-install')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-install-launcher')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-install-ynavi')), findsOneWidget);
     });
 
     testWidgets('HUD tile navigates to HudSettingsScreen', (tester) async {
       final store = await _makeStore();
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
-      await tester.tap(find.text('HUD'));
+      await tester.ensureVisible(find.byKey(const ValueKey('nav-hud')));
+      await tester.tap(find.byKey(const ValueKey('nav-hud')));
       // Not pumpAndSettle(): HudSettingsScreen's Config Preview (Block 0026)
       // forces the blinker into a perpetually-repeating blink animation, which
       // never settles. Pump past the route-push transition instead.
@@ -61,11 +75,11 @@ void main() {
   group('Language picker', () {
     testWidgets('shows App language options (System default, EN, RU)', (tester) async {
       final store = await _makeStore();
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
       // Navigate to Language — now routes to LanguageSettingsScreen (Block 0015).
-      await tester.tap(find.text('Language'));
+      await tester.ensureVisible(find.byKey(const ValueKey('nav-language')));
+      await tester.tap(find.byKey(const ValueKey('nav-language')));
       await tester.pumpAndSettle();
 
       // The new screen has 3 sections; App picker keys are still lang-system/en/ru.
@@ -82,10 +96,10 @@ void main() {
 
     testWidgets('tapping English sets locale=en in ConfigStore', (tester) async {
       final store = await _makeStore();
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
-      await tester.tap(find.text('Language'));
+      await tester.ensureVisible(find.byKey(const ValueKey('nav-language')));
+      await tester.tap(find.byKey(const ValueKey('nav-language')));
       await tester.pumpAndSettle();
 
       // Tap the English radio via its ValueKey.
@@ -97,10 +111,10 @@ void main() {
 
     testWidgets('tapping Russian sets locale=ru in ConfigStore', (tester) async {
       final store = await _makeStore();
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
-      await tester.tap(find.text('Language'));
+      await tester.ensureVisible(find.byKey(const ValueKey('nav-language')));
+      await tester.tap(find.byKey(const ValueKey('nav-language')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('lang-ru')));
@@ -111,10 +125,10 @@ void main() {
 
     testWidgets('tapping System default sets locale=null', (tester) async {
       final store = await _makeStore(const AppConfig(locale: 'ru'));
-      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
-      await tester.pump();
+      await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
-      await tester.tap(find.text('Language'));
+      await tester.ensureVisible(find.byKey(const ValueKey('nav-language')));
+      await tester.tap(find.byKey(const ValueKey('nav-language')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('lang-system')));
