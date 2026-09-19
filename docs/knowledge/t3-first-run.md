@@ -18,13 +18,16 @@ Do **not** verify a moving tip. Re-freeze explicitly if the SHA changes.
 ## Prerequisites
 
 - ADB to the DHU (`adb devices` shows the car serial). USB Peripheral may need zSupport / prior ADB enable — our in-app UsbMode write is **platform-signing gated**.
-- Release/debug APK built from the frozen tip (current `build.gradle.kts` still uses **debug signing** for release — note that USB + System language stay gated until a platform-signed APK exists).
+- APK built from the frozen tip with **AOSP/car platform signing** (`android/tools/zeekr/androiddebugkey.jks`, `useAospDebugKey=true`) — same key phase0 uses. Manifest has `sharedUserId=android.uid.system`.
+- Verify signing before install: `apksigner verify --print-certs <apk>` should show the AOSP androiddebugkey / platform cert, **not** Flutter’s default debug cert.
 
 ```bash
 cd /path/to/zee-power-toys
-git checkout 24de35e
-flutter build apk --debug   # or --release (still debug-signed today)
-# APK: build/app/outputs/flutter-apk/app-debug.apk
+git checkout <TIP>   # see Frozen tip; after signing port, tip advances
+# Ensure android/gradle.properties has useAospDebugKey=true
+flutter build apk --debug    # or --release — both use aospDebug when the key is present
+# APK: build/app/outputs/flutter-apk/app-debug.apk (or app-release.apk)
+apksigner verify --print-certs build/app/outputs/flutter-apk/app-debug.apk
 ```
 
 ## 1. Prove phase0 is out of the way
