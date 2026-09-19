@@ -214,14 +214,17 @@ class _SpeedcamSettingsScreenState
                     child: SizedBox(
                       width: side,
                       height: side,
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(color: Colors.black),
-                        child: SpeedcamRadarWidget(
-                          variant: SpeedcamRadarVariant.dhuLarge,
-                          alwaysShow: true,
-                          // Same demo contact as HUD Demo — preview must match windshield look.
-                          forceDemoDanger: SpeedcamRadarWidget.demoDanger,
-                          displayRadiusM: sc.dhuRangeM,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(side * 0.12),
+                        child: ColoredBox(
+                          color: Colors.black,
+                          child: SpeedcamRadarWidget(
+                            variant: SpeedcamRadarVariant.dhuLarge,
+                            alwaysShow: true,
+                            // Same demo contact as HUD Demo — preview must match windshield look.
+                            forceDemoDanger: SpeedcamRadarWidget.demoDanger,
+                            displayRadiusM: sc.dhuRangeM,
+                          ),
                         ),
                       ),
                     ),

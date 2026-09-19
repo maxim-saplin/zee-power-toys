@@ -334,16 +334,26 @@ class _AlienWedgePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final c = Offset(size.width / 2, size.height * 0.90);
-    final r = math.min(size.width, size.height) * 0.86;
+    final bounds = Offset.zero & size;
+    // Curved CRT face (older tube — rounded square, not sharp rect).
+    final crtRRect = RRect.fromRectAndRadius(
+      bounds.deflate(1.5),
+      Radius.circular(math.min(size.width, size.height) * 0.12),
+    );
+    final c = Offset(size.width / 2, size.height * 0.88);
+    final r = math.min(size.width, size.height) * 0.78;
+
+    // Bezel / outside CRT
+    canvas.drawRect(bounds, Paint()..color = const Color(0xFF0A0A0A));
+
+    // Clip all phosphor to curved CRT glass (hard clip via saveLayer).
+    canvas.saveLayer(bounds, Paint());
+    canvas.clipRRect(crtRRect, doAntiAlias: true);
 
     // Deep CRT black-green ground
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFF010401),
-    );
+    canvas.drawRRect(crtRRect, Paint()..color = const Color(0xFF010401));
 
-    // Heavy phosphor grain
+    // Heavy phosphor grain (inside glass only)
     final grit = Paint()..color = const Color(0x2200FF44);
     for (var i = 0; i < 140; i++) {
       final x = ((i * 131) % 997) / 997.0 * size.width;
@@ -351,10 +361,12 @@ class _AlienWedgePainter extends CustomPainter {
       canvas.drawRect(Rect.fromLTWH(x, y, 1.1, 1.1), grit);
     }
 
-    // Dense horizontal scanlines
+    // Dense horizontal scanlines with slight barrel bow near edges
     final scan = Paint()..color = const Color(0x3300FF55);
     for (var y = 0.0; y < size.height; y += 2.0) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), scan);
+      final ny = (y / size.height) * 2 - 1;
+      final bow = 3.5 * ny * ny; // edge distortion
+      canvas.drawLine(Offset(bow, y), Offset(size.width - bow, y), scan);
     }
 
     // Prop tracker: wide front fan (~100°) from bottom origin
@@ -379,7 +391,7 @@ class _AlienWedgePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Outer fan outline (double stroke like prop)
+    // Outer fan outline
     canvas.drawPath(
       wedgePath,
       Paint()
@@ -387,16 +399,8 @@ class _AlienWedgePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0,
     );
-    canvas.drawPath(
-      wedgePath,
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.25)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-    );
 
-    // Four radial dividers (prop grid)
+    // Radial dividers
     for (var i = -2; i <= 2; i++) {
       if (i == 0) continue;
       final a = baseAngle + i * (wedgeHalf / 2);
@@ -408,7 +412,6 @@ class _AlienWedgePainter extends CustomPainter {
           ..strokeWidth = 1.1,
       );
     }
-    // Center forward line thicker
     canvas.drawLine(
       c,
       Offset(c.dx + r * math.cos(baseAngle), c.dy + r * math.sin(baseAngle)),
@@ -417,7 +420,7 @@ class _AlienWedgePainter extends CustomPainter {
         ..strokeWidth = 1.4,
     );
 
-    // Static range arcs (dashed)
+    // Static range arcs (dashed) — already angularly limited to fan
     for (final frac in [0.28, 0.55, 0.82, 1.0]) {
       final rr = r * frac;
       final paint = Paint()
@@ -441,13 +444,13 @@ class _AlienWedgePainter extends CustomPainter {
       }
     }
 
-    // Expanding rings from center (growing diameter) — NOT a rotating sector.
-    canvas.save();
-    canvas.clipPath(wedgePath);
+    // Expanding rings — hard-clipped to fan (no bloom bleed outside).
+    canvas.saveLayer(bounds, Paint());
+    canvas.clipPath(wedgePath, doAntiAlias: true);
     for (var i = 0; i < 3; i++) {
       final phase = (sweepT + i / 3.0) % 1.0;
       final rr = r * phase;
-      if (rr < 4) continue;
+      if (rr < 4 || rr > r) continue;
       final fade = (1.0 - phase);
       canvas.drawArc(
         Rect.fromCircle(center: c, radius: rr),
@@ -456,25 +459,35 @@ class _AlienWedgePainter extends CustomPainter {
         false,
         Paint()
           ..color = SpeedcamRadarWidget.phosphorGlow.withValues(
-            alpha: 0.15 + 0.55 * fade,
+            alpha: 0.18 + 0.55 * fade,
           )
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0 + 2.5 * fade,
-      );
-      // Soft bloom behind the ring
-      canvas.drawArc(
-        Rect.fromCircle(center: c, radius: rr),
-        baseAngle - wedgeHalf,
-        wedgeHalf * 2,
-        false,
-        Paint()
-          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.12 * fade)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 8
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+          ..strokeWidth = 2.0 + 1.8 * fade,
       );
     }
-    canvas.restore();
+    canvas.restore(); // end wedge clip layer
+
+    // CRT edge vignette / corner distortion
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 0.95,
+        colors: [
+          const Color(0x00000000),
+          const Color(0x99000000),
+        ],
+        stops: const [0.55, 1.0],
+      ).createShader(bounds);
+    canvas.drawRRect(crtRRect, vignette);
+
+    // Glass rim highlight
+    canvas.drawRRect(
+      crtRRect,
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
 
     // Origin pip (host)
     canvas.drawCircle(
@@ -555,6 +568,9 @@ class _AlienWedgePainter extends CustomPainter {
         limit.paint(canvas, Offset(8, bottom - limit.height));
       }
     }
+
+    canvas.restore(); // end CRT glass
+
   }
 
   double _normalizeBearing(double bearingDeg) {
