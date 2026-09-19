@@ -136,7 +136,7 @@ void listenForRelay({
         case 'config':
           if (onConfig != null) {
             onConfig(AppConfig.fromJson(
-              jsonDecode(payload) as Map<String, Object?>,
+              Map<String, Object?>.from(jsonDecode(payload) as Map),
             ));
           }
         case 'carSignal':

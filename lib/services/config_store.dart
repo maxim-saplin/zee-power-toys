@@ -2,6 +2,17 @@ import 'dart:convert';
 
 import 'minimap_viewport.dart' show hudPresetSizeFraction;
 
+
+/// jsonDecode nests are [Map<String, dynamic>], which fail `is Map<String, Object?>`.
+Map<String, Object?>? _asStringKeyedMap(Object? value) {
+  if (value is Map<String, Object?>) return value;
+  if (value is Map) {
+    return value.map((k, v) => MapEntry(k.toString(), v));
+  }
+  return null;
+}
+
+
 // ---------------------------------------------------------------------------
 // MinimapLooks
 // ---------------------------------------------------------------------------
@@ -807,26 +818,33 @@ class AppConfig {
     'autoUsbPeripheral': autoUsbPeripheral,
   };
 
-  factory AppConfig.fromJson(Map<String, Object?> json) => AppConfig(
-    hudEnabled: json['hudEnabled'] as bool? ?? true,
-    safeArea: json['safeArea'] is Map<String, Object?>
-        ? HudSafeArea.fromJson(json['safeArea']! as Map<String, Object?>)
-        : const HudSafeArea(),
-    blinker: json['blinker'] is Map<String, Object?>
-        ? BlinkerConfig.fromJson(json['blinker']! as Map<String, Object?>)
-        : const BlinkerConfig(),
-    battery: json['battery'] is Map<String, Object?>
-        ? BatteryConfig.fromJson(json['battery']! as Map<String, Object?>)
-        : const BatteryConfig(),
-    minimap: json['minimap'] is Map<String, Object?>
-        ? MinimapConfig.fromJson(json['minimap']! as Map<String, Object?>)
-        : const MinimapConfig(),
-    speedcam: json['speedcam'] is Map<String, Object?>
-        ? SpeedcamConfig.fromJson(json['speedcam']! as Map<String, Object?>)
-        : const SpeedcamConfig(),
-    locale: json['locale'] as String?,
-    autoUsbPeripheral: json['autoUsbPeripheral'] as bool? ?? false,
-  );
+  factory AppConfig.fromJson(Map<String, Object?> json) {
+    final safeArea = _asStringKeyedMap(json['safeArea']);
+    final blinker = _asStringKeyedMap(json['blinker']);
+    final battery = _asStringKeyedMap(json['battery']);
+    final minimap = _asStringKeyedMap(json['minimap']);
+    final speedcam = _asStringKeyedMap(json['speedcam']);
+    return AppConfig(
+      hudEnabled: json['hudEnabled'] as bool? ?? true,
+      safeArea: safeArea != null
+          ? HudSafeArea.fromJson(safeArea)
+          : const HudSafeArea(),
+      blinker: blinker != null
+          ? BlinkerConfig.fromJson(blinker)
+          : const BlinkerConfig(),
+      battery: battery != null
+          ? BatteryConfig.fromJson(battery)
+          : const BatteryConfig(),
+      minimap: minimap != null
+          ? MinimapConfig.fromJson(minimap)
+          : const MinimapConfig(),
+      speedcam: speedcam != null
+          ? SpeedcamConfig.fromJson(speedcam)
+          : const SpeedcamConfig(),
+      locale: json['locale'] as String?,
+      autoUsbPeripheral: json['autoUsbPeripheral'] as bool? ?? false,
+    );
+  }
 
   /// Convenience: round-trip through JSON string (used by SharedPrefsConfigStore).
   factory AppConfig.fromJsonString(String s) =>
