@@ -558,6 +558,9 @@ void registerZeeExtensions({
             lon: cam.lon,
             speedKmh: double.tryParse(params['speedKmh'] ?? ''),
           ));
+        case 'reloadPack':
+          await svc.reloadFromPack();
+          break;
         case 'packStatus':
           final meta = await speedcamPack?.current(SpeedcamPackIds.by);
           return developer.ServiceExtensionResponse.result(
@@ -576,10 +579,12 @@ void registerZeeExtensions({
             );
           }
           final meta = await speedcamPack.updatePack(SpeedcamPackIds.by);
+          await speedcam?.reloadFromPack();
           return developer.ServiceExtensionResponse.result(
             jsonEncode(<String, Object?>{
               'ok': true,
               'speedcamPack': meta.toJson(),
+              'speedcam': speedcam?.snapshot.toJson(),
             }),
           );
         case 'packInstall':
@@ -611,10 +616,12 @@ void registerZeeExtensions({
             packId: params['packId'] ?? SpeedcamPackIds.by,
             jsonBody: jsonBody,
           );
+          await speedcam?.reloadFromPack();
           return developer.ServiceExtensionResponse.result(
             jsonEncode(<String, Object?>{
               'ok': true,
               'speedcamPack': installed.toJson(),
+              'speedcam': speedcam?.snapshot.toJson(),
             }),
           );
         case 'snapshot':

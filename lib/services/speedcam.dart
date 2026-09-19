@@ -47,34 +47,48 @@ class SpeedcamPoint {
 
 /// Host vehicle position for proximity (T1 inject / later GPS).
 class SpeedcamHostPose {
-  const SpeedcamHostPose({required this.lat, required this.lon, this.speedKmh});
+  const SpeedcamHostPose({
+    required this.lat,
+    required this.lon,
+    this.speedKmh,
+    this.headingDeg,
+  });
 
   final double lat;
   final double lon;
   final double? speedKmh;
 
+  /// Optional host heading degrees clockwise from north [0, 360).
+  final double? headingDeg;
+
   Map<String, Object?> toJson() => <String, Object?>{
         'lat': lat,
         'lon': lon,
         if (speedKmh != null) 'speedKmh': speedKmh,
+        if (headingDeg != null) 'headingDeg': headingDeg,
       };
 }
 
-/// Nearest cam within [approachRadiusM] (default 500 m).
+/// Nearest cam with distance + bearing; [insideApproach] when ≤ radius.
 class SpeedcamDanger {
   const SpeedcamDanger({
     required this.cam,
     required this.distanceM,
+    required this.bearingDeg,
     required this.insideApproach,
   });
 
   final SpeedcamPoint cam;
   final double distanceM;
+
+  /// Initial bearing host → cam, degrees clockwise from north [0, 360).
+  final double bearingDeg;
   final bool insideApproach;
 
   Map<String, Object?> toJson() => <String, Object?>{
         'cam': cam.toJson(),
         'distanceM': distanceM,
+        'bearingDeg': bearingDeg,
         'insideApproach': insideApproach,
       };
 }
@@ -87,6 +101,7 @@ class SpeedcamSnapshot {
     this.host,
     this.danger,
     this.approachRadiusM = 500,
+    this.camSource = 'none',
   });
 
   final bool enabled;
@@ -95,10 +110,15 @@ class SpeedcamSnapshot {
   final SpeedcamDanger? danger;
   final double approachRadiusM;
 
+  /// `pack` | `fallback` | `none`
+  final String camSource;
+
   Map<String, Object?> toJson() => <String, Object?>{
         'enabled': enabled,
         'camCount': cams.length,
-        'cams': cams.map((c) => c.toJson()).toList(),
+        'camSource': camSource,
+        // Cap dump size — full list is huge for BY (~1k); keep first 20 for FL.
+        'cams': cams.take(20).map((c) => c.toJson()).toList(),
         'host': host?.toJson(),
         'danger': danger?.toJson(),
         'approachRadiusM': approachRadiusM,
@@ -117,6 +137,23 @@ double haversineMetres(double lat1, double lon1, double lat2, double lon2) {
   return 2 * r * math.asin(math.sqrt(a));
 }
 
+/// Initial bearing from (lat1,lon1) → (lat2,lon2), degrees [0, 360).
+double initialBearingDegrees(
+  double lat1,
+  double lon1,
+  double lat2,
+  double lon2,
+) {
+  final p1 = lat1 * math.pi / 180;
+  final p2 = lat2 * math.pi / 180;
+  final dl = (lon2 - lon1) * math.pi / 180;
+  final y = math.sin(dl) * math.cos(p2);
+  final x = math.cos(p1) * math.sin(p2) -
+      math.sin(p1) * math.cos(p2) * math.cos(dl);
+  final deg = math.atan2(y, x) * 180 / math.pi;
+  return (deg + 360) % 360;
+}
+
 SpeedcamDanger? nearestDanger({
   required SpeedcamHostPose host,
   required List<SpeedcamPoint> cams,
@@ -129,6 +166,7 @@ SpeedcamDanger? nearestDanger({
       best = SpeedcamDanger(
         cam: cam,
         distanceM: d,
+        bearingDeg: initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon),
         insideApproach: d <= approachRadiusM,
       );
     }
@@ -136,11 +174,14 @@ SpeedcamDanger? nearestDanger({
   return best;
 }
 
-/// Speedcam port — nearby cams + danger; enable + host pose commands.
+/// Speedcam port — nearby cams + danger; enable + host pose + reload pack.
 abstract class SpeedcamService {
   Stream<SpeedcamSnapshot> get snapshots;
   SpeedcamSnapshot get snapshot;
   Future<void> setEnabled(bool on);
   Future<void> setHostPose(SpeedcamHostPose pose);
   Future<void> clearHostPose();
+
+  /// Reload cams from the wired pack store (no-op if none).
+  Future<void> reloadFromPack();
 }

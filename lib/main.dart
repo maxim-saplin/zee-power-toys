@@ -26,7 +26,7 @@ import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
-import 'services/fakes/fake_speedcam_service.dart';
+import 'services/default_speedcam_service.dart';
 import 'services/fakes/fake_speedcam_pack_store.dart';
 import 'services/speedcam_pack_store.dart';
 import 'services/fakes/fake_minimap_host.dart';
@@ -107,9 +107,6 @@ Future<void> dhuMain(List<String> args) async {
       ? NativePackageStatus()
       : FakePackageStatus();
 
-  // Speedcam (0030): Fake with embedded BY sample until proximity uses packs.
-  final SpeedcamService speedcamRaw = FakeSpeedcamService();
-
   // Speedcam packs (0031): file cache on device/desktop; Fake on web.
   final SpeedcamPackStore speedcamPackRaw;
   if (kIsWeb) {
@@ -119,6 +116,11 @@ Future<void> dhuMain(List<String> args) async {
     final root = Directory('${support.path}/speedcam_packs');
     speedcamPackRaw = FileSpeedcamPackStore(root: root);
   }
+
+  // Speedcam (0032): DefaultService loads pack cams; Fake samples only as fallback.
+  final SpeedcamService speedcamRaw = DefaultSpeedcamService(
+    packStore: speedcamPackRaw,
+  );
 
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
@@ -288,8 +290,8 @@ void hudMain(List<String> args) {
   // ADR 0003: each isolate has its own FakeCarSignals; the DHU one is the source.
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
-  final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
+  final speedcam = DefaultSpeedcamService(packStore: speedcamPack);
 
   registerZeeExtensions(
     surface: 'hud',

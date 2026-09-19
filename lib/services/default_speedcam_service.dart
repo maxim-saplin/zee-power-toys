@@ -1,61 +1,36 @@
 import 'dart:async';
 
-import '../speedcam.dart';
+import 'fakes/fake_speedcam_service.dart';
+import 'speedcam.dart';
+import 'speedcam_pack_store.dart';
 
-/// T1 Fake — embedded BY-ish sample cams; FL injects host pose to flip danger.
-class FakeSpeedcamService implements SpeedcamService {
-  FakeSpeedcamService({
-    List<SpeedcamPoint>? sampleCams,
+/// Production Service — pack cams + pose → danger (bearing/distance, 500 m).
+class DefaultSpeedcamService implements SpeedcamService {
+  DefaultSpeedcamService({
+    required SpeedcamPackStore packStore,
+    this.packId = SpeedcamPackIds.by,
+    List<SpeedcamPoint>? fallbackCams,
     this.approachRadiusM = 500,
-  })  : _cams = List<SpeedcamPoint>.unmodifiable(
-          sampleCams ?? kFakeBySampleCams,
+  })  : _pack = packStore,
+        _fallback = List<SpeedcamPoint>.unmodifiable(
+          fallbackCams ?? FakeSpeedcamService.kFakeBySampleCams,
         ),
         _ctrl = StreamController<SpeedcamSnapshot>.broadcast() {
+    _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+    _camSource = 'fallback';
     _emit();
+    // Fire-and-forget initial pack load; callers may await reloadFromPack.
+    unawaited(reloadFromPack());
   }
 
-  static const approachRadiusMDefault = 500.0;
-
-  /// Tiny Belarus sample (Minsk area) for T1 approach inject.
-  static const kFakeBySampleCams = <SpeedcamPoint>[
-    SpeedcamPoint(
-      id: 'by-sample-1',
-      lat: 53.9045,
-      lon: 27.5615,
-      maxspeed: 60,
-      direction: 'NE',
-    ),
-    SpeedcamPoint(
-      id: 'by-sample-2',
-      lat: 53.9100,
-      lon: 27.5800,
-      maxspeed: 70,
-    ),
-    SpeedcamPoint(
-      id: 'by-sample-3',
-      lat: 53.9000,
-      lon: 27.5500,
-      maxspeed: 50,
-      direction: 'S',
-    ),
-    SpeedcamPoint(
-      id: 'by-sample-4',
-      lat: 52.0975,
-      lon: 23.7340,
-      maxspeed: 60,
-    ), // Brest-ish
-    SpeedcamPoint(
-      id: 'by-sample-5',
-      lat: 55.1848,
-      lon: 30.2016,
-      maxspeed: 90,
-    ), // Vitebsk-ish
-  ];
-
-  final List<SpeedcamPoint> _cams;
+  final SpeedcamPackStore _pack;
+  final String packId;
+  final List<SpeedcamPoint> _fallback;
   final double approachRadiusM;
   final StreamController<SpeedcamSnapshot> _ctrl;
 
+  List<SpeedcamPoint> _cams = const [];
+  String _camSource = 'none';
   bool _enabled = true;
   SpeedcamHostPose? _host;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
@@ -86,18 +61,29 @@ class FakeSpeedcamService implements SpeedcamService {
 
   @override
   Future<void> reloadFromPack() async {
-    // Fake owns embedded samples; no pack.
+    final cams = await _pack.loadCams(packId);
+    if (cams.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(cams);
+      _camSource = 'pack';
+    } else {
+      _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+      _camSource = 'fallback';
+    }
     _emit();
   }
 
-  /// Test/FL helper: place host [distanceM] due north of [cam] (approx).
-  Future<void> approachCam(SpeedcamPoint cam, {required double distanceM, double? speedKmh}) {
-    // 1 deg lat ≈ 111_320 m
+  /// Place host [distanceM] due south of [cam] (approach from south → bearing ~0).
+  Future<void> approachCam(
+    SpeedcamPoint cam, {
+    required double distanceM,
+    double? speedKmh,
+  }) {
     final dLat = distanceM / 111320.0;
     return setHostPose(SpeedcamHostPose(
       lat: cam.lat - dLat,
       lon: cam.lon,
       speedKmh: speedKmh,
+      headingDeg: 0,
     ));
   }
 
@@ -116,7 +102,7 @@ class FakeSpeedcamService implements SpeedcamService {
       host: host,
       danger: danger,
       approachRadiusM: approachRadiusM,
-      camSource: _enabled ? 'fallback' : 'none',
+      camSource: _enabled ? _camSource : 'none',
     );
     _ctrl.add(_snapshot);
   }
