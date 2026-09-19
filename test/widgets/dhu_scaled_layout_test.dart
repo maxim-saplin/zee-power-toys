@@ -12,8 +12,8 @@ void main() {
       expect(dhuSmartScale(1600, 1.0), 2.0);
     });
 
-    test('mid-range automotive width (2000 @ dpr 1.0) → 2.5', () {
-      expect(dhuSmartScale(2000, 1.0), closeTo(2.5, 1e-9));
+    test('mid-range automotive width (2000 @ dpr 1.0) → 2.43 (clamped)', () {
+      expect(dhuSmartScale(2000, 1.0), 2.43); // 2.5 → clamp 2.43
     });
 
     test('just below the automotive width (1599) → 1.0 (no scaling)', () {
