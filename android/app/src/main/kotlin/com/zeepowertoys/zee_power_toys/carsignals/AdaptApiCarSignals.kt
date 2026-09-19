@@ -20,7 +20,7 @@ import java.lang.reflect.Proxy
 //
 // Signal IDs are ported verbatim from car-signals-adaptapi.md:
 //   SPEED=0x00100100  BLINKER_L=0x21051100  BLINKER_R=0x21051200
-//   CHARGE_STATE=0x00201500  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
+//   CHARGE_STATE=0x00201500  BATTERY_SOC=0x00404000  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
 //   CHARGE_V=0x24140100  CHARGE_A=0x24140200  CHARGE_KW=0x2420C000
 //   POWER_FLOW=0x24010100  ZONE_GLOBAL=0x80000000
 class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
@@ -34,8 +34,11 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private val BLINKER_POLL_MS = 50L
     private val BLINKER_POLL_BACKOFF_MS = 1000L
     private val CHARGE_STATE  = 0x00201500  // getSensorEvent; 0=idle,1=charging,...
-    private val BATTERY_LEVEL = 0x00100A00  // % float
+    // Prefer filtered SoC (phase0 / zee_hud_2 HUD path). Raw LEVEL kept as fallback.
+    private val BATTERY_SOC   = 0x00404000  // TYPE_EV_BATTERY_PERCENTAGE % float
+    private val BATTERY_LEVEL = 0x00100A00  // SENSOR_TYPE_EV_BATTERY_LEVEL % float
     private val BATTERY_TEMP  = 0x00102A00  // °C float
+    private val BATTERY_POLL_MS = 2000L
     private val CHARGE_VOLTS  = 0x24140100
     private val CHARGE_AMPS   = 0x24140200
     private val CHARGE_KW     = 0x2420C000
@@ -72,6 +75,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private var blinkerPollHandler: Handler? = null
     @Volatile private var lastEmittedBlinker: String = "off"
 
+    // Battery SoC/temp: listeners often never fire until change; seed + slow poll.
+    private var batteryPollThread: HandlerThread? = null
+    private var batteryPollHandler: Handler? = null
+
     // Current in-memory state (updated by callbacks for snapshot())
     @Volatile private var lastSnapshot = CarSignalSnapshot()
 
@@ -99,14 +106,17 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             }
         }
         registerListeners()
+        seedBatteryFromLatest()
         startBlinkerPoll()
-        Log.i(TAG, "AdaptApiCarSignals started — listeners registered + blinker poll")
+        startBatteryPoll()
+        Log.i(TAG, "AdaptApiCarSignals started — listeners + SoC seed/poll + blinker poll")
     }
 
     override fun snapshot(): CarSignalSnapshot = lastSnapshot
 
     override fun stop() {
         try {
+            stopBatteryPoll()
             stopBlinkerPoll()
             unregisterListeners()
             ReflectionUtils.callInstance(iCar ?: return, "disconnect")
@@ -149,17 +159,11 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                             lastSnapshot = lastSnapshot.copy(speedKmh = kmh)
                             emitter?.invoke(SignalEvent.Speed(kmh))
                         }
-                        BATTERY_LEVEL -> {
-                            val pct = value.toInt().coerceIn(0, 100)
-                            val tempC = lastSnapshot.batteryTempC ?: 25.0
-                            lastSnapshot = lastSnapshot.copy(batteryPct = pct)
-                            emitter?.invoke(SignalEvent.Battery(pct, tempC))
+                        BATTERY_SOC, BATTERY_LEVEL -> {
+                            publishBatteryPct(value.toInt().coerceIn(0, 100))
                         }
                         BATTERY_TEMP -> {
-                            val pct = lastSnapshot.batteryPct ?: 0
-                            val tempC = value.toDouble()
-                            lastSnapshot = lastSnapshot.copy(batteryTempC = tempC)
-                            emitter?.invoke(SignalEvent.Battery(pct, tempC))
+                            publishBatteryTemp(value.toDouble())
                         }
                     }
                 }
@@ -186,7 +190,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             sensorHandler,
         )
         // Try 3-arg form (with rate) first; fall back to 2-arg
-        val sensorIds = intArrayOf(SPEED, BATTERY_LEVEL, BATTERY_TEMP)
+        val sensorIds = intArrayOf(SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP)
         for (sid in sensorIds) {
             val r3 = ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid, 0)
             if (!r3.invoked || r3.error != null) {
@@ -276,6 +280,68 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         ReflectionUtils.callInstanceResult(fm, "registerFunctionValueWatcher", funcIds, functionWatcherProxy)
     }
 
+
+    private fun readSensorFloat(sensorId: Int): Float? {
+        val sm = sensorMgr ?: return null
+        val result = ReflectionUtils.callInstanceResult(sm, "getSensorLatestValue", sensorId)
+        if (!result.invoked || result.error != null) return null
+        val v = result.value as? Float ?: return null
+        return if (ReflectionUtils.nonSentinelFloat(v)) v else null
+    }
+
+    /** Seed SoC + temp via getSensorLatestValue (phase0 HUD path). */
+    private fun seedBatteryFromLatest() {
+        val soc = readSensorFloat(BATTERY_SOC) ?: readSensorFloat(BATTERY_LEVEL)
+        val temp = readSensorFloat(BATTERY_TEMP)
+        if (soc != null) publishBatteryPct(soc.toInt().coerceIn(0, 100))
+        if (temp != null) publishBatteryTemp(temp.toDouble())
+        Log.i(
+            TAG,
+            "Battery seed: soc=${soc ?: "null"} temp=${temp ?: "null"} " +
+                "pct=${lastSnapshot.batteryPct} tempC=${lastSnapshot.batteryTempC}",
+        )
+    }
+
+    private fun publishBatteryPct(pct: Int) {
+        val tempC = lastSnapshot.batteryTempC ?: 25.0
+        lastSnapshot = lastSnapshot.copy(batteryPct = pct)
+        emitter?.invoke(SignalEvent.Battery(pct, tempC))
+    }
+
+    private fun publishBatteryTemp(tempC: Double) {
+        lastSnapshot = lastSnapshot.copy(batteryTempC = tempC)
+        val pct = lastSnapshot.batteryPct ?: return
+        emitter?.invoke(SignalEvent.Battery(pct, tempC))
+    }
+
+    private fun startBatteryPoll() {
+        if (batteryPollThread != null) return
+        val thread = HandlerThread("ZeeBatteryPoll").also { it.start() }
+        batteryPollThread = thread
+        val handler = Handler(thread.looper)
+        batteryPollHandler = handler
+        val runnable = object : Runnable {
+            override fun run() {
+                val soc = readSensorFloat(BATTERY_SOC) ?: readSensorFloat(BATTERY_LEVEL)
+                val temp = readSensorFloat(BATTERY_TEMP)
+                Handler(Looper.getMainLooper()).post {
+                    if (soc != null) publishBatteryPct(soc.toInt().coerceIn(0, 100))
+                    if (temp != null) publishBatteryTemp(temp.toDouble())
+                }
+                batteryPollHandler?.postDelayed(this, BATTERY_POLL_MS)
+            }
+        }
+        handler.post(runnable)
+        Log.i(TAG, "Battery SoC poll started (${BATTERY_POLL_MS}ms)")
+    }
+
+    private fun stopBatteryPoll() {
+        batteryPollHandler?.removeCallbacksAndMessages(null)
+        batteryPollThread?.quitSafely()
+        batteryPollHandler = null
+        batteryPollThread = null
+        Log.i(TAG, "Battery SoC poll stopped")
+    }
 
     private fun publishBlinkerState(state: String) {
         if (state == lastEmittedBlinker && lastSnapshot.blinker == state) return
