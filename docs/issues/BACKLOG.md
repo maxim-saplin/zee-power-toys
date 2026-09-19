@@ -75,6 +75,33 @@ One stub per capability; each fans into its own Blocks when its turn comes.
 | [0016](0016-usb-adb-toggle.md) | zSupport-1.3.5 decompile → USB host/peripheral ADB toggle (spike) | Research | **done** |
 | [0026](0026-hud-preview-vs-live-simulate-split.md) | Split Config Preview (always-visible demo, no signal needed) from Developer Simulate (in-app live CarSignal injection); retire dead `hudBoxOn` | HUD · preview | **done** |
 
+
+### T3 boot remediations  (2026-09-19 — Maxim)
+
+Port remaining phase0/`zee_hud_2` boot tooling onto zee-power-toys. Partial auto-start already exists ([0010](0010-boot-fgs-autolaunch.md): BootReceiver → FGS + optional USB).
+
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| — | **Boot: cluster locale → English** — AdaptAPI `0x20318a00=1` on `BOOT_COMPLETED` (phase0 `BootActions.pushClusterLocaleEnglish`) | **done** | Wired via `BootRemediation.runOnBootAsync` |
+| — | **Boot: YNavi Doze whitelist** — add `ru.yandex.yandexnavi` to power-save whitelist | **done** | Same BootRemediation path |
+| — | **Manual silent YNavi restart** — `forceStopPackage` (phase0 `RESTART_YNAVI_SILENT`); Language settings + `zee/boot.restartYNavi` | **done** | No automatic network-recovery loop (phase0 retired that) |
+| — | **Automatic YNavi/network remediation on flaky data** | **wontfix / upstream** | Phase0 retired automatic restart; traffic fix lives in YNavi mod |
+
+### Publish & release  (customer backlog 2026-09-19 — Maxim)
+
+Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](0020-leftovers-scale-install-minimap.md)); the **published artifacts + links + CI** are not. Track here until promoted to numbered Blocks.
+
+| ID | Item | Status | Notes vs today |
+|----|------|--------|----------------|
+| — | **Publish Launcher APKs** — inventory correct XCLauncher versions for Zee APK mode; publish signed builds to GitHub (LFS) so Install → Launcher is real | **backlog** | `kLauncherAsset` → `maxim-saplin/zee_hud_2` `main` …/`XCLauncher3-670-proxy-signed-v8.apk`. Download URL fixed; **never runtime-confirmed** on T2/T3. Need: canonical version list + publish process + bump `install_targets.dart`. |
+| — | **Publish YNavi mod APKs** — merge `hud` → `main` if still needed; publish a **post-P1** bind-capable APK (v12+) to LFS | **backlog** | `kYnaviAsset` → `maxim-saplin/ynavi-zee` `hud`/`modded_apks/zeekr_signed_v11.apk` is **KNOWN BROKEN** (pre-P1 host allowlist; bind fails). Working build lives in gitignored `builds/`. Must republish then bump path. |
+| — | **Proper GH links in Install UI** — show repo/branch/path (or release URL) on each Install card; openable | **backlog** | `InstallScreen` today: name + desc + Install button only — no visible GitHub coordinates. |
+| — | **YNavi build variant without left letterbox** — ZeekrOS 7+ layout; `ZEEAPP_LETTERBOX_LEFT_DIP` (480dp) no longer wanted; ship a separate APK (or preset) without left padding | **backlog** | Upstream `ynavi-zee` (`features/1.mapactivity_letterbox_padding`, `dimens.xml` zeeapp_letterbox_left). Dual publish: legacy padded + OS7+ unpadded. Wire second Install target or selector. |
+| — | **GH Actions for zee-power-toys + release process** — CI (analyze/test/apk) and tagged release artifacts | **backlog** | No `.github/workflows` in this repo today. |
+| — | **README as product landing** — intro, quick start, screenshots, guide, links to sibling repos (ynavi-zee / launcher / phase0), architecture at the bottom | **backlog** | Current README is status/layout for agents, not a GH landing page. |
+
+Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
+
 ### Out of scope (post-MVP, architecture-ready)
 
 See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-testing.md) — how to compare phase0 reference vs our app on one emulator or on-car, without conflict.

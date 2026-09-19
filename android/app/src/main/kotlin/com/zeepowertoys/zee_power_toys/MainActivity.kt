@@ -21,6 +21,7 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import com.zeepowertoys.zee_power_toys.boot.BootRemediation
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
@@ -209,6 +210,19 @@ class MainActivity : FlutterActivity() {
                             "hudEnabledConfig" to hudEnabledCfg,
                             "configReadOk" to true,
                         ))
+                    }
+                    // Manual silent YNavi restart (phase0 RESTART_YNAVI_SILENT).
+                    "restartYNavi" -> {
+                        val ok = BootRemediation.restartYNaviSilent(applicationContext)
+                        result.success(mapOf("ok" to ok))
+                    }
+                    "pushClusterLocaleEnglish" -> {
+                        Thread {
+                            val ok = BootRemediation.pushClusterLocaleEnglish(applicationContext)
+                            runOnUiThread {
+                                result.success(mapOf("ok" to ok))
+                            }
+                        }.start()
                     }
                     else -> result.notImplemented()
                 }
