@@ -488,27 +488,7 @@ class _AlienWedgePainter extends CustomPainter {
       Paint()..color = const Color(0xFFE8FFE8),
     );
 
-    // Orange bezel cue labels (prop chrome, aesthetic only)
-    final labelStyle = TextStyle(
-      color: const Color(0xFFFF6A1A).withValues(alpha: 0.85),
-      fontSize: 8,
-      fontFamily: 'monospace',
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.8,
-    );
-    for (final entry in [
-      (Offset(6, 6), 'ATT'),
-      (Offset(6, 16), 'SUS'),
-      (Offset(size.width - 28, 6), 'DEC'),
-    ]) {
-      final tp = TextPainter(
-        text: TextSpan(text: entry.$2, style: labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, entry.$1);
-    }
-
-    // Blips — square-ish contacts like prop (rounded rect)
+    // Blips — round dots (Maxim: not squares)
     for (final b in blips) {
       final rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
       final a = baseAngle + rel;
@@ -527,55 +507,53 @@ class _AlienWedgePainter extends CustomPainter {
         b.distanceM,
         displayRadiusM: displayRadiusM,
       );
-      final glow = Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.4)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: p, width: rad * 2.2, height: rad * 2.2),
-          const Radius.circular(1.5),
-        ),
-        glow,
+      canvas.drawCircle(
+        p,
+        rad + 2.2,
+        Paint()
+          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.35)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: p, width: rad * 1.6, height: rad * 1.6),
-          const Radius.circular(1),
-        ),
+      canvas.drawCircle(
+        p,
+        rad,
         Paint()
           ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha),
       );
     }
 
     if (readoutM != null) {
-      final tp = TextPainter(
+      // Large distance in km; smaller camera speed limit below (Maxim).
+      final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
           style: const TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 13,
+            fontSize: 22,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
+            height: 1.0,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(6, size.height - tp.height - 6));
-      // metres hint smaller
-      final tp2 = TextPainter(
+      final limit = TextPainter(
         text: TextSpan(
-          text: maxspeed != null
-              ? '${readoutM!.round()}m · $maxspeed'
-              : '${readoutM!.round()}m',
+          text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
-            color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.7),
-            fontSize: 9,
+            color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
+            fontSize: 12,
             fontFamily: 'monospace',
+            fontWeight: FontWeight.w600,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp2.paint(canvas, Offset(6, size.height - tp.height - tp2.height - 8));
+      final bottom = size.height - 8;
+      km.paint(canvas, Offset(8, bottom - km.height - (limit.height > 0 ? limit.height + 2 : 0)));
+      if (maxspeed != null) {
+        limit.paint(canvas, Offset(8, bottom - limit.height));
+      }
     }
   }
 

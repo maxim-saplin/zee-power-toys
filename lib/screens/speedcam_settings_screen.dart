@@ -219,6 +219,8 @@ class _SpeedcamSettingsScreenState
                         child: SpeedcamRadarWidget(
                           variant: SpeedcamRadarVariant.dhuLarge,
                           alwaysShow: true,
+                          // Same demo contact as HUD Demo — preview must match windshield look.
+                          forceDemoDanger: SpeedcamRadarWidget.demoDanger,
                           displayRadiusM: sc.dhuRangeM,
                         ),
                       ),
