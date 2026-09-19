@@ -486,7 +486,10 @@ class MainActivity : FlutterActivity() {
         // measured to affect render resolution/AA only — NOT the geographic
         // area YNavi shows (see resizeYNaviSurface doc). Left at phase0's
         // value; raising it further showed no additional benefit in testing.
-        var bufScale: Float = 2.0f,
+        var bufScale: Float = 2.0f, // legacy; prefer minimapScale (phase0)
+        // Phase0 HudSettings.minimapScale — buffer = viewport / scale.
+        // Default 0.5 → 2× buffer (more map in the same square).
+        var minimapScale: Float = 0.5f,
         // Multiplier on the dpi reported to YNavi's SurfaceContainer.
         // Measured across 0.8x-4.0x (both via live resizeYNaviSurface() calls
         // AND via a full stop/start cold-bind so a fresh onSurfaceAvailable
@@ -596,6 +599,20 @@ class MainActivity : FlutterActivity() {
      * IAppHostStub/ICarHostStub; out of scope here since the dpi/buf levers
      * were not shown to control zoom at all, cold-start included.
      */
+
+    /** Phase0 buffer size: viewport / minimapScale (scale in 0.25..1). */
+    private fun bufferSizeForViewport(viewportW: Int, viewportH: Int): Pair<Int, Int> {
+        val scale = minimapParams.minimapScale.coerceIn(0.25f, 1.0f)
+        return if (scale < 1.0f) {
+            Pair(
+                (viewportW / scale).toInt().coerceAtLeast(1),
+                (viewportH / scale).toInt().coerceAtLeast(1),
+            )
+        } else {
+            Pair(viewportW.coerceAtLeast(1), viewportH.coerceAtLeast(1))
+        }
+    }
+
     private fun resizeYNaviSurface(
         viewportW: Int,
         viewportH: Int,
@@ -614,8 +631,9 @@ class MainActivity : FlutterActivity() {
             Log.w(TAG, "resizeYNaviSurface: no SurfaceTexture yet — skip")
             return
         }
-        val bufW = (bufWOverride ?: (viewportW * minimapParams.bufScale).toInt()).coerceAtLeast(1)
-        val bufH = (bufHOverride ?: (viewportH * minimapParams.bufScale).toInt()).coerceAtLeast(1)
+        val (computedW, computedH) = bufferSizeForViewport(viewportW, viewportH)
+        val bufW = (bufWOverride ?: computedW).coerceAtLeast(1)
+        val bufH = (bufHOverride ?: computedH).coerceAtLeast(1)
         val dpi = (dpiOverride ?: (hudDensityDpi() * minimapParams.dpiScale).toInt()).coerceAtLeast(1)
         st.setDefaultBufferSize(bufW, bufH)
         host.updateSurface(Surface(st), bufW, bufH, dpi)
@@ -765,7 +783,15 @@ class MainActivity : FlutterActivity() {
                         "invert"     -> asBool()?.let { minimapParams.invert = it }
                         "huePass"    -> asFloat()?.let { minimapParams.huePass = it }
                         "hueAngle"   -> asInt()?.let { minimapParams.hueAngle = it }
-                        "bufScale"   -> asFloat()?.let { minimapParams.bufScale = it }
+                        "bufScale"   -> asFloat()?.let {
+                            // Legacy: bufScale 2.0 ≡ minimapScale 0.5
+                            minimapParams.bufScale = it
+                            if (it > 0f) minimapParams.minimapScale = (1f / it).coerceIn(0.25f, 1.0f)
+                        }
+                        "minimapScale" -> asFloat()?.let {
+                            minimapParams.minimapScale = it.coerceIn(0.25f, 1.0f)
+                            minimapParams.bufScale = 1f / minimapParams.minimapScale
+                        }
                         "dpiScale"   -> asFloat()?.let { minimapParams.dpiScale = it }
                         else -> recognized = false
                     }
@@ -775,7 +801,20 @@ class MainActivity : FlutterActivity() {
                         return@post
                     }
                     when (key) {
-                        "bufScale", "dpiScale" -> resizeYNaviSurface(v.width, v.height)
+                        "bufScale", "minimapScale", "dpiScale" -> {
+                            // Cold rebind — resizeYNaviSurface alone does not change
+                            // geographic zoom on this YNavi build (onSurfaceAvailable
+                            // re-dispatch is ignored). Stop + parkForYNavi forces a
+                            // fresh SurfaceTexture and start() with new buffer size.
+                            val host = yNaviCarAppHost
+                            if (host != null && host.isActive) {
+                                host.stop()
+                                v.parkForYNavi()
+                                Log.i(TAG, "setMinimapParam($key): cold rebind via parkForYNavi scale=${minimapParams.minimapScale}")
+                            } else {
+                                resizeYNaviSurface(v.width, v.height)
+                            }
+                        }
                         else -> applyFilter()
                     }
                     Log.i(TAG, "setMinimapParam($key=$raw): APPLIED -> $minimapParams")
@@ -820,11 +859,10 @@ class MainActivity : FlutterActivity() {
             // YNavi's render time instead of just downscaling the oversampled bitmap
             // (Task 2/Task 3 — see MinimapParams doc for the measured defaults).
             val dpi = (hudDensityDpi() * minimapParams.dpiScale).toInt().coerceAtLeast(1)
-            val bufW = (width * minimapParams.bufScale).toInt().coerceAtLeast(1)
-            val bufH = (height * minimapParams.bufScale).toInt().coerceAtLeast(1)
+            val (bufW, bufH) = bufferSizeForViewport(width, height)
             surface.setDefaultBufferSize(bufW, bufH)
             host.start(Surface(surface), bufW, bufH, dpi)
-            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height buf=${bufW}x${bufH} dpi=$dpi")
+            Log.i(TAG, "startYNaviOnSurfaceReady: YNavi host started w=$width h=$height buf=${bufW}x${bufH} scale=${minimapParams.minimapScale} dpi=$dpi")
         } else {
             // Native gate (Task 1): this path should not normally be reached —
             // setMinimap() already refuses to parkForYNavi() when YNavi is

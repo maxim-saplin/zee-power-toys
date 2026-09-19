@@ -187,6 +187,34 @@ class MinimapSettingsScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: Insets.md),
+            SettingsSlider(
+              label: l10n.minimapContentScale,
+              valueLabel: cfg.contentScale.toStringAsFixed(1),
+              minLabel: '0.3',
+              maxLabel: '1.0',
+              sliderKey: const ValueKey('minimap-content-scale-slider'),
+              min: 0.3,
+              max: 1.0,
+              divisions: 7,
+              value: cfg.contentScale.clamp(0.3, 1.0),
+              onChanged: (v) {
+                store.setConfig(
+                  store.value.copyWith(
+                    minimap: cfg.copyWith(contentScale: v),
+                  ),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: Insets.xs),
+              child: Text(
+                l10n.minimapContentScaleHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ),
           ],
         ),
 

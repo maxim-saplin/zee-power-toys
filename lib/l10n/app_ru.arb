@@ -432,5 +432,12 @@
   "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
 
   "homeInstallAction": "Установить",
-  "@homeInstallAction": { "description": "Install companion APK button on home" }
+  "@homeInstallAction": { "description": "Install companion APK button on home" },
+
+  "minimapContentScale": "Плотность карты",
+  "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
+
+  "minimapContentScaleHint": "Меньше = больше области карты (по умолчанию 0.5)",
+  "@minimapContentScaleHint": { "description": "Hint under map density slider" }
+
 }

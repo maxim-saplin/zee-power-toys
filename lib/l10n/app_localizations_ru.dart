@@ -447,4 +447,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeInstallAction => 'Установить';
+
+  @override
+  String get minimapContentScale => 'Плотность карты';
+
+  @override
+  String get minimapContentScaleHint =>
+      'Меньше = больше области карты (по умолчанию 0.5)';
 }

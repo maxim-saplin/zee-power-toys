@@ -421,12 +421,14 @@ void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
       .enable(mm.enabled)
       .then((r) => _lastMinimapNative = r)
       .catchError((e) => _lastMinimapNative = 'error:$e');
-  // Look section (Task 1): push colour preset + brightness(threshold) +
-  // contrast to the native ColorMatrix filter. Unconditional and idempotent
-  // — like setBounds/enable above, `setMinimapParam` NOOP-logs on the native
-  // side when a param is already applied, so re-sending on every config
-  // change (including before YNavi is bound) is safe.
-  host.setParams(mm.looks.toParams()).catchError((_) {});
+  // Look + content density (Block 0028): colour filter knobs + phase0
+  // minimapScale (contentScale). Native cold-rebinds YNavi when scale changes.
+  final scale = mm.contentScale.clamp(0.3, 1.0);
+  final params = <String, Object?>{
+    ...mm.looks.toParams(),
+    'minimapScale': scale,
+  };
+  host.setParams(params).catchError((_) {});
 }
 
 // ---------------------------------------------------------------------------

@@ -9,10 +9,9 @@ import 'config_store.dart';
 const String _kPrefKey = 'zee.config';
 
 /// Bumped when we must rewrite persisted minimap fields for existing installs.
-/// v2 (2026-09-19): force phase0 White looks + clear advanced lock (cyan/3.5/165
-/// and advanced=true left Compact/Balanced/Large dead on the car).
+/// v3 (2026-09-19): White/3.0/150, advanced=false, contentScale=0.5 (phase0 density).
 const String _kSchemaKey = 'zee.config.schema';
-const int _kSchemaVersion = 2;
+const int _kSchemaVersion = 3;
 
 /// SharedPreferences-backed ConfigStore.
 /// The whole AppConfig is stored as one JSON string under [_kPrefKey].
@@ -43,24 +42,24 @@ class SharedPrefsConfigStore implements ConfigStore {
     }
     final schema = prefs.getInt(_kSchemaKey) ?? 0;
     if (schema < _kSchemaVersion) {
-      _value = _migrateToV2(_value);
+      _value = _migrateMinimapPhase0(_value);
       await prefs.setString(_kPrefKey, jsonEncode(_value.toJson()));
       await prefs.setInt(_kSchemaKey, _kSchemaVersion);
     }
   }
 
   /// One-shot car/desktop migration: unlock presets + phase0 White look.
-  static AppConfig _migrateToV2(AppConfig cfg) {
+  static AppConfig _migrateMinimapPhase0(AppConfig cfg) {
     final mm = cfg.minimap;
     return cfg.copyWith(
       minimap: mm.copyWith(
         advanced: false,
+        contentScale: 0.5,
         looks: const MinimapLooks(
           colorPreset: 'white',
           contrast: 3.0,
           threshold: 150.0,
         ),
-        // Keep sizeFraction if set; else leave null so preset wins.
       ),
     );
   }

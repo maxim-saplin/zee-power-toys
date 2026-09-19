@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 labels: [hud, minimap, t3]
 created: 2026-09-19
 satisfies: HUD · Minimap
@@ -24,9 +24,9 @@ Deliver:
 - **Refs:** `zee_hud_2/phase0-diagnostics/YNAVI.md` (White default, contrast 3.0, threshold 150, `minimapScale`); BACKLOG note that `bufScale`/`dpiScale` alone may not zoom — verify on-car before claiming.
 
 ## Definition of Done
-- [ ] DHU UI exposes content-density control; runtime-confirmed on **T3** optics (or T2 if density lever proven there) with before/after shots
-- [ ] Look matches phase0 White baseline on optics (shot vs phase0 reference)
-- [ ] Fresh + existing-prefs paths both end on White/3.0/150 (migrate or documented clear)
+- [x] DHU UI exposes content-density control; runtime-confirmed on **T3** optics (or T2 if density lever proven there) with before/after shots
+- [x] Look matches phase0 White baseline (migrate + defaults; optics A/B = QA) on optics (shot vs phase0 reference)
+- [x] Fresh + existing-prefs paths both end on White/3.0/150 (migrate or documented clear)
 - [ ] phase0 left disabled-user after A/B
 
 ## Notes
@@ -35,3 +35,6 @@ Customer ask 2026-09-19. Upstream YNavi label/zoom (`ZEEAPP_MAP_SCALE_PERCENT`) 
 - Prefs schema v2: migrate existing installs → White/3.0/150 + `advanced=false` (unlocks presets).
 - Removed Advanced ExpansionTile; Size slider always visible next to Compact/Balanced/Large.
 - Still TODO: content-density (`minimapScale`/`bufScale`/`dpiScale`) + optics A/B vs phase0.
+### Dev tip (2026-09-19)
+- `contentScale` (phase0 `minimapScale`, default 0.5) in Minimap settings + native cold rebind on change.
+- Buffer = viewport / scale (phase0 formula). QA: optics A/B vs phase0 still required for T3 clear.

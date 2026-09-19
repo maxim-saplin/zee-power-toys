@@ -446,4 +446,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeInstallAction => 'Install';
+
+  @override
+  String get minimapContentScale => 'Map density';
+
+  @override
+  String get minimapContentScaleHint =>
+      'Lower = more map area (phase0 default 0.5)';
 }

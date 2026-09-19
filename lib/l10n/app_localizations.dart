@@ -961,6 +961,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install'**
   String get homeInstallAction;
+
+  /// Phase0 minimapScale — lower shows more map in the square
+  ///
+  /// In en, this message translates to:
+  /// **'Map density'**
+  String get minimapContentScale;
+
+  /// Hint under map density slider
+  ///
+  /// In en, this message translates to:
+  /// **'Lower = more map area (phase0 default 0.5)'**
+  String get minimapContentScaleHint;
 }
 
 class _AppLocalizationsDelegate

@@ -120,6 +120,7 @@ class MinimapConfig {
     this.preset = 'balanced',
     this.advanced = false,
     this.sizeFraction,
+    this.contentScale = 0.5,
     this.looks = const MinimapLooks(),
   });
 
@@ -141,6 +142,12 @@ class MinimapConfig {
   /// to compute the rendered viewport, which is exactly the kind of drift
   /// this Block exists to remove. See [resolvedSizeFraction].
   final double? sizeFraction;
+
+  /// Phase0 `minimapScale`: map content density inside the square (0.3–1.0).
+  /// Lower = more map area in the same viewport (buffer = viewport / scale).
+  /// Default 0.5 matches phase0 HudSettings. Forwarded as native `bufScale`
+  /// (= 1 / contentScale) with a cold YNavi rebind on change.
+  final double contentScale;
 
   /// Native colour-filter parameters (Look section: colour preset,
   /// brightness, contrast). See [MinimapLooks].
@@ -166,6 +173,7 @@ class MinimapConfig {
     String? preset,
     bool? advanced,
     Object? sizeFraction = _unset,
+    double? contentScale,
     MinimapLooks? looks,
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
@@ -174,6 +182,7 @@ class MinimapConfig {
     sizeFraction: identical(sizeFraction, _unset)
         ? this.sizeFraction
         : sizeFraction as double?,
+    contentScale: contentScale ?? this.contentScale,
     looks: looks ?? this.looks,
   );
 
@@ -182,6 +191,7 @@ class MinimapConfig {
     'preset': preset,
     'advanced': advanced,
     if (sizeFraction != null) 'sizeFraction': sizeFraction,
+    'contentScale': contentScale,
     'looks': looks.toJson(),
   };
 
@@ -190,6 +200,7 @@ class MinimapConfig {
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
+    contentScale: (json['contentScale'] as num?)?.toDouble() ?? 0.5,
     // Unknown/removed keys (widthFrac, heightFrac, themeFollow from older
     // persisted configs) are simply never read here — fromJson tolerates
     // extra keys in the map by construction, so old installs keep loading.
@@ -205,11 +216,12 @@ class MinimapConfig {
       other.preset == preset &&
       other.advanced == advanced &&
       other.sizeFraction == sizeFraction &&
+      other.contentScale == contentScale &&
       other.looks == looks;
 
   @override
   int get hashCode =>
-      Object.hash(enabled, preset, advanced, sizeFraction, looks);
+      Object.hash(enabled, preset, advanced, sizeFraction, contentScale, looks);
 }
 
 /// What parts of the battery mark to show (icon pack vs percentage label).
