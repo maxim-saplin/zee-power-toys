@@ -305,6 +305,9 @@
   "minimapLookPreset": "Цветовой пресет",
   "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
 
+  "minimapLookPresetDefault": "По умолчанию",
+  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
+
   "minimapLookPresetGreenYellow": "Зелёно-жёлтый",
   "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
 

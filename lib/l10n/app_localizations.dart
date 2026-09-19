@@ -704,6 +704,12 @@ abstract class AppLocalizations {
   /// **'Colour preset'**
   String get minimapLookPreset;
 
+  /// Phase0 White look bundle (hue pass keeps yellow cursor)
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get minimapLookPresetDefault;
+
   /// Minimap colour preset: green-yellow
   ///
   /// In en, this message translates to:

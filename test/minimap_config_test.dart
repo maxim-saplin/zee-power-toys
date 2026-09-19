@@ -132,11 +132,14 @@ void main() {
   // MinimapLooks — the Look section's three native colour-filter knobs.
   // ---------------------------------------------------------------------------
   group('MinimapLooks', () {
-    test('defaults match phase0 White', () {
+    test('defaults match phase0 Default (White + hue pass)', () {
       const looks = MinimapLooks();
-      expect(looks.colorPreset, equals('white'));
+      expect(looks.colorPreset, equals('default'));
       expect(looks.contrast, equals(3.0));
       expect(looks.threshold, equals(150.0));
+      expect(looks.huePass, equals(1.0));
+      expect(looks.hueAngle, equals(290));
+      expect(looks.nativePreset, equals('white'));
     });
 
     test('copyWith only updates specified fields', () {

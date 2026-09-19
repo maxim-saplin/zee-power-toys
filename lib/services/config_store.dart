@@ -6,77 +6,147 @@ import 'minimap_viewport.dart' show hudPresetSizeFraction;
 // MinimapLooks
 // ---------------------------------------------------------------------------
 
-/// Native colour-filter parameters applied to the YNavi minimap render.
-///
-/// Mirrors a hand-picked subset of MainActivity.kt's `MinimapParams` — the
-/// native holder behind `setMinimapParam` — chosen for being the only three
-/// knobs that (a) have a genuinely visible, honestly-nameable effect and (b)
-/// are worth a permanent UI slot (PRINCIPLES.md #1, "every option must earn
-/// its place"). The rest of `MinimapParams` (`saturation`, native `brightness`,
-/// `invert`, `huePass`, `hueAngle`, `bufScale`, `dpiScale`) stays reachable
-/// only via `ext.zee.minimap key=... value=...` — still runtime-drivable
-/// (#3), just not surfaced as a permanent control (#1). In particular
-/// `huePass` is intentionally left at its native default of 0.0 (pure
-/// monochrome tint) — see `MainActivity.kt`'s `MinimapParams` doc: hue
-/// passthrough was tried and rejected (floods on map content sharing the
-/// pass hue), so [colorPreset] is the sole colour control and `hueAngle` is
-/// moot at huePass=0.
-///
-/// Defaults are the values measured good on the real HUD (MainActivity.kt's
-/// `MinimapParams` defaults / "THE FIX" history comment): white tint (phase0 HudSettings COLOR_PRESETS[0]),
-/// contrast=3.0, threshold=150 — chosen so an untouched install gets the
-/// good look without opening this screen.
 class MinimapLooks {
   const MinimapLooks({
-    this.colorPreset = 'white',
+    this.colorPreset = 'default',
     this.contrast = 3.0,
     this.threshold = 150.0,
+    this.brightness = -20,
+    this.huePass = 1.0,
+    this.hueAngle = 290,
   });
 
-  /// Native `preset` param token: 'green-yellow' | 'white' | 'amber' | 'cyan'.
-  /// Forwarded verbatim to `setParams` — `MainActivity.kt`'s
-  /// `presetIndexFromName()` accepts these exact string tokens directly, so
-  /// no local index mapping is needed on the Dart side.
+  /// UI / persisted look token:
+  /// - `default` — phase0 White bundle (tint white + huePass 1 / hueAngle 290)
+  /// - `white` — mono white tint (huePass 0)
+  /// - `green-yellow` | `amber` | `cyan` — phase0 COLOR_PRESETS with hue pass
   final String colorPreset;
 
-  /// Forwarded as the native `contrast` param.
   final double contrast;
 
-  /// Forwarded as the native `threshold` param. Named "Brightness" in the UI
-  /// because that is the user-visible effect: a HIGHER threshold crushes MORE
-  /// of the source image to black (a darker background, more "crushed"), not
-  /// a literal brightness multiplier — see `_applyMinimapConfig`/the settings
-  /// screen for the honest label.
+  /// Filter threshold (UI label "Brightness" — higher crushes more to black).
   final double threshold;
+
+  /// Native filter brightness offset (phase0 White uses -20).
+  final int brightness;
+
+  /// 0 = mono tint; 1 = phase0 hue passthrough (keeps YNavi yellow cursor/roads).
+  final double huePass;
+
+  /// Hue passthrough angle (phase0 White = 290).
+  final int hueAngle;
+
+  /// Named look bundles matching phase0 HudSettings.COLOR_PRESETS (+ mono White).
+  factory MinimapLooks.bundle(String name) {
+    switch (name) {
+      case 'default':
+        // phase0 COLOR_PRESETS[0] White
+        return const MinimapLooks(
+          colorPreset: 'default',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 290,
+        );
+      case 'white':
+        // Mono white — useful as an option; not phase0 parity.
+        return const MinimapLooks(
+          colorPreset: 'white',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 0.0,
+          hueAngle: 290,
+        );
+      case 'green-yellow':
+        return const MinimapLooks(
+          colorPreset: 'green-yellow',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 120,
+        );
+      case 'cyan':
+        return const MinimapLooks(
+          colorPreset: 'cyan',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 180,
+        );
+      case 'amber':
+        return const MinimapLooks(
+          colorPreset: 'amber',
+          contrast: 3.0,
+          threshold: 150,
+          brightness: -20,
+          huePass: 1.0,
+          hueAngle: 60,
+        );
+      default:
+        return MinimapLooks.bundle('default');
+    }
+  }
+
+  /// Native ColorMatrix tint token (never `default` — maps to white).
+  String get nativePreset =>
+      colorPreset == 'default' ? 'white' : colorPreset;
 
   MinimapLooks copyWith({
     String? colorPreset,
     double? contrast,
     double? threshold,
+    int? brightness,
+    double? huePass,
+    int? hueAngle,
   }) => MinimapLooks(
     colorPreset: colorPreset ?? this.colorPreset,
     contrast: contrast ?? this.contrast,
     threshold: threshold ?? this.threshold,
+    brightness: brightness ?? this.brightness,
+    huePass: huePass ?? this.huePass,
+    hueAngle: hueAngle ?? this.hueAngle,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'colorPreset': colorPreset,
     'contrast': contrast,
     'threshold': threshold,
+    'brightness': brightness,
+    'huePass': huePass,
+    'hueAngle': hueAngle,
   };
 
-  factory MinimapLooks.fromJson(Map<String, Object?> json) => MinimapLooks(
-    colorPreset: json['colorPreset'] as String? ?? 'white',
-    contrast: (json['contrast'] as num?)?.toDouble() ?? 3.0,
-    threshold: (json['threshold'] as num?)?.toDouble() ?? 150.0,
-  );
+  factory MinimapLooks.fromJson(Map<String, Object?> json) {
+    final name = json['colorPreset'] as String? ?? 'default';
+    // Old installs that only stored tint+contrast+threshold: if they claimed
+    // white without huePass, treat as mono white; missing keys → phase0 default.
+    if (!json.containsKey('huePass') && !json.containsKey('hueAngle')) {
+      if (name == 'white') return MinimapLooks.bundle('white');
+      if (name == 'default' || name == 'green-yellow' || name == 'cyan' || name == 'amber') {
+        return MinimapLooks.bundle(name);
+      }
+    }
+    return MinimapLooks(
+      colorPreset: name,
+      contrast: (json['contrast'] as num?)?.toDouble() ?? 3.0,
+      threshold: (json['threshold'] as num?)?.toDouble() ?? 150.0,
+      brightness: (json['brightness'] as num?)?.toInt() ?? -20,
+      huePass: (json['huePass'] as num?)?.toDouble() ?? 1.0,
+      hueAngle: (json['hueAngle'] as num?)?.toInt() ?? 290,
+    );
+  }
 
-  /// Wire-format params map for [MinimapHost.setParams] — the exact keys
-  /// `setMinimapParam` reads natively (`preset`/`contrast`/`threshold`).
   Map<String, Object?> toParams() => <String, Object?>{
-    'preset': colorPreset,
+    'preset': nativePreset,
     'contrast': contrast,
     'threshold': threshold,
+    'brightness': brightness,
+    'huePass': huePass,
+    'hueAngle': hueAngle,
   };
 
   @override
@@ -84,10 +154,14 @@ class MinimapLooks {
       other is MinimapLooks &&
       other.colorPreset == colorPreset &&
       other.contrast == contrast &&
-      other.threshold == threshold;
+      other.threshold == threshold &&
+      other.brightness == brightness &&
+      other.huePass == huePass &&
+      other.hueAngle == hueAngle;
 
   @override
-  int get hashCode => Object.hash(colorPreset, contrast, threshold);
+  int get hashCode =>
+      Object.hash(colorPreset, contrast, threshold, brightness, huePass, hueAngle);
 }
 
 // ---------------------------------------------------------------------------

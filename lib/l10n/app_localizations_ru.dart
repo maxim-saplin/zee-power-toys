@@ -315,6 +315,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get minimapLookPreset => 'Цветовой пресет';
 
   @override
+  String get minimapLookPresetDefault => 'По умолчанию';
+
+  @override
   String get minimapLookPresetGreenYellow => 'Зелёно-жёлтый';
 
   @override

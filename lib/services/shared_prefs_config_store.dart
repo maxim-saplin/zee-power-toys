@@ -9,9 +9,9 @@ import 'config_store.dart';
 const String _kPrefKey = 'zee.config';
 
 /// Bumped when we must rewrite persisted minimap fields for existing installs.
-/// v3 (2026-09-19): White/3.0/150, advanced=false, contentScale=0.5 (phase0 density).
+/// v4 (2026-09-19): phase0 Default look (huePass 1 / hueAngle 290), contentScale 0.5.
 const String _kSchemaKey = 'zee.config.schema';
-const int _kSchemaVersion = 3;
+const int _kSchemaVersion = 4;
 
 /// SharedPreferences-backed ConfigStore.
 /// The whole AppConfig is stored as one JSON string under [_kPrefKey].
@@ -55,11 +55,7 @@ class SharedPrefsConfigStore implements ConfigStore {
       minimap: mm.copyWith(
         advanced: false,
         contentScale: 0.5,
-        looks: const MinimapLooks(
-          colorPreset: 'white',
-          contrast: 3.0,
-          threshold: 150.0,
-        ),
+        looks: MinimapLooks.bundle('default'),
       ),
     );
   }

@@ -236,6 +236,10 @@ class MinimapSettingsScreen extends ConsumerWidget {
             SegmentedButton<String>(
               segments: <ButtonSegment<String>>[
                 ButtonSegment(
+                  value: 'default',
+                  label: Text(l10n.minimapLookPresetDefault),
+                ),
+                ButtonSegment(
                   value: 'green-yellow',
                   label: Text(l10n.minimapLookPresetGreenYellow),
                 ),
@@ -257,31 +261,27 @@ class MinimapSettingsScreen extends ConsumerWidget {
                 if (sel.isEmpty) return;
                 store.setConfig(
                   store.value.copyWith(
-                    minimap: cfg.copyWith(
-                      looks: cfg.looks.copyWith(colorPreset: sel.first),
-                    ),
+                    minimap: cfg.copyWith(looks: MinimapLooks.bundle(sel.first)),
                   ),
                 );
               },
             ),
-            // Invisible GestureDetector hooks so agent tapByKey works on T1.
             Opacity(
               opacity: 0,
               child: Row(
                 children: <Widget>[
-                  for (final p in const <String>[
+                  for (final name in const <String>[
+                    'default',
                     'green-yellow',
                     'white',
                     'amber',
                     'cyan',
                   ])
                     GestureDetector(
-                      key: ValueKey('minimap-look-$p'),
+                      key: ValueKey('minimap-look-$name'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          minimap: cfg.copyWith(
-                            looks: cfg.looks.copyWith(colorPreset: p),
-                          ),
+                          minimap: cfg.copyWith(looks: MinimapLooks.bundle(name)),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
@@ -333,6 +333,7 @@ class MinimapSettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+
       ],
     );
   }

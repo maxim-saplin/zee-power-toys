@@ -305,6 +305,9 @@
   "minimapLookPreset": "Colour preset",
   "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
 
+  "minimapLookPresetDefault": "Default",
+  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
+
   "minimapLookPresetGreenYellow": "Green-yellow",
   "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
 

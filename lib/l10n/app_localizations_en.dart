@@ -315,6 +315,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get minimapLookPreset => 'Colour preset';
 
   @override
+  String get minimapLookPresetDefault => 'Default';
+
+  @override
   String get minimapLookPresetGreenYellow => 'Green-yellow';
 
   @override
