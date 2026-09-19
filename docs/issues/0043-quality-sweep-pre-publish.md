@@ -1,7 +1,7 @@
 # 0043 — Quality sweep before publish prep
 
 ## Status
-F tipped @ 69c9534 — A–E @ f8a2118; C T1+T2 PASS; awaiting @zee-pdm ACCEPT
+F tipped @ 1bed77b — A–E @ f8a2118; C T1+T2 PASS; awaiting @zee-pdm ACCEPT
 
 
 ## Goal
