@@ -72,6 +72,8 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val TAG = "ZEE"
+        /** Zeekr DHU windshield optics — same as phase0 HUD_DISPLAY_ID. */
+        private const val HUD_DISPLAY_ID = 2
         private const val HUB_CHANNEL = "zee/hub"
         private const val MINIMAP_CHANNEL = "zee/minimap"
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
@@ -861,16 +863,22 @@ class MainActivity : FlutterActivity() {
     }
 
     // -------------------------------------------------------------------------
-    // Display discovery — first non-default display is the HUD (emulator uses
-    // the overlay_display_devices virtual display; car uses displayId=2).
+    // Display discovery — match phase0 (zee_hud_2) selectHudDisplay:
+    // prefer displayId=2 (Zeekr optics), then PRESENTATION category, then any
+    // non-default (T2 emulator overlay_display_devices usually has one secondary).
     // -------------------------------------------------------------------------
 
     private fun findSecondaryDisplay(): Display? {
         val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val displays = dm.displays
         Log.i(TAG, "findSecondaryDisplay: ${displays.size} display(s): " +
-            displays.joinToString { "[id=${it.displayId} name=${it.name}]" })
-        return displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
+            displays.joinToString { "[id=${it.displayId} name=${it.name} " +
+                "size=${it.mode?.physicalWidth}x${it.mode?.physicalHeight}]" })
+        val picked = displays.firstOrNull { it.displayId == HUD_DISPLAY_ID }
+            ?: dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).firstOrNull()
+            ?: displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
+        Log.i(TAG, "findSecondaryDisplay: picked id=${picked?.displayId} name=${picked?.name}")
+        return picked
     }
 
     // -------------------------------------------------------------------------
