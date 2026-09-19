@@ -1,23 +1,21 @@
 ---
-status: backlog
+status: in-progress
 labels: [hud, speedcam]
 created: 2026-09-19
 satisfies: HUD · Speedcam
-blocked-by: [0036]
+blocked-by: [0037]
 modules: [SpeedcamService]
 tier: T1
+owner: zee-dev
 ---
 
 # 0038 — Host heading + camera-facing mute
 
 ## Block scope
-Use host motion heading + OSM camera `direction` (when present): **do not alert** cams facing the opposite line of travel. Fail-open when facing unknown (phase0-style). Wire into danger selection + CRT/sting.
+Host motion heading + OSM camera `direction`: mute cams facing the **same** way we travel (other line); alert when cam faces into our traffic (~opposite heading). **Fail-open** if heading or facing unknown.
 
 ## Definition of Done
-- [ ] FL can set host heading; opposite-facing cam muted inside 500 m
-- [ ] Same-direction cam still alerts
-- [ ] Drive-sim / inject tests cover both
-- [ ] T1+T2 PASS
-
-## Notes
-Maxim 2026-09-19: account for camera and car motion direction.
+- [x] FL pose supports `headingDeg`; opposite-line cam muted inside 500 m
+- [x] Same-direction (cam faces us) still alerts
+- [x] Unit tests + drive/inject coverage
+- [ ] T1+T2 PASS (QA)

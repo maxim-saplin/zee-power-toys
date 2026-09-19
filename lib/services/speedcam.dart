@@ -200,6 +200,66 @@ double initialBearingDegrees(
   return (deg + 360) % 360;
 }
 
+
+/// Smallest absolute angle between two bearings [0, 180].
+double smallestAngleDeg(double a, double b) {
+  var d = (a - b).abs() % 360;
+  if (d > 180) d = 360 - d;
+  return d;
+}
+
+/// Parse OSM `direction` / compass text to degrees clockwise from north.
+/// Returns null when unknown → callers **fail-open** (still alert).
+double? parseCamFacingDegrees(String? raw) {
+  if (raw == null) return null;
+  final s = raw.trim().toUpperCase();
+  if (s.isEmpty) return null;
+  final asNum = double.tryParse(s.replaceAll(RegExp(r'[^0-9.\-]'), ''));
+  if (asNum != null && raw.trim().contains(RegExp(r'[0-9]'))) {
+    return (asNum % 360 + 360) % 360;
+  }
+  const compass = <String, double>{
+    'N': 0,
+    'NNE': 22.5,
+    'NE': 45,
+    'ENE': 67.5,
+    'E': 90,
+    'ESE': 112.5,
+    'SE': 135,
+    'SSE': 157.5,
+    'S': 180,
+    'SSW': 202.5,
+    'SW': 225,
+    'WSW': 247.5,
+    'W': 270,
+    'WNW': 292.5,
+    'NW': 315,
+    'NNW': 337.5,
+  };
+  if (compass.containsKey(s)) return compass[s];
+  // Multi-value OSM sometimes uses "180;0" — take first known token.
+  for (final part in s.split(RegExp(r'[;,/\\s]+'))) {
+    if (compass.containsKey(part)) return compass[part];
+    final n = double.tryParse(part);
+    if (n != null) return (n % 360 + 360) % 360;
+  }
+  return null;
+}
+
+/// Whether [cam] should alert for [host] travel direction.
+///
+/// Camera facing into our traffic (≈ opposite our heading) → relevant.
+/// Camera facing same way we travel (other line) → muted.
+/// Unknown heading or facing → **fail-open** (relevant).
+bool isCamRelevantForHost(SpeedcamHostPose host, SpeedcamPoint cam) {
+  final heading = host.headingDeg;
+  if (heading == null) return true;
+  final facing = parseCamFacingDegrees(cam.direction);
+  if (facing == null) return true;
+  final intoOurTraffic = (heading + 180) % 360;
+  return smallestAngleDeg(facing, intoOurTraffic) <= 90;
+}
+
 SpeedcamDanger? nearestDanger({
   required SpeedcamHostPose host,
   required List<SpeedcamPoint> cams,
@@ -207,6 +267,7 @@ SpeedcamDanger? nearestDanger({
 }) {
   SpeedcamDanger? best;
   for (final cam in cams) {
+    if (!isCamRelevantForHost(host, cam)) continue;
     final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
     if (best == null || d < best.distanceM) {
       best = SpeedcamDanger(

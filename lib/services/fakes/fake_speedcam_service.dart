@@ -125,6 +125,7 @@ class FakeSpeedcamService implements SpeedcamService {
       lat: cam.lat - dLat,
       lon: cam.lon,
       speedKmh: speedKmh,
+      headingDeg: 0,
     ));
   }
 

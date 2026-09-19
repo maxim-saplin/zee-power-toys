@@ -533,8 +533,16 @@ void registerZeeExtensions({
           final spd = params['speedKmh'] != null
               ? double.tryParse(params['speedKmh']!)
               : null;
+          final heading = params['headingDeg'] != null
+              ? double.tryParse(params['headingDeg']!)
+              : null;
           await svc.setHostPose(
-            SpeedcamHostPose(lat: lat, lon: lon, speedKmh: spd),
+            SpeedcamHostPose(
+              lat: lat,
+              lon: lon,
+              speedKmh: spd,
+              headingDeg: heading,
+            ),
           );
         case 'clearPose':
           await svc.clearHostPose();
@@ -556,10 +564,12 @@ void registerZeeExtensions({
               : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
           // 1 deg lat ≈ 111320 m — approach from south.
           final dLat = dist / 111320.0;
+          final heading = double.tryParse(params['headingDeg'] ?? '') ?? 0;
           await svc.setHostPose(SpeedcamHostPose(
             lat: cam.lat - dLat,
             lon: cam.lon,
             speedKmh: double.tryParse(params['speedKmh'] ?? ''),
+            headingDeg: heading,
           ));
         case 'reloadPack':
           await svc.reloadFromPack();
