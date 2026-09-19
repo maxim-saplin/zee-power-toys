@@ -220,7 +220,12 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
   Future<List<SpeedcamPoint>> _downloadBy() async {
     final res = await _client.post(
       Uri.parse(overpassUrl),
-      headers: const {'Content-Type': 'application/x-www-form-urlencoded'},
+      headers: const {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Overpass returns HTTP 406 without a User-Agent (QA T2 @ 07f7389).
+        'User-Agent': 'zee-power-toys/0.1 (speedcam-pack; contact=github.com/maxim-saplin/zee-power-toys)',
+        'Accept': 'application/json',
+      },
       body: 'data=${Uri.encodeQueryComponent(SpeedcamByBbox.overpassQl)}',
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {

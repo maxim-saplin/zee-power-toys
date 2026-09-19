@@ -24,3 +24,8 @@ Parent: [0029](0029-speedcam-osm-epic.md).
 
 ## Notes
 Enforcement relations can land in a follow-up if nodes alone are enough for v1 radar.
+
+## Fix tip (post-07f7389)
+- macOS sandbox: `com.apple.security.network.client`
+- Overpass: User-Agent + Accept (avoid HTTP 406)
+- FL: `ext.zee.speedcam` action `packInstall` path=/body= for offline fixture

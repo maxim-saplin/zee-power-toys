@@ -73,6 +73,30 @@ void main() {
     });
   });
 
+
+  group('Overpass headers', () {
+    test('POST includes User-Agent and Accept', () async {
+      http.BaseRequest? seen;
+      final root = await Directory.systemTemp.createTemp('speedcam_ua_');
+      final store = FileSpeedcamPackStore(
+        root: root,
+        client: MockClient((request) async {
+          seen = request;
+          final fixture = await File(
+            'test/fixtures/speedcam_by_overpass_sample.json',
+          ).readAsString();
+          return http.Response(fixture, 200);
+        }),
+      );
+      await store.updatePack(SpeedcamPackIds.by);
+      expect(seen, isNotNull);
+      expect(seen!.headers['user-agent'], contains('zee-power-toys'));
+      expect(seen!.headers['accept'], 'application/json');
+      store.dispose();
+      await root.delete(recursive: true);
+    });
+  });
+
   group('FakeSpeedcamPackStore', () {
     test('updatePack then loadCams; offline fails', () async {
       final fake = FakeSpeedcamPackStore();

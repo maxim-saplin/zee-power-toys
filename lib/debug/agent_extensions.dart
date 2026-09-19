@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:io' show pid;
+import 'dart:io' show File, pid;
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
@@ -580,6 +580,41 @@ void registerZeeExtensions({
             jsonEncode(<String, Object?>{
               'ok': true,
               'speedcamPack': meta.toJson(),
+            }),
+          );
+        case 'packInstall':
+          // Offline QA: install fixture JSON (path= or body=). File store only.
+          if (speedcamPack is! FileSpeedcamPackStore) {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'packInstall requires FileSpeedcamPackStore',
+              }),
+            );
+          }
+          final path = params['path'];
+          final bodyParam = params['body'];
+          late final String jsonBody;
+          if (path != null && path.isNotEmpty) {
+            jsonBody = await File(path).readAsString();
+          } else if (bodyParam != null && bodyParam.isNotEmpty) {
+            jsonBody = bodyParam;
+          } else {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'packInstall needs path= or body=',
+              }),
+            );
+          }
+          final installed = await speedcamPack.installFixture(
+            packId: params['packId'] ?? SpeedcamPackIds.by,
+            jsonBody: jsonBody,
+          );
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'speedcamPack': installed.toJson(),
             }),
           );
         case 'snapshot':
