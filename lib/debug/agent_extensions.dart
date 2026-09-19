@@ -15,6 +15,7 @@ import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
+import '../services/speedcam_drive.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 import '../services/usb_mode.dart';
@@ -70,6 +71,8 @@ void registerZeeExtensions({
   SpeedcamService? speedcam,
   SpeedcamPackStore? speedcamPack,
 }) {
+  final SpeedcamDriveSim? speedcamDrive =
+      speedcam != null ? SpeedcamDriveSim(speedcam) : null;
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
@@ -622,6 +625,92 @@ void registerZeeExtensions({
               'ok': true,
               'speedcamPack': installed.toJson(),
               'speedcam': speedcam?.snapshot.toJson(),
+            }),
+          );
+        case 'drive':
+          // Continuous polyline through pack cams (0036).
+          if (speedcamDrive == null) {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'drive not available',
+              }),
+            );
+          }
+          await svc.reloadFromPack();
+          final cams = svc.snapshot.cams;
+          if (cams.length < 2) {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': "need >=2 pack cams (got ${cams.length})",
+                'camCount': cams.length,
+              }),
+            );
+          }
+          final camIds = (params['cams'] ?? '')
+              .split(',')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+          List<SpeedcamPoint> selected;
+          if (camIds.isEmpty) {
+            selected = cams.take(2).toList();
+          } else {
+            selected = <SpeedcamPoint>[];
+            for (final id in camIds) {
+              selected.add(
+                cams.firstWhere((c) => c.id == id, orElse: () => cams.first),
+              );
+            }
+            if (selected.length < 2) {
+              selected = cams.take(2).toList();
+            }
+          }
+          final approachM = double.tryParse(params['approachM'] ?? '') ?? 800;
+          final speedKmh = double.tryParse(params['speedKmh'] ?? '') ?? 50;
+          final tickMs = int.tryParse(params['tickMs'] ?? '') ?? 100;
+          final pathRaw = params['path'];
+          late final List<SpeedcamWaypoint> waypoints;
+          if (pathRaw != null && pathRaw.isNotEmpty) {
+            waypoints = pathRaw.split(';').map((pair) {
+              final parts = pair.split(',');
+              return SpeedcamWaypoint(
+                double.parse(parts[0].trim()),
+                double.parse(parts[1].trim()),
+              );
+            }).toList();
+          } else {
+            waypoints = pathThroughCams(selected, approachM: approachM);
+          }
+          final started = await speedcamDrive.start(
+            waypoints: waypoints,
+            speedKmh: speedKmh,
+            tickMs: tickMs,
+          );
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              ...started,
+              'cams': selected.map((c) => c.id).toList(),
+              'speedcam': svc.snapshot.toJson(),
+              'drive': speedcamDrive.statusJson(),
+            }),
+          );
+        case 'driveStop':
+          speedcamDrive?.stop();
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'drive': speedcamDrive?.statusJson(),
+              'speedcam': svc.snapshot.toJson(),
+            }),
+          );
+        case 'driveStatus':
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'drive': speedcamDrive?.statusJson(),
+              'speedcam': svc.snapshot.toJson(),
             }),
           );
         case 'snapshot':
