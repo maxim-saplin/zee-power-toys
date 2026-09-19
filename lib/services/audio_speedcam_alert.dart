@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 import 'speedcam_alert.dart';
+import 'speedcam_alien_ping.dart';
 
 /// Asset sting — `assets/sounds/speedcam_sting.wav`.
 class AudioSpeedcamAlert implements SpeedcamAlert {
@@ -16,6 +17,7 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
   Future<void> playSting() async {
     try {
       await _player.stop();
+      await _player.setPlaybackRate(1.0);
       await _player.play(AssetSource(asset));
     } catch (e) {
       debugPrint('speedcam sting failed: $e');
@@ -23,9 +25,13 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
   }
 
   @override
-  Future<void> playAlienPing() async {
+  Future<void> playAlienPing({double? distanceM}) async {
     try {
+      final rate = distanceM == null
+          ? 1.0
+          : alienPingPlaybackRateForDistanceM(distanceM);
       await _player.stop();
+      await _player.setPlaybackRate(rate);
       await _player.play(AssetSource(pingAsset));
     } catch (e) {
       debugPrint('speedcam alien ping failed: $e');

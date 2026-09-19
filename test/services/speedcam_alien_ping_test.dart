@@ -11,4 +11,14 @@ void main() {
     expect(near.inMilliseconds, greaterThanOrEqualTo(100));
     expect(far.inMilliseconds, lessThanOrEqualTo(1500));
   });
+
+  test('Alien ping playback rate rises as distance closes (whistle)', () {
+    final far = alienPingPlaybackRateForDistanceM(500);
+    final mid = alienPingPlaybackRateForDistanceM(200);
+    final near = alienPingPlaybackRateForDistanceM(40);
+    expect(near, greaterThan(mid));
+    expect(mid, greaterThan(far));
+    expect(far, greaterThanOrEqualTo(0.85));
+    expect(near, lessThanOrEqualTo(1.9));
+  });
 }

@@ -2,12 +2,18 @@ import 'dart:async';
 
 import 'speedcam_alert.dart';
 
-/// Alien motion-tracker loop: ping interval tightens as distance closes.
+/// Alien motion-tracker loop: faster + higher pitch as distance closes.
 Duration alienPingIntervalForDistanceM(double distanceM) {
   final d = distanceM.clamp(20.0, 500.0);
   // ~120ms at 20 m → ~1200ms at 500 m
   final ms = (120 + (d - 20) / 480 * 1080).round();
   return Duration(milliseconds: ms);
+}
+
+/// Playback rate ≈ pitch: ~0.9 far → ~1.75 near (light whistle climb).
+double alienPingPlaybackRateForDistanceM(double distanceM) {
+  final d = distanceM.clamp(20.0, 500.0);
+  return 0.9 + (500.0 - d) / 480.0 * 0.85;
 }
 
 /// Drives periodic [SpeedcamAlert.playAlienPing] while inside approach
@@ -46,7 +52,7 @@ class SpeedcamAlienPingLoop {
     final interval = alienPingIntervalForDistanceM(d);
     _timer = Timer(interval, () async {
       if (!_active) return;
-      await alert.playAlienPing();
+      await alert.playAlienPing(distanceM: _lastDistanceM);
       if (_active) _schedule();
     });
   }

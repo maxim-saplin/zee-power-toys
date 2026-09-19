@@ -4,7 +4,7 @@ abstract class SpeedcamAlert {
 
   /// Short motion-tracker click (Alien look loop). Default no-op for fakes
   /// that only care about the enter sting.
-  Future<void> playAlienPing() async {}
+  Future<void> playAlienPing({double? distanceM}) async {}
 
   Future<void> dispose();
 }

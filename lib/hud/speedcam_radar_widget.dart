@@ -294,7 +294,27 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
   }
 }
 
-/// Alien motion-tracker: front-hemisphere wedge, arcs, blips, sweep pulse.
+/// Closer blips are larger (0042).
+double alienBlipRadiusForDistanceM(
+  double distanceM, {
+  required double displayRadiusM,
+  bool highlight = false,
+}) {
+  final frac = (distanceM / displayRadiusM).clamp(0.0, 1.0);
+  final base = 7.0 - frac * 4.5;
+  return highlight ? base + 1.2 : base;
+}
+
+/// Closer blips are brighter (0042).
+double alienBlipAlphaForDistanceM(
+  double distanceM, {
+  required double displayRadiusM,
+}) {
+  final frac = (distanceM / displayRadiusM).clamp(0.0, 1.0);
+  return (0.95 - frac * 0.55).clamp(0.35, 0.95);
+}
+
+/// Alien motion-tracker: front-hemisphere sector scan, grit, range-weighted blips.
 class _AlienWedgePainter extends CustomPainter {
   _AlienWedgePainter({
     required this.sweepT,
@@ -317,20 +337,27 @@ class _AlienWedgePainter extends CustomPainter {
     final c = Offset(size.width / 2, size.height * 0.92);
     final r = math.min(size.width, size.height) * 0.88;
 
-    // Dark phosphor ground
     canvas.drawRect(
       Offset.zero & size,
       Paint()..color = const Color(0xFF020802),
     );
 
+    // CRT grit (stable pseudo-noise)
+    final grit = Paint()..color = const Color(0x1800FF66);
+    for (var i = 0; i < 90; i++) {
+      final x = ((i * 97) % 1000) / 1000.0 * size.width;
+      final y = ((i * 53) % 1000) / 1000.0 * size.height;
+      canvas.drawCircle(Offset(x, y), 0.7, grit);
+    }
+
     // Scanlines
-    final scan = Paint()..color = const Color(0x2200FF66);
-    for (var y = 0.0; y < size.height; y += 3) {
+    final scan = Paint()..color = const Color(0x2800FF66);
+    for (var y = 0.0; y < size.height; y += 2.5) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), scan);
     }
 
-    const wedgeHalf = 55 * math.pi / 180; // ~110° front hemisphere
-    final baseAngle = -math.pi / 2; // up
+    const wedgeHalf = 58 * math.pi / 180; // ~116° front hemisphere
+    final baseAngle = -math.pi / 2;
 
     final wedgePath = Path()
       ..moveTo(c.dx, c.dy)
@@ -345,15 +372,15 @@ class _AlienWedgePainter extends CustomPainter {
     canvas.drawPath(
       wedgePath,
       Paint()
-        ..color = SpeedcamRadarWidget.phosphorDim.withValues(alpha: 0.25)
+        ..color = SpeedcamRadarWidget.phosphorDim.withValues(alpha: 0.22)
         ..style = PaintingStyle.fill,
     );
     canvas.drawPath(
       wedgePath,
       Paint()
-        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.55)
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.6,
     );
 
     // Radial spokes
@@ -363,21 +390,21 @@ class _AlienWedgePainter extends CustomPainter {
         c,
         Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a)),
         Paint()
-          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.35)
+          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.32)
           ..strokeWidth = 1,
       );
     }
 
-    // Range arcs (dashed feel via segments)
+    // Range arcs
     for (final frac in [0.33, 0.66, 1.0]) {
       final rr = r * frac;
       final paint = Paint()
         ..color = SpeedcamRadarWidget.phosphor.withValues(
-          alpha: frac == 1.0 ? 0.7 : 0.4,
+          alpha: frac == 1.0 ? 0.72 : 0.38,
         )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = frac == 1.0 ? 1.8 : 1.1;
-      const steps = 24;
+        ..strokeWidth = frac == 1.0 ? 1.8 : 1.0;
+      const steps = 28;
       for (var s = 0; s < steps; s++) {
         if (s.isOdd) continue;
         final a0 = baseAngle - wedgeHalf + (2 * wedgeHalf) * (s / steps);
@@ -392,7 +419,6 @@ class _AlienWedgePainter extends CustomPainter {
       }
     }
 
-    // Approach ring mark
     final approachFrac = (approachRadiusM / displayRadiusM).clamp(0.05, 1.0);
     canvas.drawArc(
       Rect.fromCircle(center: c, radius: r * approachFrac),
@@ -400,31 +426,58 @@ class _AlienWedgePainter extends CustomPainter {
       wedgeHalf * 2,
       false,
       Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.5)
+        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.45)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
 
-    // Sweep pulse line across the wedge
-    final sweepA = baseAngle - wedgeHalf + sweepT * wedgeHalf * 2;
+    // Forward circular sector scan (filled pie slice sweeping the wedge).
+    const sectorHalf = 12 * math.pi / 180;
+    final sweepMid = baseAngle - wedgeHalf + sweepT * wedgeHalf * 2;
+    final sectorPath = Path()
+      ..moveTo(c.dx, c.dy)
+      ..arcTo(
+        Rect.fromCircle(center: c, radius: r),
+        sweepMid - sectorHalf,
+        sectorHalf * 2,
+        false,
+      )
+      ..close();
     canvas.save();
     canvas.clipPath(wedgePath);
+    canvas.drawPath(
+      sectorPath,
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill,
+    );
+    // Leading edge brighter
     canvas.drawLine(
       c,
-      Offset(c.dx + r * math.cos(sweepA), c.dy + r * math.sin(sweepA)),
+      Offset(
+        c.dx + r * math.cos(sweepMid + sectorHalf),
+        c.dy + r * math.sin(sweepMid + sectorHalf),
+      ),
       Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.65)
-        ..strokeWidth = 2,
+        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.75)
+        ..strokeWidth = 2.2,
     );
     canvas.restore();
 
-    // Origin pip
-    canvas.drawCircle(c, 3, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
+    // Mild barrel vignette / CRT bloom at edges of wedge
+    canvas.drawPath(
+      wedgePath,
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.08)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
 
-    // Blips — map bearing so 0° is ahead (up)
+    canvas.drawCircle(c, 3.2, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
+
     for (final b in blips) {
       final rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
-      // bearing 0 = ahead = baseAngle; positive = right
       final a = baseAngle + rel;
       if (rel.abs() > wedgeHalf) continue;
       final frac = (b.distanceM / displayRadiusM).clamp(0.0, 1.0);
@@ -432,24 +485,33 @@ class _AlienWedgePainter extends CustomPainter {
         c.dx + r * frac * math.cos(a),
         c.dy + r * frac * math.sin(a),
       );
-      final rad = b.highlight ? 5.0 : 3.0;
+      final rad = alienBlipRadiusForDistanceM(
+        b.distanceM,
+        displayRadiusM: displayRadiusM,
+        highlight: b.highlight,
+      );
+      final alpha = alienBlipAlphaForDistanceM(
+        b.distanceM,
+        displayRadiusM: displayRadiusM,
+      );
       canvas.drawCircle(
         p,
-        rad + 2,
+        rad + 2.5,
         Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.35),
+          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.35)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
       canvas.drawCircle(
         p,
         rad,
         Paint()
-          ..color = b.highlight
-              ? SpeedcamRadarWidget.phosphorGlow
-              : SpeedcamRadarWidget.phosphor,
+          ..color = (b.highlight
+                  ? SpeedcamRadarWidget.phosphorGlow
+                  : SpeedcamRadarWidget.phosphor)
+              .withValues(alpha: alpha),
       );
     }
 
-    // Readout
     if (readoutM != null) {
       final tp = TextPainter(
         text: TextSpan(
