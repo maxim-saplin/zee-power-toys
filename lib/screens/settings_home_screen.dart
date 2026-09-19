@@ -71,14 +71,28 @@ class _SettingsHomeScreenState extends ConsumerState<SettingsHomeScreen> {
           );
           final sections = _SectionsColumn(l10n: l10n);
           if (wide) {
+            // Each column scrolls independently so a short window (e.g. 800×600)
+            // never yellow/black-stripes the Sections card (USB/ADB was clipped).
             return Padding(
               padding: const EdgeInsets.all(Insets.lg),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(flex: 5, child: welcome),
+                  Expanded(
+                    flex: 5,
+                    child: SingleChildScrollView(
+                      key: const ValueKey('home-welcome-scroll'),
+                      child: welcome,
+                    ),
+                  ),
                   const SizedBox(width: Insets.lg),
-                  Expanded(flex: 6, child: sections),
+                  Expanded(
+                    flex: 6,
+                    child: SingleChildScrollView(
+                      key: const ValueKey('home-sections-scroll'),
+                      child: sections,
+                    ),
+                  ),
                 ],
               ),
             );

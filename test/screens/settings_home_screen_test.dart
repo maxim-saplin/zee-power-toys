@@ -55,6 +55,21 @@ void main() {
       expect(find.byKey(const ValueKey('home-install-ynavi')), findsOneWidget);
     });
 
+    
+    testWidgets('two-column home has no overflow at 800x600', (tester) async {
+      final store = await _makeStore();
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(_wrap(const SettingsHomeScreen(), store));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('home-sections-scroll')), findsOneWidget);
+      // USB/ADB tile exists (may need scroll to tap; presence in tree is enough).
+      expect(find.byKey(const ValueKey('nav-usb')), findsOneWidget);
+    });
+
     testWidgets('HUD tile navigates to HudSettingsScreen', (tester) async {
       final store = await _makeStore();
       await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
