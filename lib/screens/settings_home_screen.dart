@@ -59,7 +59,10 @@ class _SettingsHomeScreenState extends ConsumerState<SettingsHomeScreen> {
       appBar: AppBar(title: Text(l10n.homeTitle)),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
+          // Prefer side-by-side on any decent desktop/DHU width. 900 was too
+          // high — default macOS T1 windows (~800) stacked and looked like the
+          // old single-column hub (Maxim 2026-09-19).
+          final wide = constraints.maxWidth >= 640;
           final welcome = _WelcomeColumn(
             l10n: l10n,
             launcher: _launcher,
