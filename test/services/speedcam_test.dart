@@ -112,7 +112,34 @@ void main() {
 
 
   group('SpeedcamSnapshot relay', () {
-    test('toRelayJson / fromJson preserves danger for HUD CRT', () {
+    
+    test('toRelayJson includes in-range cams for HUD multi-blip', () {
+      final host = const SpeedcamHostPose(lat: 53.9, lon: 27.56);
+      final near = const SpeedcamPoint(id: 'near', lat: 53.901, lon: 27.56);
+      final mid = const SpeedcamPoint(id: 'mid', lat: 53.905, lon: 27.56);
+      final far = const SpeedcamPoint(id: 'far', lat: 54.5, lon: 28.5); // >> 2km
+      final danger = SpeedcamDanger(
+        cam: near,
+        distanceM: 111,
+        bearingDeg: 0,
+        insideApproach: true,
+      );
+      final snap = SpeedcamSnapshot(
+        enabled: true,
+        cams: [near, mid, far],
+        host: host,
+        danger: danger,
+        camSource: 'pack',
+      );
+      final relay = SpeedcamSnapshot.fromJson(
+        Map<String, Object?>.from(snap.toRelayJson(radarRadiusM: 2000)),
+      );
+      expect(relay.danger?.cam.id, 'near');
+      expect(relay.cams.map((c) => c.id), containsAll(['near', 'mid']));
+      expect(relay.cams.map((c) => c.id), isNot(contains('far')));
+    });
+
+test('toRelayJson / fromJson preserves danger for HUD CRT', () {
       const cam = SpeedcamPoint(id: 'osm-1', lat: 53.9, lon: 27.5, maxspeed: 60);
       final danger = SpeedcamDanger(
         cam: cam,

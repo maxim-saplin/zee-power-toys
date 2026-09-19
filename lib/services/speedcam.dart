@@ -141,16 +141,37 @@ class SpeedcamSnapshot {
         'approachRadiusM': approachRadiusM,
       };
 
-  /// Compact envelope for DHU→HUD relay (danger drives the CRT; cams truncated).
-  Map<String, Object?> toRelayJson() => <String, Object?>{
-        'enabled': enabled,
-        'camSource': camSource,
-        'approachRadiusM': approachRadiusM,
-        'host': host?.toJson(),
-        'danger': danger?.toJson(),
-        // Include danger cam only — HUD does not need the full pack.
-        if (danger != null) 'cams': <Object?>[danger!.cam.toJson()],
-      };
+  /// Compact envelope for DHU→HUD relay.
+  ///
+  /// Includes host + danger plus **all cams within [radarRadiusM]** of the host
+  /// (capped) so Alien HUD can paint route-bright + other-in-range dim (0042).
+  Map<String, Object?> toRelayJson({double radarRadiusM = 2000}) {
+    final relayCams = <SpeedcamPoint>[];
+    final hostPose = host;
+    if (hostPose != null && cams.isNotEmpty) {
+      final ranked = <(SpeedcamPoint, double)>[
+        for (final cam in cams)
+          (cam, haversineMetres(hostPose.lat, hostPose.lon, cam.lat, cam.lon)),
+      ]..sort((a, b) => a.$2.compareTo(b.$2));
+      for (final pair in ranked) {
+        if (pair.$2 > radarRadiusM) break;
+        relayCams.add(pair.$1);
+        if (relayCams.length >= 48) break;
+      }
+    }
+    // Ensure on-route danger cam is present even if outside sort quirks.
+    if (danger != null && !relayCams.any((c) => c.id == danger!.cam.id)) {
+      relayCams.insert(0, danger!.cam);
+    }
+    return <String, Object?>{
+      'enabled': enabled,
+      'camSource': camSource,
+      'approachRadiusM': approachRadiusM,
+      'host': host?.toJson(),
+      'danger': danger?.toJson(),
+      'cams': relayCams.map((c) => c.toJson()).toList(),
+    };
+  }
 
   factory SpeedcamSnapshot.fromJson(Map<String, Object?> json) {
     final camsRaw = json['cams'] as List<dynamic>? ?? const [];
