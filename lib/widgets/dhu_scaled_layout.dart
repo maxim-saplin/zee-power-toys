@@ -8,12 +8,12 @@ import 'package:flutter/material.dart';
 /// narrower logical widths.)
 ///
 /// For the Zeekr DHU (2560 logical px, dpr 1.0):
-///   target = 800 dp → scale = (2560 / 800).clamp(1.0, 3.0) = **3.0**.
+///   target = 800 dp → scale = (2560 / 800).clamp(1.0, 2.7) = **2.7** (~10% smaller than the old 3.0 cap).
 double dhuSmartScale(double logicalWidth, double devicePixelRatio) {
   if (logicalWidth <= 0 || !logicalWidth.isFinite) return 1.0;
   final bool automotive = devicePixelRatio < 2.0 && logicalWidth >= 1600;
   if (!automotive) return 1.0;
-  return (logicalWidth / 800.0).clamp(1.0, 3.0);
+  return (logicalWidth / 800.0).clamp(1.0, 2.7);
 }
 
 /// Wraps its [child] in a [Transform.scale] to compensate for the DHU's
