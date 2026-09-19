@@ -25,6 +25,7 @@ import 'services/fakes/fake_car_signals.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
+import 'services/fakes/fake_speedcam_service.dart';
 import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
@@ -32,6 +33,7 @@ import 'services/config_store.dart';
 import 'services/hud_host.dart';
 import 'services/installer.dart';
 import 'services/package_status.dart';
+import 'services/speedcam.dart';
 import 'services/minimap_host.dart';
 import 'services/minimap_viewport.dart';
 import 'services/shared_prefs_config_store.dart';
@@ -102,6 +104,9 @@ Future<void> dhuMain(List<String> args) async {
       ? NativePackageStatus()
       : FakePackageStatus();
 
+  // Speedcam (0030): Fake with embedded BY sample until native/OSM pack lands.
+  final SpeedcamService speedcamRaw = FakeSpeedcamService();
+
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
   // On T1 desktop, FakeSystemConfig provides in-memory state.
@@ -143,6 +148,7 @@ Future<void> dhuMain(List<String> args) async {
       hudHostProvider.overrideWithValue(hudHostRaw),
       installerProvider.overrideWithValue(installerRaw),
       packageStatusProvider.overrideWithValue(packageStatusRaw),
+      speedcamServiceProvider.overrideWithValue(speedcamRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],
@@ -233,6 +239,7 @@ Future<void> dhuMain(List<String> args) async {
     installer: installerRaw,
     systemConfig: systemConfigRaw,
     usbMode: usbModeRaw,
+    speedcam: speedcamRaw,
     // onSetConfig is null: the store.changes.listen above handles relay.
     // getBootState: on Android, query the native FGS singleton for boot status.
     // On other platforms (T1 desktop) the callback is not provided.
@@ -266,12 +273,14 @@ void hudMain(List<String> args) {
   // ADR 0003: each isolate has its own FakeCarSignals; the DHU one is the source.
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
+  final speedcam = FakeSpeedcamService();
 
   registerZeeExtensions(
     surface: 'hud',
     store: store,
     shotKey: hudShotKey,
     carSignals: carSignals,
+    speedcam: speedcam,
   );
 
   // Seed from persisted prefs, then arm the relay listener.
@@ -291,6 +300,7 @@ void hudMain(List<String> args) {
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         packageStatusProvider.overrideWithValue(FakePackageStatus()),
+        speedcamServiceProvider.overrideWithValue(speedcam),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],

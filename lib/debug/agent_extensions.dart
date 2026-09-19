@@ -13,6 +13,7 @@ import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
+import '../services/speedcam.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 import '../services/usb_mode.dart';
@@ -65,6 +66,7 @@ void registerZeeExtensions({
   // readViewModel stays consistent regardless of which path enabled it.
   String? Function()? getMinimapNative,
   void Function(String?)? onMinimapNativeResult,
+  SpeedcamService? speedcam,
 }) {
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
@@ -115,6 +117,7 @@ void registerZeeExtensions({
         // locale: null = follow system; 'en'/'ru' = explicit override.
         'locale': store.value.locale,
         'signalSource': signalSource,
+        'speedcam': speedcam?.snapshot.toJson(),
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
           'state': snap?.blinker.name ?? BlinkerState.off.name,
@@ -496,6 +499,84 @@ void registerZeeExtensions({
         jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
       );
     }); // end ext.zee.inject
+
+  // Speedcam (0030): set host pose / approach a sample cam / enable.
+  // T1 Fake only until pack+native land.
+  developer.registerExtension('ext.zee.speedcam', (method, params) async {
+    final svc = speedcam;
+    if (svc == null) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'ok': false,
+          'error': 'speedcam not available on this surface',
+        }),
+      );
+    }
+    final action = params['action'] ?? params['op'] ?? 'snapshot';
+    try {
+      switch (action) {
+        case 'enable':
+          await svc.setEnabled(params['on'] != 'false' && params['on'] != '0');
+        case 'disable':
+          await svc.setEnabled(false);
+        case 'pose':
+          final lat = double.parse(params['lat'] ?? '0');
+          final lon = double.parse(params['lon'] ?? '0');
+          final spd = params['speedKmh'] != null
+              ? double.tryParse(params['speedKmh']!)
+              : null;
+          await svc.setHostPose(
+            SpeedcamHostPose(lat: lat, lon: lon, speedKmh: spd),
+          );
+        case 'clearPose':
+          await svc.clearHostPose();
+        case 'approach':
+          // Place host distanceM from first cam (or cam id=).
+          final dist = double.parse(params['distanceM'] ?? '200');
+          final cams = svc.snapshot.cams;
+          if (cams.isEmpty) {
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'no cams loaded',
+              }),
+            );
+          }
+          final id = params['camId'];
+          final cam = id == null
+              ? cams.first
+              : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
+          // 1 deg lat ≈ 111320 m — approach from south.
+          final dLat = dist / 111320.0;
+          await svc.setHostPose(SpeedcamHostPose(
+            lat: cam.lat - dLat,
+            lon: cam.lon,
+            speedKmh: double.tryParse(params['speedKmh'] ?? ''),
+          ));
+        case 'snapshot':
+          break;
+        default:
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode(<String, Object?>{
+              'ok': false,
+              'error': 'unknown action=$action',
+            }),
+          );
+      }
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'ok': true,
+          'surface': surface,
+          'speedcam': svc.snapshot.toJson(),
+        }),
+      );
+    } catch (e) {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{'ok': false, 'error': '$e'}),
+      );
+    }
+  });
+
   } // end if (surface == 'dhu')
 
   // tapByKey — synthetic-tap a widget identified by ValueKey<String>.

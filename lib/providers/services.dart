@@ -5,6 +5,7 @@ import '../services/config_store.dart';
 import '../services/hud_host.dart';
 import '../services/installer.dart';
 import '../services/package_status.dart';
+import '../services/speedcam.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 
@@ -38,3 +39,8 @@ final packageStatusProvider = Provider<PackageStatus>((ref) {
 final systemConfigProvider = Provider<SystemConfig>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });
+
+final speedcamServiceProvider = Provider<SpeedcamService>((ref) {
+  throw UnimplementedError('inject via ProviderScope.overrides');
+});
+
