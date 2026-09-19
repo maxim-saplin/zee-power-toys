@@ -1057,6 +1057,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approach alert sound'**
   String get speedcamSoundEnable;
+
+  /// DHU local speedcam pack state
+  ///
+  /// In en, this message translates to:
+  /// **'Local pack / DB'**
+  String get speedcamDbSection;
+
+  /// Pack region label
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get speedcamDbRegion;
+
+  /// Pack source overpass/fixture/fake
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get speedcamDbSource;
+
+  /// Pack fetch timestamp
+  ///
+  /// In en, this message translates to:
+  /// **'Last fetched'**
+  String get speedcamDbFetched;
+
+  /// Pack age vs now
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get speedcamDbAge;
+
+  /// Cached cam count
+  ///
+  /// In en, this message translates to:
+  /// **'Cameras in pack'**
+  String get speedcamDbCount;
+
+  /// First N cams from local DB
+  ///
+  /// In en, this message translates to:
+  /// **'Sample cams'**
+  String get speedcamDbSample;
+
+  /// Pack refresh policy section
+  ///
+  /// In en, this message translates to:
+  /// **'Harvest / refresh'**
+  String get speedcamHarvestSection;
+
+  /// Manual vs if-stale
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh policy'**
+  String get speedcamRefreshPolicy;
+
+  /// Only Update button refreshes
+  ///
+  /// In en, this message translates to:
+  /// **'Manual only'**
+  String get speedcamRefreshManual;
+
+  /// Auto refresh when older than N days
+  ///
+  /// In en, this message translates to:
+  /// **'If stale'**
+  String get speedcamRefreshIfStale;
+
+  /// Days before if-stale refreshes
+  ///
+  /// In en, this message translates to:
+  /// **'Stale after (days)'**
+  String get speedcamStaleDays;
 }
 
 class _AppLocalizationsDelegate

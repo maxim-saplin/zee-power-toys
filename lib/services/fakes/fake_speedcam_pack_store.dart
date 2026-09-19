@@ -33,6 +33,21 @@ class FakeSpeedcamPackStore implements SpeedcamPackStore {
   }
 
   @override
+  Future<SpeedcamPackMeta?> refreshIfNeeded({
+    required String packId,
+    required bool ifStale,
+    required int staleAfterDays,
+    DateTime? now,
+  }) async {
+    final meta = await current(packId);
+    if (!ifStale) return meta;
+    if (meta == null || meta.isStale(afterDays: staleAfterDays, now: now)) {
+      return updatePack(packId);
+    }
+    return meta;
+  }
+
+  @override
   Future<SpeedcamPackMeta> updatePack(String packId) async {
     if (packId != SpeedcamPackIds.by) {
       throw ArgumentError('unsupported packId=$packId');

@@ -498,4 +498,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamSoundEnable => 'Звук приближения';
+
+  @override
+  String get speedcamDbSection => 'Локальный пакет / БД';
+
+  @override
+  String get speedcamDbRegion => 'Регион';
+
+  @override
+  String get speedcamDbSource => 'Источник';
+
+  @override
+  String get speedcamDbFetched => 'Последнее обновление';
+
+  @override
+  String get speedcamDbAge => 'Возраст';
+
+  @override
+  String get speedcamDbCount => 'Камер в пакете';
+
+  @override
+  String get speedcamDbSample => 'Примеры камер';
+
+  @override
+  String get speedcamHarvestSection => 'Сбор / обновление';
+
+  @override
+  String get speedcamRefreshPolicy => 'Политика обновления';
+
+  @override
+  String get speedcamRefreshManual => 'Только вручную';
+
+  @override
+  String get speedcamRefreshIfStale => 'Если устарел';
+
+  @override
+  String get speedcamStaleDays => 'Устарел через (дней)';
 }

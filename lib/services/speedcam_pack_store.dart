@@ -32,6 +32,7 @@ class SpeedcamPackMeta {
     required this.fetchedAt,
     required this.camCount,
     this.source = 'overpass',
+    this.regionLabel = 'Belarus (BY)',
   });
 
   final String id;
@@ -39,6 +40,14 @@ class SpeedcamPackMeta {
   final DateTime fetchedAt;
   final int camCount;
   final String source;
+  final String regionLabel;
+
+  /// Age of the pack relative to [now].
+  Duration age({DateTime? now}) =>
+      (now ?? DateTime.now().toUtc()).difference(fetchedAt.toUtc());
+
+  bool isStale({required int afterDays, DateTime? now}) =>
+      age(now: now) >= Duration(days: afterDays);
 
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
@@ -46,6 +55,7 @@ class SpeedcamPackMeta {
         'fetchedAt': fetchedAt.toUtc().toIso8601String(),
         'camCount': camCount,
         'source': source,
+        'regionLabel': regionLabel,
       };
 
   factory SpeedcamPackMeta.fromJson(Map<String, Object?> json) =>
@@ -55,6 +65,7 @@ class SpeedcamPackMeta {
         fetchedAt: DateTime.parse(json['fetchedAt'] as String),
         camCount: (json['camCount'] as num?)?.toInt() ?? 0,
         source: json['source'] as String? ?? 'overpass',
+        regionLabel: json['regionLabel'] as String? ?? 'Belarus (BY)',
       );
 }
 
@@ -64,6 +75,14 @@ abstract class SpeedcamPackStore {
   Future<List<SpeedcamPoint>> loadCams(String packId);
   Future<SpeedcamPackMeta> updatePack(String packId);
   Stream<SpeedcamPackMeta?> watch(String packId);
+
+  /// Refresh when missing or stale. [ifStale]=false → never auto-fetch.
+  Future<SpeedcamPackMeta?> refreshIfNeeded({
+    required String packId,
+    required bool ifStale,
+    required int staleAfterDays,
+    DateTime? now,
+  });
 }
 
 /// On-disk JSON pack under [root]/id}.json — atomic replace via .tmp.
@@ -133,6 +152,7 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
       fetchedAt: now,
       camCount: cams.length,
       source: 'overpass',
+      regionLabel: packId == SpeedcamPackIds.by ? 'Belarus (BY)' : packId,
     );
     final body = jsonEncode(<String, Object?>{
       'meta': meta.toJson(),
@@ -236,6 +256,22 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
     final map = jsonDecode(res.body) as Map<String, dynamic>;
     final elements = map['elements'] as List<dynamic>? ?? const [];
     return parseOverpassElements(elements);
+  }
+
+
+  @override
+  Future<SpeedcamPackMeta?> refreshIfNeeded({
+    required String packId,
+    required bool ifStale,
+    required int staleAfterDays,
+    DateTime? now,
+  }) async {
+    final meta = await current(packId);
+    if (!ifStale) return meta;
+    if (meta == null || meta.isStale(afterDays: staleAfterDays, now: now)) {
+      return updatePack(packId);
+    }
+    return meta;
   }
 
   void dispose() {

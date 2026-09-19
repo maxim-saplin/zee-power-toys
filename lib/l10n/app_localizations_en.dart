@@ -497,4 +497,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamSoundEnable => 'Approach alert sound';
+
+  @override
+  String get speedcamDbSection => 'Local pack / DB';
+
+  @override
+  String get speedcamDbRegion => 'Region';
+
+  @override
+  String get speedcamDbSource => 'Source';
+
+  @override
+  String get speedcamDbFetched => 'Last fetched';
+
+  @override
+  String get speedcamDbAge => 'Age';
+
+  @override
+  String get speedcamDbCount => 'Cameras in pack';
+
+  @override
+  String get speedcamDbSample => 'Sample cams';
+
+  @override
+  String get speedcamHarvestSection => 'Harvest / refresh';
+
+  @override
+  String get speedcamRefreshPolicy => 'Refresh policy';
+
+  @override
+  String get speedcamRefreshManual => 'Manual only';
+
+  @override
+  String get speedcamRefreshIfStale => 'If stale';
+
+  @override
+  String get speedcamStaleDays => 'Stale after (days)';
 }

@@ -609,11 +609,22 @@ class HudSafeArea {
 
 
 /// Speedcam HUD/DHU radar appearance (0034).
+/// When to re-fetch the OSM pack from Overpass (0037).
+enum SpeedcamRefreshPolicy {
+  /// Only when the user taps Update.
+  manualOnly,
+
+  /// Auto-refresh if pack is missing or older than [SpeedcamConfig.staleAfterDays].
+  ifStale,
+}
+
 class SpeedcamConfig {
   const SpeedcamConfig({
     this.hudRadarEnabled = true,
     this.dhuRangeM = 2000,
     this.soundEnabled = true,
+    this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
+    this.staleAfterDays = 7,
   });
 
   /// Paint CRT on the HUD windshield when approaching.
@@ -625,38 +636,67 @@ class SpeedcamConfig {
   /// Play approach sting when [insideApproach] flips true.
   final bool soundEnabled;
 
+  /// Harvest / cache refresh policy.
+  final SpeedcamRefreshPolicy refreshPolicy;
+
+  /// Age in days after which [SpeedcamRefreshPolicy.ifStale] refetches.
+  final int staleAfterDays;
+
   SpeedcamConfig copyWith({
     bool? hudRadarEnabled,
     double? dhuRangeM,
     bool? soundEnabled,
+    SpeedcamRefreshPolicy? refreshPolicy,
+    int? staleAfterDays,
   }) =>
       SpeedcamConfig(
         hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
         dhuRangeM: dhuRangeM ?? this.dhuRangeM,
         soundEnabled: soundEnabled ?? this.soundEnabled,
+        refreshPolicy: refreshPolicy ?? this.refreshPolicy,
+        staleAfterDays: staleAfterDays ?? this.staleAfterDays,
       );
 
   Map<String, Object?> toJson() => <String, Object?>{
         'hudRadarEnabled': hudRadarEnabled,
         'dhuRangeM': dhuRangeM,
         'soundEnabled': soundEnabled,
+        'refreshPolicy': refreshPolicy.name,
+        'staleAfterDays': staleAfterDays,
       };
 
-  factory SpeedcamConfig.fromJson(Map<String, Object?> json) => SpeedcamConfig(
-        hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
-        dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
-        soundEnabled: json['soundEnabled'] as bool? ?? true,
-      );
+  factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
+    final policyName = json['refreshPolicy'] as String?;
+    final policy = SpeedcamRefreshPolicy.values.firstWhere(
+      (e) => e.name == policyName,
+      orElse: () => SpeedcamRefreshPolicy.manualOnly,
+    );
+    return SpeedcamConfig(
+      hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
+      dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
+      soundEnabled: json['soundEnabled'] as bool? ?? true,
+      refreshPolicy: policy,
+      staleAfterDays: (json['staleAfterDays'] as num?)?.toInt() ?? 7,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
       other is SpeedcamConfig &&
       other.hudRadarEnabled == hudRadarEnabled &&
       other.dhuRangeM == dhuRangeM &&
-      other.soundEnabled == soundEnabled;
+      other.soundEnabled == soundEnabled &&
+      other.refreshPolicy == refreshPolicy &&
+      other.staleAfterDays == staleAfterDays;
 
   @override
-  int get hashCode => Object.hash(hudRadarEnabled, dhuRangeM, soundEnabled);
+  int get hashCode => Object.hash(
+        hudRadarEnabled,
+        dhuRangeM,
+        soundEnabled,
+        refreshPolicy,
+        staleAfterDays,
+      );
 }
 
 /// Minimal app configuration.
