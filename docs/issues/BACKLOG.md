@@ -102,6 +102,10 @@ Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](
 
 Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
 
+### Speedcam follow-up
+
+| [0036](0036-speedcam-drive-sim.md) | Simulated drive polyline through pack cams | ready-for-agent |
+
 ### Out of scope (post-MVP, architecture-ready)
 
 See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-testing.md) — how to compare phase0 reference vs our app on one emulator or on-car, without conflict.
