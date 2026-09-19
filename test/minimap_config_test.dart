@@ -132,7 +132,7 @@ void main() {
   // MinimapLooks — the Look section's three native colour-filter knobs.
   // ---------------------------------------------------------------------------
   group('MinimapLooks', () {
-    test('defaults match the measured-good native values', () {
+    test('defaults match the phase0 White defaults (contrast 3.0 / threshold 150)', () {
       const looks = MinimapLooks();
       expect(looks.colorPreset, equals('green-yellow'));
       expect(looks.contrast, equals(3.5));
