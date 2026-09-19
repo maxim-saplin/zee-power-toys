@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -170,6 +171,67 @@ class _SpeedcamSettingsScreenState
         children: [
           // DB + harvest FIRST (above the fold) — PDM/QA bar for 0037.
           SettingsSection(
+            title: l10n.speedcamRadarSection,
+            children: [
+              // Cap disk to viewport so CRT is fully visible without scroll (0039).
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final h = MediaQuery.sizeOf(context).height;
+                  // App bar + toggles + range + section chrome ≈ 280; leave margin.
+                  final maxDisk = (h - 280).clamp(140.0, 280.0);
+                  final side = math.min(constraints.maxWidth, maxDisk);
+                  return Align(
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: side,
+                      height: side,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(color: Colors.black),
+                        child: SpeedcamRadarWidget(
+                          variant: SpeedcamRadarVariant.dhuLarge,
+                          alwaysShow: true,
+                          displayRadiusM: sc.dhuRangeM,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                key: const ValueKey('speedcam-hud-radar'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamHudRadarEnable),
+                value: sc.hudRadarEnabled,
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(hudRadarEnabled: v),
+                ),
+              ),
+              SwitchListTile(
+                key: const ValueKey('speedcam-sound'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamSoundEnable),
+                value: sc.soundEnabled,
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(soundEnabled: v),
+                ),
+              ),
+              SettingsSlider(
+                label: l10n.speedcamDhuRange,
+                valueLabel: '${sc.dhuRangeM.round()} m',
+                minLabel: '500',
+                maxLabel: '3000',
+                sliderKey: const ValueKey('speedcam-dhu-range'),
+                min: 500,
+                max: 3000,
+                divisions: 25,
+                value: sc.dhuRangeM.clamp(500, 3000),
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(dhuRangeM: v),
+                ),
+              ),
+            ],
+          ),          SettingsSection(
             title: l10n.speedcamDbSection,
             children: [
               ListTile(
@@ -306,55 +368,7 @@ class _SpeedcamSettingsScreenState
             ),
           ],
           const SizedBox(height: 16),
-          SettingsSection(
-            title: l10n.speedcamRadarSection,
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(color: Colors.black),
-                  child: SpeedcamRadarWidget(
-                    variant: SpeedcamRadarVariant.dhuLarge,
-                    alwaysShow: true,
-                    displayRadiusM: sc.dhuRangeM,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                key: const ValueKey('speedcam-hud-radar'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamHudRadarEnable),
-                value: sc.hudRadarEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(hudRadarEnabled: v),
-                ),
-              ),
-              SwitchListTile(
-                key: const ValueKey('speedcam-sound'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamSoundEnable),
-                value: sc.soundEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(soundEnabled: v),
-                ),
-              ),
-              SettingsSlider(
-                label: l10n.speedcamDhuRange,
-                valueLabel: '${sc.dhuRangeM.round()} m',
-                minLabel: '500',
-                maxLabel: '3000',
-                sliderKey: const ValueKey('speedcam-dhu-range'),
-                min: 500,
-                max: 3000,
-                divisions: 25,
-                value: sc.dhuRangeM.clamp(500, 3000),
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(dhuRangeM: v),
-                ),
-              ),
-            ],
-          ),
+
         ],
       ),
     );
