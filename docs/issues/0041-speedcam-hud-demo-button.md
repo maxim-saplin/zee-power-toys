@@ -1,7 +1,8 @@
 # 0041 — Speedcam “Demo on HUD” from DHU settings
 
 ## Status
-in-progress
+done @ 72e3025
+
 
 ## Goal
 Maxim wants to preview looks + sounds on the live HUD **without driving / approaching a cam**. Today: DHU settings = look preview; HUD stays idle empty until real/FL approach.

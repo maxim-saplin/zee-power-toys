@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # product cut through 0042 @ 956d6b8; quality 0043 @ f8a2118
 labels: [hud, speedcam, osm]
 created: 2026-09-19
 satisfies: HUD · Speedcam (REQUIREMENTS)

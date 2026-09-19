@@ -1,7 +1,8 @@
 # 0042 — Alien CRT + audio fidelity
 
 ## Status
-done @ 956d6b8 (T1 relay multi-cam PASS; taste polish landed through a6f3383/09e5f0e/448a300)
+done @ 956d6b8 (taste polish a6f3383…)
+
 
 ## Goal
 Raise Alien look/sound toward Maxim’s motion-tracker refs (and taste), after 0041 Demo lands.

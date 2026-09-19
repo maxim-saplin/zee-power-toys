@@ -33,8 +33,8 @@ The turn-signal indicator drawn on the HUD.
 _Avoid_: turn signal, indicator, arrow
 
 **Speedcam**:
-The speed-camera proximity indicator on the HUD. "Radar" and "alien mode" are visual *styles* of the Speedcam, not the concept itself.
-_Avoid_: speed camera alert, radar
+The speed-camera proximity indicator on the HUD (OSM packs, approach sting, optional Demo). **Default** and **Alien** are visual *looks* (text readout vs CRT motion-tracker), not separate features. Data: OpenStreetMap (ODbL).
+_Avoid_: speed camera alert, radar (alone), Alien mode (as a product name)
 
 **Guidance**:
 The turn-by-turn overlay we draw on the HUD (turn arrow, distance, road name, ETA) from YNavi trip data. Distinct from the Minimap, which YNavi draws.

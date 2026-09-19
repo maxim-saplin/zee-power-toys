@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # dc8e220 / relay ae74500
 labels: [hud, speedcam]
 created: 2026-09-19
 satisfies: HUD · Speedcam

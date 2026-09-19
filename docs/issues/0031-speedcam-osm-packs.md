@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # 07f7389 / live 9d3b79f
 labels: [hud, speedcam, osm]
 created: 2026-09-19
 satisfies: HUD · Speedcam

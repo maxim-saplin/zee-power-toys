@@ -104,19 +104,18 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 
 ### Quality + publish
 
-| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | in-progress (A+B+E+D tipped; C=QA) |
+| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | F tipped — awaiting ACCEPT |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | blocked-by 0043 |
 
-### Speedcam follow-up
+### Speedcam (0029–0042) — **done** on T1/T2
 
-| [0036](0036-speedcam-drive-sim.md) | Simulated drive polyline through pack cams | ready-for-agent |
-| [0037](0037-speedcam-harvest-db-ui.md) | Harvest refresh policy + DHU local DB state | backlog |
-| [0038](0038-speedcam-heading-facing.md) | Host heading + opposite-facing mute | backlog |
+Product cut shipped through Alien fidelity + Demo; tip of record `956d6b8`. Quality sweep [0043](0043-quality-sweep-pre-publish.md). Residual taste polish is not a numbered block unless Maxim reopens.
+
 
 ### Out of scope (post-MVP, architecture-ready)
 
 See also: [phase0 / YNavi A/B testing protocol](../knowledge/phase0-ynavi-ab-testing.md) — how to compare phase0 reference vs our app on one emulator or on-car, without conflict.
-- **Speedcam** (+ Alien mode) — slots in as a future `SpeedcamService` + a location signal; no design effort now. ADR 0003's service-port model makes it additive (events out: nearest cam, danger level; commands in: lane toggles), with radar / alien visuals being more Flutter HUD content (ADR 0001).
+- ~~**Speedcam** (+ Alien mode)~~ → **shipped** as [0029](0029-speedcam-osm-epic.md)–[0042](0042-speedcam-alien-fidelity.md) (`SpeedcamService` + OSM packs + Default/Alien looks).
 
 ### Deferred hardening (tracked, low-priority — surfaced by the QA sweep)
 Non-blocking polish noted so it is never invisible. None gate on-car (T3) testing.

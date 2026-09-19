@@ -53,8 +53,7 @@ uv run dev/feedback_loop.py whoami-all
 
 **Feature board through Speedcam** — Blocks 0001–0026 plus Speedcam
 0029–0042 (pack → proximity → HUD/DHU radar → Demo → Alien fidelity) are
-T1/T2 runtime-confirmed where QA cut them; tip of record for Speedcam
-multi-cam HUD relay is `956d6b8` (chore HEAD may be newer). `flutter analyze`
+T1/T2 runtime-confirmed where QA cut them; Speedcam tip of record `956d6b8`; quality sweep HEAD may be newer (`f8a2118`+). `flutter analyze`
 clean; run `flutter test` for the current count. **T3 (car) fidelity still
 the source of truth** (ADR 0004) — do not treat T1/T2 alone as windshield-final.
 See [`docs/issues/BACKLOG.md`](docs/issues/BACKLOG.md). Speedcam OSM credit: below.

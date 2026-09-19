@@ -1,7 +1,8 @@
 # 0039 — DHU Speedcam radar fits vertically (no scroll for disk)
 
 ## Status
-in-progress
+done @ 12f8584
+
 
 ## Goal
 On Speedcam settings, the large Alien/CRT radar must be fully visible without scrolling. Today it is `AspectRatio(1)` under harvest/DB, so on typical T1/DHU heights the square overflows and the disk is half off-screen.

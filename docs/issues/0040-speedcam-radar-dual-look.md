@@ -1,7 +1,8 @@
 # 0040 — Speedcam radar dual look: Default + Alien
 
 ## Status
-in-progress
+done @ d7e7ae4 / relay adea35f
+
 
 ## Goal
 Two distinct radar looks, switchable in Speedcam settings (and visible on HUD + DHU):

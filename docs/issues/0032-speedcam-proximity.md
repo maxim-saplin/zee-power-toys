@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # 81aedc5
 labels: [hud, speedcam]
 created: 2026-09-19
 satisfies: HUD · Speedcam

@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # d8a7bb0 / fold 45df34a
 labels: [hud, speedcam, osm]
 created: 2026-09-19
 satisfies: HUD · Speedcam

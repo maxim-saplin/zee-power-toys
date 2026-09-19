@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # 0c53680
 labels: [hud, speedcam]
 created: 2026-09-19
 satisfies: HUD · Speedcam

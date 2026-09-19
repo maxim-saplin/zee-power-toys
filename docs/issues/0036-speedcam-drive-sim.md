@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done  # 1fc47ad
 labels: [hud, speedcam, t1, t2]
 created: 2026-09-19
 satisfies: HUD · Speedcam

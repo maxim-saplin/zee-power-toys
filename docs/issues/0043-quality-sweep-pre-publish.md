@@ -1,7 +1,8 @@
 # 0043 — Quality sweep before publish prep
 
 ## Status
-in-progress (A+B+E tipped; D N/A shameful; C=QA)
+F tipped @ 69c9534 — A–E @ f8a2118; C T1+T2 PASS; awaiting @zee-pdm ACCEPT
+
 
 ## Goal
 Raise the bar so features are production-ready on T1+T2 before staging publish changesets (Maxim reviews / go later). **No publish green.**
@@ -37,14 +38,12 @@ Must cover at least:
 - Agent-oriented README stays until publish lane rewrites landing (0044)
 
 ## DoD
-- [x] A Credit + About tipped
-- [x] B deps+analyze tipped
-- [ ] C Regression matrix (QA)
-- [x] D Tech debt — no shameful TODO/FIXME in lib/ (left BACKLOG)
-- [x] E Coverage — About + radarLook nested + Demo; facing-mute approach tests fixed
-- [ ] F Docs honesty
-- [ ] A–F tipped or explicitly N/A with reason
-- [ ] T1+T2 regression matrix green (or FAIL→fix→PASS logged)
+- [x] A Credit Speedcam README+About @ f8a2118
+- [x] B Deps+analyze @ f8a2118
+- [x] C Regression matrix T1→T2 PASS @ f8a2118 (QA evidence qa-0043-t{1,2}-f8a2118)
+- [x] D Tech debt (DHU 2.19 tests; no shameful lib TODO)
+- [x] E Coverage (relay / cold-boot radarLook / Demo / About)
+- [x] F Docs honesty (issue statuses + BACKLOG + CONTEXT)
 - [ ] @zee-pdm ACCEPT on 0043 → unlock publish prep (0044)
 
 ## Out of scope
