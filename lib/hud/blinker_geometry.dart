@@ -145,15 +145,17 @@ Path blinkerArrowPath(Size size, {required bool isLeft}) {
   final diameter = blinkerMarkDiameter(slotH: slotH, sizeScale: config.sizeScale);
   final box = blinkerMarkBox(shape, diameter);
   final top = slotH * config.vertFrac - box.height / 2;
-  final padX = slotW * config.sidePadFrac;
+  final bias = slotW * config.horizBiasFrac;
+  final leftPad = (slotW * config.sidePadFrac + bias).clamp(0.0, slotW);
+  final rightPad = (slotW * config.sidePadFrac - bias).clamp(0.0, slotW);
 
   final showLeft = state == BlinkerState.left || state == BlinkerState.hazard;
   final showRight = state == BlinkerState.right || state == BlinkerState.hazard;
 
   return (
-    left: showLeft ? Rect.fromLTWH(padX, top, box.width, box.height) : null,
+    left: showLeft ? Rect.fromLTWH(leftPad, top, box.width, box.height) : null,
     right: showRight
-        ? Rect.fromLTWH(slotW - padX - box.width, top, box.width, box.height)
+        ? Rect.fromLTWH(slotW - rightPad - box.width, top, box.width, box.height)
         : null,
   );
 }

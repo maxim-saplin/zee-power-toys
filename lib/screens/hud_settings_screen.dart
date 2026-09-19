@@ -248,16 +248,37 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                 valueLabel:
                     '${(blinkerCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
                 minLabel: l10n.positionEdge,
-                maxLabel: '20%',
+                maxLabel: '35%',
                 sliderKey: const ValueKey('blinker-side-pad'),
                 min: 0.0,
-                max: 0.20,
-                divisions: 20,
-                value: blinkerCfg.sidePadFrac.clamp(0.0, 0.20),
+                max: 0.35,
+                divisions: 35,
+                value: blinkerCfg.sidePadFrac.clamp(0.0, 0.35),
                 onChanged: (v) {
                   store.setConfig(
                     store.value.copyWith(
                       blinker: blinkerCfg.copyWith(sidePadFrac: v),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: 'Horizontal bias',
+                valueLabel:
+                    '${(blinkerCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
+                minLabel: '←',
+                maxLabel: '→',
+                sliderKey: const ValueKey('blinker-horiz-bias'),
+                min: -0.25,
+                max: 0.25,
+                divisions: 50,
+                value: blinkerCfg.horizBiasFrac.clamp(-0.25, 0.25),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      blinker: blinkerCfg.copyWith(horizBiasFrac: v),
                     ),
                   );
                 },

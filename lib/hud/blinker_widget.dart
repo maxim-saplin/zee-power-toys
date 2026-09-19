@@ -72,15 +72,20 @@ class BlinkerWidget extends HookConsumerWidget {
 
     // Effect: start/stop the repeat animation in sync with active state.
     // useEffect re-runs whenever [isActive] changes.
+    // Restart blink phase ON whenever stalk engages or side changes — matches
+    // phase0 BlinkerOverlayView (blinkOn=true on rising edge). Cuts perceived
+    // latency vs continuing a free-run mid-cycle.
     useEffect(() {
       if (isActive) {
+        controller.stop();
+        controller.value = 0.0; // blinkOnAt(0) == true
         controller.repeat();
       } else {
         controller.stop();
         controller.value = 0.0;
       }
       return null;
-    }, [isActive]);
+    }, [isActive, state]);
 
     // useAnimation subscribes to the controller so this widget rebuilds every
     // tick while it repeats — without this, nothing reads controller.value
@@ -118,8 +123,9 @@ class BlinkerWidget extends HookConsumerWidget {
         final box = blinkerMarkBox(cfg.shape, diameter);
 
         final vertCenter = slotH * cfg.vertFrac;
-        // Horizontal: sidePadFrac is inward from the outer slot edge.
-        final padX = slotW * cfg.sidePadFrac;
+        final bias = slotW * cfg.horizBiasFrac;
+        final leftPad = (slotW * cfg.sidePadFrac + bias).clamp(0.0, slotW);
+        final rightPad = (slotW * cfg.sidePadFrac - bias).clamp(0.0, slotW);
 
         final color = blinkOn ? _kAmber : Colors.transparent;
 
@@ -127,7 +133,7 @@ class BlinkerWidget extends HookConsumerWidget {
           children: <Widget>[
             if (showLeft)
               Positioned(
-                left: padX,
+                left: leftPad,
                 top: vertCenter - box.height / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-left'),
@@ -139,7 +145,7 @@ class BlinkerWidget extends HookConsumerWidget {
               ),
             if (showRight)
               Positioned(
-                right: padX,
+                right: rightPad,
                 top: vertCenter - box.height / 2,
                 child: _BlinkerMark(
                   key: const ValueKey('blinker-mark-right'),

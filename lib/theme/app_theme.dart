@@ -110,7 +110,7 @@ abstract final class AppTheme {
         overlayColor: AppColors.accent.withValues(alpha: 0.12),
         // The value is already shown inline by [SettingsSlider] above the
         // track (always visible, never clipped) — the M3 value-indicator
-        // bubble is pure redundancy and, at the DHU's 2.7x scale, overflows
+        // bubble is pure redundancy and, at the DHU's 2.43x scale, overflows
         // the screen near the track ends. Suppress it here so no future
         // slider (discrete or continuous) can reintroduce the balloon.
         showValueIndicator: ShowValueIndicator.never,

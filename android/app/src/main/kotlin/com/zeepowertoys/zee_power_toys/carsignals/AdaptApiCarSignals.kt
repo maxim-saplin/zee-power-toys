@@ -1,6 +1,9 @@
 package com.zeepowertoys.zee_power_toys.carsignals
 
 import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import android.util.Log
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
@@ -28,6 +31,8 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private val SPEED         = 0x00100100
     private val BLINKER_LEFT  = 0x21051100
     private val BLINKER_RIGHT = 0x21051200
+    private val BLINKER_POLL_MS = 50L
+    private val BLINKER_POLL_BACKOFF_MS = 1000L
     private val CHARGE_STATE  = 0x00201500  // getSensorEvent; 0=idle,1=charging,...
     private val BATTERY_LEVEL = 0x00100A00  // % float
     private val BATTERY_TEMP  = 0x00102A00  // °C float
@@ -62,6 +67,11 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private var functionWatcherProxy: Any? = null
     private var emitter: ((SignalEvent) -> Unit)? = null
 
+    // Phase0-style blinker poll — callbacks alone can miss stalk-off on DHU.
+    private var blinkerPollThread: HandlerThread? = null
+    private var blinkerPollHandler: Handler? = null
+    @Volatile private var lastEmittedBlinker: String = "off"
+
     // Current in-memory state (updated by callbacks for snapshot())
     @Volatile private var lastSnapshot = CarSignalSnapshot()
 
@@ -89,13 +99,15 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             }
         }
         registerListeners()
-        Log.i(TAG, "AdaptApiCarSignals started — listeners registered")
+        startBlinkerPoll()
+        Log.i(TAG, "AdaptApiCarSignals started — listeners registered + blinker poll")
     }
 
     override fun snapshot(): CarSignalSnapshot = lastSnapshot
 
     override fun stop() {
         try {
+            stopBlinkerPoll()
             unregisterListeners()
             ReflectionUtils.callInstance(iCar ?: return, "disconnect")
         } catch (t: Throwable) {
@@ -209,8 +221,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                                 right == 1 -> "right"
                                 else -> "off"
                             }
-                            lastSnapshot = lastSnapshot.copy(blinker = state)
-                            emitter?.invoke(SignalEvent.Blinker(state))
+                            publishBlinkerState(state)
                         }
                         POWER_FLOW -> {
                             val flow = when (value) {
@@ -263,6 +274,61 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         )
         val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
         ReflectionUtils.callInstanceResult(fm, "registerFunctionValueWatcher", funcIds, functionWatcherProxy)
+    }
+
+
+    private fun publishBlinkerState(state: String) {
+        if (state == lastEmittedBlinker && lastSnapshot.blinker == state) return
+        lastEmittedBlinker = state
+        lastSnapshot = lastSnapshot.copy(blinker = state)
+        emitter?.invoke(SignalEvent.Blinker(state))
+    }
+
+    private fun readBlinkerStateFromApi(): String? {
+        val fm = functionMgr ?: return null
+        val leftRaw = ReflectionUtils.callInstance(fm, "getFunctionValue", BLINKER_LEFT) as? Int
+        val rightRaw = ReflectionUtils.callInstance(fm, "getFunctionValue", BLINKER_RIGHT) as? Int
+        if (leftRaw == null && rightRaw == null) return null
+        val left = leftRaw != null && leftRaw != 0
+        val right = rightRaw != null && rightRaw != 0
+        return when {
+            left && right -> "hazard"
+            left -> "left"
+            right -> "right"
+            else -> "off"
+        }
+    }
+
+    private fun startBlinkerPoll() {
+        if (blinkerPollThread != null) return
+        val thread = HandlerThread("ZeeBlinkerPoll").also {
+            it.priority = Thread.MAX_PRIORITY
+            it.start()
+        }
+        blinkerPollThread = thread
+        val handler = Handler(thread.looper)
+        blinkerPollHandler = handler
+        val runnable = object : Runnable {
+            override fun run() {
+                val state = readBlinkerStateFromApi()
+                if (state != null) {
+                    Handler(Looper.getMainLooper()).post { publishBlinkerState(state) }
+                }
+                val delay = if (state != null) BLINKER_POLL_MS else BLINKER_POLL_BACKOFF_MS
+                blinkerPollHandler?.postDelayed(this, delay)
+            }
+        }
+        handler.post(runnable)
+        Log.i(TAG, "Blinker poll started (${BLINKER_POLL_MS}ms)")
+    }
+
+    private fun stopBlinkerPoll() {
+        blinkerPollHandler?.removeCallbacksAndMessages(null)
+        blinkerPollThread?.quitSafely()
+        blinkerPollHandler = null
+        blinkerPollThread = null
+        lastEmittedBlinker = "off"
+        Log.i(TAG, "Blinker poll stopped")
     }
 
     private fun unregisterListeners() {

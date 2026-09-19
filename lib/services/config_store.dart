@@ -23,14 +23,14 @@ import 'minimap_viewport.dart' show hudPresetSizeFraction;
 /// moot at huePass=0.
 ///
 /// Defaults are the values measured good on the real HUD (MainActivity.kt's
-/// `MinimapParams` defaults / "THE FIX" history comment): green-yellow tint,
-/// contrast=3.5, threshold=165 — chosen so an untouched install gets the
+/// `MinimapParams` defaults / "THE FIX" history comment): white tint (phase0 HudSettings COLOR_PRESETS[0]),
+/// contrast=3.0, threshold=150 — chosen so an untouched install gets the
 /// good look without opening this screen.
 class MinimapLooks {
   const MinimapLooks({
-    this.colorPreset = 'green-yellow',
-    this.contrast = 3.5,
-    this.threshold = 165.0,
+    this.colorPreset = 'white',
+    this.contrast = 3.0,
+    this.threshold = 150.0,
   });
 
   /// Native `preset` param token: 'green-yellow' | 'white' | 'amber' | 'cyan'.
@@ -66,9 +66,9 @@ class MinimapLooks {
   };
 
   factory MinimapLooks.fromJson(Map<String, Object?> json) => MinimapLooks(
-    colorPreset: json['colorPreset'] as String? ?? 'green-yellow',
-    contrast: (json['contrast'] as num?)?.toDouble() ?? 3.5,
-    threshold: (json['threshold'] as num?)?.toDouble() ?? 165.0,
+    colorPreset: json['colorPreset'] as String? ?? 'white',
+    contrast: (json['contrast'] as num?)?.toDouble() ?? 3.0,
+    threshold: (json['threshold'] as num?)?.toDouble() ?? 150.0,
   );
 
   /// Wire-format params map for [MinimapHost.setParams] — the exact keys
@@ -364,6 +364,7 @@ class BlinkerConfig {
     this.sizeScale = 1.0,
     this.sidePadFrac = 0.04,
     this.vertFrac = 0.50,
+    this.horizBiasFrac = 0.0,
   });
 
   final BlinkerShape shape;
@@ -380,16 +381,22 @@ class BlinkerConfig {
   /// slot height (0 = top, 1 = bottom).
   final double vertFrac;
 
+  /// Horizontal bias as a fraction of slot width (−0.25…0.25). Positive shifts
+  /// both marks toward the right (left pad grows, right pad shrinks).
+  final double horizBiasFrac;
+
   BlinkerConfig copyWith({
     BlinkerShape? shape,
     double? sizeScale,
     double? sidePadFrac,
     double? vertFrac,
+    double? horizBiasFrac,
   }) => BlinkerConfig(
     shape: shape ?? this.shape,
     sizeScale: sizeScale ?? this.sizeScale,
     sidePadFrac: sidePadFrac ?? this.sidePadFrac,
     vertFrac: vertFrac ?? this.vertFrac,
+    horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
   );
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -397,6 +404,7 @@ class BlinkerConfig {
     'sizeScale': sizeScale,
     'sidePadFrac': sidePadFrac,
     'vertFrac': vertFrac,
+    'horizBiasFrac': horizBiasFrac,
   };
 
   factory BlinkerConfig.fromJson(Map<String, Object?> json) {
@@ -412,6 +420,7 @@ class BlinkerConfig {
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
       vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.50,
+      horizBiasFrac: (json['horizBiasFrac'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -421,10 +430,12 @@ class BlinkerConfig {
       other.shape == shape &&
       other.sizeScale == sizeScale &&
       other.sidePadFrac == sidePadFrac &&
-      other.vertFrac == vertFrac;
+      other.vertFrac == vertFrac &&
+      other.horizBiasFrac == horizBiasFrac;
 
   @override
-  int get hashCode => Object.hash(shape, sizeScale, sidePadFrac, vertFrac);
+  int get hashCode =>
+      Object.hash(shape, sizeScale, sidePadFrac, vertFrac, horizBiasFrac);
 }
 
 /// The sub-rectangle of the HUD's backing display that is optically visible
