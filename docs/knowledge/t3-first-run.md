@@ -18,7 +18,7 @@ Do **not** verify a moving tip. Re-freeze explicitly if the SHA changes.
 ## Prerequisites
 
 - ADB to the DHU (`adb devices` shows the car serial). USB Peripheral may need zSupport / prior ADB enable — our in-app UsbMode write is **platform-signing gated**.
-- APK built from the frozen tip with **AOSP/car platform signing** (`android/tools/zeekr/androiddebugkey.jks`, `useAospDebugKey=true`) — same key phase0 uses. Manifest has `sharedUserId=android.uid.system`.
+- APK built from the frozen tip with **AOSP/car platform signing**: copy phase0’s `androiddebugkey.jks` into `android/tools/zeekr/` (see that folder’s README; not committed), `useAospDebugKey=true`, alias `platformkey`. Manifest has `sharedUserId=android.uid.system`.
 - Verify signing before install: `apksigner verify --print-certs <apk>` should show the AOSP androiddebugkey / platform cert, **not** Flutter’s default debug cert.
 
 ```bash
