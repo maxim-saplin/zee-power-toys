@@ -314,7 +314,7 @@ double alienBlipAlphaForDistanceM(
   return (0.95 - frac * 0.55).clamp(0.35, 0.95);
 }
 
-/// Alien motion-tracker: front-hemisphere sector scan, grit, range-weighted blips.
+/// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 class _AlienWedgePainter extends CustomPainter {
   _AlienWedgePainter({
     required this.sweepT,
@@ -334,29 +334,31 @@ class _AlienWedgePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final c = Offset(size.width / 2, size.height * 0.92);
-    final r = math.min(size.width, size.height) * 0.88;
+    final c = Offset(size.width / 2, size.height * 0.90);
+    final r = math.min(size.width, size.height) * 0.86;
 
+    // Deep CRT black-green ground
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = const Color(0xFF020802),
+      Paint()..color = const Color(0xFF010401),
     );
 
-    // CRT grit (stable pseudo-noise)
-    final grit = Paint()..color = const Color(0x1800FF66);
-    for (var i = 0; i < 90; i++) {
-      final x = ((i * 97) % 1000) / 1000.0 * size.width;
-      final y = ((i * 53) % 1000) / 1000.0 * size.height;
-      canvas.drawCircle(Offset(x, y), 0.7, grit);
+    // Heavy phosphor grain
+    final grit = Paint()..color = const Color(0x2200FF44);
+    for (var i = 0; i < 140; i++) {
+      final x = ((i * 131) % 997) / 997.0 * size.width;
+      final y = ((i * 89) % 991) / 991.0 * size.height;
+      canvas.drawRect(Rect.fromLTWH(x, y, 1.1, 1.1), grit);
     }
 
-    // Scanlines
-    final scan = Paint()..color = const Color(0x2800FF66);
-    for (var y = 0.0; y < size.height; y += 2.5) {
+    // Dense horizontal scanlines
+    final scan = Paint()..color = const Color(0x3300FF55);
+    for (var y = 0.0; y < size.height; y += 2.0) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), scan);
     }
 
-    const wedgeHalf = 58 * math.pi / 180; // ~116° front hemisphere
+    // Prop tracker: wide front fan (~100°) from bottom origin
+    const wedgeHalf = 50 * math.pi / 180;
     final baseAngle = -math.pi / 2;
 
     final wedgePath = Path()
@@ -369,42 +371,62 @@ class _AlienWedgePainter extends CustomPainter {
       )
       ..close();
 
+    // Dim fill inside fan
     canvas.drawPath(
       wedgePath,
       Paint()
-        ..color = SpeedcamRadarWidget.phosphorDim.withValues(alpha: 0.22)
+        ..color = const Color(0xFF0A3D0A).withValues(alpha: 0.55)
         ..style = PaintingStyle.fill,
     );
+
+    // Outer fan outline (double stroke like prop)
     canvas.drawPath(
       wedgePath,
       Paint()
-        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.6)
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.85)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
+        ..strokeWidth = 2.0,
+    );
+    canvas.drawPath(
+      wedgePath,
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.25)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
 
-    // Radial spokes
+    // Four radial dividers (prop grid)
     for (var i = -2; i <= 2; i++) {
+      if (i == 0) continue;
       final a = baseAngle + i * (wedgeHalf / 2);
       canvas.drawLine(
         c,
         Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a)),
         Paint()
-          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.32)
-          ..strokeWidth = 1,
+          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.4)
+          ..strokeWidth = 1.1,
       );
     }
+    // Center forward line thicker
+    canvas.drawLine(
+      c,
+      Offset(c.dx + r * math.cos(baseAngle), c.dy + r * math.sin(baseAngle)),
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.55)
+        ..strokeWidth = 1.4,
+    );
 
-    // Range arcs
-    for (final frac in [0.33, 0.66, 1.0]) {
+    // Static range arcs (dashed)
+    for (final frac in [0.28, 0.55, 0.82, 1.0]) {
       final rr = r * frac;
       final paint = Paint()
         ..color = SpeedcamRadarWidget.phosphor.withValues(
-          alpha: frac == 1.0 ? 0.72 : 0.38,
+          alpha: frac == 1.0 ? 0.8 : 0.42,
         )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = frac == 1.0 ? 1.8 : 1.0;
-      const steps = 28;
+        ..strokeWidth = frac == 1.0 ? 2.0 : 1.15;
+      const steps = 32;
       for (var s = 0; s < steps; s++) {
         if (s.isOdd) continue;
         final a0 = baseAngle - wedgeHalf + (2 * wedgeHalf) * (s / steps);
@@ -419,63 +441,74 @@ class _AlienWedgePainter extends CustomPainter {
       }
     }
 
-    final approachFrac = (approachRadiusM / displayRadiusM).clamp(0.05, 1.0);
-    canvas.drawArc(
-      Rect.fromCircle(center: c, radius: r * approachFrac),
-      baseAngle - wedgeHalf,
-      wedgeHalf * 2,
-      false,
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.45)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-
-    // Forward circular sector scan (filled pie slice sweeping the wedge).
-    const sectorHalf = 12 * math.pi / 180;
-    final sweepMid = baseAngle - wedgeHalf + sweepT * wedgeHalf * 2;
-    final sectorPath = Path()
-      ..moveTo(c.dx, c.dy)
-      ..arcTo(
-        Rect.fromCircle(center: c, radius: r),
-        sweepMid - sectorHalf,
-        sectorHalf * 2,
-        false,
-      )
-      ..close();
+    // Expanding rings from center (growing diameter) — NOT a rotating sector.
     canvas.save();
     canvas.clipPath(wedgePath);
-    canvas.drawPath(
-      sectorPath,
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.22)
-        ..style = PaintingStyle.fill,
-    );
-    // Leading edge brighter
-    canvas.drawLine(
-      c,
-      Offset(
-        c.dx + r * math.cos(sweepMid + sectorHalf),
-        c.dy + r * math.sin(sweepMid + sectorHalf),
-      ),
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: 0.75)
-        ..strokeWidth = 2.2,
-    );
+    for (var i = 0; i < 3; i++) {
+      final phase = (sweepT + i / 3.0) % 1.0;
+      final rr = r * phase;
+      if (rr < 4) continue;
+      final fade = (1.0 - phase);
+      canvas.drawArc(
+        Rect.fromCircle(center: c, radius: rr),
+        baseAngle - wedgeHalf,
+        wedgeHalf * 2,
+        false,
+        Paint()
+          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(
+            alpha: 0.15 + 0.55 * fade,
+          )
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0 + 2.5 * fade,
+      );
+      // Soft bloom behind the ring
+      canvas.drawArc(
+        Rect.fromCircle(center: c, radius: rr),
+        baseAngle - wedgeHalf,
+        wedgeHalf * 2,
+        false,
+        Paint()
+          ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.12 * fade)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 8
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+    }
     canvas.restore();
 
-    // Mild barrel vignette / CRT bloom at edges of wedge
-    canvas.drawPath(
-      wedgePath,
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.08)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    // Origin pip (host)
+    canvas.drawCircle(
+      c,
+      4,
+      Paint()..color = SpeedcamRadarWidget.phosphorGlow,
+    );
+    canvas.drawCircle(
+      c,
+      2,
+      Paint()..color = const Color(0xFFE8FFE8),
     );
 
-    canvas.drawCircle(c, 3.2, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
+    // Orange bezel cue labels (prop chrome, aesthetic only)
+    final labelStyle = TextStyle(
+      color: const Color(0xFFFF6A1A).withValues(alpha: 0.85),
+      fontSize: 8,
+      fontFamily: 'monospace',
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.8,
+    );
+    for (final entry in [
+      (Offset(6, 6), 'ATT'),
+      (Offset(6, 16), 'SUS'),
+      (Offset(size.width - 28, 6), 'DEC'),
+    ]) {
+      final tp = TextPainter(
+        text: TextSpan(text: entry.$2, style: labelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, entry.$1);
+    }
 
+    // Blips — square-ish contacts like prop (rounded rect)
     for (final b in blips) {
       final rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
       final a = baseAngle + rel;
@@ -494,40 +527,55 @@ class _AlienWedgePainter extends CustomPainter {
         b.distanceM,
         displayRadiusM: displayRadiusM,
       );
-      canvas.drawCircle(
-        p,
-        rad + 2.5,
-        Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.35)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+      final glow = Paint()
+        ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha * 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: p, width: rad * 2.2, height: rad * 2.2),
+          const Radius.circular(1.5),
+        ),
+        glow,
       );
-      canvas.drawCircle(
-        p,
-        rad,
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: p, width: rad * 1.6, height: rad * 1.6),
+          const Radius.circular(1),
+        ),
         Paint()
-          ..color = (b.highlight
-                  ? SpeedcamRadarWidget.phosphorGlow
-                  : SpeedcamRadarWidget.phosphor)
-              .withValues(alpha: alpha),
+          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: alpha),
       );
     }
 
     if (readoutM != null) {
       final tp = TextPainter(
         text: TextSpan(
-          text: maxspeed != null
-              ? '${readoutM!.round()} m  ·  $maxspeed'
-              : '${readoutM!.round()} m',
+          text: (readoutM! / 1000).toStringAsFixed(2),
           style: const TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 11,
+            fontSize: 13,
             fontFamily: 'monospace',
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(6, size.height - tp.height - 4));
+      tp.paint(canvas, Offset(6, size.height - tp.height - 6));
+      // metres hint smaller
+      final tp2 = TextPainter(
+        text: TextSpan(
+          text: maxspeed != null
+              ? '${readoutM!.round()}m · $maxspeed'
+              : '${readoutM!.round()}m',
+          style: TextStyle(
+            color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.7),
+            fontSize: 9,
+            fontFamily: 'monospace',
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp2.paint(canvas, Offset(6, size.height - tp.height - tp2.height - 8));
     }
   }
 

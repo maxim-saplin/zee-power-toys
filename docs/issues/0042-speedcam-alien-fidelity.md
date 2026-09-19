@@ -7,6 +7,7 @@ in-progress
 Raise Alien look/sound toward Maxim’s motion-tracker refs (and taste), after 0041 Demo lands.
 
 ## Visual
+- Maxim recut (2026-09-19): scan = **expanding circles from center** (not rotating sector); overall aesthetic + sound still need prop fidelity
 - Blip brightens / thickens as range closes
 - CRT grit / scanline / mild distortions (phosphor bloom ok)
 - Scan = **forward circular sector** (front hemisphere), not a thin rotating sweep line

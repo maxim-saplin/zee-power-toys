@@ -6,14 +6,14 @@ import 'speedcam_alert.dart';
 Duration alienPingIntervalForDistanceM(double distanceM) {
   final d = distanceM.clamp(20.0, 500.0);
   // ~120ms at 20 m → ~1200ms at 500 m
-  final ms = (120 + (d - 20) / 480 * 1080).round();
+  final ms = (90 + (d - 20) / 480 * 1100).round();
   return Duration(milliseconds: ms);
 }
 
-/// Playback rate ≈ pitch: ~0.9 far → ~1.75 near (light whistle climb).
+/// Playback rate ≈ pitch: ~0.75 far → ~2.1 near (tracker whistle climb).
 double alienPingPlaybackRateForDistanceM(double distanceM) {
   final d = distanceM.clamp(20.0, 500.0);
-  return 0.9 + (500.0 - d) / 480.0 * 0.85;
+  return 0.75 + (500.0 - d) / 480.0 * 1.35;
 }
 
 /// Drives periodic [SpeedcamAlert.playAlienPing] while inside approach

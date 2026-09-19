@@ -18,7 +18,7 @@ void main() {
     final near = alienPingPlaybackRateForDistanceM(40);
     expect(near, greaterThan(mid));
     expect(mid, greaterThan(far));
-    expect(far, greaterThanOrEqualTo(0.85));
-    expect(near, lessThanOrEqualTo(1.9));
+    expect(far, greaterThanOrEqualTo(0.7));
+    expect(near, lessThanOrEqualTo(2.2));
   });
 }
