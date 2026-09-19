@@ -82,9 +82,14 @@ void hudEntry() {
 // ---------------------------------------------------------------------------
 // DHU — primary surface; owns creating the HUD window on T1 desktop.
 // ---------------------------------------------------------------------------
+/// DHU config store — held so [_DhuRootState] can re-push after HUD window create.
+SharedPrefsConfigStore? _dhuConfigStore;
+
 Future<void> dhuMain(List<String> args) async {
+
   final store = SharedPrefsConfigStore();
   await store.load();
+  _dhuConfigStore = store;
 
   // On Android, the DHU engine hosts the native CarSignalsController.
   // NativeCarSignals subscribes to the EventChannel and calls start() on init.
@@ -178,6 +183,9 @@ Future<void> dhuMain(List<String> args) async {
   // Relay every config change to the HUD isolate.
   // ADR 0003: only the event crosses — never the store object itself.
   store.changes.listen(pushConfigToHud);
+  // Cold boot: [changes] does not emit [load] — seed HUD with persisted prefs
+  // (radarLook etc.) without waiting for a settings tap (0040).
+  await pushConfigToHud(store.value);
 
   // Wire MinimapConfig → MinimapHost: enable/disable + Safe-Area-relative
   // bounds derived from the preset (or manual fracs in advanced mode).
@@ -370,6 +378,13 @@ class _DhuRootState extends State<_DhuRoot> {
         const WindowConfiguration(arguments: 'hud', hiddenAtLaunch: true),
       );
       await c.show();
+      // HUD listenForRelay arms after its own load — re-seed prefs now + once more.
+      final seed = _dhuConfigStore?.value;
+      if (seed != null) {
+        await pushConfigToHud(seed);
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        await pushConfigToHud(seed);
+      }
       if (!mounted) return;
       setState(() => _hud = c);
     } catch (e) {
