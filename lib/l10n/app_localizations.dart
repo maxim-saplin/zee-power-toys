@@ -1051,6 +1051,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'DHU radar range'**
   String get speedcamDhuRange;
+
+  /// Toggle sting on insideApproach enter
+  ///
+  /// In en, this message translates to:
+  /// **'Approach alert sound'**
+  String get speedcamSoundEnable;
 }
 
 class _AppLocalizationsDelegate

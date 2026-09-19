@@ -494,4 +494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamDhuRange => 'DHU radar range';
+
+  @override
+  String get speedcamSoundEnable => 'Approach alert sound';
 }

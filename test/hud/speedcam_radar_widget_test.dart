@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/hud/speedcam_radar_widget.dart';
 import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_service.dart';
+import 'package:zee_power_toys/services/fakes/fake_speedcam_alert.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 void main() {
@@ -20,6 +21,7 @@ void main() {
       ProviderScope(
         overrides: [
           speedcamServiceProvider.overrideWithValue(svc),
+          speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
           configStoreProvider.overrideWithValue(store),
         ],
         child: const MaterialApp(
@@ -40,6 +42,7 @@ void main() {
       ProviderScope(
         overrides: [
           speedcamServiceProvider.overrideWithValue(svc),
+          speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
           configStoreProvider.overrideWithValue(store),
         ],
         child: MaterialApp(
@@ -68,6 +71,7 @@ void main() {
       ProviderScope(
         overrides: [
           speedcamServiceProvider.overrideWithValue(svc),
+          speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
           configStoreProvider.overrideWithValue(store),
         ],
         child: const MaterialApp(

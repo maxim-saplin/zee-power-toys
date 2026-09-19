@@ -481,5 +481,7 @@
   "@speedcamHudRadarEnable": { "description": "Toggle CRT on windshield HUD" },
 
   "speedcamDhuRange": "DHU radar range",
-  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" }
+  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" },
+"speedcamSoundEnable": "Approach alert sound",
+  "@speedcamSoundEnable": { "description": "Toggle sting on insideApproach enter" }
 }

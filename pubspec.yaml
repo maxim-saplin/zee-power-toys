@@ -19,6 +19,7 @@ dependencies:
   intl: any
   http: ^1.6.0
   path_provider: ^2.1.6
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -28,3 +29,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/sounds/speedcam_sting.wav

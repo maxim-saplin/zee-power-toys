@@ -7,6 +7,7 @@ import '../services/installer.dart';
 import '../services/package_status.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
+import '../services/speedcam_alert.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 
@@ -46,6 +47,10 @@ final speedcamServiceProvider = Provider<SpeedcamService>((ref) {
 });
 
 final speedcamPackStoreProvider = Provider<SpeedcamPackStore>((ref) {
+  throw UnimplementedError('inject via ProviderScope.overrides');
+});
+
+final speedcamAlertProvider = Provider<SpeedcamAlert>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });
 

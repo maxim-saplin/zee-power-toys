@@ -27,6 +27,8 @@ import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
 import 'services/default_speedcam_service.dart';
+import 'services/audio_speedcam_alert.dart';
+import 'services/speedcam_alert.dart';
 import 'services/fakes/fake_speedcam_service.dart';
 import 'services/fakes/fake_speedcam_pack_store.dart';
 import 'services/speedcam_pack_store.dart';
@@ -122,6 +124,7 @@ Future<void> dhuMain(List<String> args) async {
   final SpeedcamService speedcamRaw = DefaultSpeedcamService(
     packStore: speedcamPackRaw,
   );
+  final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
 
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
@@ -166,6 +169,7 @@ Future<void> dhuMain(List<String> args) async {
       packageStatusProvider.overrideWithValue(packageStatusRaw),
       speedcamServiceProvider.overrideWithValue(speedcamRaw),
       speedcamPackStoreProvider.overrideWithValue(speedcamPackRaw),
+      speedcamAlertProvider.overrideWithValue(speedcamAlertRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],
@@ -296,6 +300,7 @@ void hudMain(List<String> args) {
   // HUD Speedcam is a relay sink — pack+pose live on DHU (ADR 0003).
   final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
+  final speedcamAlert = AudioSpeedcamAlert();
 
   registerZeeExtensions(
     surface: 'hud',
@@ -326,6 +331,7 @@ void hudMain(List<String> args) {
         packageStatusProvider.overrideWithValue(FakePackageStatus()),
         speedcamServiceProvider.overrideWithValue(speedcam),
         speedcamPackStoreProvider.overrideWithValue(speedcamPack),
+        speedcamAlertProvider.overrideWithValue(speedcamAlert),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],

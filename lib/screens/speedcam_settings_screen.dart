@@ -107,6 +107,15 @@ class _SpeedcamSettingsScreenState
                   (c) => c.copyWith(hudRadarEnabled: v),
                 ),
               ),
+              SwitchListTile(
+                key: const ValueKey('speedcam-sound'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamSoundEnable),
+                value: sc.soundEnabled,
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(soundEnabled: v),
+                ),
+              ),
               SettingsSlider(
                 label: l10n.speedcamDhuRange,
                 valueLabel: '${sc.dhuRangeM.round()} m',

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 
 import '../hud/hud_root.dart';
+import '../hud/speedcam_alert_binder.dart';
 import '../theme/app_theme.dart';
 
 /// Shot key — exposed at library level so main.dart can pass it to extensions.
@@ -52,7 +53,7 @@ class _HudScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _compositesOverNative ? Colors.transparent : Colors.black,
-      body: const HudRoot(),
+      body: const SpeedcamAlertBinder(child: HudRoot()),
     );
   }
 }

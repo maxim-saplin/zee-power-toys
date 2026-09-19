@@ -613,6 +613,7 @@ class SpeedcamConfig {
   const SpeedcamConfig({
     this.hudRadarEnabled = true,
     this.dhuRangeM = 2000,
+    this.soundEnabled = true,
   });
 
   /// Paint CRT on the HUD windshield when approaching.
@@ -621,33 +622,41 @@ class SpeedcamConfig {
   /// DHU large-radar display radius in metres (zoom-out; approach stays 500 m).
   final double dhuRangeM;
 
+  /// Play approach sting when [insideApproach] flips true.
+  final bool soundEnabled;
+
   SpeedcamConfig copyWith({
     bool? hudRadarEnabled,
     double? dhuRangeM,
+    bool? soundEnabled,
   }) =>
       SpeedcamConfig(
         hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
         dhuRangeM: dhuRangeM ?? this.dhuRangeM,
+        soundEnabled: soundEnabled ?? this.soundEnabled,
       );
 
   Map<String, Object?> toJson() => <String, Object?>{
         'hudRadarEnabled': hudRadarEnabled,
         'dhuRangeM': dhuRangeM,
+        'soundEnabled': soundEnabled,
       };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) => SpeedcamConfig(
         hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
         dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
+        soundEnabled: json['soundEnabled'] as bool? ?? true,
       );
 
   @override
   bool operator ==(Object other) =>
       other is SpeedcamConfig &&
       other.hudRadarEnabled == hudRadarEnabled &&
-      other.dhuRangeM == dhuRangeM;
+      other.dhuRangeM == dhuRangeM &&
+      other.soundEnabled == soundEnabled;
 
   @override
-  int get hashCode => Object.hash(hudRadarEnabled, dhuRangeM);
+  int get hashCode => Object.hash(hudRadarEnabled, dhuRangeM, soundEnabled);
 }
 
 /// Minimal app configuration.
