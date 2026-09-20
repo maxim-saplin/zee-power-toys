@@ -51,7 +51,7 @@ uv run dev/feedback_loop.py whoami-all
 | Companion | Repo | Current target | Honesty |
 |-----------|------|----------------|---------|
 | YNavi mod (HUD) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) `hud` | `modded_apks/zeekr_signed_v11.apk` | **Broken bind** (pre-P1). Use a local post-P1 build until `v12` is published. |
-| Modded Launcher | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) `main` | `XCLauncher3-670-proxy-signed-v8.apk` | URL OK; E2E install unconfirmed on T2/T3. |
+| Modded Launcher | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) `main` (**private**) | `XCLauncher3-670-proxy-signed-v8.apk` | **HTTP 404** anonymous LFS CDN; need public Release/host before Install green. |
 
 **This app (zee-power-toys)** — platform-signed car build:
 

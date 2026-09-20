@@ -3,6 +3,10 @@
 **Status:** drafts on branch `0044-publish-prep` in `zee-power-toys`.  
 **Rule:** no push / no GitHub Release / no CI enable until your explicit go.
 
+### QA FAIL (0044 T1)
+
+Launcher anonymous LFS URL → **404** because `zee_hud_2` is private. YNavi (`ynavi-zee` public) LFS → 200 (bind still pre-P1 broken). Install cannot ship green until Launcher has a public artifact path.
+
 ## 1. zee-power-toys
 
 | Item | Draft | Needs your go |
@@ -32,9 +36,10 @@ flutter build apk --release -PuseAospDebugKey=true
 
 | Item | Reality | Pending |
 |------|---------|---------|
-| Install path | `XCLauncher3-670-proxy-signed-v8.apk` on `main` (LFS) — URL resolves | E2E install never T2/T3 confirmed |
+| Install path | `XCLauncher3-670-proxy-signed-v8.apk` on `main` (LFS) | Blob exists for collaborators |
+| Anonymous CDN | **HTTP 404** — repo is **private** (QA T1 FAIL @ 264b9f0) | **Blocker for Install green** |
 | Older v2–v7 | Present; leave as history | None |
-| Publish | Already on `main`; no new APK required for URL honesty | Optional: tag / Release notes when go |
+| Fix (pick one) | Public GitHub Release / public artifact host / app auth download | Required before Maxim go on Install |
 
 ## Suggested review order
 

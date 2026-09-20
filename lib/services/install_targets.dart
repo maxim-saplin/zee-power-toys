@@ -58,8 +58,12 @@ const GithubAsset kYnaviAsset = GithubAsset(
 /// Path:   zeekr_apk_mod_vendor/6.7.0/modded_apks/XCLauncher3-670-proxy-signed-v8.apk
 ///         (latest versioned signed build in the tree)
 ///
-/// Untested end-to-end: the download URL is now correct, but installing the
-/// modded Launcher has never been runtime-confirmed on T2 or the car.
+/// **404 for anonymous sideload** — `zee_hud_2` is a **private** repo, so
+/// `media.githubusercontent.com/...` returns HTTP 404 without auth (QA 0044
+/// T1 @ 264b9f0). Path/blob exist for collaborators; public Install users cannot
+/// fetch. Fix options (Maxim pick): (1) GitHub Release on a public repo,
+/// (2) make artifact host public, (3) authenticated download (not in app today).
+/// E2E PackageInstaller also unconfirmed on T2/T3.
 const GithubAsset kLauncherAsset = GithubAsset(
   repo: 'maxim-saplin/zee_hud_2',
   branch: 'main',
