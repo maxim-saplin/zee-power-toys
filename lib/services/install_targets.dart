@@ -29,3 +29,13 @@ const GithubAsset kLauncherAsset = GithubAsset(
   path: 'XCLauncher3-670-yandex-signed.apk',
   releaseTag: 'launcher-670',
 );
+
+
+/// Self-update (0069) — public Releases on this app's own repo.
+const String kSelfUpdateRepo = 'maxim-saplin/zee-power-toys';
+
+/// Preferred APK asset filenames on a Release (first match wins).
+const List<String> kSelfUpdateAssetNames = <String>[
+  'zee-power-toys.apk',
+  'app-release.apk',
+];

@@ -21,6 +21,7 @@ class GithubAsset {
     required this.branch,
     required this.path,
     this.releaseTag,
+    this.directUrl,
   });
 
   /// GitHub repository as "owner/repo-name" (no scheme, no .git).
@@ -36,8 +37,16 @@ class GithubAsset {
   /// When non-null, [downloadUrl] uses GitHub Releases instead of LFS media.
   final String? releaseTag;
 
-  /// Resolved download URL (LFS media or Release asset).
+  /// Absolute download URL from the GitHub Releases API (`browser_download_url`).
+  /// When set, wins over [releaseTag]/LFS construction (0069 self-update).
+  final String? directUrl;
+
+  /// Resolved download URL (direct, Release asset, or LFS media).
   String get downloadUrl {
+    final absolute = directUrl;
+    if (absolute != null && absolute.isNotEmpty) {
+      return absolute;
+    }
     final tag = releaseTag;
     if (tag != null) {
       return 'https://github.com/$repo/releases/download/$tag/$path';

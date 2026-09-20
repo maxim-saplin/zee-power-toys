@@ -875,5 +875,43 @@
   "installYnaviOs7Desc": "Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.",
   "@installYnaviOs7Desc": {
     "description": "Install card desc OS7 YNavi"
+  },
+  "updateCardName": "Zee Power Toys",
+  "@updateCardName": {
+    "description": "Self-update card title"
+  },
+  "updateCardDesc": "Проверить GitHub Releases на новую сборку этого приложения и установить.",
+  "@updateCardDesc": {
+    "description": "Self-update card description"
+  },
+  "updateCheckButton": "Проверить обновления",
+  "@updateCheckButton": {
+    "description": "Probe GitHub for newer release"
+  },
+  "updateInstallButton": "Обновить",
+  "@updateInstallButton": {
+    "description": "Download and install newer APK"
+  },
+  "updateStatusChecking": "Проверка…",
+  "@updateStatusChecking": {
+    "description": "Self-update checking status"
+  },
+  "updateStatusUpToDate": "У вас актуальная сборка.",
+  "@updateStatusUpToDate": {
+    "description": "No newer release"
+  },
+  "updateStatusAvailable": "Доступно обновление: {label}",
+  "@updateStatusAvailable": {
+    "description": "Newer release found",
+    "placeholders": {"label": {"type": "String"}}
+  },
+  "updateStatusNone": "Публичных релизов пока нет.",
+  "@updateStatusNone": {
+    "description": "Empty releases list"
+  },
+  "updateStatusFailed": "Ошибка проверки: {message}",
+  "@updateStatusFailed": {
+    "description": "Check error",
+    "placeholders": {"message": {"type": "String"}}
   }
 }

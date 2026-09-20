@@ -1399,6 +1399,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.'**
   String get installYnaviOs7Desc;
+
+  /// Self-update card title
+  ///
+  /// In en, this message translates to:
+  /// **'Zee Power Toys'**
+  String get updateCardName;
+
+  /// Self-update card description
+  ///
+  /// In en, this message translates to:
+  /// **'Check GitHub Releases for a newer build of this app, then download and install.'**
+  String get updateCardDesc;
+
+  /// Probe GitHub for newer release
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get updateCheckButton;
+
+  /// Download and install newer APK
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateInstallButton;
+
+  /// Self-update checking status
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get updateStatusChecking;
+
+  /// No newer release
+  ///
+  /// In en, this message translates to:
+  /// **'You are on the latest build.'**
+  String get updateStatusUpToDate;
+
+  /// Newer release found
+  ///
+  /// In en, this message translates to:
+  /// **'Update available: {label}'**
+  String updateStatusAvailable(String label);
+
+  /// Empty releases list
+  ///
+  /// In en, this message translates to:
+  /// **'No public releases published yet.'**
+  String get updateStatusNone;
+
+  /// Check error
+  ///
+  /// In en, this message translates to:
+  /// **'Update check failed: {message}'**
+  String updateStatusFailed(String message);
 }
 
 class _AppLocalizationsDelegate

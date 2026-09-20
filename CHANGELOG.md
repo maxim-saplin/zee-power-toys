@@ -5,6 +5,11 @@ All notable changes to Zee Power Toys are documented here.
 Versioning: `MAJOR.MINOR.PATCH+BUILD` in `pubspec.yaml`.
 Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing releases.
 
+## [1.0.0+3] — 2026-09-20
+
+### Added
+- Self-update from public GitHub Releases (0069) — Install screen Check / Update
+
 ## [1.0.0+2] — 2026-09-20
 
 ### Fixed

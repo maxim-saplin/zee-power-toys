@@ -676,4 +676,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get installYnaviOs7Desc =>
       'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.';
+
+  @override
+  String get updateCardName => 'Zee Power Toys';
+
+  @override
+  String get updateCardDesc =>
+      'Check GitHub Releases for a newer build of this app, then download and install.';
+
+  @override
+  String get updateCheckButton => 'Check for updates';
+
+  @override
+  String get updateInstallButton => 'Update now';
+
+  @override
+  String get updateStatusChecking => 'Checking…';
+
+  @override
+  String get updateStatusUpToDate => 'You are on the latest build.';
+
+  @override
+  String updateStatusAvailable(String label) {
+    return 'Update available: $label';
+  }
+
+  @override
+  String get updateStatusNone => 'No public releases published yet.';
+
+  @override
+  String updateStatusFailed(String message) {
+    return 'Update check failed: $message';
+  }
 }

@@ -1,4 +1,7 @@
-# 0044 — draft GitHub Release (DISABLED until Maxim go). Use ci-publish-prep for CI.
+# 0044 / 0069 — draft GitHub Release (DISABLED until Maxim go).
+# When enabled: tag MUST be `1.0.0+N` (or `v1.0.0+N`) and upload the
+# platform-signed APK as `zee-power-toys.apk` (fallback name `app-release.apk`)
+# so in-app self-update can find it anonymously.
 name: release
 on:
   workflow_dispatch:
@@ -7,4 +10,4 @@ jobs:
     if: false
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Enable after Maxim go"
+      - run: echo "Enable after Maxim go — publish zee-power-toys.apk on tag 1.0.0+N"

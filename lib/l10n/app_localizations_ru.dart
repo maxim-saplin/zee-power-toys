@@ -677,4 +677,36 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get installYnaviOs7Desc =>
       'Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.';
+
+  @override
+  String get updateCardName => 'Zee Power Toys';
+
+  @override
+  String get updateCardDesc =>
+      'Проверить GitHub Releases на новую сборку этого приложения и установить.';
+
+  @override
+  String get updateCheckButton => 'Проверить обновления';
+
+  @override
+  String get updateInstallButton => 'Обновить';
+
+  @override
+  String get updateStatusChecking => 'Проверка…';
+
+  @override
+  String get updateStatusUpToDate => 'У вас актуальная сборка.';
+
+  @override
+  String updateStatusAvailable(String label) {
+    return 'Доступно обновление: $label';
+  }
+
+  @override
+  String get updateStatusNone => 'Публичных релизов пока нет.';
+
+  @override
+  String updateStatusFailed(String message) {
+    return 'Ошибка проверки: $message';
+  }
 }
