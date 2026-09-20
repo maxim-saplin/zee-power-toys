@@ -89,3 +89,10 @@ flutter build apk --release -PuseAospDebugKey=true
 ### Dual YNavi builds
 - `build_zeekr.sh` → margined (left=480) DEFAULT
 - `build_zeekr_os7.sh` → left=0 OS7+
+
+## Maxim: no builds in .git
+
+Binaries ship via **draft GitHub Releases** only (delete drafts after 0044 exercise).
+Prep branches carry workflows/docs; `gh release create --draft` uploads from local `builds/`.
+
+See sibling NOTES on ynavi-zee / zee_hud_2 `0044-publish-prep`.
