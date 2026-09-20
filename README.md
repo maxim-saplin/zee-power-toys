@@ -43,6 +43,24 @@ uv run dev/feedback_loop.py whoami-all
 ```
 
 
+
+## Install / Get the APKs (landing draft — 0044)
+
+**Not a public store listing yet.** In-car **Install** downloads two companions from Git-LFS raw URLs configured in [`lib/services/install_targets.dart`](lib/services/install_targets.dart):
+
+| Companion | Repo | Current target | Honesty |
+|-----------|------|----------------|---------|
+| YNavi mod (HUD) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) `hud` | `modded_apks/zeekr_signed_v11.apk` | **Broken bind** (pre-P1). Use a local post-P1 build until `v12` is published. |
+| Modded Launcher | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) `main` | `XCLauncher3-670-proxy-signed-v8.apk` | URL OK; E2E install unconfirmed on T2/T3. |
+
+**This app (zee-power-toys)** — platform-signed car build:
+
+```bash
+flutter build apk --release -PuseAospDebugKey=true
+```
+
+Full publish checklist: [`docs/publish/0044-notes-for-maxim.md`](docs/publish/0044-notes-for-maxim.md).
+
 ## Credits
 
 **Speedcam** locations come from [OpenStreetMap](https://www.openstreetmap.org/)

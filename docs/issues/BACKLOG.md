@@ -104,8 +104,8 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 
 ### Quality + publish
 
-| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | F tipped — awaiting ACCEPT |
-| [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | blocked-by 0043 |
+| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
+| [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |
 
 ### Speedcam (0029–0042) — **done** on T1/T2
 

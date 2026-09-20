@@ -1,7 +1,8 @@
 # 0044 — Publish prep (three repos), review-ready, no green
 
 ## Status
-blocked-by: [0043]
+in-progress — drafts on branch `0044-publish-prep` (no push until Maxim go)
+
 
 ## Goal
 Stage **review-ready** publish changesets on main (or review branches Maxim prefers) for:
@@ -12,7 +13,8 @@ Stage **review-ready** publish changesets on main (or review branches Maxim pref
 **Maxim** reviews tomorrow; **no commit/push/publish** until his explicit go.
 
 ## DoD
-- [ ] Each repo has a clear pending changeset + short notes for Maxim
-- [ ] Install points at real artifacts (or honest “pending upload” with paths)
-- [ ] README landing draft in zee-power-toys
-- [ ] CI workflow draft (may be disabled until go)
+- [x] Each repo has a clear pending changeset + short notes for Maxim — see `docs/publish/0044-notes-for-maxim.md` (ynavi/launcher actions listed; APK LFS commits await go)
+- [x] Install points at real artifacts (or honest “pending upload” with paths) — YNavi v11 broken called out; v12 path documented
+- [x] README landing draft in zee-power-toys
+- [x] CI workflow draft (disabled `if: false` until go)
+- [ ] Maxim explicit go → push branch / LFS v12 / enable CI

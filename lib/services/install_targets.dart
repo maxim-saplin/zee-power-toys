@@ -2,6 +2,7 @@ import 'installer.dart';
 
 // ---------------------------------------------------------------------------
 // Install targets — deployment-time configuration.
+// Publish checklist: docs/publish/0044-notes-for-maxim.md
 //
 // Both APKs are tracked as Git-LFS objects in their respective repos.
 // The download URL resolves to the LFS raw-content CDN:
