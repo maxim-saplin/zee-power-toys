@@ -4,48 +4,37 @@ import 'installer.dart';
 // Install targets — deployment-time configuration.
 // Publish checklist: docs/publish/0044-notes-for-maxim.md
 //
-// LFS raw CDN (public repos only anonymously):
-//   https://media.githubusercontent.com/media/<repo>/<branch>/<path>
-// Release assets:
-//   https://github.com/<repo>/releases/download/<tag>/<filename>
+// Maxim 0044: APKs stay in **source repos** only. Install uses GitHub
+// **Release** asset URLs (prep-branch workflows). No APK copies into
+// zee-power-toys.
+//
+// Release: https://github.com/<repo>/releases/download/<tag>/<filename>
+// LFS media (legacy / until Release exists): media.githubusercontent.com/...
 // ---------------------------------------------------------------------------
 
-/// YNavi mod — **DEFAULT** (margined / left letterbox 480dp). Zeekr panel layout.
-///
-/// Pending Maxim go: publish post-P1 build as LFS
-/// `modded_apks/zeekr_signed_v12.apk` on `hud`. Until then live LFS is still
-/// pre-P1 `v11` (bind broken). Local build: `ynavi-zee/builds/zeekr_signed.apk`
-/// / HARDEN `zeekr_v12_margined`.
+/// YNavi — **DEFAULT** margined (left letterbox 480dp).
+/// Source repo: maxim-saplin/ynavi-zee. Pending Release asset after Maxim go.
 const GithubAsset kYnaviAsset = GithubAsset(
   repo: 'maxim-saplin/ynavi-zee',
   branch: 'hud',
-  path: 'modded_apks/zeekr_signed_v12.apk',
+  path: 'zeekr_signed_v12.apk',
+  releaseTag: 'ynavi-zeekr-v12',
 );
 
-/// YNavi mod — **OS7+** (left letterbox DISABLED, LEFT_DIP=0).
-///
-/// Pending: `modded_apks/zeekr_signed_v12_os7_nomargin.apk` on `hud`.
+/// YNavi — **OS7+** left letterbox DISABLED.
 const GithubAsset kYnaviOs7Asset = GithubAsset(
   repo: 'maxim-saplin/ynavi-zee',
   branch: 'hud',
-  path: 'modded_apks/zeekr_signed_v12_os7_nomargin.apk',
+  path: 'zeekr_signed_v12_os7_nomargin.apk',
+  releaseTag: 'ynavi-zeekr-v12',
 );
 
-/// Modded Launcher — staged for **zee-power-toys GitHub Release** (PDM default
-/// while Maxim reviews; he can veto).
-///
-/// Local staged copy (gitignored): `artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk`
-/// (copied from zee_hud_2). On go:
-///   gh release create install-apks-v1 \\
-///     artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk \\
-///     --repo maxim-saplin/zee-power-toys
-///
-/// NOTE: `zee-power-toys` is **private** today — Release assets still need the
-/// repo public (or auth) for anonymous Install. Same class of blocker as
-/// zee_hud_2 LFS until visibility/host is fixed.
+/// Modded Launcher — source repo maxim-saplin/zee_hud_2 only.
+/// Private LFS CDN 404 → fix via **public Release** on zee_hud_2 (not by
+/// relocating the APK into zee-power-toys).
 const GithubAsset kLauncherAsset = GithubAsset(
-  repo: 'maxim-saplin/zee-power-toys',
+  repo: 'maxim-saplin/zee_hud_2',
   branch: 'main',
   path: 'XCLauncher3-670-proxy-signed-v8.apk',
-  releaseTag: 'install-apks-v1',
+  releaseTag: 'launcher-v8',
 );

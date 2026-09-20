@@ -1,0 +1,31 @@
+# 0044 prep — zee-power-toys Release draft. Disabled until Maxim go.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag'
+        required: true
+        default: 'app-v0.1.0'
+
+jobs:
+  release-apk:
+    if: false  # DISABLED until Maxim go
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: build/app/outputs/flutter-apk/app-release.apk
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -63,19 +63,29 @@ flutter build apk --release -PuseAospDebugKey=true
 | zee_hud_2 | `main` | `72651e1c5f` | `NOTES-for-Maxim-0044.md` |
 | zee-power-toys | `0044-publish-prep` | this branch | `docs/publish/0044-notes-for-maxim.md` |
 
-## HARDEN deltas (2026-09-20)
+## Maxim correction (prep branches + source-repo Releases)
 
-### Launcher hosting (PDM default — you can veto)
-- Staged copy: `artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk` (from zee_hud_2; **gitignored**)
-- Install points at Release URL: `zee-power-toys` / tag `install-apks-v1` / asset filename above
-- On go: `gh release create install-apks-v1 artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk --repo maxim-saplin/zee-power-toys`
-- **Caveat:** `zee-power-toys` is also **private** today — anonymous Install still fails until repo is public or you host elsewhere
+1. **APKs only in source repos** — never copy Launcher/YNavi into zee-power-toys.
+2. Each repo gets a **prep branch** + draft **Release + GH Actions** (disabled until go).
+3. Install points at Release assets on those source repos.
+4. `zee_hud_2` private LFS 404 → **public Release on zee_hud_2** (or make artifacts public).
 
-### Dual YNavi
-- Default Install card → margined (`zeekr_signed_v12.apk`, left=480)
-- Second card → OS7+ no left margin (`zeekr_signed_v12_os7_nomargin.apk`, left=0)
-- Build scripts: `ynavi-zee/build_zeekr.sh`, `build_zeekr_os7.sh`
+### Prep branches (local tips — no push until go)
 
-### UI vs CLI
-- README table: Install UI vs `adb -g` / `pm grant` / `ynavi_prep` / pending public host
+| Repo | Prep branch | Workflow |
+|------|-------------|----------|
+| zee-power-toys | `0044-publish-prep` | `.github/workflows/release.yml` (dispatch; app-release APK) |
+| ynavi-zee | `0044-publish-prep` | release dual Zeekr APKs |
+| zee_hud_2 | `0044-publish-prep` | release Launcher v8 |
 
+### Install Release tags (planned)
+
+| Asset | Repo | Tag | Filename |
+|-------|------|-----|----------|
+| YNavi margined | ynavi-zee | `ynavi-zeekr-v12` | `zeekr_signed_v12.apk` |
+| YNavi OS7+ | ynavi-zee | `ynavi-zeekr-v12` | `zeekr_signed_v12_os7_nomargin.apk` |
+| Launcher | zee_hud_2 | `launcher-v8` | `XCLauncher3-670-proxy-signed-v8.apk` |
+
+### Dual YNavi builds
+- `build_zeekr.sh` → margined (left=480) DEFAULT
+- `build_zeekr_os7.sh` → left=0 OS7+

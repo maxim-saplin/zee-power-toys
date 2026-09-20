@@ -25,3 +25,5 @@ Stage **review-ready** publish changesets on main (or review branches Maxim pref
 - Detour: proper **Release + GH Actions** in each repo; use **prep branches** (drop pending-on-main pile for this)
 - Dual YNavi still (margined = Install default; no-margin second)
 - Private zee_hud_2 404 → public Release / public artifacts on that repo, not relocate APKs
+
+- zee-power-toys README: clear **Features** + **Dependencies** sections (Maxim 2026-09-20)
