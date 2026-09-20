@@ -123,6 +123,7 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 | [0062](0062-battery-pct-inside-dual-color.md) | Battery + % inside pack — dual-color clip at fill (FAIL: empty white) | **done** |
 | [0063](0063-battery-outline-pct-height.md) | Battery polish — thinner outline + full-height % (keep 0062 clip) | **done** |
 | [0064](0064-speedcam-blip-colors.md) | Speedcam HUD blip colors — danger white / others greenish | **done** |
+| [0066](0066-hud-charging-indicator.md) | HUD charging indicator — register+seed/poll CHARGE_STATE (live bolt/kW) | **done** (code; T3 QA pending) |
 
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |
