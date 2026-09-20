@@ -8,6 +8,12 @@ diagnostics) through the central touchscreen.
 See [`CONTEXT.md`](CONTEXT.md) for the domain glossary, [`REQUIREMENTS.md`](REQUIREMENTS.md)
 for the *what*, and [`docs/adr/`](docs/adr/) for the load-bearing *how*.
 
+## Versioning
+
+`pubspec.yaml` uses **`MAJOR.MINOR.PATCH+BUILD`** (started at `1.0.0+1`).
+Bump the `+BUILD` integer on every tip/car APK; bump semver for meaningful releases.
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## Architecture in one paragraph
 
 Flutter renders 100% of the designed UI on both surfaces (DHU touchscreen + HUD), running

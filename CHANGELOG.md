@@ -1,0 +1,25 @@
+# Changelog
+
+All notable changes to Zee Power Toys are documented here.
+
+Versioning: `MAJOR.MINOR.PATCH+BUILD` in `pubspec.yaml`.
+Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing releases.
+
+## [1.0.0] — 2026-09-20
+
+First numbered product line on `0044-publish-prep`.
+
+### Added
+- Speedcam HUD/sound modes (Any / Dangerous / Off), map harvest preview, alert loudness on NAV volume
+- Battery look picker (pack / pack+% / bars / text) with dual-color % inside pack
+- Minimap only-while-guidance, GuidanceOverlayView scale slider
+- Boot FGS auto-start + remediations (locale, YNavi whitelist)
+
+### Fixed
+- Charging indicator: real `SENSOR_TYPE_EV_BATTERY_STATE` enums + kW fallback (0066)
+- HUD battery cluster: room for 3 charging lines; sizeScale no longer reverse-shrinks (0067 / 0067b)
+- Speedcam radar blip colors (dangerous white / others greenish)
+- Platform signing so `adb install -r` keeps data
+
+### Changed
+- Product label **Zee Power Toys**; launcher asset from public `zeekr_apk_mod`

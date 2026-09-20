@@ -11,9 +11,9 @@ class FakeSpeedcamService implements SpeedcamService {
   })  : _cams = List<SpeedcamPoint>.unmodifiable(
           sampleCams ?? kFakeBySampleCams,
         ),
-        _approachRadiusM = approachRadiusM,
         _passGate = SpeedcamPassClearGate(clock: clock),
         _ctrl = StreamController<SpeedcamSnapshot>.broadcast() {
+    _approachRadiusM = approachRadiusM;
     _emit();
   }
 
@@ -56,7 +56,7 @@ class FakeSpeedcamService implements SpeedcamService {
   ];
 
   List<SpeedcamPoint> _cams;
-  double _approachRadiusM;
+  late double _approachRadiusM;
   final SpeedcamPassClearGate _passGate;
   final StreamController<SpeedcamSnapshot> _ctrl;
 

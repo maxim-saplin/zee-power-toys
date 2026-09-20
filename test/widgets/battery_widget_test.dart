@@ -657,25 +657,35 @@ void main() {
     });
 
     testWidgets(
-        'no overflow at the slider maximum (2.5x) with battery + temp + '
-        'charging stats all rendering at once — pins the Block 0026 fix '
-        '(FittedBox around the whole panel, not just the icon row)',
+        'no layout overflow error at slider max (2.5x) with all rows — '
+        '0067b: ClipRect; slot grows with sizeScale in HudRoot',
         (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
+      // Grown charging slot approx (width/height fracs * sizeScale caps).
+      const grown = Size(200, 280);
+      await tester.binding.setSurfaceSize(grown);
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await pumpAt(tester, sizeScale: 2.5, charging: true);
+      final signals = FakeCarSignals();
+      final config = AppConfig(
+        battery: const BatteryConfig(
+          sizeScale: 2.5,
+          showTemp: true,
+          showChargingStats: true,
+        ),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        SizedBox.fromSize(size: grown, child: const BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 24.0);
+      signals.emitCharge(charging: true, kw: 42.0);
+      await tester.pump();
 
-      // A RenderFlex/layout overflow surfaces as a FlutterError captured by
-      // the test binding, not a thrown Dart exception during pump() — so it
-      // must be checked via takeException(), not a try/catch around pumpAt.
       expect(tester.takeException(), isNull,
-          reason: 'the whole panel must still fit (via FittedBox scaleDown), '
-              'never overflow the fixed BATTERY slot, at the maximum '
-              'sizeScale with every optional row showing at once');
-
-      // The widget must still actually render something (not blank) —
-      // scaling down to fit is correct; disappearing is not.
+          reason: 'no RenderFlex overflow with ClipRect + adequate slot');
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
     });

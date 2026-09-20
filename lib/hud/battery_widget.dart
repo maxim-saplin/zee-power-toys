@@ -139,7 +139,8 @@ class BatteryWidget extends ConsumerWidget {
       // 0067b: no FittedBox(scaleDown) — it reversed sizeScale past ~1.5×
       // once content exceeded the slot. Slot grows with sizeScale in
       // batteryClusterSlotFracs; Align keeps marks at their true size.
-      child: Align(
+      child: ClipRect(
+        child: Align(
         alignment: clusterAlign,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -225,6 +226,7 @@ class BatteryWidget extends ConsumerWidget {
               ),
             ],
           ],
+        ),
         ),
       ),
     );

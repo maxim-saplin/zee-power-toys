@@ -16,9 +16,9 @@ class DefaultSpeedcamService implements SpeedcamService {
         _fallback = List<SpeedcamPoint>.unmodifiable(
           fallbackCams ?? FakeSpeedcamService.kFakeBySampleCams,
         ),
-        _approachRadiusM = approachRadiusM,
         _passGate = SpeedcamPassClearGate(clock: clock),
         _ctrl = StreamController<SpeedcamSnapshot>.broadcast() {
+    _approachRadiusM = approachRadiusM;
     _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
     _camSource = 'fallback';
     _emit();
@@ -29,7 +29,7 @@ class DefaultSpeedcamService implements SpeedcamService {
   final SpeedcamPackStore _pack;
   final String packId;
   final List<SpeedcamPoint> _fallback;
-  double _approachRadiusM;
+  late double _approachRadiusM;
   final SpeedcamPassClearGate _passGate;
   final StreamController<SpeedcamSnapshot> _ctrl;
 

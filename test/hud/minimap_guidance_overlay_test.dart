@@ -15,7 +15,7 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final sub = container.listen(guidanceEventsProvider, (_, __) {});
+    final sub = container.listen(guidanceEventsProvider, (_, _) {});
     addTearDown(sub.close);
 
     expect(container.read(latestGuidanceProvider), isNull);
