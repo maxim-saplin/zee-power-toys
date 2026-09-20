@@ -72,8 +72,11 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     final danger = forceDemoDanger ?? liveDanger;
     final look = cfg.radarLook;
 
+    final approachM = snap.approachRadiusM > 0
+        ? snap.approachRadiusM
+        : cfg.dhuRangeM;
     final range = displayRadiusM ??
-        (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : 500.0);
+        (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : approachM);
 
     final blips = <SpeedcamRadarBlip>[];
     if (forceDemoDanger != null) {
@@ -215,7 +218,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
               blinkT: controller.value,
               blips: blips,
               displayRadiusM: range,
-              approachRadiusM: 500,
+              approachRadiusM: approachM,
               readoutM: labelDist,
               maxspeed: labelMax,
             ),

@@ -515,10 +515,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamHudRadarEnable => 'Радар на HUD';
 
   @override
-  String get speedcamDhuRange => 'Дальность радара DHU';
+  String get speedcamDhuRange => 'Дальность оповещения / радара';
 
   @override
   String get speedcamSoundEnable => 'Звук приближения';
+
+  @override
+  String get speedcamSoundVolume => 'Громкость оповещения';
 
   @override
   String get speedcamRadarLook => 'Вид радара';

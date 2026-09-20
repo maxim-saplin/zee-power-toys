@@ -327,6 +327,20 @@ class _SpeedcamSettingsScreenState
                   (c) => c.copyWith(soundEnabled: v),
                 ),
               ),
+              SettingsSlider(
+                label: l10n.speedcamSoundVolume,
+                valueLabel: '${(sc.soundVolume * 100).round()}%',
+                minLabel: '0',
+                maxLabel: '100',
+                sliderKey: const ValueKey('speedcam-sound-volume'),
+                min: 0,
+                max: 1,
+                divisions: 20,
+                value: sc.soundVolume.clamp(0.0, 1.0),
+                onChanged: (v) => _patchSpeedcam(
+                  (c) => c.copyWith(soundVolume: v),
+                ),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [

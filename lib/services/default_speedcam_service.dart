@@ -4,17 +4,20 @@ import 'fakes/fake_speedcam_service.dart';
 import 'speedcam.dart';
 import 'speedcam_pack_store.dart';
 
-/// Production Service — pack cams + pose → danger (bearing/distance, 500 m).
+/// Production Service — pack cams + pose → danger (bearing/distance; radius from DHU range).
 class DefaultSpeedcamService implements SpeedcamService {
   DefaultSpeedcamService({
     required SpeedcamPackStore packStore,
     this.packId = SpeedcamPackIds.by,
     List<SpeedcamPoint>? fallbackCams,
-    this.approachRadiusM = 500,
+    double approachRadiusM = 500,
+    DateTime Function()? clock,
   })  : _pack = packStore,
         _fallback = List<SpeedcamPoint>.unmodifiable(
           fallbackCams ?? FakeSpeedcamService.kFakeBySampleCams,
         ),
+        _approachRadiusM = approachRadiusM,
+        _passGate = SpeedcamPassClearGate(clock: clock),
         _ctrl = StreamController<SpeedcamSnapshot>.broadcast() {
     _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
     _camSource = 'fallback';
@@ -26,8 +29,19 @@ class DefaultSpeedcamService implements SpeedcamService {
   final SpeedcamPackStore _pack;
   final String packId;
   final List<SpeedcamPoint> _fallback;
-  final double approachRadiusM;
+  double _approachRadiusM;
+  final SpeedcamPassClearGate _passGate;
   final StreamController<SpeedcamSnapshot> _ctrl;
+
+  double get approachRadiusM => _approachRadiusM;
+
+  /// DHU range slider → when cams enter alert/presence.
+  void setApproachRadiusM(double metres) {
+    final next = metres.clamp(100.0, 5000.0);
+    if (next == _approachRadiusM) return;
+    _approachRadiusM = next;
+    _emit();
+  }
 
   List<SpeedcamPoint> _cams = const [];
   String _camSource = 'none';
@@ -123,18 +137,19 @@ class DefaultSpeedcamService implements SpeedcamService {
   void _emit() {
     final host = _host;
     final danger = (_enabled && host != null)
-        ? nearestDanger(
+        ? _passGate.resolve(
             host: host,
             cams: _cams,
-            approachRadiusM: approachRadiusM,
+            approachRadiusM: _approachRadiusM,
           )
         : null;
+    if (host == null) _passGate.reset();
     _snapshot = SpeedcamSnapshot(
       enabled: _enabled,
       cams: _enabled ? _cams : const <SpeedcamPoint>[],
       host: host,
       danger: danger,
-      approachRadiusM: approachRadiusM,
+      approachRadiusM: _approachRadiusM,
       camSource: _enabled ? _camSource : 'none',
     );
     _ctrl.add(_snapshot);

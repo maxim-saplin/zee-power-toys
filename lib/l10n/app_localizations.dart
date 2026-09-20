@@ -1088,10 +1088,10 @@ abstract class AppLocalizations {
   /// **'Show radar on HUD'**
   String get speedcamHudRadarEnable;
 
-  /// Zoom-out display radius metres
+  /// Presence and alert radius metres (DHU + approach)
   ///
   /// In en, this message translates to:
-  /// **'DHU radar range'**
+  /// **'Alert / radar range'**
   String get speedcamDhuRange;
 
   /// Toggle sting on insideApproach enter
@@ -1099,6 +1099,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approach alert sound'**
   String get speedcamSoundEnable;
+
+  /// Speedcam sting/ping volume 0-100%
+  ///
+  /// In en, this message translates to:
+  /// **'Alert volume'**
+  String get speedcamSoundVolume;
 
   /// Speedcam radar visual look picker
   ///

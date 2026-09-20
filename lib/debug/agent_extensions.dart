@@ -130,6 +130,7 @@ void registerZeeExtensions({
           'hudRadarEnabled': store.value.speedcam.hudRadarEnabled,
           'radarLook': store.value.speedcam.radarLook.name,
           'soundEnabled': store.value.speedcam.soundEnabled,
+          'soundVolume': store.value.speedcam.soundVolume,
           'dhuRangeM': store.value.speedcam.dhuRangeM,
         },
         'speedKmh': snap?.speedKmh,

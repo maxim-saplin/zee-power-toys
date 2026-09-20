@@ -16,6 +16,7 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
   }
 
   final AudioPlayer _player;
+  double _volume = 0.85;
   static const asset = 'sounds/speedcam_sting.wav';
   static const pingAsset = 'sounds/speedcam_alien_ping.wav';
 
@@ -41,9 +42,21 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
   }
 
   @override
+  Future<void> setVolume(double volume) async {
+    _volume = volume.clamp(0.0, 1.0);
+    try {
+      await _player.setVolume(_volume);
+    } catch (e) {
+      debugPrint('speedcam volume failed: $e');
+    }
+  }
+
+  @override
   Future<void> playSting() async {
+    if (_volume <= 0) return;
     try {
       await _ensureSonificationContext();
+      await _player.setVolume(_volume);
       await _player.stop();
       await _player.setPlaybackRate(1.0);
       await _player.play(AssetSource(asset));
@@ -54,8 +67,10 @@ class AudioSpeedcamAlert implements SpeedcamAlert {
 
   @override
   Future<void> playAlienPing({double? distanceM}) async {
+    if (_volume <= 0) return;
     try {
       await _ensureSonificationContext();
+      await _player.setVolume(_volume);
       final rate = distanceM == null
           ? 1.0
           : alienPingPlaybackRateForDistanceM(distanceM);

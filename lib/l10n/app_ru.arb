@@ -668,13 +668,17 @@
   "@speedcamHudRadarEnable": {
     "description": "Toggle CRT on windshield HUD"
   },
-  "speedcamDhuRange": "Дальность радара DHU",
+  "speedcamDhuRange": "Дальность оповещения / радара",
   "@speedcamDhuRange": {
-    "description": "Zoom-out display radius metres"
+    "description": "Presence and alert radius metres (DHU + approach)"
   },
   "speedcamSoundEnable": "Звук приближения",
   "@speedcamSoundEnable": {
     "description": "Toggle sting on insideApproach enter"
+  },
+  "speedcamSoundVolume": "Громкость оповещения",
+  "@speedcamSoundVolume": {
+    "description": "Speedcam sting/ping volume 0-100%"
   },
   "speedcamRadarLook": "Вид радара",
   "@speedcamRadarLook": {

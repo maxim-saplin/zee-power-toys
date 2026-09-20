@@ -201,6 +201,7 @@ Future<void> dhuMain(List<String> args) async {
   // Idempotent on the native side (setMinimap is a NOOP when already in state).
   // Fires once on startup (persisted config) and on every subsequent change.
   _applyMinimapConfig(minimapHostRaw, store.value);
+  _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, store.value);
 
   // Listen for dynamic hudEnabled toggles: show()/hide() the HUD engine.
   // store.changes only fires on explicit setConfig; the initial state at boot
@@ -217,6 +218,7 @@ Future<void> dhuMain(List<String> args) async {
       }
     }
     _applyMinimapConfig(minimapHostRaw, cfg);
+    _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg);
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
@@ -331,7 +333,11 @@ void hudMain(List<String> args) {
   // Seed from persisted prefs, then arm the relay listener.
   store.load().then((_) {
     listenForRelay(
-      onConfig: (cfg) => store.setConfig(cfg),
+      onConfig: (cfg) {
+        store.setConfig(cfg);
+        speedcamAlert.setVolume(cfg.speedcam.soundVolume);
+        speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
+      },
       onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
       onSpeedcam: speedcam.applyRelaySnapshot,
     );
@@ -464,6 +470,20 @@ String? _lastMinimapNative;
 /// the viewport rect before parkForYNavi triggers the YNavi surface start.
 ///
 /// Called once on startup and on every config change (both paths are idempotent).
+void _applySpeedcamConfig(
+  SpeedcamService speedcam,
+  SpeedcamAlert alert,
+  AppConfig cfg,
+) {
+  final sc = cfg.speedcam;
+  if (speedcam is DefaultSpeedcamService) {
+    speedcam.setApproachRadiusM(sc.dhuRangeM);
+  } else if (speedcam is FakeSpeedcamService) {
+    speedcam.setApproachRadiusM(sc.dhuRangeM);
+  }
+  alert.setVolume(sc.soundVolume);
+}
+
 void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   final mm = cfg.minimap;
   // Compute the phase0 square viewport from dp constants × real density.

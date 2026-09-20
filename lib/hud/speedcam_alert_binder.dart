@@ -26,6 +26,11 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
     arm.enabled = cfg.soundEnabled;
 
     useEffect(() {
+      alert.setVolume(cfg.soundVolume);
+      return null;
+    }, [alert, cfg.soundVolume]);
+
+    useEffect(() {
       final inside = danger?.insideApproach ?? false;
       arm.onInsideApproach(inside);
       return null;

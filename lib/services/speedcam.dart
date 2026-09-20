@@ -281,13 +281,23 @@ bool isCamRelevantForHost(SpeedcamHostPose host, SpeedcamPoint cam) {
   return smallestAngleDeg(facing, intoOurTraffic) <= 90;
 }
 
+/// Whether the cam lies ahead of host travel (relative bearing ≤ 90°).
+/// Unknown heading → fail-open (treat as ahead).
+bool isCamAheadOfTravel(SpeedcamHostPose host, double bearingToCamDeg) {
+  final heading = host.headingDeg;
+  if (heading == null) return true;
+  return smallestAngleDeg(bearingToCamDeg, heading) <= 90;
+}
+
 SpeedcamDanger? nearestDanger({
   required SpeedcamHostPose host,
   required List<SpeedcamPoint> cams,
   double approachRadiusM = 500,
+  Set<String> skipIds = const <String>{},
 }) {
   SpeedcamDanger? best;
   for (final cam in cams) {
+    if (skipIds.contains(cam.id)) continue;
     if (!isCamRelevantForHost(host, cam)) continue;
     final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
     if (best == null || d < best.distanceM) {
@@ -300,6 +310,120 @@ SpeedcamDanger? nearestDanger({
     }
   }
   return best;
+}
+
+/// Default grace after host passes a cam (behind / leaving) before clearing alert.
+const Duration kSpeedcamPassClearGrace = Duration(seconds: 4);
+
+/// Keeps a passed-by cam alerted briefly, then suppresses it until re-approach.
+///
+/// Prefer heading+bearing (behind = relative bearing > 90°). When heading is
+/// unknown, fall back to distance trend (was closing, now opening).
+class SpeedcamPassClearGate {
+  SpeedcamPassClearGate({
+    this.grace = kSpeedcamPassClearGrace,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  final Duration grace;
+  final DateTime Function() _clock;
+
+  String? _graceCamId;
+  DateTime? _graceUntil;
+  final Set<String> _expired = <String>{};
+
+  String? _trendCamId;
+  double? _prevDistanceM;
+  bool _wasClosing = false;
+
+  void reset() {
+    _graceCamId = null;
+    _graceUntil = null;
+    _expired.clear();
+    _trendCamId = null;
+    _prevDistanceM = null;
+    _wasClosing = false;
+  }
+
+  bool _isLeaving(SpeedcamHostPose host, SpeedcamDanger danger) {
+    final heading = host.headingDeg;
+    if (heading != null) {
+      return !isCamAheadOfTravel(host, danger.bearingDeg);
+    }
+    // Distance-trend fallback when heading unknown.
+    if (_trendCamId != danger.cam.id) {
+      _trendCamId = danger.cam.id;
+      _prevDistanceM = danger.distanceM;
+      _wasClosing = false;
+      return false;
+    }
+    final prev = _prevDistanceM ?? danger.distanceM;
+    if (danger.distanceM < prev - 5) _wasClosing = true;
+    final leaving = _wasClosing && danger.distanceM > prev + 5;
+    _prevDistanceM = danger.distanceM;
+    return leaving;
+  }
+
+  /// Resolve danger with pass-clear grace. May return null after grace expires.
+  SpeedcamDanger? resolve({
+    required SpeedcamHostPose host,
+    required List<SpeedcamPoint> cams,
+    required double approachRadiusM,
+  }) {
+    // Drop expired suppressions once host is ahead again or far outside range.
+    final camById = {for (final c in cams) c.id: c};
+    _expired.removeWhere((id) {
+      final cam = camById[id];
+      if (cam == null) return true;
+      final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+      if (d > approachRadiusM * 1.25) return true;
+      final bearing = initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+      return isCamAheadOfTravel(host, bearing);
+    });
+
+    final skip = Set<String>.from(_expired);
+    while (true) {
+      final danger = nearestDanger(
+        host: host,
+        cams: cams,
+        approachRadiusM: approachRadiusM,
+        skipIds: skip,
+      );
+      if (danger == null) return null;
+
+      final leaving = _isLeaving(host, danger);
+      if (!leaving) {
+        if (_graceCamId == danger.cam.id) {
+          _graceCamId = null;
+          _graceUntil = null;
+        }
+        _expired.remove(danger.cam.id);
+        return danger;
+      }
+
+      // Behind / leaving but outside approach — report without grace hang.
+      if (!danger.insideApproach) {
+        _graceCamId = null;
+        _graceUntil = null;
+        return danger;
+      }
+
+      final now = _clock();
+      if (_graceCamId == danger.cam.id && _graceUntil != null) {
+        if (now.isBefore(_graceUntil!)) return danger;
+        _expired.add(danger.cam.id);
+        skip.add(danger.cam.id);
+        _graceCamId = null;
+        _graceUntil = null;
+        continue;
+      }
+
+      // Start grace — keep alerting 3–5s after pass.
+      _graceCamId = danger.cam.id;
+      _graceUntil = now.add(grace);
+      return danger;
+    }
+  }
 }
 
 /// Speedcam port — nearby cams + danger; enable + host pose + reload pack.
