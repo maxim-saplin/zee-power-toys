@@ -286,15 +286,34 @@ class _SpeedcamSettingsScreenState
                 },
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
-                key: const ValueKey('speedcam-hud-radar'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamHudRadarEnable),
-                value: sc.hudRadarEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(hudRadarEnabled: v),
-                ),
+              Text(
+                l10n.speedcamHudMode,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
+              const SizedBox(height: 8),
+              SegmentedButton<SpeedcamPresenceMode>(
+                key: const ValueKey('speedcam-hud-mode'),
+                segments: [
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.any,
+                    label: Text(l10n.speedcamPresenceAny),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.dangerous,
+                    label: Text(l10n.speedcamPresenceDangerous),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.off,
+                    label: Text(l10n.speedcamPresenceOff),
+                  ),
+                ],
+                selected: {sc.hudMode},
+                onSelectionChanged: (sel) {
+                  if (sel.isEmpty) return;
+                  _patchSpeedcam((c) => c.copyWith(hudMode: sel.first));
+                },
+              ),
+              const SizedBox(height: 12),
               Text(
                 l10n.speedcamRadarLook,
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -318,14 +337,33 @@ class _SpeedcamSettingsScreenState
                   _patchSpeedcam((c) => c.copyWith(radarLook: sel.first));
                 },
               ),
-              SwitchListTile(
-                key: const ValueKey('speedcam-sound'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamSoundEnable),
-                value: sc.soundEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(soundEnabled: v),
-                ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.speedcamSoundMode,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<SpeedcamPresenceMode>(
+                key: const ValueKey('speedcam-sound-mode'),
+                segments: [
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.any,
+                    label: Text(l10n.speedcamPresenceAny),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.dangerous,
+                    label: Text(l10n.speedcamPresenceDangerous),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.off,
+                    label: Text(l10n.speedcamPresenceOff),
+                  ),
+                ],
+                selected: {sc.soundMode},
+                onSelectionChanged: (sel) {
+                  if (sel.isEmpty) return;
+                  _patchSpeedcam((c) => c.copyWith(soundMode: sel.first));
+                },
               ),
               SettingsSlider(
                 label: l10n.speedcamSoundVolume,

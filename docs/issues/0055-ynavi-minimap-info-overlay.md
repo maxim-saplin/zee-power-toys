@@ -57,6 +57,7 @@ parity:
 3. **Toggles** (Zee HUD 2 `guidance_overlay` / `eta_bar`):
    - `MinimapConfig.guidanceOverlay` / `etaBar` / `overlayScale` (defaults on / 0.5)
    - Minimap settings switches + `setMinimapParam` + FL `ext.zee.setConfig`
+   - Overlay scale **slider UI** → [0061](0061-guidance-overlay-scale-slider.md)
 4. **Do not** reintroduce Flutter `MinimapGuidanceOverlay`.
 5. YNavi map-pixel force-on remains as optional belt; not required for DoD.
 
@@ -64,6 +65,7 @@ parity:
 - [x] Flutter ETA/street plate stays deleted
 - [x] Native `GuidanceOverlayView` on Presentation from `updateTrip`
 - [x] `guidance_overlay` / `eta_bar` toggles (defaults on)
+- [x] `overlayScale` prefs wired to native (slider UI → 0061)
 - [x] Issue + BACKLOG updated with FAIL write-up
 - [ ] Runtime T2/T3: street + ETA Maxim bar visible on minimap during guidance
       (`adb install -r` power-toys; ynavi tip optional)

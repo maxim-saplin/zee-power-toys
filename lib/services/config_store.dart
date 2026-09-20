@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'minimap_viewport.dart' show hudPresetSizeFraction;
+import 'speedcam.dart' show SpeedcamPresenceMode;
 
 
 /// jsonDecode nests are [Map<String, dynamic>], which fail `is Map<String, Object?>`.
@@ -317,7 +318,7 @@ class MinimapConfig {
     onlyWhileGuidance: json['onlyWhileGuidance'] as bool? ?? false,
     guidanceOverlay: json['guidanceOverlay'] as bool? ?? true,
     etaBar: json['etaBar'] as bool? ?? true,
-    overlayScale: (json['overlayScale'] as num?)?.toDouble() ?? 0.5,
+    overlayScale: ((json['overlayScale'] as num?)?.toDouble() ?? 0.5).clamp(0.25, 1.0),
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
@@ -881,23 +882,23 @@ enum SpeedcamRefreshPolicy {
 
 class SpeedcamConfig {
   const SpeedcamConfig({
-    this.hudRadarEnabled = true,
+    this.hudMode = SpeedcamPresenceMode.any,
+    this.soundMode = SpeedcamPresenceMode.dangerous,
     this.dhuRangeM = 2000,
-    this.soundEnabled = true,
     this.soundVolume = 0.85,
     this.radarLook = SpeedcamRadarLook.defaultLook,
     this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
     this.staleAfterDays = 7,
   });
 
-  /// Paint radar on the HUD windshield when enabled (idle frame OK).
-  final bool hudRadarEnabled;
+  /// HUD radar/presence mode (default [SpeedcamPresenceMode.any]).
+  final SpeedcamPresenceMode hudMode;
+
+  /// Alert sound mode (default [SpeedcamPresenceMode.dangerous]).
+  final SpeedcamPresenceMode soundMode;
 
   /// Alert presence + DHU radar radius in metres (prefs → approachRadiusM).
   final double dhuRangeM;
-
-  /// Play approach sting when [insideApproach] flips true.
-  final bool soundEnabled;
 
   /// Alert sound volume 0.0 (mute) … 1.0. Applied to sting + Alien ping.
   final double soundVolume;
@@ -911,26 +912,51 @@ class SpeedcamConfig {
   /// Age in days after which [SpeedcamRefreshPolicy.ifStale] refetches.
   final int staleAfterDays;
 
+  /// Legacy: HUD paint not Off (0060 migration / dumpState).
+  bool get hudRadarEnabled => hudMode != SpeedcamPresenceMode.off;
+
+  /// Legacy: sound not Off (0060 migration / dumpState).
+  bool get soundEnabled => soundMode != SpeedcamPresenceMode.off;
+
   SpeedcamConfig copyWith({
-    bool? hudRadarEnabled,
+    SpeedcamPresenceMode? hudMode,
+    SpeedcamPresenceMode? soundMode,
     double? dhuRangeM,
-    bool? soundEnabled,
     double? soundVolume,
     SpeedcamRadarLook? radarLook,
     SpeedcamRefreshPolicy? refreshPolicy,
     int? staleAfterDays,
-  }) =>
-      SpeedcamConfig(
-        hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
-        dhuRangeM: dhuRangeM ?? this.dhuRangeM,
-        soundEnabled: soundEnabled ?? this.soundEnabled,
-        soundVolume: soundVolume ?? this.soundVolume,
-        radarLook: radarLook ?? this.radarLook,
-        refreshPolicy: refreshPolicy ?? this.refreshPolicy,
-        staleAfterDays: staleAfterDays ?? this.staleAfterDays,
-      );
+    // Legacy bool shims — prefer [hudMode] / [soundMode].
+    bool? hudRadarEnabled,
+    bool? soundEnabled,
+  }) {
+    var nextHud = hudMode ?? this.hudMode;
+    var nextSound = soundMode ?? this.soundMode;
+    if (hudMode == null && hudRadarEnabled != null) {
+      nextHud = hudRadarEnabled
+          ? SpeedcamPresenceMode.any
+          : SpeedcamPresenceMode.off;
+    }
+    if (soundMode == null && soundEnabled != null) {
+      nextSound = soundEnabled
+          ? SpeedcamPresenceMode.dangerous
+          : SpeedcamPresenceMode.off;
+    }
+    return SpeedcamConfig(
+      hudMode: nextHud,
+      soundMode: nextSound,
+      dhuRangeM: dhuRangeM ?? this.dhuRangeM,
+      soundVolume: soundVolume ?? this.soundVolume,
+      radarLook: radarLook ?? this.radarLook,
+      refreshPolicy: refreshPolicy ?? this.refreshPolicy,
+      staleAfterDays: staleAfterDays ?? this.staleAfterDays,
+    );
+  }
 
   Map<String, Object?> toJson() => <String, Object?>{
+        'hudMode': hudMode.name,
+        'soundMode': soundMode.name,
+        // Legacy mirrors for older readers / dumpState.
         'hudRadarEnabled': hudRadarEnabled,
         'dhuRangeM': dhuRangeM,
         'soundEnabled': soundEnabled,
@@ -953,9 +979,19 @@ class SpeedcamConfig {
     );
     final vol = (json['soundVolume'] as num?)?.toDouble() ?? 0.85;
     return SpeedcamConfig(
-      hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
+      hudMode: _presenceModeFromJson(
+        json['hudMode'],
+        legacyBool: json['hudRadarEnabled'] as bool?,
+        legacyTrue: SpeedcamPresenceMode.any,
+        defaultMode: SpeedcamPresenceMode.any,
+      ),
+      soundMode: _presenceModeFromJson(
+        json['soundMode'],
+        legacyBool: json['soundEnabled'] as bool?,
+        legacyTrue: SpeedcamPresenceMode.dangerous,
+        defaultMode: SpeedcamPresenceMode.dangerous,
+      ),
       dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
-      soundEnabled: json['soundEnabled'] as bool? ?? true,
       soundVolume: vol.clamp(0.0, 1.0),
       radarLook: look,
       refreshPolicy: policy,
@@ -966,9 +1002,9 @@ class SpeedcamConfig {
   @override
   bool operator ==(Object other) =>
       other is SpeedcamConfig &&
-      other.hudRadarEnabled == hudRadarEnabled &&
+      other.hudMode == hudMode &&
+      other.soundMode == soundMode &&
       other.dhuRangeM == dhuRangeM &&
-      other.soundEnabled == soundEnabled &&
       other.soundVolume == soundVolume &&
       other.radarLook == radarLook &&
       other.refreshPolicy == refreshPolicy &&
@@ -976,14 +1012,30 @@ class SpeedcamConfig {
 
   @override
   int get hashCode => Object.hash(
-        hudRadarEnabled,
+        hudMode,
+        soundMode,
         dhuRangeM,
-        soundEnabled,
         soundVolume,
         radarLook,
         refreshPolicy,
         staleAfterDays,
       );
+}
+
+SpeedcamPresenceMode _presenceModeFromJson(
+  Object? raw, {
+  required bool? legacyBool,
+  required SpeedcamPresenceMode legacyTrue,
+  required SpeedcamPresenceMode defaultMode,
+}) {
+  if (raw is String) {
+    for (final m in SpeedcamPresenceMode.values) {
+      if (m.name == raw) return m;
+    }
+  }
+  if (legacyBool == false) return SpeedcamPresenceMode.off;
+  if (legacyBool == true) return legacyTrue;
+  return defaultMode;
 }
 
 /// Minimal app configuration.

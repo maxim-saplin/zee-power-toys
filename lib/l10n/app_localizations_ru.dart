@@ -348,6 +348,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Оставшиеся дистанция, время и прибытие на миникарте';
 
   @override
+  String get minimapOverlayScale => 'Масштаб оверлея';
+
+  @override
+  String get minimapOverlayScaleHint =>
+      'Уменьшает полосы манёвров и ETA, чтобы влезли в миникарту (независимо от плотности карты)';
+
+  @override
   String get minimapPreset => 'Пресет';
 
   @override
@@ -549,6 +556,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamHudRadarEnable => 'Радар на HUD';
+
+  @override
+  String get speedcamHudMode => 'Радар на HUD';
+
+  @override
+  String get speedcamSoundMode => 'Звук оповещения';
+
+  @override
+  String get speedcamPresenceAny => 'Любые';
+
+  @override
+  String get speedcamPresenceDangerous => 'Опасные';
+
+  @override
+  String get speedcamPresenceOff => 'Выкл';
 
   @override
   String get speedcamDhuRange => 'Дальность оповещения / радара';

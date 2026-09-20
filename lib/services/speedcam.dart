@@ -281,6 +281,18 @@ double? parseCamFacingDegrees(String? raw) {
   return null;
 }
 
+/// Independent HUD paint / alert-sound presence gate (0060).
+///
+/// **Scan set** = front hemisphere ([isCamAheadOfTravel]) ∩ approach radius.
+/// - [any]: all scan candidates (no facing mute)
+/// - [dangerous]: scan ∩ facing our traffic ([isCamRelevantForHost])
+/// - [off]: channel silent / hidden
+enum SpeedcamPresenceMode {
+  any,
+  dangerous,
+  off,
+}
+
 /// Whether [cam] should alert for [host] travel direction.
 ///
 /// Camera facing into our traffic (≈ opposite our heading) → relevant.
@@ -303,27 +315,140 @@ bool isCamAheadOfTravel(SpeedcamHostPose host, double bearingToCamDeg) {
   return smallestAngleDeg(bearingToCamDeg, heading) <= 90;
 }
 
-SpeedcamDanger? nearestDanger({
+/// Whether [cam] is in the 0060 scan set: ahead of travel and within [radiusM].
+bool isCamInScanSet({
+  required SpeedcamHostPose host,
+  required SpeedcamPoint cam,
+  required double radiusM,
+  double? distanceM,
+  double? bearingDeg,
+}) {
+  final d = distanceM ??
+      haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+  if (d > radiusM) return false;
+  final bearing = bearingDeg ??
+      initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+  return isCamAheadOfTravel(host, bearing);
+}
+
+/// True when [mode] should treat [cam] as an active presence contact.
+bool camPassesPresenceMode({
+  required SpeedcamPresenceMode mode,
+  required SpeedcamHostPose host,
+  required SpeedcamPoint cam,
+  required double approachRadiusM,
+  double? distanceM,
+  double? bearingDeg,
+}) {
+  if (mode == SpeedcamPresenceMode.off) return false;
+  final d = distanceM ??
+      haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+  final bearing = bearingDeg ??
+      initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+  if (!isCamInScanSet(
+    host: host,
+    cam: cam,
+    radiusM: approachRadiusM,
+    distanceM: d,
+    bearingDeg: bearing,
+  )) {
+    return false;
+  }
+  if (mode == SpeedcamPresenceMode.dangerous) {
+    return isCamRelevantForHost(host, cam);
+  }
+  // any
+  return true;
+}
+
+/// Nearest cam for [mode] within the front-hemisphere scan set.
+///
+/// Returns null when [mode] is [SpeedcamPresenceMode.off] or no candidate
+/// matches. [insideApproach] is always true for returned hits (scan ∩ radius).
+SpeedcamDanger? nearestForPresenceMode({
+  required SpeedcamPresenceMode mode,
   required SpeedcamHostPose host,
   required List<SpeedcamPoint> cams,
   double approachRadiusM = 500,
   Set<String> skipIds = const <String>{},
 }) {
+  if (mode == SpeedcamPresenceMode.off) return null;
+  final requireFacing = mode == SpeedcamPresenceMode.dangerous;
+  return nearestDanger(
+    host: host,
+    cams: cams,
+    approachRadiusM: approachRadiusM,
+    skipIds: skipIds,
+    requireFacing: requireFacing,
+    requireAhead: true,
+    onlyInsideApproach: true,
+  );
+}
+
+/// Nearest relevant cam (0060: front hemisphere by default).
+///
+/// When [requireFacing] is true (default), applies [isCamRelevantForHost].
+/// When [requireAhead] is true (default), applies [isCamAheadOfTravel].
+/// When [onlyInsideApproach] is true, skips cams outside [approachRadiusM].
+SpeedcamDanger? nearestDanger({
+  required SpeedcamHostPose host,
+  required List<SpeedcamPoint> cams,
+  double approachRadiusM = 500,
+  Set<String> skipIds = const <String>{},
+  bool requireFacing = true,
+  bool requireAhead = true,
+  bool onlyInsideApproach = false,
+}) {
   SpeedcamDanger? best;
   for (final cam in cams) {
     if (skipIds.contains(cam.id)) continue;
-    if (!isCamRelevantForHost(host, cam)) continue;
+    if (requireFacing && !isCamRelevantForHost(host, cam)) continue;
     final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+    if (onlyInsideApproach && d > approachRadiusM) continue;
+    final bearing = initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+    if (requireAhead && !isCamAheadOfTravel(host, bearing)) continue;
     if (best == null || d < best.distanceM) {
       best = SpeedcamDanger(
         cam: cam,
         distanceM: d,
-        bearingDeg: initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon),
+        bearingDeg: bearing,
         insideApproach: d <= approachRadiusM,
       );
     }
   }
   return best;
+}
+
+/// Resolve which danger drives sound/HUD for [mode].
+///
+/// Prefer [serviceDanger] for [SpeedcamPresenceMode.dangerous] so pass-clear
+/// grace from the service remains intact. [any] recomputes without facing mute.
+SpeedcamDanger? resolvePresenceDanger({
+  required SpeedcamPresenceMode mode,
+  required SpeedcamHostPose? host,
+  required List<SpeedcamPoint> cams,
+  required double approachRadiusM,
+  SpeedcamDanger? serviceDanger,
+}) {
+  switch (mode) {
+    case SpeedcamPresenceMode.off:
+      return null;
+    case SpeedcamPresenceMode.dangerous:
+      if (serviceDanger == null || !serviceDanger.insideApproach) return null;
+      return serviceDanger;
+    case SpeedcamPresenceMode.any:
+      if (host == null) {
+        return (serviceDanger != null && serviceDanger.insideApproach)
+            ? serviceDanger
+            : null;
+      }
+      return nearestForPresenceMode(
+        mode: SpeedcamPresenceMode.any,
+        host: host,
+        cams: cams,
+        approachRadiusM: approachRadiusM,
+      );
+  }
 }
 
 /// Default grace after host passes a cam (behind / leaving) before clearing alert.
@@ -397,12 +522,29 @@ class SpeedcamPassClearGate {
 
     final skip = Set<String>.from(_expired);
     while (true) {
-      final danger = nearestDanger(
+      // Prefer front-hemisphere scan (0060). If nothing ahead, still consider a
+      // behind/leaving facing-relevant cam so pass-clear grace can start/hold.
+      var danger = nearestDanger(
         host: host,
         cams: cams,
         approachRadiusM: approachRadiusM,
         skipIds: skip,
+        requireAhead: true,
       );
+      if (danger == null) {
+        final behind = nearestDanger(
+          host: host,
+          cams: cams,
+          approachRadiusM: approachRadiusM,
+          skipIds: skip,
+          requireAhead: false,
+        );
+        if (behind != null &&
+            behind.insideApproach &&
+            _isLeaving(host, behind)) {
+          danger = behind;
+        }
+      }
       if (danger == null) return null;
 
       final leaving = _isLeaving(host, danger);

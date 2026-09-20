@@ -348,6 +348,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remaining distance, time, and arrival on the minimap';
 
   @override
+  String get minimapOverlayScale => 'Overlay scale';
+
+  @override
+  String get minimapOverlayScaleHint =>
+      'Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)';
+
+  @override
   String get minimapPreset => 'Preset';
 
   @override
@@ -548,6 +555,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamHudRadarEnable => 'Show radar on HUD';
+
+  @override
+  String get speedcamHudMode => 'HUD radar';
+
+  @override
+  String get speedcamSoundMode => 'Alert sound';
+
+  @override
+  String get speedcamPresenceAny => 'Any';
+
+  @override
+  String get speedcamPresenceDangerous => 'Dangerous';
+
+  @override
+  String get speedcamPresenceOff => 'Off';
 
   @override
   String get speedcamDhuRange => 'Alert / radar range';

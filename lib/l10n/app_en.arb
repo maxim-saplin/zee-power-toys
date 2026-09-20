@@ -444,6 +444,14 @@
   "@minimapEtaBarHint": {
     "description": "Hint for ETA bar toggle"
   },
+  "minimapOverlayScale": "Overlay scale",
+  "@minimapOverlayScale": {
+    "description": "0055: Zee HUD 2 overlayScale slider (guidance/ETA bars)"
+  },
+  "minimapOverlayScaleHint": "Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)",
+  "@minimapOverlayScaleHint": {
+    "description": "Hint for overlay scale slider"
+  },
   "minimapPreset": "Preset",
   "@minimapPreset": {
     "description": "Minimap preset selector label"
@@ -710,7 +718,27 @@
   },
   "speedcamHudRadarEnable": "Show radar on HUD",
   "@speedcamHudRadarEnable": {
-    "description": "Toggle CRT on windshield HUD"
+    "description": "Toggle CRT on windshield HUD (legacy; prefer presence mode)"
+  },
+  "speedcamHudMode": "HUD radar",
+  "@speedcamHudMode": {
+    "description": "0060: HUD presence mode Any/Dangerous/Off"
+  },
+  "speedcamSoundMode": "Alert sound",
+  "@speedcamSoundMode": {
+    "description": "0060: sound presence mode Any/Dangerous/Off"
+  },
+  "speedcamPresenceAny": "Any",
+  "@speedcamPresenceAny": {
+    "description": "0060 presence mode: any ahead cam"
+  },
+  "speedcamPresenceDangerous": "Dangerous",
+  "@speedcamPresenceDangerous": {
+    "description": "0060 presence mode: facing-relevant ahead"
+  },
+  "speedcamPresenceOff": "Off",
+  "@speedcamPresenceOff": {
+    "description": "0060 presence mode: channel off"
   },
   "speedcamDhuRange": "Alert / radar range",
   "@speedcamDhuRange": {

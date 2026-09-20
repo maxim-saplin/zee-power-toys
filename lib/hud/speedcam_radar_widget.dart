@@ -63,18 +63,29 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cfg = ref.watch(speedcamConfigProvider);
-    if (variant == SpeedcamRadarVariant.hudCompact && !cfg.hudRadarEnabled) {
+    // 0060: HUD Off → no paint on windshield (DHU preview still shows via alwaysShow).
+    if (variant == SpeedcamRadarVariant.hudCompact &&
+        cfg.hudMode == SpeedcamPresenceMode.off) {
       return const SizedBox.shrink();
     }
 
     final snap = ref.watch(speedcamSnapshotProvider);
     final liveDanger = ref.watch(speedcamDangerProvider);
-    final danger = forceDemoDanger ?? liveDanger;
-    final look = cfg.radarLook;
-
     final approachM = snap.approachRadiusM > 0
         ? snap.approachRadiusM
         : cfg.dhuRangeM;
+    // Presence selection for HUD channel (independent of sound mode).
+    final modeDanger = forceDemoDanger ??
+        resolvePresenceDanger(
+          mode: cfg.hudMode,
+          host: snap.host,
+          cams: snap.cams,
+          approachRadiusM: approachM,
+          serviceDanger: liveDanger,
+        );
+    final danger = forceDemoDanger ?? modeDanger;
+    final look = cfg.radarLook;
+
     final range = displayRadiusM ??
         (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : approachM);
 
@@ -99,23 +110,22 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
         highlight: false,
         maxspeed: 50,
       ));
-    } else if (snap.host != null) {
-      final heading = snap.host!.headingDeg;
+    } else if (snap.host != null && cfg.hudMode != SpeedcamPresenceMode.off) {
+      final host = snap.host!;
+      final heading = host.headingDeg;
       for (final cam in snap.cams) {
-        final d = haversineMetres(
-          snap.host!.lat,
-          snap.host!.lon,
-          cam.lat,
-          cam.lon,
-        );
+        final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
         if (d > range) continue;
+        final absBearing =
+            initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+        // Front-hemisphere scan for candidates (0060).
+        if (!isCamAheadOfTravel(host, absBearing)) continue;
+        // Dangerous HUD: facing mute; Any: show all ahead blips.
+        if (cfg.hudMode == SpeedcamPresenceMode.dangerous &&
+            !isCamRelevantForHost(host, cam)) {
+          continue;
+        }
         final isDanger = danger != null && danger.cam.id == cam.id;
-        final absBearing = initialBearingDegrees(
-          snap.host!.lat,
-          snap.host!.lon,
-          cam.lat,
-          cam.lon,
-        );
         blips.add(SpeedcamRadarBlip(
           // Alien fan + Default arrow expect forward-relative degrees.
           bearingDeg: relativeBearingDegrees(absBearing, heading),

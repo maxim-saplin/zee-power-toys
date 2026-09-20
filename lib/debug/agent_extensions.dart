@@ -127,6 +127,8 @@ void registerZeeExtensions({
         'speedcam': speedcam?.snapshot.toJson(),
         'speedcamPack': packMeta?.toJson(),
         'speedcamConfig': <String, Object?>{
+          'hudMode': store.value.speedcam.hudMode.name,
+          'soundMode': store.value.speedcam.soundMode.name,
           'hudRadarEnabled': store.value.speedcam.hudRadarEnabled,
           'radarLook': store.value.speedcam.radarLook.name,
           'soundEnabled': store.value.speedcam.soundEnabled,

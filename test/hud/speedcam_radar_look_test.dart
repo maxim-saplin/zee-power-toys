@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/hud/speedcam_radar_widget.dart';
 import 'package:zee_power_toys/services/config_store.dart';
+import 'package:zee_power_toys/services/speedcam.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 import '../support/harness.dart';
@@ -19,7 +20,7 @@ void main() {
   testWidgets('Default look shows distance text, not CRT painter', (tester) async {
     final store = await storeWith(const SpeedcamConfig(
       radarLook: SpeedcamRadarLook.defaultLook,
-      hudRadarEnabled: true,
+      hudMode: SpeedcamPresenceMode.any,
     ));
     await tester.binding.setSurfaceSize(const Size(400, 400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -43,7 +44,7 @@ void main() {
   testWidgets('Alien look paints CRT key, not default text', (tester) async {
     final store = await storeWith(const SpeedcamConfig(
       radarLook: SpeedcamRadarLook.alien,
-      hudRadarEnabled: true,
+      hudMode: SpeedcamPresenceMode.any,
     ));
     await tester.binding.setSurfaceSize(const Size(400, 400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -72,7 +73,7 @@ void main() {
   testWidgets('Default HUD idle (no danger) shows nothing', (tester) async {
     final store = await storeWith(const SpeedcamConfig(
       radarLook: SpeedcamRadarLook.defaultLook,
-      hudRadarEnabled: true,
+      hudMode: SpeedcamPresenceMode.any,
     ));
     await tester.binding.setSurfaceSize(const Size(400, 400));
     addTearDown(() => tester.binding.setSurfaceSize(null));

@@ -118,6 +118,8 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 | [0055](0055-ynavi-minimap-info-overlay.md) | Street/ETA via native GuidanceOverlayView (Zee HUD 2 updateTrip) | in-progress (FAIL redirect) |
 | [0058](0058-hud-approach-cam-blip.md) | HUD approach cam blip — relative bearing fold | **done** |
 | [0059](0059-speedcam-alert-loudness.md) | Alert loudness — NAV stream + real slider gain | **done** |
+| [0061](0061-guidance-overlay-scale-slider.md) | GuidanceOverlayView overlay scale slider (Zee HUD 2 0.25–1.0) | **done** |
+| [0060](0060-speedcam-hud-sound-modes.md) | Speedcam HUD + sound modes (Any / Dangerous / Off) | **done** |
 
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |

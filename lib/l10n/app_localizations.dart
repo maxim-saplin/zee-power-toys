@@ -764,6 +764,18 @@ abstract class AppLocalizations {
   /// **'Remaining distance, time, and arrival on the minimap'**
   String get minimapEtaBarHint;
 
+  /// 0055: Zee HUD 2 overlayScale slider (guidance/ETA bars)
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay scale'**
+  String get minimapOverlayScale;
+
+  /// Hint for overlay scale slider
+  ///
+  /// In en, this message translates to:
+  /// **'Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)'**
+  String get minimapOverlayScaleHint;
+
   /// Minimap preset selector label
   ///
   /// In en, this message translates to:
@@ -1148,11 +1160,41 @@ abstract class AppLocalizations {
   /// **'Radar'**
   String get speedcamRadarSection;
 
-  /// Toggle CRT on windshield HUD
+  /// Toggle CRT on windshield HUD (legacy; prefer presence mode)
   ///
   /// In en, this message translates to:
   /// **'Show radar on HUD'**
   String get speedcamHudRadarEnable;
+
+  /// 0060: HUD presence mode Any/Dangerous/Off
+  ///
+  /// In en, this message translates to:
+  /// **'HUD radar'**
+  String get speedcamHudMode;
+
+  /// 0060: sound presence mode Any/Dangerous/Off
+  ///
+  /// In en, this message translates to:
+  /// **'Alert sound'**
+  String get speedcamSoundMode;
+
+  /// 0060 presence mode: any ahead cam
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get speedcamPresenceAny;
+
+  /// 0060 presence mode: facing-relevant ahead
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous'**
+  String get speedcamPresenceDangerous;
+
+  /// 0060 presence mode: channel off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get speedcamPresenceOff;
 
   /// Presence and alert radius metres (DHU + approach)
   ///

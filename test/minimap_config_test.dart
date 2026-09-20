@@ -429,6 +429,17 @@ void main() {
       );
       expect(MinimapConfig.fromJson(cfg.toJson()), equals(cfg));
     });
+
+    test('overlayScale clamp 0.25–1.0 on fromJson', () {
+      expect(
+        MinimapConfig.fromJson({'overlayScale': 0.1}).overlayScale,
+        0.25,
+      );
+      expect(
+        MinimapConfig.fromJson({'overlayScale': 2.0}).overlayScale,
+        1.0,
+      );
+    });
   });
 
   group('onlyWhileGuidance (0057)', () {
