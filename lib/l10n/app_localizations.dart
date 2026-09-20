@@ -929,7 +929,7 @@ abstract class AppLocalizations {
   /// Short product intro on the home welcome column
   ///
   /// In en, this message translates to:
-  /// **'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.'**
+  /// **'HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the left.'**
   String get homeWelcomeBody;
 
   /// Companion APK status section heading
