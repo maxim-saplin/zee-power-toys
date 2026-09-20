@@ -1,0 +1,24 @@
+# 0044 — exercise publish-prep on GitHub (artifacts only; NO Release).
+name: ci-publish-prep
+
+on:
+  push:
+    branches: [0044-publish-prep]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zee-power-toys-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
