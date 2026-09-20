@@ -5,6 +5,12 @@ All notable changes to Zee Power Toys are documented here.
 Versioning: `MAJOR.MINOR.PATCH+BUILD` in `pubspec.yaml`.
 Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing releases.
 
+## [1.0.0+2] — 2026-09-20
+
+### Fixed
+- CI release build: commit AOSP `androiddebugkey.jks` (was gitignored → GH fail)
+- Diagnostics/HUD charge fields: read snapshot (not latest stream event); show signed kW whenever present
+
 ## [1.0.0] — 2026-09-20
 
 First numbered product line on `0044-publish-prep`.

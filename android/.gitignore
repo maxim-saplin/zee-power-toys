@@ -11,4 +11,8 @@ GeneratedPluginRegistrant.java
 # See https://flutter.dev/to/reference-keystore
 key.properties
 **/*.keystore
-**/*.jks
+
+# Keep public AOSP/platform debug key for CI + car sharedUser installs (0054).
+*.jks
+!tools/zeekr/
+!tools/zeekr/androiddebugkey.jks

@@ -564,103 +564,13 @@ void main() {
   // full transform chain (including FittedBox's scale), so they reflect what
   // actually reaches the screen, not the unscaled layout size.
   group('BatteryWidget — size slider honesty', () {
-    // The real BATTERY slot at the reference Safe Area geometry (1024×576 @
-    // 213dpi, T2/T3 — CONTEXT.md's 616×175dp Safe Area converted to logical
-    // px at that density): saWidth*0.12 × saHeight*0.6 (hud_root.dart:131,
-    // 128). This is the actual physical constraint the slider's range is
-    // honest (or not) against.
-    const slotSize = Size(98.4, 139.8);
-
-    Size renderedIconSize(WidgetTester tester) {
-      final finder = find.byKey(const ValueKey('battery-icon'));
-      final topLeft = tester.getTopLeft(finder);
-      final bottomRight = tester.getBottomRight(finder);
-      return Size(bottomRight.dx - topLeft.dx, bottomRight.dy - topLeft.dy);
-    }
-
-    Future<void> pumpAt(
-      WidgetTester tester, {
-      required double sizeScale,
-      bool showTemp = true,
-      bool showChargingStats = true,
-      bool charging = false,
-    }) async {
-      final signals = FakeCarSignals();
-      final config = AppConfig(
-        battery: BatteryConfig(
-          sizeScale: sizeScale,
-          showTemp: showTemp,
-          showChargingStats: showChargingStats,
-        ),
-      );
-      await tester.pumpWidget(wrapWithProviders(
-        SizedBox.fromSize(size: slotSize, child: const BatteryWidget()),
-        config: config,
-        signals: signals,
-        scaffold: true,
-        localizations: false,
-      ));
-      signals.emitBattery(levelPct: 72, tempC: 24.0);
-      if (charging) signals.emitCharge(charging: true, kw: 42.0);
-      await tester.pump();
-    }
-
-    testWidgets(
-        'no charging stats: icon keeps growing with sizeScale across '
-        'almost the entire 0.5-2.5 range (single "NN%" line is the only '
-        'competing width, so it stays under the slot for far longer than '
-        'the old icon+pct row did)', (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpAt(tester, sizeScale: 0.5, showTemp: false, showChargingStats: false);
-      final at05 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.5, showTemp: false, showChargingStats: false);
-      final at15 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 2.0, showTemp: false, showChargingStats: false);
-      final at20 = renderedIconSize(tester).width;
-
-      // Real, substantial growth at every step — not the near-flat line the
-      // old row layout produced once past sizeScale≈1.07.
-      expect(at15, greaterThan(at05 * 1.5),
-          reason: 'growth from 0.5x to 1.5x must be substantial, not '
-              'absorbed by FittedBox scaleDown');
-      expect(at20, greaterThan(at15 * 1.05),
-          reason: 'growth must still be visible out at 2.0x when charging '
-              'stats are not competing for width');
-    });
-
-    testWidgets(
-        'temp + charging stats shown (worst case): growth is still real up '
-        'through the middle of the range, even though the widest line (the '
-        '"NN kW" charging stat) caps it earlier than the no-stats case',
-        (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpAt(tester, sizeScale: 0.5, charging: true);
-      final at05 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.0, charging: true);
-      final at10 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.25, charging: true);
-      final at125 = renderedIconSize(tester).width;
-
-      // Strictly increasing across this stretch — this is exactly the span
-      // that used to be flat (or nearly so) before the vertical-stack
-      // layout change.
-      expect(at10, greaterThan(at05));
-      expect(at125, greaterThan(at10));
-    });
+    // 0067b removed FittedBox; monotonic growth is asserted in
+    // test/hud/battery_geometry_test.dart (slot fracs × sizeScale).
 
     testWidgets(
         'no layout overflow error at slider max (2.5x) with all rows — '
         '0067b: ClipRect; slot grows with sizeScale in HudRoot',
         (tester) async {
-      // Grown charging slot approx (width/height fracs * sizeScale caps).
       const grown = Size(200, 280);
       await tester.binding.setSurfaceSize(grown);
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -690,4 +600,5 @@ void main() {
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
     });
   });
+
 }
