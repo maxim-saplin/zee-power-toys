@@ -60,13 +60,13 @@ These are **optional for Speedcam**. They unlock minimap / default-nav integrati
 | Companion | Source repo | Why |
 |-----------|-------------|-----|
 | **YNavi mod** (margined default / OS7+ no-margin) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | HUD minimap surface + CarApp bind |
-| **XCLauncher** (modded) | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) | YNavi as default nav / launcher integration |
+| **Zeekr Launcher mod** | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | YNavi as default nav / launcher integration |
 
 Platform: Zeekr DHU Android (T3); T1 desktop / T2 emulator for bring-up. Speedcam data: OpenStreetMap (ODbL).
 
 ## Install / Get the APKs (landing draft — 0044)
 
-**Not a public store listing yet.** APKs live in **source repos** only (ynavi-zee, zee_hud_2). Install uses GitHub **Release** asset URLs once Maxim greens the prep-branch workflows.
+**Not a public store listing yet.** APKs live in **source repos** only (ynavi-zee, zeekr_apk_mod). Install uses GitHub **Release** asset URLs once Maxim greens the prep-branch workflows.
 
 ### UI (normal flow) vs CLI-only
 
@@ -83,7 +83,7 @@ Sideload Install ≠ `adb -g` for privileged permissions.
 |-----------|-------------|----------------|---------|
 | YNavi **margined** (default) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | tag `ynavi-zeekr-v12` / `zeekr_v12_margined.apk` | Pending Maxim go; until then CLI/`ynavi_prep` |
 | YNavi **OS7+ no left margin** | same | same tag / `zeekr_v12_os7_nomargin.apk` | Pending |
-| Modded Launcher | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) | tag `launcher-v8` / `XCLauncher3-670-proxy-signed-v8.apk` | Private repo LFS = **404** anonymous; **public Release on zee_hud_2** is the fix (do not copy APK here) |
+| Modded Launcher | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | tag `launcher-670` / `XCLauncher3-670-yandex-signed.apk` | Private repo LFS = **404** anonymous; **public Release on zeekr_apk_mod** is the fix (do not copy APK here) |
 
 **This app** — platform-signed car build:
 

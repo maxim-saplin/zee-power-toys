@@ -1,12 +1,9 @@
 import 'installer.dart';
 
 // ---------------------------------------------------------------------------
-// Install targets — GitHub **Release** assets on source repos only.
-// No APKs in zee-power-toys git (Maxim 0044).
-//
-// Draft Releases use untagged-* download paths until published; anonymous
-// HEAD on drafts is 404. After Maxim undrafts/publishes, tag URLs resolve.
-// Draft exercise URLs — see docs/publish/0044-notes-for-maxim.md.
+// Install targets — GitHub **Release** assets on publish repos only.
+// Trio: zee-power-toys | ynavi-zee | zeekr_apk_mod
+// zee_hud_2 is NOT in publishing scope.
 // ---------------------------------------------------------------------------
 
 /// YNavi — DEFAULT margined (left=480).
@@ -25,10 +22,10 @@ const GithubAsset kYnaviOs7Asset = GithubAsset(
   releaseTag: 'ynavi-zeekr-v12',
 );
 
-/// Launcher — zee_hud_2 Release only.
+/// Zeekr Launcher mod (Yandex Navi as default) — **zeekr_apk_mod** only.
 const GithubAsset kLauncherAsset = GithubAsset(
-  repo: 'maxim-saplin/zee_hud_2',
+  repo: 'maxim-saplin/zeekr_apk_mod',
   branch: 'main',
-  path: 'XCLauncher3-670-proxy-signed-v8.apk',
-  releaseTag: 'launcher-v8',
+  path: 'XCLauncher3-670-yandex-signed.apk',
+  releaseTag: 'launcher-670',
 );
