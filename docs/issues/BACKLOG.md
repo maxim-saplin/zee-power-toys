@@ -121,6 +121,7 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 | [0061](0061-guidance-overlay-scale-slider.md) | GuidanceOverlayView overlay scale slider (Zee HUD 2 0.25–1.0) | **done** |
 | [0060](0060-speedcam-hud-sound-modes.md) | Speedcam HUD + sound modes (Any / Dangerous / Off) | **done** |
 | [0062](0062-battery-pct-inside-dual-color.md) | Battery + % inside pack — dual-color clip at fill (FAIL: empty white) | **done** |
+| [0063](0063-battery-outline-pct-height.md) | Battery polish — thinner outline + full-height % (keep 0062 clip) | **done** |
 
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |

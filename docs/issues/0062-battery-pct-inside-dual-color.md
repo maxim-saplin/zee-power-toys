@@ -59,3 +59,8 @@ had no clip of its own.
 
 ## Notes
 Amber/red low-battery fill still uses black-on-fill (readable on amber/red).
+
+## Follow-up polish (0063)
+Outline stroke toned down + % sized to inner fill height — see
+[0063](0063-battery-outline-pct-height.md). Dual-color clip kept.
+

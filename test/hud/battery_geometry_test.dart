@@ -185,4 +185,20 @@ void main() {
       );
     });
   });
+
+
+  group('batteryPackStrokeW / innerH (0063 polish)', () {
+    test('stroke is thinner than 0056 bold (bodyH*0.14)', () {
+      const bodyH = 20.0;
+      expect(batteryPackStrokeW(bodyH), lessThan(bodyH * 0.14));
+      expect(batteryPackStrokeW(bodyH), closeTo(bodyH * 0.08, 1e-9));
+    });
+
+    test('innerH matches body minus 2× inner pad', () {
+      const bodyH = 20.0;
+      final expected = bodyH - batteryPackInnerPad(bodyH) * 2;
+      expect(batteryPackInnerH(bodyH), closeTo(expected, 1e-9));
+      expect(batteryPackInnerH(bodyH), greaterThan(bodyH * 0.48));
+    });
+  });
 }

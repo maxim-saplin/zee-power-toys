@@ -13,7 +13,7 @@ import 'battery_geometry.dart';
 /// [batteryTempCProvider] is shown when [BatteryConfig.showTemp] is set.
 ///
 /// Pack styles ([BatteryStyle]) — driven by [BatteryLook] (0056 PDM):
-///   outline   — squarish bold outline + continuous fill + nub (default)
+///   outline   — squarish outline + continuous fill + nub (default)
 ///   filled    — 5 segment bars inside the pack ("Battery with bars")
 ///   pctInside — continuous fill with % text inside the pack (0062 dual-color)
 ///
@@ -238,7 +238,7 @@ class BatteryWidget extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 /// Paints the battery body per [BatteryStyle]:
-/// - [BatteryStyle.outline]/[BatteryStyle.pctInside]: squarish bold outline
+/// - [BatteryStyle.outline]/[BatteryStyle.pctInside]: squarish outline
 ///   + continuous fill + nub + bolt
 /// - [BatteryStyle.filled]: outline + 5 segment bars + nub + bolt
 class _BatteryPainter extends CustomPainter {
@@ -268,7 +268,7 @@ class _BatteryPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 0056 PDM: squarish bold outline (thicker stroke, tight corners).
+    // 0056 PDM squarish corners; 0063 thinner outline (stroke toned down).
     // Stroke/pad shared with batteryPackFillEdgeX so 0062 % clip matches fill.
     final strokeW = batteryPackStrokeW(bodyH);
     final radius = bodyH * 0.08;
@@ -403,8 +403,9 @@ class _DualColorPctLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 0063: % fills the inner fill height (taller glyph inside the pack).
     final style = TextStyle(
-      fontSize: bodyH * 0.48,
+      fontSize: batteryPackInnerH(bodyH),
       fontWeight: FontWeight.w700,
       height: 1.0,
     );
