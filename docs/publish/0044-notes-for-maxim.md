@@ -7,7 +7,7 @@
 
 ### QA FAIL (0044 T1)
 
-Launcher anonymous LFS URL → **404** because `zeekr_apk_mod` is private. YNavi (`ynavi-zee` public) LFS → 200 (bind still pre-P1 broken). Install cannot ship green until Launcher has a public artifact path.
+Launcher Install → `zeekr_apk_mod` Release `launcher-670` (public repo). Draft download paths are untagged-* (anon 404 until undraft). YNavi dual on ynavi draft Release.
 
 ## 1. zee-power-toys
 
@@ -70,7 +70,7 @@ flutter build apk --release -PuseAospDebugKey=true
 1. **APKs only in source repos** — never copy Launcher/YNavi into zee-power-toys.
 2. Each repo gets a **prep branch** + draft **Release + GH Actions** (disabled until go).
 3. Install points at Release assets on those source repos.
-4. `zeekr_apk_mod` private LFS 404 → **public Release on zeekr_apk_mod** (or make artifacts public).
+4. Launcher = Release on public `zeekr_apk_mod` only.
 
 ### Prep branches (local tips — no push until go)
 
@@ -78,7 +78,7 @@ flutter build apk --release -PuseAospDebugKey=true
 |------|-------------|----------|
 | zee-power-toys | `0044-publish-prep` | `.github/workflows/release.yml` (dispatch; app-release APK) |
 | ynavi-zee | `0044-publish-prep` | release dual Zeekr APKs |
-| zeekr_apk_mod | `0044-publish-prep` | release Launcher v8 |
+| zeekr_apk_mod | `0044-publish-prep` | release Launcher 670 |
 
 ### Install Release tags (planned)
 
@@ -104,13 +104,13 @@ See sibling NOTES on ynavi-zee / zeekr_apk_mod `0044-publish-prep`.
 | Repo | Draft page | Assets |
 |------|------------|--------|
 | ynavi-zee | https://github.com/maxim-saplin/ynavi-zee/releases/tag/untagged-309029f8dd29d2218b97 | `zeekr_v12_margined.apk`, `zeekr_v12_os7_nomargin.apk` |
-| zeekr_apk_mod | https://github.com/maxim-saplin/zeekr_apk_mod/releases/tag/SEE-ZEEKR-APK-MOD-DRAFT | `XCLauncher3-670-yandex-signed.apk` |
+| zeekr_apk_mod | https://github.com/maxim-saplin/zeekr_apk_mod/releases/tag/untagged-d364752080d814335b65 | `XCLauncher3-670-yandex-signed.apk` |
 
 Draft download URLs (auth may be required; anonymous = 404):
 
 - https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_margined.apk
 - https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_os7_nomargin.apk
-- https://github.com/maxim-saplin/zeekr_apk_mod/releases/download/SEE-ZEEKR-APK-MOD-DRAFT/XCLauncher3-670-yandex-signed.apk
+- https://github.com/maxim-saplin/zeekr_apk_mod/releases/download/untagged-d364752080d814335b65/XCLauncher3-670-yandex-signed.apk
 
 Install `releaseTag` targets `ynavi-zeekr-v12` / `launcher-670` — resolve after undraft/publish.
 

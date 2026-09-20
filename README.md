@@ -83,7 +83,7 @@ Sideload Install ≠ `adb -g` for privileged permissions.
 |-----------|-------------|----------------|---------|
 | YNavi **margined** (default) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | tag `ynavi-zeekr-v12` / `zeekr_v12_margined.apk` | Pending Maxim go; until then CLI/`ynavi_prep` |
 | YNavi **OS7+ no left margin** | same | same tag / `zeekr_v12_os7_nomargin.apk` | Pending |
-| Modded Launcher | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | tag `launcher-670` / `XCLauncher3-670-yandex-signed.apk` | Private repo LFS = **404** anonymous; **public Release on zeekr_apk_mod** is the fix (do not copy APK here) |
+| Zeekr Launcher mod | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | tag `launcher-670` / `XCLauncher3-670-yandex-signed.apk` | Public repo; Install via **draft/public Release** (anon 404 while draft) |
 
 **This app** — platform-signed car build:
 
