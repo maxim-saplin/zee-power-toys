@@ -113,3 +113,9 @@ Draft download URLs (auth may be required; anonymous = 404):
 - https://github.com/maxim-saplin/zeekr_apk_mod/releases/download/SEE-ZEEKR-APK-MOD-DRAFT/XCLauncher3-670-yandex-signed.apk
 
 Install `releaseTag` targets `ynavi-zeekr-v12` / `launcher-670` — resolve after undraft/publish.
+
+## Launcher draft (zeekr_apk_mod — NOT zee_hud_2)
+
+- https://github.com/maxim-saplin/zeekr_apk_mod/releases/tag/untagged-d364752080d814335b65
+- Asset: `XCLauncher3-670-yandex-signed.apk`
+- Download: https://github.com/maxim-saplin/zeekr_apk_mod/releases/download/untagged-d364752080d814335b65/XCLauncher3-670-yandex-signed.apk
