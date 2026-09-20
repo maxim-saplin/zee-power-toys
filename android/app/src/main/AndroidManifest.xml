@@ -24,8 +24,9 @@
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
     <!-- Speedcam live pose (0050): Android LocationManager GPS fallback when YNavi
-         sendLocation is silent (no active nav route). System sharedUserId → granted
-         at install on Zeekr DHU; harmless on emulator if GPS absent. -->
+         sendLocation is silent (no active nav route). Declared here for install-time
+         visibility; **runtime** grant via Activity.requestPermissions / in-app dialog
+         (0050 HARD) — not install-time automatic, not ADB pm grant (lab only). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 

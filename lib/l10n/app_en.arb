@@ -720,6 +720,14 @@
   "@speedcamStaleDays": {
     "description": "Days before if-stale refreshes"
   },
+  "speedcamLocationDenied": "Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.",
+  "@speedcamLocationDenied": {
+    "description": "Honest error when runtime location permission is denied (0050 HARD)"
+  },
+  "speedcamLocationNeeded": "Allow location so Speedcam can track the car and center harvest.",
+  "@speedcamLocationNeeded": {
+    "description": "Hint before/with location permission prompt"
+  },
   "sectionAbout": "About",
   "@sectionAbout": {
     "description": "Home tile — About"

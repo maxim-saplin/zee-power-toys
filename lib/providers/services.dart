@@ -8,6 +8,7 @@ import '../services/package_status.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import '../services/speedcam_alert.dart';
+import '../services/adapters/native_speedcam_location.dart';
 import '../services/minimap_host.dart';
 import '../services/system_config.dart';
 
@@ -52,5 +53,10 @@ final speedcamPackStoreProvider = Provider<SpeedcamPackStore>((ref) {
 
 final speedcamAlertProvider = Provider<SpeedcamAlert>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
+});
+
+/// Android-only live GPS bridge (0050). Null on T1 desktop / web.
+final speedcamLocationProvider = Provider<NativeSpeedcamLocation?>((ref) {
+  return null;
 });
 

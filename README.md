@@ -73,9 +73,12 @@ Platform: Zeekr DHU Android (T3); T1 desktop / T2 emulator for bring-up. Speedca
 | Path | What it covers | What it does **not** |
 |------|----------------|----------------------|
 | **Install UI** | Download + `PackageInstaller` for Launcher + YNavi (margined default + OS7+ no-margin) | Privileged/OEM grants; `REQUEST_INSTALL_PACKAGES` confirm quirks |
-| **CLI** | `adb install -g -r -d …`, `pm grant`, `uv run dev/ynavi_prep.py --apk …` | Use until Releases are public / post-P1 v12 published |
+| **App UI (location)** | Runtime `ACCESS_FINE`/`COARSE` dialog when opening Speedcam or tapping Harvest; Settings → App permissions if permanently denied | Install-time auto-grant (even with `sharedUserId`); silent Minsk harvest fallback |
+| **CLI / lab** | `adb install -g -r -d …`, `pm grant …ACCESS_*_LOCATION`, `uv run dev/ynavi_prep.py --apk …` | Product path — ADB grant is **lab only** until you verify the in-app prompt |
 
-Sideload Install ≠ `adb -g` for privileged permissions.
+Sideload Install ≠ `adb -g` for privileged permissions.  
+**Location** = runtime (in-app dialog or Settings), **not** install-time. `adb shell pm grant …ACCESS_FINE_LOCATION` is lab-only.
+
 
 ### Companion targets (source repos)
 

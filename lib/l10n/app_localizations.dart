@@ -1166,6 +1166,18 @@ abstract class AppLocalizations {
   /// **'Stale after (days)'**
   String get speedcamStaleDays;
 
+  /// Honest error when runtime location permission is denied (0050 HARD)
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.'**
+  String get speedcamLocationDenied;
+
+  /// Hint before/with location permission prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location so Speedcam can track the car and center harvest.'**
+  String get speedcamLocationNeeded;
+
   /// Home tile — About
   ///
   /// In en, this message translates to:

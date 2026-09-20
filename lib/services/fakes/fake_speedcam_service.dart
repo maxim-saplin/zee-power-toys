@@ -59,6 +59,7 @@ class FakeSpeedcamService implements SpeedcamService {
   bool _enabled = true;
   SpeedcamHostPose? _host;
   bool _holdManualPose = false;
+  void Function()? onHostPoseCleared;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
 
   @override
@@ -86,6 +87,7 @@ class FakeSpeedcamService implements SpeedcamService {
     _host = null;
     _holdManualPose = false;
     _emit();
+    onHostPoseCleared?.call();
   }
 
   @override

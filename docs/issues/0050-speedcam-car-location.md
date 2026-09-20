@@ -4,7 +4,7 @@ labels: [hud, speedcam, ynavi, gps]
 created: 2026-09-20
 satisfies: HUD · Speedcam
 blocked-by: [0047]
-modules: [SpeedcamService, YNaviCarAppHost, SpeedcamPackStore, AndroidGpsLocationSource]
+modules: [SpeedcamService, YNaviCarAppHost, SpeedcamPackStore, AndroidGpsLocationSource, NativeSpeedcamLocation]
 tier: T3
 owner: zee-dev
 ---
@@ -33,6 +33,12 @@ center exists; if neither exists, fail honestly.
   (Minsk). Car GPS is Gomel ~52.46/30.81. YNavi often does not call
   `sendLocation` without an active nav route. AdaptAPI has **no** lat/lon
   sensors — Android `LocationManager` is the fallback.
+- **T3 FAIL follow-up (0050 HARD):** Manifest had FINE/COARSE but **no**
+  `requestPermissions` / permission_handler. Fresh install → GPS source silent
+  no-op → no live pose → Harvest stuck on prior Minsk. After ADB `pm grant`,
+  native emits `android_gps` @ Gomel — product must not depend on ADB. After
+  `clearPose`, host stayed null while native was still emitting — need
+  re-emit lastKnown after clearPose / permission grant.
 
 ## Definition of Done
 - [x] `docs/issues/0050-speedcam-car-location.md` from this brief
@@ -44,37 +50,55 @@ center exists; if neither exists, fail honestly.
 - [x] Demo / inject / drive-sim still work (manual pose holds off live until `clearHostPose`)
 - [x] Tip on `0044-publish-prep`; push; car verify steps below
 - [x] Analyze clean on touched files; harvest remains merge-no-purge
+- [x] **0050 HARD:** Runtime location prompt via app UI (Activity.requestPermissions
+      / `zee/speedcam/location_ctl`) before GPS starts / when opening Speedcam or
+      tapping Harvest
+- [x] **0050 HARD:** Honest UI if denied — do not silent-fail to Minsk prior center
+- [x] **0050 HARD:** README UI↔CLI — location = runtime (Settings or in-app), ADB grant = lab only
+- [x] **0050 HARD:** Re-emit lastKnown after clearPose / permission grant so
+      `fromLive` poses resume (Dart cache + native)
 
 ## Design
 1. **Native YNavi:** `IAppHostStub.sendLocation` → `onLocation` →
    `YNaviCarAppHost.onLocation` → MainActivity EventChannel
    `zee/speedcam/location` map `{lat,lon,speedKmh?,headingDeg?,source:"ynavi"}`.
 2. **Native Android GPS fallback:** `AndroidGpsLocationSource` uses
-   `LocationManager` (GPS / network / passive). Started when Dart listens to
-   the EventChannel. Emits `source:"android_gps"`. Yields for 5 s after any
-   YNavi fix (no thrash). Immediate `getLastKnownLocation` on start.
-3. **Dart:** `NativeSpeedcamLocation` listens and calls
-   `setHostPose(..., fromLive: true)`.
-4. **Manual hold:** inject / demo / drive set pose without `fromLive` and hold
+   `LocationManager` (GPS / network / passive). Started when Dart listens **and**
+   runtime permission is granted. Emits `source:"android_gps"`. Yields for 5 s
+   after any YNavi fix. Immediate `getLastKnownLocation` on start / reemit.
+3. **Runtime permission (0050 HARD):** MethodChannel `zee/speedcam/location_ctl`
+   — `hasPermission` / `requestPermission` / `ensureGpsStarted` /
+   `reemitLastKnown`. `MainActivity.requestPermissions` shows the system dialog;
+   on grant → start GPS + reemit. Speedcam settings calls `ensurePermission` on
+   open and before Harvest.
+4. **Dart:** `NativeSpeedcamLocation` listens and calls
+   `setHostPose(..., fromLive: true)`. Hooks `DefaultSpeedcamService.onHostPoseCleared`
+   to re-apply cached pose + native reemit after `clearHostPose`.
+5. **Manual hold:** inject / demo / drive set pose without `fromLive` and hold
    until `clearHostPose` so live GPS cannot stomp T1 tools.
-5. **Harvest:** `centerLat/Lon` → prior pack center → `StateError` (no Minsk).
-6. **Permissions:** `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` (system
-   `sharedUserId` → granted on Zeekr DHU).
+6. **Harvest:** live pose → prior pack center → `StateError` (no Minsk). If
+   permission **denied**, UI shows `speedcamLocationDenied` and does **not**
+   harvest around a stale Demo/Minsk prior.
+7. **Permissions:** Manifest declares `ACCESS_FINE_LOCATION` +
+   `ACCESS_COARSE_LOCATION`; **runtime** grant via in-app dialog (or Settings).
+   ADB `pm grant` is lab-only.
 
-## Verify on car
-1. Build/install tip; app start is enough (GPS fallback does **not** require
-   Minimap / nav route). Optional: enable Minimap (binds YNavi →
-   `startLocationUpdates`).
-2. `adb logcat -s ZEE | grep -E 'sendLocation|speedcam/location|AndroidGps'` —
-   expect `AndroidGpsLocationSource: start` + `speedcam/location source=android_gps`
-   with Gomel-ish lat/lon (~52.46/30.81). If actively navigating, prefer
-   `source=ynavi` lines when YNavi finally sends.
-3. `ext.zee.speedcam` `clearPose`, then `ext.zee.dumpState` / readViewModel:
-   `speedcam.host` lat/lon track the car (not null, not Minsk Demo).
-4. HUD radar danger bearing/distance update while driving.
-5. Speedcam settings → Harvest: center ≈ live pose (not Minsk).
-6. Demo button still arms CRT; Stop clears and live may resume.
-7. Without pose and without prior center, Harvest shows an honest error (no silent Minsk).
+## Verify on car (no ADB grant)
+1. **Fresh install** (or revoke location in Settings). Build/install tip —
+   do **not** `pm grant` location.
+2. Open **Speedcam** settings — expect system location permission dialog
+   (or Settings redirect if permanently denied). Allow it.
+3. `adb logcat -s ZEE | grep -E 'sendLocation|speedcam/location|AndroidGps|requesting ACCESS'` —
+   expect permission grant path, `AndroidGpsLocationSource: start`, and
+   `speedcam/location source=android_gps` with Gomel-ish lat/lon (~52.46/30.81).
+4. Tap **Harvest** — center ≈ live pose (not Minsk). Deny permission on a
+   fresh install → honest error string, no harvest on prior Minsk.
+5. `ext.zee.speedcam` `clearPose`, then `ext.zee.dumpState` / readViewModel:
+   `speedcam.host` resumes from live (not null, not Minsk Demo) via lastKnown
+   reemit — without waiting for the next GPS tick alone.
+6. HUD radar danger bearing/distance update while driving.
+7. Demo button still arms CRT; Stop clears and live may resume.
+8. Optional: enable Minimap (binds YNavi → prefer `source=ynavi` when it sends).
 
 ## Out of scope
 - 0045 / 0051
@@ -82,10 +106,12 @@ center exists; if neither exists, fail honestly.
 - Changing harvest merge-no-purge semantics
 - Moving GPS into the FGS (`foregroundServiceType=location`) — Activity +
   system UID is enough for on-car HUD session
+- `permission_handler` pub package (Activity.requestPermissions is enough)
 
 ## Reconciliation
 YNavi `sendLocation` remains the preferred live feed when it fires. Android
 `LocationManager` covers the common case where cluster host gets trip updates
 but never `sendLocation` without a nav route. Manual pose hold preserves T1
 Demo/inject/drive. Minsk constants remain only as explicit fixture centers,
-not an automatic harvest fallback.
+not an automatic harvest fallback. Runtime permission is product; ADB grant
+is lab.

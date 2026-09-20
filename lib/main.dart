@@ -132,8 +132,10 @@ Future<void> dhuMain(List<String> args) async {
   );
 
   // 0050: YNavi sendLocation + Android GPS fallback → Speedcam host pose.
+  // Runtime permission via zee/speedcam/location_ctl (0050 HARD) — not ADB.
+  NativeSpeedcamLocation? speedcamLocationRaw;
   if (!kIsWeb && Platform.isAndroid) {
-    NativeSpeedcamLocation(speedcamRaw).start();
+    speedcamLocationRaw = NativeSpeedcamLocation(speedcamRaw)..start();
   }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
 
@@ -181,6 +183,7 @@ Future<void> dhuMain(List<String> args) async {
       speedcamServiceProvider.overrideWithValue(speedcamRaw),
       speedcamPackStoreProvider.overrideWithValue(speedcamPackRaw),
       speedcamAlertProvider.overrideWithValue(speedcamAlertRaw),
+      speedcamLocationProvider.overrideWithValue(speedcamLocationRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],

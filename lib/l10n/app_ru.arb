@@ -720,6 +720,14 @@
   "@speedcamStaleDays": {
     "description": "Days before if-stale refreshes"
   },
+  "speedcamLocationDenied": "Нет доступа к геолокации — разрешите в настройках или в диалоге приложения. Сбор не будет использовать старый центр Demo/Минск.",
+  "@speedcamLocationDenied": {
+    "description": "Honest error when runtime location permission is denied (0050 HARD)"
+  },
+  "speedcamLocationNeeded": "Разрешите геолокацию, чтобы Speedcam следил за авто и центрировал сбор.",
+  "@speedcamLocationNeeded": {
+    "description": "Hint before/with location permission prompt"
+  },
   "sectionAbout": "О приложении",
   "@sectionAbout": {
     "description": "Home tile — About"

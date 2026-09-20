@@ -1,7 +1,9 @@
 package com.zeepowertoys.zee_power_toys
 
+import android.Manifest
 import android.app.Presentation
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.ColorMatrix
@@ -81,6 +83,8 @@ class MainActivity : FlutterActivity() {
         private const val MINIMAP_CHANNEL = "zee/minimap"
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
         private const val SPEEDCAM_LOCATION_CHANNEL = "zee/speedcam/location"
+        private const val SPEEDCAM_LOCATION_CTL_CHANNEL = "zee/speedcam/location_ctl"
+        private const val LOCATION_PERMISSION_REQ = 5050
         private const val BOOT_CHANNEL = "zee/boot"
         // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
         private const val HUD_LIFECYCLE_CHANNEL = "zee/hud_lifecycle"
@@ -138,6 +142,11 @@ class MainActivity : FlutterActivity() {
     @Volatile private var speedcamLocationSink: EventChannel.EventSink? = null
     // Android LocationManager fallback when YNavi sendLocation is silent (0050 T3).
     private var androidGpsLocationSource: AndroidGpsLocationSource? = null
+    // Last emitted location — re-pushed after clearPose / permission grant (0050 HARD).
+    @Volatile private var lastSpeedcamLocation: android.location.Location? = null
+    @Volatile private var lastSpeedcamSource: String? = null
+    // Pending Activity.requestPermissions result for zee/speedcam/location_ctl.
+    private var pendingLocationPermissionResult: MethodChannel.Result? = null
 
     // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
     private var dhuMinimapChannel: MethodChannel? = null
@@ -212,7 +221,14 @@ class MainActivity : FlutterActivity() {
                 override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                     speedcamLocationSink = sink
                     Log.i(TAG, "speedcam location EventChannel: Dart subscribed")
-                    ensureAndroidGpsLocationSource().start()
+                    // Start GPS only when already granted — otherwise Dart must
+                    // request via zee/speedcam/location_ctl (0050 HARD runtime prompt).
+                    val gps = ensureAndroidGpsLocationSource()
+                    if (gps.hasFineOrCoarseLocation()) {
+                        gps.start()
+                    } else {
+                        Log.w(TAG, "speedcam location: awaiting runtime ACCESS_FINE/COARSE grant")
+                    }
                 }
                 override fun onCancel(arguments: Any?) {
                     speedcamLocationSink = null
@@ -220,6 +236,33 @@ class MainActivity : FlutterActivity() {
                     Log.i(TAG, "speedcam location EventChannel: Dart unsubscribed")
                 }
             })
+
+        // Speedcam location control (0050 HARD): runtime permission + reemit lastKnown.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_LOCATION_CTL_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasPermission" -> {
+                        result.success(ensureAndroidGpsLocationSource().hasFineOrCoarseLocation())
+                    }
+                    "requestPermission" -> {
+                        handleRequestLocationPermission(result)
+                    }
+                    "ensureGpsStarted" -> {
+                        val gps = ensureAndroidGpsLocationSource()
+                        if (!gps.hasFineOrCoarseLocation()) {
+                            result.success(mapOf("ok" to false, "reason" to "permission-denied"))
+                        } else {
+                            gps.start()
+                            result.success(mapOf("ok" to true))
+                        }
+                    }
+                    "reemitLastKnown" -> {
+                        reemitSpeedcamLastKnown()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
 
         // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
         // for ext.zee.bootState (Block 0010).

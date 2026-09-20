@@ -554,6 +554,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamStaleDays => 'Устарел через (дней)';
 
   @override
+  String get speedcamLocationDenied =>
+      'Нет доступа к геолокации — разрешите в настройках или в диалоге приложения. Сбор не будет использовать старый центр Demo/Минск.';
+
+  @override
+  String get speedcamLocationNeeded =>
+      'Разрешите геолокацию, чтобы Speedcam следил за авто и центрировал сбор.';
+
+  @override
   String get sectionAbout => 'О приложении';
 
   @override

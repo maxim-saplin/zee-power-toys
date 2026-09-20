@@ -43,7 +43,34 @@ class _SpeedcamSettingsScreenState
 
   Future<void> _bootstrap() async {
     await _reloadLocal();
+    // 0050 HARD: prompt for location before GPS fallback / auto-harvest on open.
+    final locOk = await _ensureLocationPermission(showDeniedError: true);
+    if (!locOk) {
+      // Honest empty — do not auto-harvest around a stale Demo/Minsk prior.
+      return;
+    }
     await _applyRefreshPolicy(reason: 'open');
+  }
+
+  /// Runtime location prompt (in-app). Null [speedcamLocationProvider] = T1 desktop.
+  Future<bool> _ensureLocationPermission({required bool showDeniedError}) async {
+    final loc = ref.read(speedcamLocationProvider);
+    if (loc == null) return true;
+    final granted = await loc.ensurePermission();
+    if (!granted) {
+      if (showDeniedError && mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() {
+          _error = l10n.speedcamLocationDenied;
+          _busy = false;
+          _policyNote = null;
+        });
+      }
+      return false;
+    }
+    // Give native a beat to push lastKnown into the host pose.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    return true;
   }
 
   Future<void> _reloadLocal() async {
@@ -73,6 +100,8 @@ class _SpeedcamSettingsScreenState
       _policyNote = 'Checking freshness…';
     });
     try {
+      final locOk = await _ensureLocationPermission(showDeniedError: true);
+      if (!locOk) return;
       final store = ref.read(speedcamPackStoreProvider);
       final before = await store.current(SpeedcamPackIds.by);
       final wasStale = before == null ||
@@ -131,8 +160,12 @@ class _SpeedcamSettingsScreenState
       _policyNote = null;
     });
     try {
+      final locOk = await _ensureLocationPermission(showDeniedError: true);
+      if (!locOk) return;
       final store = ref.read(speedcamPackStoreProvider);
       final center = _harvestCenter();
+      // Permission ok but no live pose and no prior center → pack store StateError
+      // (honest — no silent Minsk). Denied path never reaches here.
       final meta = await store.updatePack(
         SpeedcamPackIds.by,
         centerLat: center.lat,

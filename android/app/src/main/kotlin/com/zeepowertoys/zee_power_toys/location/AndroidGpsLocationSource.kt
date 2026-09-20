@@ -23,6 +23,10 @@ import android.util.Log
  *
  * Prefer YNavi: when a YNavi fix arrived within [YNAVI_PREFER_MS], Android GPS
  * updates are dropped (no thrash). Call [noteYNaviFix] from the YNavi path.
+ *
+ * Runtime permission (0050 HARD): [start] no-ops without ACCESS_FINE/COARSE —
+ * callers must [Activity.requestPermissions] first. [reemitLastKnown] after
+ * grant / clearPose so Dart `fromLive` poses resume immediately.
  */
 class AndroidGpsLocationSource(
     private val context: Context,
@@ -46,6 +50,7 @@ class AndroidGpsLocationSource(
 
     @Volatile private var listening = false
     @Volatile private var lastYNaviElapsedMs: Long = 0L
+    @Volatile private var lastEmitted: Location? = null
 
     private val listener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
@@ -61,6 +66,14 @@ class AndroidGpsLocationSource(
     /** Mark that YNavi just delivered a fix — Android GPS yields for a short window. */
     fun noteYNaviFix() {
         lastYNaviElapsedMs = SystemClock.elapsedRealtime()
+    }
+
+    fun hasFineOrCoarseLocation(): Boolean {
+        val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        return fine || coarse
     }
 
     fun start() {
@@ -111,12 +124,26 @@ class AndroidGpsLocationSource(
         Log.i(TAG, "AndroidGpsLocationSource: stop")
     }
 
-    private fun hasFineOrCoarseLocation(): Boolean {
-        val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-        val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-        return fine || coarse
+    /**
+     * Push last-known / cached fix again (after permission grant or clearPose).
+     * Safe if not yet [start]ed — will emit lastKnown without registering updates
+     * when permission is present; no-op when denied.
+     */
+    fun reemitLastKnown() {
+        if (!hasFineOrCoarseLocation()) {
+            Log.w(TAG, "AndroidGpsLocationSource: reemitLastKnown skipped — no permission")
+            return
+        }
+        val cached = lastEmitted
+        if (cached != null) {
+            Log.i(
+                TAG,
+                "AndroidGpsLocationSource: reemit cached lat=${cached.latitude} lon=${cached.longitude}",
+            )
+            deliver(cached)
+        }
+        val lm = locationManager ?: return
+        emitBestLastKnown(lm)
     }
 
     @SuppressLint("MissingPermission")
@@ -142,18 +169,23 @@ class AndroidGpsLocationSource(
             )
             return
         }
-        // Deliver on main — EventChannel must be touched on the platform thread.
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            onLocation(location)
-        } else {
-            mainHandler.post { onLocation(location) }
-        }
+        lastEmitted = location
+        deliver(location)
         if (fromLastKnown) {
             Log.i(
                 TAG,
                 "AndroidGpsLocationSource: lastKnown lat=${location.latitude} " +
                     "lon=${location.longitude} provider=${location.provider}",
             )
+        }
+    }
+
+    private fun deliver(location: Location) {
+        // Deliver on main — EventChannel must be touched on the platform thread.
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            onLocation(location)
+        } else {
+            mainHandler.post { onLocation(location) }
         }
     }
 }

@@ -553,6 +553,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamStaleDays => 'Stale after (days)';
 
   @override
+  String get speedcamLocationDenied =>
+      'Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.';
+
+  @override
+  String get speedcamLocationNeeded =>
+      'Allow location so Speedcam can track the car and center harvest.';
+
+  @override
   String get sectionAbout => 'About';
 
   @override

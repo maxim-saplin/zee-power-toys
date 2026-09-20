@@ -35,6 +35,8 @@ class DefaultSpeedcamService implements SpeedcamService {
   SpeedcamHostPose? _host;
   /// When true, live GPS/YNavi poses are ignored until [clearHostPose].
   bool _holdManualPose = false;
+  /// Fired after [clearHostPose] so live GPS can re-seed (0050 HARD).
+  void Function()? onHostPoseCleared;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
 
   @override
@@ -62,6 +64,7 @@ class DefaultSpeedcamService implements SpeedcamService {
     _host = null;
     _holdManualPose = false;
     _emit();
+    onHostPoseCleared?.call();
   }
 
   @override
