@@ -98,7 +98,7 @@ Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](
 | — | **Proper GH links in Install UI** — show repo/branch/path (or release URL) on each Install card; openable | **backlog** | `InstallScreen` today: name + desc + Install button only — no visible GitHub coordinates. |
 | — | **YNavi build variant without left letterbox** — ZeekrOS 7+ layout; `ZEEAPP_LETTERBOX_LEFT_DIP` (480dp) no longer wanted; ship a separate APK (or preset) without left padding | **backlog** | Upstream `ynavi-zee` (`features/1.mapactivity_letterbox_padding`, `dimens.xml` zeeapp_letterbox_left). Dual publish: legacy padded + OS7+ unpadded. Wire second Install target or selector. |
 | — | **GH Actions for zee-power-toys + release process** — CI (analyze/test/apk) and tagged release artifacts | **backlog** | No `.github/workflows` in this repo today. |
-| — | **README as product landing** — intro, quick start, screenshots, guide, links to sibling repos (ynavi-zee / launcher / phase0), architecture at the bottom | **backlog** | Current README is status/layout for agents, not a GH landing page. |
+| — | **README as product landing** — intro, quick start, screenshots, guide, links to sibling repos (ynavi-zee / launcher / phase0), architecture at the bottom | **done** (`1.0.0+5`) | Front face + quick start + companions; screenshot placeholders until Maxim icons; arch last. |
 
 Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
 
