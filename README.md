@@ -79,6 +79,8 @@ Platform: Zeekr DHU Android (T3); T1 desktop / T2 emulator for bring-up. Speedca
 Sideload Install ≠ `adb -g` for privileged permissions.  
 **Location** = runtime (in-app dialog or Settings), **not** install-time. `adb shell pm grant …ACCESS_FINE_LOCATION` is lab-only.
 
+**Platform-signed car builds** (`sharedUserId` / `-PuseAospDebugKey=true`): `ACCESS_FINE` is often `GRANTED_BY_DEFAULT` / `SYSTEM_FIXED` — `pm revoke` no-ops and the deny dialog is **not** exercisable on T3. Cut deny honesty on T2 (non-platform) or a non-system install; T3 bar is allow → live pose (≈Gomel) + harvest off Minsk.
+
 
 ### Companion targets (source repos)
 
