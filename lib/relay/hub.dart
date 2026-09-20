@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
+import '../services/minimap_host.dart';
 import '../services/speedcam.dart';
 
 /// The cross-engine relay abstraction.
@@ -114,6 +115,11 @@ Future<void> pushSpeedcamToHud(SpeedcamSnapshot snapshot) async {
   await _push('speedcam', jsonEncode(snapshot.toRelayJson()));
 }
 
+/// Push a [GuidanceEvent] to the HUD isolate (0055 FAIL: overlay lives on HUD).
+Future<void> pushGuidanceToHud(GuidanceEvent event) async {
+  await _push('guidance', jsonEncode(event.toJson()));
+}
+
 Future<void> _push(String kind, String payload) async {
   try {
     await _relay.push(kind, payload);
@@ -129,6 +135,7 @@ void listenForRelay({
   void Function(AppConfig)? onConfig,
   void Function(CarSignalEvent)? onCarSignal,
   void Function(SpeedcamSnapshot)? onSpeedcam,
+  void Function(GuidanceEvent)? onGuidance,
 }) {
   _relay.listen((kind, payload) {
     try {
@@ -149,6 +156,12 @@ void listenForRelay({
         case 'speedcam':
           if (onSpeedcam != null) {
             onSpeedcam(SpeedcamSnapshot.fromJson(
+              Map<String, Object?>.from(jsonDecode(payload) as Map),
+            ));
+          }
+        case 'guidance':
+          if (onGuidance != null) {
+            onGuidance(GuidanceEvent.fromJson(
               Map<String, Object?>.from(jsonDecode(payload) as Map),
             ));
           }

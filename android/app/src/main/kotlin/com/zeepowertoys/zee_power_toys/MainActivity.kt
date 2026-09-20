@@ -408,14 +408,20 @@ class MainActivity : FlutterActivity() {
             yNaviCarAppHost = YNaviCarAppHost(this).also { host ->
                 // Trip updates → guidance EventChannel → Dart GuidanceEvent.
                 host.onTrip = { trip ->
+                    // Zee HUD 2 parity: street = step.cue (then step.road /
+                    // currentRoad); ETA from destination remainingTimeSeconds.
                     val step = trip.steps.firstOrNull()
                     val stepEst = trip.stepTravelEstimates.firstOrNull()
                     val destEst = trip.destinationTravelEstimates.firstOrNull()
+                    val cue = step?.cue?.toString()?.takeIf { it.isNotBlank() }
+                    val stepRoad = step?.road?.toString()?.takeIf { it.isNotBlank() }
+                    val currentRoad = trip.currentRoad?.toString()?.takeIf { it.isNotBlank() }
+                    val remainSec = destEst?.remainingTimeSeconds
                     val event = mapOf(
                         "turnIcon" to (step?.maneuver?.type?.toString()),
                         "distanceM" to (stepEst?.remainingDistance?.displayDistance?.toInt()),
-                        "roadName" to (step?.cue?.toString() ?: trip.currentRoad?.toString()),
-                        "etaMin" to (destEst?.remainingTimeSeconds?.let { (it / 60).toInt() }),
+                        "roadName" to (cue ?: stepRoad ?: currentRoad),
+                        "etaMin" to (remainSec?.takeIf { it >= 0 }?.let { (it / 60).toInt() }),
                     )
                     guidanceSink?.success(event)
                 }

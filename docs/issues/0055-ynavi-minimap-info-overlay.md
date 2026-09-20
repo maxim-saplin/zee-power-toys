@@ -47,3 +47,20 @@ Product name: **Zee HUD 2** (`zee_hud_2`), not Z-Hat. Built on box after
 ## Notes
 Native YNavi ETA panel alignment quirks remain a mod concern; HUD now has an
 honest Flutter fallback that survives crop.
+
+## FAIL fix (T3 QA @ b3acb22)
+
+**Symptom:** Overlay never paints on the windshield. `hudMain()` overrides
+`minimapHostProvider` with a fresh `FakeMinimapHost`, so
+`latestGuidanceProvider` never sees the DHU `zee/minimap/guidance`
+EventChannel. Config / carSignals / speedcam already relay DHU→HUD; guidance
+did not.
+
+**Fix:**
+- `pushGuidanceToHud` / `listenForRelay(onGuidance:)` on `zee/hub`
+- `dhuMain`: `minimapHostRaw.guidance.listen(pushGuidanceToHud)`
+- `hudMain`: named `FakeMinimapHost` + `onGuidance: emitGuidance`
+- Native trip map prefers `step.cue` → `step.road` → `currentRoad`; ETA from
+  `destinationTravelEstimates[0].remainingTimeSeconds` (Zee HUD 2 parity)
+
+Car install: `adb install -r` only (0054 keep-data).

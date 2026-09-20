@@ -37,4 +37,30 @@ class GuidanceEvent {
   final int? distanceM;
   final String? roadName;
   final int? etaMin;
+
+  /// Serialized for the DHU→HUD relay (0055 FAIL fix).
+  Map<String, Object?> toJson() => <String, Object?>{
+        if (turnIcon != null) 'turnIcon': turnIcon,
+        if (distanceM != null) 'distanceM': distanceM,
+        if (roadName != null) 'roadName': roadName,
+        if (etaMin != null) 'etaMin': etaMin,
+      };
+
+  factory GuidanceEvent.fromJson(Map<String, Object?> json) => GuidanceEvent(
+        turnIcon: json['turnIcon'] as String?,
+        distanceM: (json['distanceM'] as num?)?.toInt(),
+        roadName: json['roadName'] as String?,
+        etaMin: (json['etaMin'] as num?)?.toInt(),
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is GuidanceEvent &&
+      other.turnIcon == turnIcon &&
+      other.distanceM == distanceM &&
+      other.roadName == roadName &&
+      other.etaMin == etaMin;
+
+  @override
+  int get hashCode => Object.hash(turnIcon, distanceM, roadName, etaMin);
 }

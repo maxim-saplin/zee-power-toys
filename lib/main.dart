@@ -271,6 +271,10 @@ Future<void> dhuMain(List<String> args) async {
   carSignalsRaw.events.listen(pushCarSignalToHud);
   // Speedcam (0033): DHU owns pack+pose; HUD paints CRT from relay.
   speedcamRaw.snapshots.listen(pushSpeedcamToHud);
+  // Guidance (0055 FAIL): NativeMinimapHost EventChannel lives on DHU only;
+  // hudMain overrides minimapHost with FakeMinimapHost — relay trip events so
+  // latestGuidanceProvider / MinimapGuidanceOverlay on the HUD engine see them.
+  minimapHostRaw.guidance.listen(pushGuidanceToHud);
 
   registerZeeExtensions(
     surface: 'dhu',
@@ -320,6 +324,10 @@ void hudMain(List<String> args) {
   final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
   final speedcamAlert = AudioSpeedcamAlert();
+  // HUD MinimapHost is a relay sink for GuidanceEvent (0055 FAIL). Native
+  // EventChannel is registered on the DHU engine only; this fake re-emits
+  // relayed trip rows so HudRoot's latestGuidanceProvider can paint.
+  final minimapHost = FakeMinimapHost();
 
   registerZeeExtensions(
     surface: 'hud',
@@ -340,6 +348,7 @@ void hudMain(List<String> args) {
       },
       onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
       onSpeedcam: speedcam.applyRelaySnapshot,
+      onGuidance: minimapHost.emitGuidance,
     );
   });
 
@@ -348,7 +357,7 @@ void hudMain(List<String> args) {
       overrides: [
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(carSignals),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
+        minimapHostProvider.overrideWithValue(minimapHost),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         packageStatusProvider.overrideWithValue(FakePackageStatus()),
