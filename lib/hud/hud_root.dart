@@ -169,8 +169,10 @@ class _HudSlots extends ConsumerWidget {
     // 0067: grow slot when charging stats are shown (3 lines vs 2).
     final chargingStatsVisible =
         ref.watch(chargingProvider) == true && batteryCfg.showChargingStats;
-    final slotFracs =
-        batteryClusterSlotFracs(chargingStatsVisible: chargingStatsVisible);
+    final slotFracs = batteryClusterSlotFracs(
+      chargingStatsVisible: chargingStatsVisible,
+      sizeScale: batteryCfg.sizeScale,
+    );
     final batteryRect = batteryClusterRect(
       saW: saWidth,
       saH: saHeight,

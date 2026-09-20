@@ -136,13 +136,11 @@ class BatteryWidget extends ConsumerWidget {
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
-      // FittedBox around the WHOLE panel (icon, pct, temp, charging-stats) —
-      // kept as a safety net, not removed (Block 0026 fixed a real overflow
-      // this way). See prior layout notes: vertical stack so sizeScale remains
-      // honest against the tall-narrow BATTERY slot.
-      child: FittedBox(
+      // 0067b: no FittedBox(scaleDown) — it reversed sizeScale past ~1.5×
+      // once content exceeded the slot. Slot grows with sizeScale in
+      // batteryClusterSlotFracs; Align keeps marks at their true size.
+      child: Align(
         alignment: clusterAlign,
-        fit: BoxFit.scaleDown,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: clusterCross,

@@ -1,3 +1,4 @@
+import 'dart:ui' show Rect;
 // Tests for lib/hud/battery_geometry.dart — BATTERY cluster placement (0051).
 //
 // Relationship assertions on pure rect math: default rightTop matches today's
@@ -239,4 +240,51 @@ void main() {
       expect(charging.width, greaterThan(idle.width));
     });
   });
+
+  group('batteryClusterSlotFracs — 0067b sizeScale monotonic', () {
+    test('grows until Safe-Area cap; never reverse-shrinks', () {
+      final a = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        sizeScale: 1.0,
+      );
+      final b = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        sizeScale: 1.1,
+      );
+      final c = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        sizeScale: 2.0,
+      );
+      expect(b.heightFrac, greaterThan(a.heightFrac));
+      expect(c.heightFrac, greaterThanOrEqualTo(b.heightFrac));
+      expect(b.widthFrac, greaterThan(a.widthFrac));
+      expect(c.widthFrac, greaterThanOrEqualTo(b.widthFrac));
+    });
+
+    test('charging rect height never shrinks as sizeScale rises', () {
+      final defaults = batteryPlacementDefaults(BatteryPlacement.rightTop);
+      Rect rectAt(double scale) {
+        final f = batteryClusterSlotFracs(
+          chargingStatsVisible: true,
+          sizeScale: scale,
+        );
+        return batteryClusterRect(
+          saW: saW,
+          saH: saH,
+          placement: BatteryPlacement.rightTop,
+          vertFrac: defaults.vertFrac,
+          sidePadFrac: defaults.sidePadFrac,
+          widthFrac: f.widthFrac,
+          heightFrac: f.heightFrac,
+        );
+      }
+
+      final r1 = rectAt(1.0);
+      final r11 = rectAt(1.1);
+      final r2 = rectAt(2.0);
+      expect(r11.height, greaterThan(r1.height));
+      expect(r2.height, greaterThanOrEqualTo(r11.height));
+    });
+  });
+
 }
