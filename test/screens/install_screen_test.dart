@@ -36,9 +36,9 @@ void main() {
       await tester.pumpWidget(_wrap(const InstallScreen(), store, installer));
       await tester.pump();
 
-      expect(find.text('Modded Launcher'), findsOneWidget);
-      expect(find.textContaining('YNavi mod (margined'), findsOneWidget);
-      expect(find.textContaining('OS7+'), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-launcher')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-ynavi')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-ynavi-os7')), findsOneWidget);
     });
 
     testWidgets('Install buttons for launcher + both YNavi variants', (tester) async {
