@@ -273,7 +273,7 @@ Future<void> dhuMain(List<String> args) async {
   speedcamRaw.snapshots.listen(pushSpeedcamToHud);
   // Guidance (0055 FAIL): NativeMinimapHost EventChannel lives on DHU only;
   // hudMain overrides minimapHost with FakeMinimapHost — relay trip events so
-  // latestGuidanceProvider / MinimapGuidanceOverlay on the HUD engine see them.
+  // latestGuidanceProvider on the HUD engine (FL/diagnostics; 0055 no Flutter plate).
   minimapHostRaw.guidance.listen(pushGuidanceToHud);
   // 0057: real navigation-session truth → surface gate + HUD chrome relay.
   minimapHostRaw.navigationActive.listen((active) {
@@ -332,7 +332,7 @@ void hudMain(List<String> args) {
   final speedcamAlert = AudioSpeedcamAlert();
   // HUD MinimapHost is a relay sink for GuidanceEvent (0055 FAIL). Native
   // EventChannel is registered on the DHU engine only; this fake re-emits
-  // relayed trip rows so HudRoot's latestGuidanceProvider can paint.
+  // relayed trip rows for latestGuidanceProvider (FL; paint is YNavi native).
   final minimapHost = FakeMinimapHost();
 
   registerZeeExtensions(
@@ -346,6 +346,8 @@ void hudMain(List<String> args) {
 
   // Seed from persisted prefs, then arm the relay listener.
   store.load().then((_) {
+    // Apply persisted alert volume before any approach (0059 slider).
+    speedcamAlert.setVolume(store.value.speedcam.soundVolume);
     listenForRelay(
       onConfig: (cfg) {
         store.setConfig(cfg);
