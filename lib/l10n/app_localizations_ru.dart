@@ -139,11 +139,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Лаунчер с YNavi в качестве навигации по умолчанию';
 
   @override
-  String get installYnaviName => 'Мод YNavi (HUD)';
+  String get installYnaviName => 'YNavi мод (с полями / по умолчанию)';
 
   @override
   String get installYnaviDesc =>
-      'Мод Яндекс.Навигатора с поддержкой HUD и трансляцией миникарты';
+      'YNavi с HUD и левым letterbox под боковую панель Zeekr. Для OS7+ — другая карточка.';
 
   @override
   String get installButtonLabel => 'Установить / Обновить';
@@ -577,4 +577,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get aboutSpeedcamCreditBody =>
       'Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).';
+
+  @override
+  String get installYnaviOs7Name => 'YNavi мод (OS7+, без левого поля)';
+
+  @override
+  String get installYnaviOs7Desc =>
+      'Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.';
 }

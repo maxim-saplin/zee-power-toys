@@ -51,3 +51,4 @@ doc/api/
 # Flutter run logs & research APK artifacts — never tracked
 flutter_*.log
 *.apk
+artifacts/

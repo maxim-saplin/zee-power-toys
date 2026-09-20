@@ -4,34 +4,46 @@ abstract class Installer {
   Stream<InstallProgress> install(GithubAsset asset);
 }
 
-/// A GitHub-hosted APK asset stored in a Git-LFS-tracked repo.
+/// A GitHub-hosted APK — either Git-LFS raw media or a Release asset.
 ///
-/// The download URL is resolved to:
+/// LFS (default when [releaseTag] is null):
 ///   `https://media.githubusercontent.com/media/<repo>/<branch>/<path>`
-/// which serves the raw LFS bytes directly (follows redirects transparently).
 ///
-/// To update an artifact: bump [branch] (or [path]) to the new version in
-/// `lib/services/install_targets.dart`.
+/// Release (when [releaseTag] is set):
+///   `https://github.com/<repo>/releases/download/<tag>/<path>`
+/// where [path] is the asset filename only (no directories).
+///
+/// Anonymous download requires a **public** repo (or auth). Private repos
+/// 404 for sideload users — see docs/publish/0044-notes-for-maxim.md.
 class GithubAsset {
   const GithubAsset({
     required this.repo,
     required this.branch,
     required this.path,
+    this.releaseTag,
   });
 
   /// GitHub repository as "owner/repo-name" (no scheme, no .git).
   final String repo;
 
   /// Git branch (or tag/commit) where the LFS-tracked APK lives.
+  /// Ignored for Release downloads when [releaseTag] is set (kept for docs).
   final String branch;
 
-  /// File path within the repo (relative to the root), e.g.
-  /// "modded_apks/zeekr_signed_v11.apk".
+  /// LFS: path within the repo. Release: asset **filename** only.
   final String path;
 
-  /// Resolved LFS raw-content download URL.
-  String get downloadUrl =>
-      'https://media.githubusercontent.com/media/$repo/$branch/$path';
+  /// When non-null, [downloadUrl] uses GitHub Releases instead of LFS media.
+  final String? releaseTag;
+
+  /// Resolved download URL (LFS media or Release asset).
+  String get downloadUrl {
+    final tag = releaseTag;
+    if (tag != null) {
+      return 'https://github.com/$repo/releases/download/$tag/$path';
+    }
+    return 'https://media.githubusercontent.com/media/$repo/$branch/$path';
+  }
 }
 
 class InstallProgress {

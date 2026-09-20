@@ -18,3 +18,10 @@ Stage **review-ready** publish changesets on main (or review branches Maxim pref
 - [x] README landing draft in zee-power-toys
 - [x] CI workflow draft (disabled `if: false` until go)
 - [ ] Maxim explicit go → push branch / LFS v12 / enable CI
+
+## Maxim correct (2026-09-20 ~08:25)
+
+- **APKs only in source repos** — never stage Launcher/YNavi binaries into zee-power-toys
+- Detour: proper **Release + GH Actions** in each repo; use **prep branches** (drop pending-on-main pile for this)
+- Dual YNavi still (margined = Install default; no-margin second)
+- Private zee_hud_2 404 → public Release / public artifacts on that repo, not relocate APKs

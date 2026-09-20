@@ -45,6 +45,15 @@ class InstallScreen extends ConsumerWidget {
             asset: kYnaviAsset,
             installer: installer,
           ),
+          const SizedBox(height: Insets.md),
+          _InstallCard(
+            key: const ValueKey('card-ynavi-os7'),
+            installKey: const ValueKey('install-ynavi-os7'),
+            name: l10n.installYnaviOs7Name,
+            description: l10n.installYnaviOs7Desc,
+            asset: kYnaviOs7Asset,
+            installer: installer,
+          ),
         ],
       ),
     );

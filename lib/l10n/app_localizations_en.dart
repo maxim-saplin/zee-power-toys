@@ -139,11 +139,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Launcher with YNavi set as the default navigation app';
 
   @override
-  String get installYnaviName => 'YNavi mod (HUD)';
+  String get installYnaviName => 'YNavi mod (margined / default)';
 
   @override
   String get installYnaviDesc =>
-      'Yandex.Navi mod with HUD support and minimap broadcast';
+      'HUD-capable YNavi with left letterbox for Zeekr side panel. Prefer this unless on OS7+.';
 
   @override
   String get installButtonLabel => 'Install / Update';
@@ -576,4 +576,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutSpeedcamCreditBody =>
       'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).';
+
+  @override
+  String get installYnaviOs7Name => 'YNavi mod (OS7+ no left margin)';
+
+  @override
+  String get installYnaviOs7Desc =>
+      'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.';
 }

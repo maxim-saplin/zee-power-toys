@@ -46,12 +46,24 @@ uv run dev/feedback_loop.py whoami-all
 
 ## Install / Get the APKs (landing draft — 0044)
 
-**Not a public store listing yet.** In-car **Install** downloads two companions from Git-LFS raw URLs configured in [`lib/services/install_targets.dart`](lib/services/install_targets.dart):
+**Not a public store listing yet.** In-app **Install** and CLI paths differ — see table below.
 
-| Companion | Repo | Current target | Honesty |
-|-----------|------|----------------|---------|
-| YNavi mod (HUD) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) `hud` | `modded_apks/zeekr_signed_v11.apk` | **Broken bind** (pre-P1). Use a local post-P1 build until `v12` is published. |
-| Modded Launcher | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) `main` (**private**) | `XCLauncher3-670-proxy-signed-v8.apk` | **HTTP 404** anonymous LFS CDN; need public Release/host before Install green. |
+### UI (normal flow) vs CLI-only
+
+| Path | What it covers | What it does **not** |
+|------|----------------|----------------------|
+| **Install UI** | Download + `PackageInstaller` for Launcher + YNavi (margined default + OS7+ no-margin cards) | Privileged/OEM grants, `REQUEST_INSTALL_PACKAGES` user confirm quirks, special perms |
+| **CLI** | `adb install -g -r -d …`, `pm grant`, `uv run dev/ynavi_prep.py --apk …` | — use until artifacts are public / post-P1 v12 is on LFS |
+
+Sideload Install ≠ `adb -g` for privileged permissions.
+
+### Companion targets
+
+| Companion | Host plan | Current honesty |
+|-----------|-----------|-----------------|
+| YNavi **margined** (default) | Public `ynavi-zee` LFS `modded_apks/zeekr_signed_v12.apk` on `hud` | Pending Maxim publish; live CDN may still be pre-P1 `v11` (bind broken). CLI: local `builds/` or `ynavi_prep`. |
+| YNavi **OS7+ no left margin** | LFS `modded_apks/zeekr_signed_v12_os7_nomargin.apk` | Same — pending publish. |
+| Modded Launcher | **zee-power-toys Release** `install-apks-v1` / `XCLauncher3-670-proxy-signed-v8.apk` (PDM default; Maxim can veto) | Staged locally at `artifacts/launcher/…` (gitignored). Repo is **private** today → anonymous Release URL still blocked until public/host go. Old `zee_hud_2` LFS = 404 anonymous. |
 
 **This app (zee-power-toys)** — platform-signed car build:
 
@@ -59,7 +71,8 @@ uv run dev/feedback_loop.py whoami-all
 flutter build apk --release -PuseAospDebugKey=true
 ```
 
-Full publish checklist: [`docs/publish/0044-notes-for-maxim.md`](docs/publish/0044-notes-for-maxim.md).
+Checklist: [`docs/publish/0044-notes-for-maxim.md`](docs/publish/0044-notes-for-maxim.md).
+
 
 ## Credits
 

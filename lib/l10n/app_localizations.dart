@@ -359,13 +359,13 @@ abstract class AppLocalizations {
   /// Install target: YNavi mod name
   ///
   /// In en, this message translates to:
-  /// **'YNavi mod (HUD)'**
+  /// **'YNavi mod (margined / default)'**
   String get installYnaviName;
 
   /// Install target: YNavi mod description
   ///
   /// In en, this message translates to:
-  /// **'Yandex.Navi mod with HUD support and minimap broadcast'**
+  /// **'HUD-capable YNavi with left letterbox for Zeekr side panel. Prefer this unless on OS7+.'**
   String get installYnaviDesc;
 
   /// Install button label (used for first install and updates)
@@ -1213,6 +1213,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).'**
   String get aboutSpeedcamCreditBody;
+
+  /// Install card — OS7 YNavi variant
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi mod (OS7+ no left margin)'**
+  String get installYnaviOs7Name;
+
+  /// Install card desc OS7 YNavi
+  ///
+  /// In en, this message translates to:
+  /// **'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.'**
+  String get installYnaviOs7Desc;
 }
 
 class _AppLocalizationsDelegate

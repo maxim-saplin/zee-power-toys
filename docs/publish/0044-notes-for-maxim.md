@@ -62,3 +62,20 @@ flutter build apk --release -PuseAospDebugKey=true
 | ynavi-zee | `hud` | `8ffe0aed6` | `NOTES-for-Maxim-0044.md` |
 | zee_hud_2 | `main` | `72651e1c5f` | `NOTES-for-Maxim-0044.md` |
 | zee-power-toys | `0044-publish-prep` | this branch | `docs/publish/0044-notes-for-maxim.md` |
+
+## HARDEN deltas (2026-09-20)
+
+### Launcher hosting (PDM default — you can veto)
+- Staged copy: `artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk` (from zee_hud_2; **gitignored**)
+- Install points at Release URL: `zee-power-toys` / tag `install-apks-v1` / asset filename above
+- On go: `gh release create install-apks-v1 artifacts/launcher/XCLauncher3-670-proxy-signed-v8.apk --repo maxim-saplin/zee-power-toys`
+- **Caveat:** `zee-power-toys` is also **private** today — anonymous Install still fails until repo is public or you host elsewhere
+
+### Dual YNavi
+- Default Install card → margined (`zeekr_signed_v12.apk`, left=480)
+- Second card → OS7+ no left margin (`zeekr_signed_v12_os7_nomargin.apk`, left=0)
+- Build scripts: `ynavi-zee/build_zeekr.sh`, `build_zeekr_os7.sh`
+
+### UI vs CLI
+- README table: Install UI vs `adb -g` / `pm grant` / `ynavi_prep` / pending public host
+
