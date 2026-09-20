@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<full-backup-content>
-    <!-- SharedPreferences FlutterSharedPreferences + durable note: file mirror is under /sdcard. -->
-    <include domain="sharedpref" path="." />
-</full-backup-content>

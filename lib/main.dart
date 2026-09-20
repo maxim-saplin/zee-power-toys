@@ -1,6 +1,7 @@
-import 'dart:io' show Platform;
+import 'dart:io' show Directory, Platform;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,7 +37,6 @@ import 'services/fakes/fake_minimap_host.dart';
 import 'services/fakes/fake_system_config.dart';
 import 'services/fakes/fake_usb_mode.dart';
 import 'services/config_store.dart';
-import 'services/durable_store_paths.dart';
 import 'services/hud_host.dart';
 import 'services/installer.dart';
 import 'services/package_status.dart';
@@ -121,8 +121,8 @@ Future<void> dhuMain(List<String> args) async {
   if (kIsWeb) {
     speedcamPackRaw = FakeSpeedcamPackStore();
   } else {
-    // 0054: durable root survives adb uninstall (SHARED_USER wipe path).
-    final root = await durableSpeedcamPacksDir();
+    final support = await getApplicationSupportDirectory();
+    final root = Directory('${support.path}/speedcam_packs');
     speedcamPackRaw = FileSpeedcamPackStore(root: root);
   }
 

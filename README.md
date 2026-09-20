@@ -94,9 +94,16 @@ Sideload Install ≠ `adb -g` for privileged permissions.
 
 ```bash
 flutter build apk --release -PuseAospDebugKey=true
+adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
+`useAospDebugKey=true` is set in `android/gradle.properties`; release **fails** if
+`android/tools/zeekr/androiddebugkey.jks` is missing. **Never `adb uninstall`** to
+work around `SHARED_USER_INCOMPATIBLE` — that wipes prefs (0054). Fix signing /
+use release (keeps `sharedUserId`), then `install -r` again.
+
 Prep-branch checklist: [`docs/publish/0044-notes-for-maxim.md`](docs/publish/0044-notes-for-maxim.md).
+Keep-data: [`docs/issues/0054-settings-survive-reinstall.md`](docs/issues/0054-settings-survive-reinstall.md).
 
 
 ## Credits
