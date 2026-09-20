@@ -96,3 +96,18 @@ Binaries ship via **draft GitHub Releases** only (delete drafts after 0044 exerc
 Prep branches carry workflows/docs; `gh release create --draft` uploads from local `builds/`.
 
 See sibling NOTES on ynavi-zee / zee_hud_2 `0044-publish-prep`.
+
+## Draft Releases created (2026-09-20) — delete after exercise
+
+| Repo | Draft page | Assets |
+|------|------------|--------|
+| ynavi-zee | https://github.com/maxim-saplin/ynavi-zee/releases/tag/untagged-309029f8dd29d2218b97 | `zeekr_v12_margined.apk`, `zeekr_v12_os7_nomargin.apk` |
+| zee_hud_2 | https://github.com/maxim-saplin/zee_hud_2/releases/tag/untagged-29aeacbf341edf30f6ae | `XCLauncher3-670-proxy-signed-v8.apk` |
+
+Draft download URLs (auth may be required; anonymous = 404):
+
+- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_margined.apk
+- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_os7_nomargin.apk
+- https://github.com/maxim-saplin/zee_hud_2/releases/download/untagged-29aeacbf341edf30f6ae/XCLauncher3-670-proxy-signed-v8.apk
+
+Install `releaseTag` targets `ynavi-zeekr-v12` / `launcher-v8` — resolve after undraft/publish.

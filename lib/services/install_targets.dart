@@ -1,37 +1,31 @@
 import 'installer.dart';
 
 // ---------------------------------------------------------------------------
-// Install targets — deployment-time configuration.
-// Publish checklist: docs/publish/0044-notes-for-maxim.md
+// Install targets — GitHub **Release** assets on source repos only.
+// No APKs in zee-power-toys git (Maxim 0044).
 //
-// Maxim 0044: APKs stay in **source repos** only. Install uses GitHub
-// **Release** asset URLs (prep-branch workflows). No APK copies into
-// zee-power-toys.
-//
-// Release: https://github.com/<repo>/releases/download/<tag>/<filename>
-// LFS media (legacy / until Release exists): media.githubusercontent.com/...
+// Draft Releases use untagged-* download paths until published; anonymous
+// HEAD on drafts is 404. After Maxim undrafts/publishes, tag URLs resolve.
+// Draft exercise URLs — see docs/publish/0044-notes-for-maxim.md.
 // ---------------------------------------------------------------------------
 
-/// YNavi — **DEFAULT** margined (left letterbox 480dp).
-/// Source repo: maxim-saplin/ynavi-zee. Pending Release asset after Maxim go.
+/// YNavi — DEFAULT margined (left=480).
 const GithubAsset kYnaviAsset = GithubAsset(
   repo: 'maxim-saplin/ynavi-zee',
   branch: 'hud',
-  path: 'zeekr_signed_v12.apk',
+  path: 'zeekr_v12_margined.apk',
   releaseTag: 'ynavi-zeekr-v12',
 );
 
-/// YNavi — **OS7+** left letterbox DISABLED.
+/// YNavi — OS7+ no left margin.
 const GithubAsset kYnaviOs7Asset = GithubAsset(
   repo: 'maxim-saplin/ynavi-zee',
   branch: 'hud',
-  path: 'zeekr_signed_v12_os7_nomargin.apk',
+  path: 'zeekr_v12_os7_nomargin.apk',
   releaseTag: 'ynavi-zeekr-v12',
 );
 
-/// Modded Launcher — source repo maxim-saplin/zee_hud_2 only.
-/// Private LFS CDN 404 → fix via **public Release** on zee_hud_2 (not by
-/// relocating the APK into zee-power-toys).
+/// Launcher — zee_hud_2 Release only.
 const GithubAsset kLauncherAsset = GithubAsset(
   repo: 'maxim-saplin/zee_hud_2',
   branch: 'main',
