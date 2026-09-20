@@ -430,7 +430,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWelcomeBody =>
-      'HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the left.';
+      'HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the right.';
 
   @override
   String get homeCompanionsTitle => 'Companion apps';

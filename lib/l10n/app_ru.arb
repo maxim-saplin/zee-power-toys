@@ -552,7 +552,7 @@
   "@homeWelcomeTitle": {
     "description": "Welcome column heading"
   },
-  "homeWelcomeBody": "Оверлеи HUD и миникарта для Zeekr. Проверьте приложения ниже, затем выберите раздел слева.",
+  "homeWelcomeBody": "Оверлеи HUD и миникарта для Zeekr. Проверьте приложения ниже, затем выберите раздел справа.",
   "@homeWelcomeBody": {
     "description": "Short product intro on the home welcome column"
   },
