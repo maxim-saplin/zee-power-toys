@@ -709,4 +709,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String updateStatusFailed(String message) {
     return 'Ошибка проверки: $message';
   }
+
+  @override
+  String get speedcamDhuSystemOverlay => 'Системный оверлей DHU';
+
+  @override
+  String get speedcamDhuSystemOverlayHint =>
+      'Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).';
+
+  @override
+  String get speedcamOverlayPermissionDenied =>
+      'Нужно разрешение показа поверх других окон.';
 }

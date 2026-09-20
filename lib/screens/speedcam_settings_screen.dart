@@ -314,6 +314,30 @@ class _SpeedcamSettingsScreenState
                 },
               ),
               const SizedBox(height: 12),
+              SwitchListTile(
+                key: const ValueKey('speedcam-dhu-system-overlay'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamDhuSystemOverlay),
+                subtitle: Text(l10n.speedcamDhuSystemOverlayHint),
+                value: sc.dhuSystemOverlay,
+                onChanged: (v) async {
+                  if (v) {
+                    final overlay = ref.read(speedcamSystemOverlayProvider);
+                    final ok = await overlay.canDrawOverlays();
+                    if (!ok) {
+                      await overlay.openPermissionSettings();
+                      final granted = await overlay.canDrawOverlays();
+                      if (!granted) {
+                        if (!mounted) return;
+                        setState(() => _error = l10n.speedcamOverlayPermissionDenied);
+                        return;
+                      }
+                    }
+                  }
+                  _patchSpeedcam((c) => c.copyWith(dhuSystemOverlay: v));
+                },
+              ),
+              const SizedBox(height: 12),
               Text(
                 l10n.speedcamRadarLook,
                 style: Theme.of(context).textTheme.bodyMedium,

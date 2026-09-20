@@ -890,6 +890,7 @@ class SpeedcamConfig {
     this.radarLook = SpeedcamRadarLook.defaultLook,
     this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
     this.staleAfterDays = 7,
+    this.dhuSystemOverlay = false,
   });
 
   /// HUD radar/presence mode (default [SpeedcamPresenceMode.any]).
@@ -913,6 +914,9 @@ class SpeedcamConfig {
   /// Age in days after which [SpeedcamRefreshPolicy.ifStale] refetches.
   final int staleAfterDays;
 
+  /// 0065: always-on-top Speedcam plate on the DHU (SYSTEM_ALERT_WINDOW).
+  final bool dhuSystemOverlay;
+
   /// Legacy: HUD paint not Off (0060 migration / dumpState).
   bool get hudRadarEnabled => hudMode != SpeedcamPresenceMode.off;
 
@@ -927,6 +931,7 @@ class SpeedcamConfig {
     SpeedcamRadarLook? radarLook,
     SpeedcamRefreshPolicy? refreshPolicy,
     int? staleAfterDays,
+    bool? dhuSystemOverlay,
     // Legacy bool shims — prefer [hudMode] / [soundMode].
     bool? hudRadarEnabled,
     bool? soundEnabled,
@@ -951,6 +956,7 @@ class SpeedcamConfig {
       radarLook: radarLook ?? this.radarLook,
       refreshPolicy: refreshPolicy ?? this.refreshPolicy,
       staleAfterDays: staleAfterDays ?? this.staleAfterDays,
+      dhuSystemOverlay: dhuSystemOverlay ?? this.dhuSystemOverlay,
     );
   }
 
@@ -965,6 +971,7 @@ class SpeedcamConfig {
         'radarLook': radarLook.name,
         'refreshPolicy': refreshPolicy.name,
         'staleAfterDays': staleAfterDays,
+        'dhuSystemOverlay': dhuSystemOverlay,
       };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
@@ -997,6 +1004,7 @@ class SpeedcamConfig {
       radarLook: look,
       refreshPolicy: policy,
       staleAfterDays: (json['staleAfterDays'] as num?)?.toInt() ?? 7,
+      dhuSystemOverlay: json['dhuSystemOverlay'] as bool? ?? false,
     );
   }
 
@@ -1009,7 +1017,8 @@ class SpeedcamConfig {
       other.soundVolume == soundVolume &&
       other.radarLook == radarLook &&
       other.refreshPolicy == refreshPolicy &&
-      other.staleAfterDays == staleAfterDays;
+      other.staleAfterDays == staleAfterDays &&
+      other.dhuSystemOverlay == dhuSystemOverlay;
 
   @override
   int get hashCode => Object.hash(
@@ -1020,6 +1029,7 @@ class SpeedcamConfig {
         radarLook,
         refreshPolicy,
         staleAfterDays,
+        dhuSystemOverlay,
       );
 }
 

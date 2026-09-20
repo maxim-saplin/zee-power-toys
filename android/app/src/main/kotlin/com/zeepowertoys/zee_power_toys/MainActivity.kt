@@ -33,6 +33,7 @@ import com.zeepowertoys.zee_power_toys.location.AndroidGpsLocationSource
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
+import com.zeepowertoys.zee_power_toys.speedcam.SpeedcamSystemOverlayController
 import com.zeepowertoys.zee_power_toys.install.PackageStatusController
 import com.zeepowertoys.zee_power_toys.usb.UsbModeController
 import io.flutter.FlutterInjector
@@ -117,6 +118,7 @@ class MainActivity : FlutterActivity() {
 
     // Installer native bridge — DHU engine only (Block 0014).
     private var installerController: InstallerController? = null
+    private var speedcamSystemOverlay: SpeedcamSystemOverlayController? = null
     private var packageStatusController: PackageStatusController? = null
 
     // SystemConfig native bridge — DHU engine only (Block 0015).
@@ -318,6 +320,8 @@ class MainActivity : FlutterActivity() {
         // Construct InstallerController on the DHU engine messenger (Block 0014).
         // Registers zee/installer MethodChannel and zee/installer/events EventChannel.
         installerController = InstallerController(this, flutterEngine.dartExecutor.binaryMessenger)
+        speedcamSystemOverlay = SpeedcamSystemOverlayController(
+            this, flutterEngine.dartExecutor.binaryMessenger)
         packageStatusController = PackageStatusController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Construct SystemConfigController on the DHU engine messenger (Block 0015).
@@ -1225,6 +1229,8 @@ class MainActivity : FlutterActivity() {
     // -------------------------------------------------------------------------
 
     override fun onDestroy() {
+        speedcamSystemOverlay?.dispose()
+        speedcamSystemOverlay = null
         SimulateReceiver.controllerRef = null
         carSignalsController?.tearDown()
         carSignalsController = null

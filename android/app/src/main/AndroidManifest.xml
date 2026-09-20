@@ -30,6 +30,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- 0065: Speedcam DHU system overlay (TYPE_APPLICATION_OVERLAY). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- YNavi CarApp host permissions (Block YNavi / YNaviCarAppHost).
          TEMPLATE_RENDERER: system/signature permission pre-granted on Zeekr OS;
          required to bind the CarApp cluster host.  Declaring it here is harmless

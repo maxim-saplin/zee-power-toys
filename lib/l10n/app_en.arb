@@ -913,5 +913,17 @@
   "@updateStatusFailed": {
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
+  },
+  "speedcamDhuSystemOverlay": "DHU system overlay",
+  "@speedcamDhuSystemOverlay": {
+    "description": "0065 toggle title"
+  },
+  "speedcamDhuSystemOverlayHint": "Show a floating Speedcam alert over other apps (needs display-over permission).",
+  "@speedcamDhuSystemOverlayHint": {
+    "description": "0065 toggle hint"
+  },
+  "speedcamOverlayPermissionDenied": "Display-over permission required for the system overlay.",
+  "@speedcamOverlayPermissionDenied": {
+    "description": "0065 permission denied"
   }
 }

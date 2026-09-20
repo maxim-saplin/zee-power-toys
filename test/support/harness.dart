@@ -33,6 +33,7 @@ import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_service.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_alert.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_pack_store.dart';
+import 'package:zee_power_toys/services/fakes/fake_speedcam_system_overlay.dart';
 import 'package:zee_power_toys/services/fakes/fake_minimap_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_system_config.dart';
 import 'package:zee_power_toys/services/installer.dart';
@@ -112,6 +113,7 @@ Widget wrapWithProviders(
       speedcamServiceProvider.overrideWithValue(FakeSpeedcamService()),
       speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
       speedcamPackStoreProvider.overrideWithValue(FakeSpeedcamPackStore()),
+      speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
       systemConfigProvider.overrideWithValue(systemConfig ?? FakeSystemConfig()),
       if (usbMode != null) usbModeProvider.overrideWithValue(usbMode),
     ],

@@ -913,5 +913,17 @@
   "@updateStatusFailed": {
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
+  },
+  "speedcamDhuSystemOverlay": "Системный оверлей DHU",
+  "@speedcamDhuSystemOverlay": {
+    "description": "0065 toggle title"
+  },
+  "speedcamDhuSystemOverlayHint": "Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).",
+  "@speedcamDhuSystemOverlayHint": {
+    "description": "0065 toggle hint"
+  },
+  "speedcamOverlayPermissionDenied": "Нужно разрешение показа поверх других окон.",
+  "@speedcamOverlayPermissionDenied": {
+    "description": "0065 permission denied"
   }
 }

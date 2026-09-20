@@ -708,4 +708,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String updateStatusFailed(String message) {
     return 'Update check failed: $message';
   }
+
+  @override
+  String get speedcamDhuSystemOverlay => 'DHU system overlay';
+
+  @override
+  String get speedcamDhuSystemOverlayHint =>
+      'Show a floating Speedcam alert over other apps (needs display-over permission).';
+
+  @override
+  String get speedcamOverlayPermissionDenied =>
+      'Display-over permission required for the system overlay.';
 }

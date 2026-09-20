@@ -8,7 +8,7 @@ library;
 const String appVersionName = '1.0.0';
 
 /// Android-style versionCode — the `+BUILD` integer from pubspec.
-const int appVersionCode = 3;
+const int appVersionCode = 4;
 
 /// Full pubspec-style version string.
-const String appVersionFull = '1.0.0+3';
+const String appVersionFull = '1.0.0+4';

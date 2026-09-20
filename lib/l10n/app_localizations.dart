@@ -1453,6 +1453,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update check failed: {message}'**
   String updateStatusFailed(String message);
+
+  /// 0065 toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'DHU system overlay'**
+  String get speedcamDhuSystemOverlay;
+
+  /// 0065 toggle hint
+  ///
+  /// In en, this message translates to:
+  /// **'Show a floating Speedcam alert over other apps (needs display-over permission).'**
+  String get speedcamDhuSystemOverlayHint;
+
+  /// 0065 permission denied
+  ///
+  /// In en, this message translates to:
+  /// **'Display-over permission required for the system overlay.'**
+  String get speedcamOverlayPermissionDenied;
 }
 
 class _AppLocalizationsDelegate
