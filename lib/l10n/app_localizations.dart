@@ -728,6 +728,18 @@ abstract class AppLocalizations {
   /// **'Install a compatible YNavi mod to enable the minimap'**
   String get minimapYnaviUnavailableHint;
 
+  /// 0057: show minimap only while YNavi guidance active
+  ///
+  /// In en, this message translates to:
+  /// **'Show only during guidance'**
+  String get minimapOnlyWhileGuidance;
+
+  /// Hint for only-while-guidance toggle
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the minimap appears only while YNavi navigation is active'**
+  String get minimapOnlyWhileGuidanceHint;
+
   /// Minimap preset selector label
   ///
   /// In en, this message translates to:

@@ -12,12 +12,15 @@ import '../minimap_host.dart';
 class FakeMinimapHost implements MinimapHost {
   FakeMinimapHost({bool ynaviAvailable = false})
       : _ctrl = StreamController<GuidanceEvent>.broadcast(),
+        _navCtrl = StreamController<bool>.broadcast(),
         _ynaviAvailable = ynaviAvailable; // ignore: prefer_initializing_formals
 
   final StreamController<GuidanceEvent> _ctrl;
+  final StreamController<bool> _navCtrl;
   bool _ynaviAvailable;
 
   bool? lastEnabled;
+  bool? lastSurfaceVisible;
   Rect? lastBounds;
   Map<String, Object?>? lastParams;
 
@@ -34,6 +37,11 @@ class FakeMinimapHost implements MinimapHost {
   }
 
   @override
+  Future<void> setSurfaceVisible(bool visible) async {
+    lastSurfaceVisible = visible;
+  }
+
+  @override
   Future<void> setBounds(Rect r) async => lastBounds = r;
 
   @override
@@ -43,9 +51,17 @@ class FakeMinimapHost implements MinimapHost {
   Stream<GuidanceEvent> get guidance => _ctrl.stream;
 
   @override
+  Stream<bool> get navigationActive => _navCtrl.stream;
+
+  @override
   Future<bool> isYnaviAvailable() async => _ynaviAvailable;
 
   void emitGuidance(GuidanceEvent e) => _ctrl.add(e);
 
-  void dispose() => _ctrl.close();
+  void emitNavigationActive(bool active) => _navCtrl.add(active);
+
+  void dispose() {
+    _ctrl.close();
+    _navCtrl.close();
+  }
 }

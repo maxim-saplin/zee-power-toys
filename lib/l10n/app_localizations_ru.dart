@@ -327,6 +327,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Установите совместимый мод YNavi, чтобы включить миникарту';
 
   @override
+  String get minimapOnlyWhileGuidance => 'Только во время ведения';
+
+  @override
+  String get minimapOnlyWhileGuidanceHint =>
+      'Если включено, миникарта видна только при активной навигации YNavi';
+
+  @override
   String get minimapPreset => 'Пресет';
 
   @override

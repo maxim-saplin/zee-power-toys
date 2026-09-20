@@ -11,9 +11,17 @@ abstract class MinimapHost {
   /// Dart-side `enable(true)` alone can never make content appear when YNavi
   /// is absent (Block "kill the rainbow placeholder").
   Future<String?> enable(bool on);
+  /// Show/hide the native minimap TextureView without stopping the YNavi bind
+  /// (0057 onlyWhileGuidance). [enable](false) still tears the host down.
+  Future<void> setSurfaceVisible(bool visible);
   Future<void> setBounds(Rect r);
   Future<void> setParams(Map<String, Object?> p);
   Stream<GuidanceEvent> get guidance;
+
+  /// Live navigation session truth from YNavi (`navigationStarted` /
+  /// `navigationEnded`). Used by 0057 `onlyWhileGuidance` gating — not inferred
+  /// from trip/GuidanceEvent traffic alone.
+  Stream<bool> get navigationActive;
 
   /// Returns true when a compatible YNavi mod is installed and detectable.
   ///

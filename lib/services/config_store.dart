@@ -202,6 +202,7 @@ class MinimapLooks {
 class MinimapConfig {
   const MinimapConfig({
     this.enabled = false,
+    this.onlyWhileGuidance = false,
     this.preset = 'balanced',
     this.advanced = false,
     this.sizeFraction,
@@ -211,6 +212,10 @@ class MinimapConfig {
 
   /// Whether the minimap is enabled. Only meaningful when YNavi mod is present.
   final bool enabled;
+
+  /// When true, show the minimap surface only while YNavi reports an active
+  /// navigation session (0057). Default false = always show when [enabled].
+  final bool onlyWhileGuidance;
 
   /// Preset name: 'compact', 'balanced', or 'large'.
   final String preset;
@@ -255,6 +260,7 @@ class MinimapConfig {
 
   MinimapConfig copyWith({
     bool? enabled,
+    bool? onlyWhileGuidance,
     String? preset,
     bool? advanced,
     Object? sizeFraction = _unset,
@@ -262,6 +268,7 @@ class MinimapConfig {
     MinimapLooks? looks,
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
+    onlyWhileGuidance: onlyWhileGuidance ?? this.onlyWhileGuidance,
     preset: preset ?? this.preset,
     advanced: advanced ?? this.advanced,
     sizeFraction: identical(sizeFraction, _unset)
@@ -273,6 +280,7 @@ class MinimapConfig {
 
   Map<String, Object?> toJson() => <String, Object?>{
     'enabled': enabled,
+    'onlyWhileGuidance': onlyWhileGuidance,
     'preset': preset,
     'advanced': advanced,
     if (sizeFraction != null) 'sizeFraction': sizeFraction,
@@ -282,6 +290,7 @@ class MinimapConfig {
 
   factory MinimapConfig.fromJson(Map<String, Object?> json) => MinimapConfig(
     enabled: json['enabled'] as bool? ?? false,
+    onlyWhileGuidance: json['onlyWhileGuidance'] as bool? ?? false,
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
@@ -298,6 +307,7 @@ class MinimapConfig {
   bool operator ==(Object other) =>
       other is MinimapConfig &&
       other.enabled == enabled &&
+      other.onlyWhileGuidance == onlyWhileGuidance &&
       other.preset == preset &&
       other.advanced == advanced &&
       other.sizeFraction == sizeFraction &&
@@ -306,8 +316,16 @@ class MinimapConfig {
 
   @override
   int get hashCode =>
-      Object.hash(enabled, preset, advanced, sizeFraction, contentScale, looks);
+      Object.hash(enabled, onlyWhileGuidance, preset, advanced, sizeFraction,
+          contentScale, looks);
 }
+
+
+/// Effective minimap surface visibility (0057).
+///
+/// [navActive] is YNavi navigation-session truth (`navigationActive` stream).
+bool minimapSurfaceWanted(MinimapConfig mm, {required bool navActive}) =>
+    mm.enabled && (!mm.onlyWhileGuidance || navActive);
 
 /// What parts of the battery mark to show (icon pack vs percentage label).
 ///

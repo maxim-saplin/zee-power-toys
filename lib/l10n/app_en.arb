@@ -420,6 +420,14 @@
   "@minimapYnaviUnavailableHint": {
     "description": "Hint shown when YNavi mod is absent"
   },
+  "minimapOnlyWhileGuidance": "Show only during guidance",
+  "@minimapOnlyWhileGuidance": {
+    "description": "0057: show minimap only while YNavi guidance active"
+  },
+  "minimapOnlyWhileGuidanceHint": "When on, the minimap appears only while YNavi navigation is active",
+  "@minimapOnlyWhileGuidanceHint": {
+    "description": "Hint for only-while-guidance toggle"
+  },
   "minimapPreset": "Preset",
   "@minimapPreset": {
     "description": "Minimap preset selector label"

@@ -213,7 +213,8 @@ class _HudSlots extends ConsumerWidget {
         // MinimapHost applies natively, so the debug glyph sits exactly where
         // the real Minimap would. F4: omit when minimap is disabled — the stub
         // must not pretend to be content while Minimap is off.
-        if (showStubs && minimapCfg.enabled)
+        // 0057: glyph follows surface gate (onlyWhileGuidance ∧ navActive).
+        if (showStubs && ref.watch(minimapSurfaceActiveProvider))
           Positioned(
             key: const ValueKey('hud-minimap-glyph'),
             left: minimapRect.left * saWidth,
@@ -225,7 +226,7 @@ class _HudSlots extends ConsumerWidget {
 
         // STREET + ETA — Flutter chrome replacing YNavi panels cropped by
         // MinimapHost scale/letterbox (0055 Zee HUD 2 parity).
-        if (minimapCfg.enabled) ...[
+        if (ref.watch(minimapSurfaceActiveProvider)) ...[
           Builder(
             builder: (context) {
               final g = ref.watch(latestGuidanceProvider);

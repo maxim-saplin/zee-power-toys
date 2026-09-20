@@ -427,6 +427,8 @@ class MainActivity : FlutterActivity() {
                 }
                 host.onNavState = { active ->
                     Log.i(TAG, "YNavi navigation active=$active")
+                    // 0057: real guidance-session truth for onlyWhileGuidance.
+                    guidanceSink?.success(mapOf("navActive" to active))
                 }
                 // Native gate (Task 1), async half: if the bind itself fails despite
                 // isYnaviAvailable() passing its static check, force the surface back
@@ -873,6 +875,18 @@ class MainActivity : FlutterActivity() {
                         Log.i(TAG, "setMinimap(false): APPLIED")
                         result.success("applied:false")
                     }
+                }
+                "setMinimapSurfaceVisible" -> {
+                    // 0057: hide/show TextureView without host.stop() so
+                    // navigationStarted can still arrive while gated off.
+                    val visible = call.argument<Boolean>("visible") ?: true
+                    if (visible) {
+                        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+                    } else {
+                        if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                    }
+                    Log.i(TAG, "setMinimapSurfaceVisible($visible): APPLIED")
+                    result.success("applied:$visible")
                 }
                 "setMinimapBounds" -> {
                     val x = call.argument<Int>("x") ?: 0

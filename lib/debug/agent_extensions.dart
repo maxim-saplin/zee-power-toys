@@ -364,15 +364,24 @@ void registerZeeExtensions({
       next = next.copyWith(locale: rawLocale == 'system' ? null : rawLocale);
     }
 
-    // Minimap config: minimapEnabled=true|false, minimapPreset=compact|balanced|large.
+    // Minimap config: minimapEnabled=true|false,
+    // minimapOnlyWhileGuidance=true|false (0057),
+    // minimapPreset=compact|balanced|large.
     final rawMinimapEnabled = params['minimapEnabled'];
+    final rawMinimapOnlyWhileGuidance =
+        params['minimapOnlyWhileGuidance'] ?? params['onlyWhileGuidance'];
     final rawMinimapPreset = params['minimapPreset'];
-    if (rawMinimapEnabled != null || rawMinimapPreset != null) {
+    if (rawMinimapEnabled != null ||
+        rawMinimapOnlyWhileGuidance != null ||
+        rawMinimapPreset != null) {
       final mm = next.minimap;
       next = next.copyWith(
         minimap: mm.copyWith(
           enabled: rawMinimapEnabled != null
               ? rawMinimapEnabled == 'true'
+              : null,
+          onlyWhileGuidance: rawMinimapOnlyWhileGuidance != null
+              ? rawMinimapOnlyWhileGuidance == 'true'
               : null,
           preset: rawMinimapPreset,
         ),

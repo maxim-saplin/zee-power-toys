@@ -411,4 +411,31 @@ void main() {
       expect(ru.minimapLookContrast, isNotEmpty);
     });
   });
+
+  group('onlyWhileGuidance (0057)', () {
+    test('defaults off', () {
+      expect(const MinimapConfig().onlyWhileGuidance, isFalse);
+    });
+
+    test('JSON round-trip', () {
+      const cfg = MinimapConfig(enabled: true, onlyWhileGuidance: true);
+      expect(MinimapConfig.fromJson(cfg.toJson()), equals(cfg));
+    });
+
+    test('minimapSurfaceWanted respects gate', () {
+      const off = MinimapConfig(enabled: true, onlyWhileGuidance: false);
+      const gated = MinimapConfig(enabled: true, onlyWhileGuidance: true);
+      expect(minimapSurfaceWanted(off, navActive: false), isTrue);
+      expect(minimapSurfaceWanted(gated, navActive: false), isFalse);
+      expect(minimapSurfaceWanted(gated, navActive: true), isTrue);
+      expect(
+        minimapSurfaceWanted(
+          const MinimapConfig(enabled: false, onlyWhileGuidance: true),
+          navActive: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
 }

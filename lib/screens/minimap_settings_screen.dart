@@ -89,6 +89,26 @@ class MinimapSettingsScreen extends ConsumerWidget {
                     : null,
               ),
             ),
+            SettingsToggleRow(
+              label: l10n.minimapOnlyWhileGuidance,
+              subtitle: Text(
+                l10n.minimapOnlyWhileGuidanceHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-only-while-guidance-toggle'),
+                value: cfg.onlyWhileGuidance,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(onlyWhileGuidance: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
           ],
         ),
 

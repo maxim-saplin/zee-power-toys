@@ -275,6 +275,12 @@ Future<void> dhuMain(List<String> args) async {
   // hudMain overrides minimapHost with FakeMinimapHost — relay trip events so
   // latestGuidanceProvider / MinimapGuidanceOverlay on the HUD engine see them.
   minimapHostRaw.guidance.listen(pushGuidanceToHud);
+  // 0057: real navigation-session truth → surface gate + HUD chrome relay.
+  minimapHostRaw.navigationActive.listen((active) {
+    _ynaviNavActive = active;
+    _applyMinimapConfig(minimapHostRaw, store.value);
+    pushNavActiveToHud(active);
+  });
 
   registerZeeExtensions(
     surface: 'dhu',
@@ -349,6 +355,7 @@ void hudMain(List<String> args) {
       onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
       onSpeedcam: speedcam.applyRelaySnapshot,
       onGuidance: minimapHost.emitGuidance,
+      onNavActive: minimapHost.emitNavigationActive,
     );
   });
 
@@ -449,6 +456,10 @@ int _hudDpi = 213; // Zeekr S2 / T2 emulator density; updated from onHudReady.
 /// displayId — the app is the source of truth for its own geometry.
 int? _hudDisplayId;
 
+/// Latest YNavi navigation-session flag (0057). Updated from
+/// [MinimapHost.navigationActive]; drives onlyWhileGuidance surface gating.
+bool _ynaviNavActive = false;
+
 /// Last minimap viewport [Rect] computed by [_applyMinimapConfig] (Block
 /// 0027) — the exact ROI the pixel verifier must crop to check the minimap,
 /// regardless of whether the minimap is currently enabled (the geometry is
@@ -511,10 +522,17 @@ void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   if (mm.enabled) {
     host.setBounds(bounds).catchError((_) {});
   }
+  // 0057: keep YNavi bind alive whenever minimap is enabled so navigationStarted
+  // still arrives while onlyWhileGuidance is hiding the TextureView. Soft-hide
+  // via setSurfaceVisible — never enable(false) solely for guidance gating.
   host
       .enable(mm.enabled)
       .then((r) => _lastMinimapNative = r)
       .catchError((e) => _lastMinimapNative = 'error:$e');
+  if (mm.enabled) {
+    final show = minimapSurfaceWanted(mm, navActive: _ynaviNavActive);
+    host.setSurfaceVisible(show).catchError((_) {});
+  }
   // Look + content density (Block 0028): colour filter knobs + phase0
   // minimapScale (contentScale). Native cold-rebinds YNavi when scale changes.
   final scale = mm.contentScale.clamp(0.3, 1.0);

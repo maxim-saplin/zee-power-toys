@@ -327,6 +327,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install a compatible YNavi mod to enable the minimap';
 
   @override
+  String get minimapOnlyWhileGuidance => 'Show only during guidance';
+
+  @override
+  String get minimapOnlyWhileGuidanceHint =>
+      'When on, the minimap appears only while YNavi navigation is active';
+
+  @override
   String get minimapPreset => 'Preset';
 
   @override

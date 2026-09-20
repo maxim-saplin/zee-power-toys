@@ -120,6 +120,11 @@ Future<void> pushGuidanceToHud(GuidanceEvent event) async {
   await _push('guidance', jsonEncode(event.toJson()));
 }
 
+/// Push YNavi navigation-session truth to the HUD (0057 gating chrome).
+Future<void> pushNavActiveToHud(bool active) async {
+  await _push('navActive', jsonEncode(<String, Object?>{'navActive': active}));
+}
+
 Future<void> _push(String kind, String payload) async {
   try {
     await _relay.push(kind, payload);
@@ -136,6 +141,7 @@ void listenForRelay({
   void Function(CarSignalEvent)? onCarSignal,
   void Function(SpeedcamSnapshot)? onSpeedcam,
   void Function(GuidanceEvent)? onGuidance,
+  void Function(bool)? onNavActive,
 }) {
   _relay.listen((kind, payload) {
     try {
@@ -164,6 +170,11 @@ void listenForRelay({
             onGuidance(GuidanceEvent.fromJson(
               Map<String, Object?>.from(jsonDecode(payload) as Map),
             ));
+          }
+        case 'navActive':
+          if (onNavActive != null) {
+            final m = Map<String, Object?>.from(jsonDecode(payload) as Map);
+            onNavActive(m['navActive'] == true);
           }
       }
     } catch (_) {
