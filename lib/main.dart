@@ -131,7 +131,7 @@ Future<void> dhuMain(List<String> args) async {
     packStore: speedcamPackRaw,
   );
 
-  // 0050: YNavi sendLocation → Speedcam host pose (Android only).
+  // 0050: YNavi sendLocation + Android GPS fallback → Speedcam host pose.
   if (!kIsWeb && Platform.isAndroid) {
     NativeSpeedcamLocation(speedcamRaw).start();
   }

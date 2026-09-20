@@ -25,6 +25,7 @@ import com.zeepowertoys.zee_power_toys.boot.BootRemediation
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
+import com.zeepowertoys.zee_power_toys.location.AndroidGpsLocationSource
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
@@ -133,8 +134,10 @@ class MainActivity : FlutterActivity() {
 
     // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
     @Volatile private var guidanceSink: EventChannel.EventSink? = null
-    // Speedcam location EventChannel sink — YNavi sendLocation → Dart setHostPose.
+    // Speedcam location EventChannel sink — YNavi / Android GPS → Dart setHostPose.
     @Volatile private var speedcamLocationSink: EventChannel.EventSink? = null
+    // Android LocationManager fallback when YNavi sendLocation is silent (0050 T3).
+    private var androidGpsLocationSource: AndroidGpsLocationSource? = null
 
     // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
     private var dhuMinimapChannel: MethodChannel? = null
@@ -202,15 +205,18 @@ class MainActivity : FlutterActivity() {
                 }
             })
 
-        // YNavi IAppHost.sendLocation → Dart Speedcam host pose (0050).
+        // Speedcam live pose (0050): YNavi sendLocation preferred; Android GPS
+        // fallback when YNavi is silent (no active nav route). Same EventChannel.
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_LOCATION_CHANNEL)
             .setStreamHandler(object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                     speedcamLocationSink = sink
                     Log.i(TAG, "speedcam location EventChannel: Dart subscribed")
+                    ensureAndroidGpsLocationSource().start()
                 }
                 override fun onCancel(arguments: Any?) {
                     speedcamLocationSink = null
+                    androidGpsLocationSource?.stop()
                     Log.i(TAG, "speedcam location EventChannel: Dart unsubscribed")
                 }
             })
@@ -381,16 +387,8 @@ class MainActivity : FlutterActivity() {
                     Log.w(TAG, "YNavi bind failed — MinimapView forced INVISIBLE")
                 }
                 host.onLocation = { loc ->
-                    val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null
-                    val heading = if (loc.hasBearing()) loc.bearing.toDouble() else null
-                    val event = hashMapOf<String, Any?>(
-                        "lat" to loc.latitude,
-                        "lon" to loc.longitude,
-                        "source" to "ynavi",
-                    )
-                    if (speedKmh != null) event["speedKmh"] = speedKmh
-                    if (heading != null) event["headingDeg"] = heading
-                    speedcamLocationSink?.success(event)
+                    androidGpsLocationSource?.noteYNaviFix()
+                    emitSpeedcamLocation(loc, source = "ynavi")
                 }
             }
 
@@ -432,6 +430,40 @@ class MainActivity : FlutterActivity() {
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Speedcam location emit (0050) — YNavi preferred, Android GPS fallback.
+    // -------------------------------------------------------------------------
+
+    private fun ensureAndroidGpsLocationSource(): AndroidGpsLocationSource {
+        val existing = androidGpsLocationSource
+        if (existing != null) return existing
+        val created = AndroidGpsLocationSource(applicationContext, handler) { loc ->
+            emitSpeedcamLocation(loc, source = AndroidGpsLocationSource.SOURCE)
+        }
+        androidGpsLocationSource = created
+        return created
+    }
+
+    /** Push a location map to Dart; Log.i so `adb logcat -s ZEE` shows the path. */
+    private fun emitSpeedcamLocation(loc: android.location.Location, source: String) {
+        val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null
+        val heading = if (loc.hasBearing()) loc.bearing.toDouble() else null
+        val event = hashMapOf<String, Any?>(
+            "lat" to loc.latitude,
+            "lon" to loc.longitude,
+            "source" to source,
+        )
+        if (speedKmh != null) event["speedKmh"] = speedKmh
+        if (heading != null) event["headingDeg"] = heading
+        val sink = speedcamLocationSink
+        Log.i(
+            TAG,
+            "speedcam/location source=$source lat=${loc.latitude} lon=${loc.longitude} " +
+                "speedKmh=$speedKmh headingDeg=$heading sink=${sink != null}",
+        )
+        sink?.success(event)
     }
 
     // -------------------------------------------------------------------------
@@ -979,6 +1011,9 @@ class MainActivity : FlutterActivity() {
         usbModeController?.tearDown()
         usbModeController = null
         dhuMinimapChannel = null
+        androidGpsLocationSource?.stop()
+        androidGpsLocationSource = null
+        speedcamLocationSink = null
         tearDownHud()
         super.onDestroy()
     }

@@ -5,14 +5,14 @@ import 'package:flutter/services.dart';
 
 import '../speedcam.dart';
 
-/// Android bridge: YNavi `IAppHost.sendLocation` → [SpeedcamService.setHostPose].
+/// Android bridge: live car GPS → [SpeedcamService.setHostPose].
 ///
 /// EventChannel `zee/speedcam/location` events are maps:
 ///   lat        : double
 ///   lon        : double
 ///   speedKmh   : double?  (from Location.speed m/s × 3.6)
 ///   headingDeg : double?  (from Location.bearing)
-///   source     : String?  (e.g. "ynavi")
+///   source     : String?  ("ynavi" preferred; "android_gps" LocationManager fallback)
 ///
 /// Live poses use `fromLive: true` so Demo / inject / drive-sim (manual) still
 /// win until [SpeedcamService.clearHostPose].
@@ -63,7 +63,7 @@ class NativeSpeedcamLocation {
       headingDeg: (m['headingDeg'] as num?)?.toDouble(),
     );
     _lastPose = pose;
-    _lastSource = m['source'] as String? ?? 'ynavi';
+    _lastSource = m['source'] as String? ?? 'android_gps';
     _events++;
     // ignore: discarded_futures
     _service.setHostPose(pose, fromLive: true);

@@ -65,10 +65,22 @@ class IAppHostStub(
     }
 
     override fun sendLocation(location: Location?) {
-        Log.v(loggerTag, "IAppHost.sendLocation location=$location")
-        if (location != null) {
-            onLocation?.invoke(location)
+        // Log.i (not v) — T3 triage: YNavi often never calls this without an
+        // active nav route even after startLocationUpdates SUCCESS (0050 FAIL).
+        // Also log under TAG "ZEE" so `adb logcat -s ZEE` catches it (loggerTag
+        // is typically "ZEE/YNaviCarApp", which -s ZEE does not match).
+        if (location == null) {
+            Log.i(loggerTag, "IAppHost.sendLocation location=null onLocationWired=${onLocation != null}")
+            Log.i("ZEE", "IAppHost.sendLocation location=null onLocationWired=${onLocation != null}")
+            return
         }
+        val msg =
+            "IAppHost.sendLocation lat=${location.latitude} lon=${location.longitude} " +
+                "hasSpeed=${location.hasSpeed()} hasBearing=${location.hasBearing()} " +
+                "onLocationWired=${onLocation != null}"
+        Log.i(loggerTag, msg)
+        Log.i("ZEE", msg)
+        onLocation?.invoke(location)
     }
 
     override fun showAlert(alert: Bundleable?) {
