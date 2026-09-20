@@ -311,19 +311,71 @@ class MinimapConfig {
 
 /// What parts of the battery mark to show (icon pack vs percentage label).
 ///
-/// `both`     — pack + percentage (default).
+/// Kept as the low-level rendering axes; product UI picks a [BatteryLook]
+/// which maps onto these (0056 PDM names).
+///
+/// `both`     — pack + percentage.
 /// `iconOnly` — pack only (no separate % label below; [BatteryStyle.pctInside]
 ///              still paints % inside the pack).
 /// `textOnly` — percentage label only (no pack icon).
 enum BatteryContentMode { both, iconOnly, textOnly }
 
-/// Visual look of the battery pack icon.
+/// Visual look of the battery pack icon (low-level).
 ///
-/// `outline`   — Steam-Deck outline + continuous fill + nub (default / current).
+/// `outline`   — squarish bold outline + continuous fill + nub (default).
 /// `filled`    — segmented bars (4–5 blocks) inside the pack outline.
 /// `pctInside` — continuous fill with percentage text painted inside the pack
-///               (suppresses the separate % below when content includes icon).
+///               (legacy; product UI maps this to [BatteryLook.batteryText]).
 enum BatteryStyle { outline, filled, pctInside }
+
+/// Product battery looks (0056 PDM names).
+///
+/// 1. [battery]     — "Battery" — filled pack (icon only, continuous fill)
+/// 2. [batteryText] — "Battery + text" — pack with %
+/// 3. [batteryBars] — "Battery with bars" — segmented
+/// 4. [justText]    — "Just text" — % only
+enum BatteryLook { battery, batteryText, batteryBars, justText }
+
+/// Map a [BatteryLook] onto contentMode + style.
+({BatteryContentMode contentMode, BatteryStyle style}) batteryLookParts(
+  BatteryLook look,
+) =>
+    switch (look) {
+      BatteryLook.battery => (
+          contentMode: BatteryContentMode.iconOnly,
+          style: BatteryStyle.outline,
+        ),
+      BatteryLook.batteryText => (
+          contentMode: BatteryContentMode.both,
+          style: BatteryStyle.outline,
+        ),
+      BatteryLook.batteryBars => (
+          contentMode: BatteryContentMode.iconOnly,
+          style: BatteryStyle.filled,
+        ),
+      BatteryLook.justText => (
+          contentMode: BatteryContentMode.textOnly,
+          style: BatteryStyle.outline,
+        ),
+    };
+
+/// Derive [BatteryLook] from legacy contentMode + style (prefs migration).
+BatteryLook batteryLookFromParts(
+  BatteryContentMode contentMode,
+  BatteryStyle style,
+) {
+  if (contentMode == BatteryContentMode.textOnly) {
+    return BatteryLook.justText;
+  }
+  if (style == BatteryStyle.filled) {
+    return BatteryLook.batteryBars;
+  }
+  if (contentMode == BatteryContentMode.iconOnly) {
+    return BatteryLook.battery;
+  }
+  // both + outline/pctInside → Battery + text
+  return BatteryLook.batteryText;
+}
 
 /// Named placement for the battery cluster (icon + % + temp + charging kW).
 ///
@@ -359,18 +411,19 @@ enum BatteryPlacement {
 /// Battery widget appearance + placement config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// contentMode = both, style = outline, sizeScale = 1.0, placement = rightTop
-/// with vertFrac/sidePadFrac matching today's hard-coded top-right slot.
-/// The charging stats panel is show-while-charging — it appears automatically
-/// when the car reports charging and is hidden otherwise (app policy per
-/// ADR 0003); showChargingStats merely lets the user suppress the panel
-/// entirely if they prefer.
+/// look = batteryText (PDM "Battery + text"), sizeScale = 1.0, placement =
+/// rightTop with vertFrac/sidePadFrac matching today's hard-coded top-right
+/// slot. The charging stats panel is show-while-charging — it appears
+/// automatically when the car reports charging and is hidden otherwise (app
+/// policy per ADR 0003); showChargingStats merely lets the user suppress the
+/// panel entirely if they prefer.
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
     this.sizeScale = 1.0,
+    this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
     this.style = BatteryStyle.outline,
     this.placement = BatteryPlacement.rightTop,
@@ -393,10 +446,16 @@ class BatteryConfig {
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
 
-  /// Icon vs text content mode (pack / percentage / both).
+  /// Product look (0056 PDM). Source of truth for contentMode + style when
+  /// set via [withLook] / [copyWith] `look:`.
+  final BatteryLook look;
+
+  /// Icon vs text content mode (pack / percentage / both). Kept in sync with
+  /// [look] by [withLook]; still writable for Feedback Loop / legacy prefs.
   final BatteryContentMode contentMode;
 
-  /// Pack visual style (outline / filled segments / % inside).
+  /// Pack visual style (outline / filled segments / % inside). Kept in sync
+  /// with [look] by [withLook].
   final BatteryStyle style;
 
   /// Named side/corner preset. Fine adjust fields below override the preset's
@@ -418,24 +477,50 @@ class BatteryConfig {
     bool? showTemp,
     bool? showChargingStats,
     double? sizeScale,
+    BatteryLook? look,
     BatteryContentMode? contentMode,
     BatteryStyle? style,
     BatteryPlacement? placement,
     double? vertFrac,
     double? sidePadFrac,
     double? horizBiasFrac,
-  }) => BatteryConfig(
-    showBattery: showBattery ?? this.showBattery,
-    showTemp: showTemp ?? this.showTemp,
-    showChargingStats: showChargingStats ?? this.showChargingStats,
-    sizeScale: sizeScale ?? this.sizeScale,
-    contentMode: contentMode ?? this.contentMode,
-    style: style ?? this.style,
-    placement: placement ?? this.placement,
-    vertFrac: vertFrac ?? this.vertFrac,
-    sidePadFrac: sidePadFrac ?? this.sidePadFrac,
-    horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
-  );
+  }) {
+    // Prefer explicit look; else if contentMode/style change without look,
+    // re-derive look so product picker stays coherent.
+    final BatteryLook nextLook;
+    final BatteryContentMode nextMode;
+    final BatteryStyle nextStyle;
+    if (look != null) {
+      nextLook = look;
+      final parts = batteryLookParts(look);
+      nextMode = parts.contentMode;
+      nextStyle = parts.style;
+    } else if (contentMode != null || style != null) {
+      nextMode = contentMode ?? this.contentMode;
+      nextStyle = style ?? this.style;
+      nextLook = batteryLookFromParts(nextMode, nextStyle);
+    } else {
+      nextLook = this.look;
+      nextMode = this.contentMode;
+      nextStyle = this.style;
+    }
+    return BatteryConfig(
+      showBattery: showBattery ?? this.showBattery,
+      showTemp: showTemp ?? this.showTemp,
+      showChargingStats: showChargingStats ?? this.showChargingStats,
+      sizeScale: sizeScale ?? this.sizeScale,
+      look: nextLook,
+      contentMode: nextMode,
+      style: nextStyle,
+      placement: placement ?? this.placement,
+      vertFrac: vertFrac ?? this.vertFrac,
+      sidePadFrac: sidePadFrac ?? this.sidePadFrac,
+      horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
+    );
+  }
+
+  /// Apply a named product [look] (0056 PDM) and sync contentMode + style.
+  BatteryConfig withLook(BatteryLook look) => copyWith(look: look);
 
   /// Apply a named [placement] and reset fine-adjust knobs to that preset's
   /// defaults (left / right / rightTop).
@@ -454,6 +539,7 @@ class BatteryConfig {
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'sizeScale': sizeScale,
+    'look': look.name,
     'contentMode': contentMode.name,
     'style': style.name,
     'placement': placement.name,
@@ -477,6 +563,19 @@ class BatteryConfig {
             orElse: () => BatteryStyle.outline,
           )
         : BatteryStyle.outline;
+    final lookName = json['look'] as String?;
+    final hasLook = lookName != null;
+    final look = hasLook
+        ? BatteryLook.values.firstWhere(
+            (e) => e.name == lookName,
+            orElse: () => batteryLookFromParts(contentMode, style),
+          )
+        : batteryLookFromParts(contentMode, style);
+    // look key present → parts follow look (product source of truth).
+    // Legacy prefs without look → keep contentMode/style (e.g. pctInside).
+    final parts = batteryLookParts(look);
+    final resolvedMode = hasLook ? parts.contentMode : contentMode;
+    final resolvedStyle = hasLook ? parts.style : style;
     final placementName = json['placement'] as String?;
     final placement = placementName != null
         ? BatteryPlacement.values.firstWhere(
@@ -489,8 +588,9 @@ class BatteryConfig {
       showTemp: json['showTemp'] as bool? ?? true,
       showChargingStats: json['showChargingStats'] as bool? ?? true,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
-      contentMode: contentMode,
-      style: style,
+      look: look,
+      contentMode: resolvedMode,
+      style: resolvedStyle,
       placement: placement,
       vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.010,
       sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
@@ -505,6 +605,7 @@ class BatteryConfig {
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
       other.sizeScale == sizeScale &&
+      other.look == look &&
       other.contentMode == contentMode &&
       other.style == style &&
       other.placement == placement &&
@@ -518,6 +619,7 @@ class BatteryConfig {
     showTemp,
     showChargingStats,
     sizeScale,
+    look,
     contentMode,
     style,
     placement,

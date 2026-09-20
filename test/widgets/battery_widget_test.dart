@@ -16,12 +16,13 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0, outline+both, rightTop', () {
+    test('defaults are all-on, sizeScale 1.0, batteryText look, rightTop', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
       expect(cfg.showChargingStats, isTrue);
       expect(cfg.sizeScale, 1.0);
+      expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);
       expect(cfg.style, BatteryStyle.outline);
       expect(cfg.placement, BatteryPlacement.rightTop);
@@ -36,12 +37,33 @@ void main() {
         showTemp: true,
         showChargingStats: false,
         sizeScale: 1.5,
+        look: BatteryLook.batteryBars,
         contentMode: BatteryContentMode.iconOnly,
-        style: BatteryStyle.pctInside,
+        style: BatteryStyle.filled,
       );
       final json = cfg.toJson();
       final cfg2 = BatteryConfig.fromJson(json);
       expect(cfg2, equals(cfg));
+    });
+
+    test('withLook syncs contentMode + style to PDM parts', () {
+      const base = BatteryConfig();
+      expect(base.withLook(BatteryLook.battery).contentMode,
+          BatteryContentMode.iconOnly);
+      expect(base.withLook(BatteryLook.battery).style, BatteryStyle.outline);
+      expect(base.withLook(BatteryLook.batteryBars).style, BatteryStyle.filled);
+      expect(base.withLook(BatteryLook.justText).contentMode,
+          BatteryContentMode.textOnly);
+    });
+
+    test('legacy contentMode+style without look migrates to BatteryLook', () {
+      final cfg = BatteryConfig.fromJson(<String, Object?>{
+        'contentMode': 'iconOnly',
+        'style': 'filled',
+      });
+      expect(cfg.look, BatteryLook.batteryBars);
+      expect(cfg.contentMode, BatteryContentMode.iconOnly);
+      expect(cfg.style, BatteryStyle.filled);
     });
 
     test('fromJson falls back to defaults for missing keys', () {

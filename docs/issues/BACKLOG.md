@@ -112,6 +112,10 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 ### Quality + publish
 
 | [0051](0051-battery-free-placement.md) | Battery HUD free placement (left / right / right-top + fine adjust) | **done** |
+| [0054](0054-settings-survive-reinstall.md) | Settings survive reinstall via `adb install -r` (no uninstall / no sdcard mirror) | **done** |
+| [0055](0055-ynavi-minimap-info-overlay.md) | YNavi minimap street+ETA Flutter overlay (keep on tip) | **done** |
+| [0056](0056-battery-looks-pdm.md) | Battery looks — PDM names + squarish bold outline | **done** |
+| — | **0057** — Show minimap only while YNavi guidance active (default off = always when enabled) | **queued** (after 0056 tip) |
 
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |

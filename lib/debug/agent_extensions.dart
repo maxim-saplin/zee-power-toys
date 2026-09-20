@@ -147,6 +147,7 @@ void registerZeeExtensions({
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
           'showChargingStats': bat.showChargingStats,
+          'look': bat.look.name,
           'contentMode': bat.contentMode.name,
           'style': bat.style.name,
           'placement': bat.placement.name,
@@ -279,14 +280,17 @@ void registerZeeExtensions({
     }
 
     // Battery config: batteryShow=true|false, tempShow=..., chargingShow=...,
-    // batterySize=<double>, batteryContentMode=both|iconOnly|textOnly,
-    // batteryStyle=outline|filled|pctInside (also accepts contentMode/style aliases),
+    // batterySize=<double>,
+    // batteryLook=battery|batteryText|batteryBars|justText (0056 PDM),
+    // batteryContentMode=both|iconOnly|textOnly + batteryStyle=outline|filled|pctInside
+    // (legacy aliases; also contentMode/style),
     // batteryPlacement=left|right|rightTop, batteryVert / batterySidePad /
     // batteryHorizBias=<double>.
     final rawBatteryShow = params['batteryShow'];
     final rawTempShow = params['tempShow'];
     final rawChargingShow = params['chargingShow'];
     final rawBatterySize = params['batterySize'];
+    final rawBatteryLook = params['batteryLook'] ?? params['look'];
     final rawBatteryContentMode =
         params['batteryContentMode'] ?? params['contentMode'];
     final rawBatteryStyle = params['batteryStyle'] ?? params['style'];
@@ -298,6 +302,7 @@ void registerZeeExtensions({
         rawTempShow != null ||
         rawChargingShow != null ||
         rawBatterySize != null ||
+        rawBatteryLook != null ||
         rawBatteryContentMode != null ||
         rawBatteryStyle != null ||
         rawBatteryPlacement != null ||
@@ -305,6 +310,13 @@ void registerZeeExtensions({
         rawBatterySidePad != null ||
         rawBatteryHorizBias != null) {
       var bat = next.battery;
+      BatteryLook? look;
+      if (rawBatteryLook != null) {
+        look = BatteryLook.values.firstWhere(
+          (e) => e.name == rawBatteryLook,
+          orElse: () => bat.look,
+        );
+      }
       BatteryContentMode? contentMode;
       if (rawBatteryContentMode != null) {
         contentMode = BatteryContentMode.values.firstWhere(
@@ -326,6 +338,9 @@ void registerZeeExtensions({
         );
         bat = bat.withPlacement(placement);
       }
+      if (look != null) {
+        bat = bat.withLook(look);
+      }
       next = next.copyWith(
         battery: bat.copyWith(
           showBattery: rawBatteryShow != null ? rawBatteryShow == 'true' : null,
@@ -334,8 +349,8 @@ void registerZeeExtensions({
               ? rawChargingShow == 'true'
               : null,
           sizeScale: double.tryParse(rawBatterySize ?? ''),
-          contentMode: contentMode,
-          style: style,
+          contentMode: look == null ? contentMode : null,
+          style: look == null ? style : null,
           vertFrac: double.tryParse(rawBatteryVert ?? ''),
           sidePadFrac: double.tryParse(rawBatterySidePad ?? ''),
           horizBiasFrac: double.tryParse(rawBatteryHorizBias ?? ''),

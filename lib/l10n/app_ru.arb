@@ -324,6 +324,26 @@
   "@batteryStylePctInside": {
     "description": "Battery style: percentage inside pack"
   },
+  "batteryLook": "Вид",
+  "@batteryLook": {
+    "description": "Battery look picker label (0056 PDM)"
+  },
+  "batteryLookBattery": "Аккумулятор",
+  "@batteryLookBattery": {
+    "description": "PDM: Battery — filled pack"
+  },
+  "batteryLookBatteryText": "Аккумулятор + текст",
+  "@batteryLookBatteryText": {
+    "description": "PDM: Battery + text — pack with %"
+  },
+  "batteryLookBatteryBars": "Аккумулятор с полосками",
+  "@batteryLookBatteryBars": {
+    "description": "PDM: Battery with bars — segmented"
+  },
+  "batteryLookJustText": "Только текст",
+  "@batteryLookJustText": {
+    "description": "PDM: Just text — % only"
+  },
   "batteryPlacement": "Положение",
   "@batteryPlacement": {
     "description": "Battery placement preset selector label"

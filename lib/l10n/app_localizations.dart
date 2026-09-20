@@ -584,6 +584,36 @@ abstract class AppLocalizations {
   /// **'% inside'**
   String get batteryStylePctInside;
 
+  /// Battery look picker label (0056 PDM)
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get batteryLook;
+
+  /// PDM: Battery — filled pack
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get batteryLookBattery;
+
+  /// PDM: Battery + text — pack with %
+  ///
+  /// In en, this message translates to:
+  /// **'Battery + text'**
+  String get batteryLookBatteryText;
+
+  /// PDM: Battery with bars — segmented
+  ///
+  /// In en, this message translates to:
+  /// **'Battery with bars'**
+  String get batteryLookBatteryBars;
+
+  /// PDM: Just text — % only
+  ///
+  /// In en, this message translates to:
+  /// **'Just text'**
+  String get batteryLookJustText;
+
   /// Battery placement preset selector label
   ///
   /// In en, this message translates to:

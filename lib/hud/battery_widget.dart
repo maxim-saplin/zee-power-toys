@@ -11,11 +11,10 @@ import '../services/config_store.dart';
 /// [BatteryConfig.contentMode] / [BatteryConfig.style]. Temperature
 /// [batteryTempCProvider] is shown when [BatteryConfig.showTemp] is set.
 ///
-/// Pack styles ([BatteryStyle]):
-///   outline   — Steam-Deck outline + continuous fill + nub (default)
-///   filled    — 5 segment bars inside the pack
-///   pctInside — continuous fill with % text painted inside the pack
-///               (no duplicate % below when content includes the icon)
+/// Pack styles ([BatteryStyle]) — driven by [BatteryLook] (0056 PDM):
+///   outline   — squarish bold outline + continuous fill + nub (default)
+///   filled    — 5 segment bars inside the pack ("Battery with bars")
+///   pctInside — continuous fill with % text inside the pack (legacy)
 ///
 /// Low-battery colour ramp (mirrors Steam Deck UX):
 ///   ≥ 30 %  → [_kFillGreen]   (emissive green)
@@ -247,9 +246,9 @@ class BatteryWidget extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 /// Paints the battery body per [BatteryStyle]:
-/// - [BatteryStyle.outline]: rounded outline + continuous fill + nub + bolt
+/// - [BatteryStyle.outline]/[BatteryStyle.pctInside]: squarish bold outline
+///   + continuous fill + nub + bolt
 /// - [BatteryStyle.filled]: outline + 5 segment bars + nub + bolt
-/// - [BatteryStyle.pctInside]: same as outline (inline % is a Text overlay)
 class _BatteryPainter extends CustomPainter {
   const _BatteryPainter({
     required this.fillFrac,
@@ -277,8 +276,9 @@ class _BatteryPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final strokeW = bodyH * 0.07;
-    final radius = bodyH * 0.22;
+    // 0056 PDM: squarish bold outline (thicker stroke, tight corners).
+    final strokeW = bodyH * 0.14;
+    final radius = bodyH * 0.08;
 
     // ---- Body outline ----
     final outlinePaint = Paint()

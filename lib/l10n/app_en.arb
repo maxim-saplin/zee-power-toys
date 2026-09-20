@@ -324,6 +324,26 @@
   "@batteryStylePctInside": {
     "description": "Battery style: percentage inside pack"
   },
+  "batteryLook": "Look",
+  "@batteryLook": {
+    "description": "Battery look picker label (0056 PDM)"
+  },
+  "batteryLookBattery": "Battery",
+  "@batteryLookBattery": {
+    "description": "PDM: Battery — filled pack"
+  },
+  "batteryLookBatteryText": "Battery + text",
+  "@batteryLookBatteryText": {
+    "description": "PDM: Battery + text — pack with %"
+  },
+  "batteryLookBatteryBars": "Battery with bars",
+  "@batteryLookBatteryBars": {
+    "description": "PDM: Battery with bars — segmented"
+  },
+  "batteryLookJustText": "Just text",
+  "@batteryLookJustText": {
+    "description": "PDM: Just text — % only"
+  },
   "batteryPlacement": "Position",
   "@batteryPlacement": {
     "description": "Battery placement preset selector label"

@@ -254,6 +254,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get batteryStylePctInside => '% внутри';
 
   @override
+  String get batteryLook => 'Вид';
+
+  @override
+  String get batteryLookBattery => 'Аккумулятор';
+
+  @override
+  String get batteryLookBatteryText => 'Аккумулятор + текст';
+
+  @override
+  String get batteryLookBatteryBars => 'Аккумулятор с полосками';
+
+  @override
+  String get batteryLookJustText => 'Только текст';
+
+  @override
   String get batteryPlacement => 'Положение';
 
   @override
