@@ -59,4 +59,35 @@ void main() {
     expect(find.byType(TileLayer), findsOneWidget);
     expect(find.byType(CircleLayer), findsOneWidget);
   });
+
+
+  testWidgets('caption omits showing-cap for packs under kMaxMarkers', (tester) async {
+    // ~574-style pack must not say "showing 400" (0052).
+    final cams = [
+      for (var i = 0; i < 574; i++)
+        SpeedcamPoint(
+          id: 'c$i',
+          lat: 53.9 + (i % 40) * 0.01,
+          lon: 27.5 + (i ~/ 40) * 0.01,
+        ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeedcamPackMapPreview(
+            cams: cams,
+            tileProvider: fakeTiles,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.textContaining('574 cameras'), findsOneWidget);
+    expect(find.textContaining('showing'), findsNothing);
+    expect(
+      SpeedcamPackMapPreview.kMaxMarkers,
+      greaterThanOrEqualTo(2000),
+    );
+  });
+
 }

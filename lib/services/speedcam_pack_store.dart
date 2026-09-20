@@ -23,7 +23,7 @@ const double kSpeedcamHarvestRadiusKm = 300;
 const double kSpeedcamDefaultCenterLat = 53.9045;
 const double kSpeedcamDefaultCenterLon = 27.5615;
 
-/// Overpass around-query helpers (0047).
+/// Overpass around-query helpers (0047 → 0052).
 abstract final class SpeedcamHarvestArea {
   static String overpassQl({
     required double lat,
@@ -31,9 +31,19 @@ abstract final class SpeedcamHarvestArea {
     double radiusKm = kSpeedcamHarvestRadiusKm,
   }) {
     final radiusM = (radiusKm * 1000).round();
+    // highway=speed_camera nodes PLUS enforcement=maxspeed relation device
+    // members (0052). Relations stay in the result so parse can fall back to
+    // relation maxspeed/direction when the device node lacks them.
     return '''
 [out:json][timeout:90];
-node["highway"="speed_camera"](around:$radiusM,$lat,$lon);
+(
+  node["highway"="speed_camera"](around:$radiusM,$lat,$lon);
+  relation["enforcement"="maxspeed"](around:$radiusM,$lat,$lon);
+)->.base;
+(
+  .base;
+  node(r.base:"device");
+);
 out body;
 ''';
   }
@@ -245,7 +255,7 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
     );
     if (harvested.isEmpty && prior == null) {
       throw StateError(
-        'Overpass returned 0 speed_camera nodes within ${radiusKm.round()} km',
+        'Overpass returned 0 cameras within ${radiusKm.round()} km',
       );
     }
 
@@ -279,37 +289,108 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
   }
 
   /// Parse Overpass JSON elements → [SpeedcamPoint].
+  ///
+  /// Accepts `highway=speed_camera` nodes and `enforcement=maxspeed` relation
+  /// **device** member nodes (0052). Dedupes by `osm-{id}`. maxspeed/direction
+  /// prefer device tags, then fall back to the parent relation tags.
   static List<SpeedcamPoint> parseOverpassElements(List<dynamic> elements) {
-    final out = <SpeedcamPoint>[];
+    final nodesById = <int, Map<String, dynamic>>{};
+    final relations = <Map<String, dynamic>>[];
     for (final raw in elements) {
       if (raw is! Map) continue;
       final m = Map<String, dynamic>.from(raw);
-      if (m['type'] != 'node') continue;
-      final lat = (m['lat'] as num?)?.toDouble();
-      final lon = (m['lon'] as num?)?.toDouble();
-      if (lat == null || lon == null) continue;
+      final type = m['type'];
+      if (type == 'node') {
+        final id = (m['id'] as num?)?.toInt();
+        if (id != null) nodesById[id] = m;
+      } else if (type == 'relation') {
+        relations.add(m);
+      }
+    }
+
+    final byId = <String, SpeedcamPoint>{};
+
+    void put(SpeedcamPoint point) {
+      final existing = byId[point.id];
+      if (existing == null) {
+        byId[point.id] = point;
+        return;
+      }
+      // Enrich missing tags; keep first lat/lon (highway node preferred if first).
+      byId[point.id] = SpeedcamPoint(
+        id: existing.id,
+        lat: existing.lat,
+        lon: existing.lon,
+        maxspeed: existing.maxspeed ?? point.maxspeed,
+        direction: existing.direction ?? point.direction,
+      );
+    }
+
+    for (final m in nodesById.values) {
       final tags = Map<String, dynamic>.from(m['tags'] as Map? ?? const {});
       if (tags['highway'] != 'speed_camera') continue;
-      final id = 'osm-${m['id']}';
-      final maxRaw = tags['maxspeed'];
-      int? maxspeed;
-      if (maxRaw is String) {
-        maxspeed = int.tryParse(maxRaw.replaceAll(RegExp(r'[^0-9]'), ''));
-      } else if (maxRaw is num) {
-        maxspeed = maxRaw.toInt();
-      }
-      final direction =
-          tags['direction'] as String? ?? tags['traffic_sign'] as String?;
-      out.add(SpeedcamPoint(
-        id: id,
-        lat: lat,
-        lon: lon,
-        maxspeed: maxspeed,
-        direction: direction,
-      ));
+      final point = _pointFromNode(m, primaryTags: tags);
+      if (point != null) put(point);
     }
-    return out;
+
+    for (final rel in relations) {
+      final relTags = Map<String, dynamic>.from(rel['tags'] as Map? ?? const {});
+      if (relTags['enforcement'] != 'maxspeed') continue;
+      final members = rel['members'] as List<dynamic>? ?? const [];
+      for (final memRaw in members) {
+        if (memRaw is! Map) continue;
+        final mem = Map<String, dynamic>.from(memRaw);
+        if (mem['role'] != 'device' || mem['type'] != 'node') continue;
+        final nodeId = (mem['ref'] as num?)?.toInt();
+        if (nodeId == null) continue;
+        final node = nodesById[nodeId];
+        if (node == null) continue;
+        final deviceTags =
+            Map<String, dynamic>.from(node['tags'] as Map? ?? const {});
+        final point = _pointFromNode(
+          node,
+          primaryTags: deviceTags,
+          fallbackTags: relTags,
+        );
+        if (point != null) put(point);
+      }
+    }
+
+    return byId.values.toList();
   }
+
+  static SpeedcamPoint? _pointFromNode(
+    Map<String, dynamic> node, {
+    required Map<String, dynamic> primaryTags,
+    Map<String, dynamic>? fallbackTags,
+  }) {
+    final lat = (node['lat'] as num?)?.toDouble();
+    final lon = (node['lon'] as num?)?.toDouble();
+    final idNum = node['id'];
+    if (lat == null || lon == null || idNum == null) return null;
+    final maxspeed = _parseMaxspeed(primaryTags['maxspeed']) ??
+        (fallbackTags != null ? _parseMaxspeed(fallbackTags['maxspeed']) : null);
+    final direction = _parseDirection(primaryTags) ??
+        (fallbackTags != null ? _parseDirection(fallbackTags) : null);
+    return SpeedcamPoint(
+      id: 'osm-$idNum',
+      lat: lat,
+      lon: lon,
+      maxspeed: maxspeed,
+      direction: direction,
+    );
+  }
+
+  static int? _parseMaxspeed(Object? maxRaw) {
+    if (maxRaw is String) {
+      return int.tryParse(maxRaw.replaceAll(RegExp(r'[^0-9]'), ''));
+    }
+    if (maxRaw is num) return maxRaw.toInt();
+    return null;
+  }
+
+  static String? _parseDirection(Map<String, dynamic> tags) =>
+      tags['direction'] as String? ?? tags['traffic_sign'] as String?;
 
   /// Load pack from a fixture file (tests / Overpass flaky).
   Future<SpeedcamPackMeta> installFixture({

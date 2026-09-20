@@ -25,6 +25,64 @@ void main() {
       expect(cams.first.maxspeed, 60);
       expect(cams.first.direction, 'N');
     });
+
+    test('includes enforcement=maxspeed device members; relation tags fallback',
+        () {
+      final cams = FileSpeedcamPackStore.parseOverpassElements([
+        {
+          'type': 'node',
+          'id': 100,
+          'lat': 53.9,
+          'lon': 27.5,
+          'tags': {'highway': 'speed_camera', 'maxspeed': '60'},
+        },
+        // Device node without highway=speed_camera — only via relation.
+        {
+          'type': 'node',
+          'id': 200,
+          'lat': 53.91,
+          'lon': 27.55,
+          'tags': {'direction': 'E'},
+        },
+        {
+          'type': 'relation',
+          'id': 9,
+          'tags': {'enforcement': 'maxspeed', 'maxspeed': '90'},
+          'members': [
+            {'type': 'node', 'ref': 200, 'role': 'device'},
+            {'type': 'way', 'ref': 1, 'role': 'from'},
+          ],
+        },
+      ]);
+      final byId = {for (final c in cams) c.id: c};
+      expect(byId.keys, containsAll(['osm-100', 'osm-200']));
+      expect(byId['osm-200']!.maxspeed, 90); // from relation
+      expect(byId['osm-200']!.direction, 'E'); // from device
+    });
+
+    test('dedupes highway node that is also an enforcement device', () {
+      final cams = FileSpeedcamPackStore.parseOverpassElements([
+        {
+          'type': 'node',
+          'id': 50,
+          'lat': 53.9,
+          'lon': 27.5,
+          'tags': {'highway': 'speed_camera'},
+        },
+        {
+          'type': 'relation',
+          'id': 8,
+          'tags': {'enforcement': 'maxspeed', 'maxspeed': '70', 'direction': 'S'},
+          'members': [
+            {'type': 'node', 'ref': 50, 'role': 'device'},
+          ],
+        },
+      ]);
+      expect(cams, hasLength(1));
+      expect(cams.first.id, 'osm-50');
+      expect(cams.first.maxspeed, 70); // enriched from relation
+      expect(cams.first.direction, 'S');
+    });
   });
 
   group('FileSpeedcamPackStore', () {
@@ -126,6 +184,19 @@ void main() {
       expect(ql, contains('around:300000,53.9,27.5'));
       expect(ql, isNot(contains('51.2')));
       expect(ql, isNot(contains('highway"="speed_camera"](51')));
+    });
+
+    test('overpassQl keeps speed_camera nodes and enforcement device members',
+        () {
+      final ql = SpeedcamHarvestArea.overpassQl(
+        lat: 53.9,
+        lon: 27.5,
+        radiusKm: 300,
+      );
+      expect(ql, contains('node["highway"="speed_camera"](around:'));
+      expect(ql, contains('relation["enforcement"="maxspeed"](around:'));
+      expect(ql, contains('node(r.base:"device")'));
+      expect(ql, contains('out body;'));
     });
 
     test('mergeById retains outside-circle cams (no purge)', () {

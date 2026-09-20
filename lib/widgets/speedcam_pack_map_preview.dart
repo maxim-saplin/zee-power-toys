@@ -9,9 +9,10 @@ import '../services/speedcam_pack_store.dart';
 
 /// DHU OSM map preview of cached pack cams.
 ///
-/// Real OpenStreetMap tiles via [flutter_map]. Dense packs are downsampled
-/// (≤ [kMaxMarkers]) so the DHU stays smooth. ODbL credit lives in Speedcam
-/// settings; the map shows the standard OSM tile attribution chip.
+/// Real OpenStreetMap tiles via [flutter_map]. Packs above [kMaxMarkers]
+/// (~2000) are downsampled so the DHU stays smooth; typical ≤2000 packs
+/// paint all markers. ODbL credit lives in Speedcam settings; the map shows
+/// the standard OSM tile attribution chip.
 class SpeedcamPackMapPreview extends StatelessWidget {
   const SpeedcamPackMapPreview({
     super.key,
@@ -29,7 +30,8 @@ class SpeedcamPackMapPreview extends StatelessWidget {
   @visibleForTesting
   final TileProvider? tileProvider;
 
-  static const int kMaxMarkers = 400;
+  /// High enough that typical harvests (≤~2000 cams) paint every marker (0052).
+  static const int kMaxMarkers = 2000;
 
   static const String _osmTileUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -153,11 +155,15 @@ class SpeedcamPackMapPreview extends StatelessWidget {
 
   static String _caption(int n, SpeedcamPackMeta? meta) {
     final coverage = meta?.coverageLabel ?? 'within 300 km';
+    // Only mention a cap when we actually downsample — never "showing 400"
+    // for a ~574 pack (0052).
     final shown = n > kMaxMarkers ? ' · showing $kMaxMarkers' : '';
     return '$n cameras · $coverage$shown';
   }
 
-  /// Bounds from cam markers, expanded by harvest center/radius when known.
+  /// Bounds from cam markers (+ harvest center pin). Does **not** expand to the
+  /// full 300 km circle — that left the map mostly empty for modest packs
+  /// (0052). The radius circle still draws as an overlay; users can zoom out.
   static LatLngBounds _fitBounds(
     List<SpeedcamPoint> cams,
     SpeedcamPackMeta? meta,
@@ -168,13 +174,7 @@ class SpeedcamPackMapPreview extends StatelessWidget {
     final centerLat = meta?.centerLat;
     final centerLon = meta?.centerLon;
     if (centerLat != null && centerLon != null) {
-      final r = meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
-      final dLat = r / 111.0;
-      final cosLat =
-          math.cos(centerLat * math.pi / 180).abs().clamp(0.2, 1.0);
-      final dLon = r / (111.0 * cosLat);
-      points.add(LatLng(centerLat - dLat, centerLon - dLon));
-      points.add(LatLng(centerLat + dLat, centerLon + dLon));
+      points.add(LatLng(centerLat, centerLon));
     }
     // Degenerate single-point packs: nudge so CameraFit has a span.
     if (points.length == 1) {
