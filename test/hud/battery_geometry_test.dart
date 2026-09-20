@@ -201,4 +201,42 @@ void main() {
       expect(batteryPackInnerH(bodyH), greaterThan(bodyH * 0.48));
     });
   });
+
+  group('batteryClusterSlotFracs — 0067 charging grow', () {
+    test('non-charging keeps baseline fracs', () {
+      final f = batteryClusterSlotFracs(chargingStatsVisible: false);
+      expect(f.widthFrac, kBatterySlotWidthFrac);
+      expect(f.heightFrac, kBatterySlotHeightFrac);
+    });
+
+    test('charging grows height and width', () {
+      final f = batteryClusterSlotFracs(chargingStatsVisible: true);
+      expect(f.widthFrac, kBatterySlotWidthFracCharging);
+      expect(f.heightFrac, kBatterySlotHeightFracCharging);
+      expect(f.heightFrac, greaterThan(kBatterySlotHeightFrac));
+      expect(f.widthFrac, greaterThan(kBatterySlotWidthFrac));
+    });
+
+    test('charging rect is taller than idle for same placement', () {
+      final defaults = batteryPlacementDefaults(BatteryPlacement.rightTop);
+      final idle = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.rightTop,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+      );
+      final charging = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.rightTop,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+        widthFrac: kBatterySlotWidthFracCharging,
+        heightFrac: kBatterySlotHeightFracCharging,
+      );
+      expect(charging.height, greaterThan(idle.height));
+      expect(charging.width, greaterThan(idle.width));
+    });
+  });
 }

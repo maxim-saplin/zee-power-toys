@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
 import '../services/minimap_viewport.dart';
@@ -165,6 +166,11 @@ class _HudSlots extends ConsumerWidget {
     // Battery cluster placement — presets (left / right / rightTop) + fine
     // adjust. Default rightTop matches today's hard-coded top-right.
     final batteryCfg = ref.watch(batteryConfigProvider);
+    // 0067: grow slot when charging stats are shown (3 lines vs 2).
+    final chargingStatsVisible =
+        ref.watch(chargingProvider) == true && batteryCfg.showChargingStats;
+    final slotFracs =
+        batteryClusterSlotFracs(chargingStatsVisible: chargingStatsVisible);
     final batteryRect = batteryClusterRect(
       saW: saWidth,
       saH: saHeight,
@@ -172,6 +178,8 @@ class _HudSlots extends ConsumerWidget {
       vertFrac: batteryCfg.vertFrac,
       sidePadFrac: batteryCfg.sidePadFrac,
       horizBiasFrac: batteryCfg.horizBiasFrac,
+      widthFrac: slotFracs.widthFrac,
+      heightFrac: slotFracs.heightFrac,
     );
 
     return Stack(

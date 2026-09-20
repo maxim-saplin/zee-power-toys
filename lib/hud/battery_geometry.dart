@@ -8,7 +8,8 @@ import '../services/config_store.dart' show BatteryPlacement;
 // Mirrors blinker_geometry / minimap_viewport: sizing/placement math lives
 // here so relationship tests can assert rects without pumping the widget tree.
 // The BATTERY slot is a tall-narrow box; BatteryWidget fits its cluster
-// (icon + % + temp + charging kW) inside it. Temp and charging move with
+// (icon + % + temp + charging kW) inside it. While charging the slot grows
+// (0067) so three lines stay readable. Temp and charging move with
 // the cluster because they are children of BatteryWidget, not separate slots.
 // ---------------------------------------------------------------------------
 
@@ -17,6 +18,28 @@ const double kBatterySlotWidthFrac = 0.12;
 
 /// Slot height as a fraction of Safe Area height (today's hard-coded 60%).
 const double kBatterySlotHeightFrac = 0.6;
+
+/// Taller slot while charging so bolt/kW + SoC + temp stay legible (0067).
+/// Non-charging keeps [kBatterySlotHeightFrac]; FittedBox was crushing the
+/// 3-line cluster into the 2-line box.
+const double kBatterySlotHeightFracCharging = 0.82;
+
+/// Slightly wider while charging so kW digits are not clipped.
+const double kBatterySlotWidthFracCharging = 0.15;
+
+/// Height/width fracs for the cluster given charging + stats visibility.
+({double widthFrac, double heightFrac}) batteryClusterSlotFracs({
+  required bool chargingStatsVisible,
+}) =>
+    chargingStatsVisible
+        ? (
+            widthFrac: kBatterySlotWidthFracCharging,
+            heightFrac: kBatterySlotHeightFracCharging,
+          )
+        : (
+            widthFrac: kBatterySlotWidthFrac,
+            heightFrac: kBatterySlotHeightFrac,
+          );
 
 /// Whether [placement] anchors the cluster on the left Safe-Area edge.
 bool batteryPlacementIsLeft(BatteryPlacement placement) =>
