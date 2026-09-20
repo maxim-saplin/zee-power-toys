@@ -600,7 +600,7 @@
   "@speedcamTitle": {
     "description": "Speedcam settings screen app-bar title"
   },
-  "speedcamPackSection": "Региональный пакет",
+  "speedcamPackSection": "Кэш камер",
   "@speedcamPackSection": {
     "description": "Speedcam pack section heading"
   },
@@ -608,7 +608,7 @@
   "@speedcamPackBy": {
     "description": "BY OSM pack label"
   },
-  "speedcamPackMissing": "Пакета нет — нажмите Обновить",
+  "speedcamPackMissing": "Камер нет — нажмите Обновить",
   "@speedcamPackMissing": {
     "description": "Shown when no BY pack on disk"
   },
@@ -624,7 +624,7 @@
       }
     }
   },
-  "speedcamPackUpdate": "Обновить пакет",
+  "speedcamPackUpdate": "Собрать (300 км)",
   "@speedcamPackUpdate": {
     "description": "Manual Overpass download button"
   },
@@ -668,13 +668,17 @@
   "@speedcamHudDemoStop": {
     "description": "Clear HUD speedcam demo approach"
   },
-  "speedcamDbSection": "Локальный пакет / БД",
+  "speedcamDbSection": "Локальная БД / карта",
   "@speedcamDbSection": {
     "description": "DHU local speedcam pack state"
   },
   "speedcamDbRegion": "Регион",
   "@speedcamDbRegion": {
     "description": "Pack region label"
+  },
+  "speedcamDbCoverage": "Охват",
+  "@speedcamDbCoverage": {
+    "description": "Честный радиус последнего сбора (напр. в пределах 300 км)"
   },
   "speedcamDbSource": "Источник",
   "@speedcamDbSource": {
@@ -688,7 +692,7 @@
   "@speedcamDbAge": {
     "description": "Pack age vs now"
   },
-  "speedcamDbCount": "Камер в пакете",
+  "speedcamDbCount": "Камер в кэше",
   "@speedcamDbCount": {
     "description": "Cached cam count"
   },

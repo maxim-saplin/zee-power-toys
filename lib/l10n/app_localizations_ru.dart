@@ -468,13 +468,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamTitle => 'Камеры';
 
   @override
-  String get speedcamPackSection => 'Региональный пакет';
+  String get speedcamPackSection => 'Кэш камер';
 
   @override
   String get speedcamPackBy => 'Беларусь (BY)';
 
   @override
-  String get speedcamPackMissing => 'Пакета нет — нажмите Обновить';
+  String get speedcamPackMissing => 'Камер нет — нажмите Обновить';
 
   @override
   String speedcamPackStatus(int count, String when) {
@@ -482,7 +482,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get speedcamPackUpdate => 'Обновить пакет';
+  String get speedcamPackUpdate => 'Собрать (300 км)';
 
   @override
   String get speedcamPackUpdating => 'Обновление…';
@@ -515,10 +515,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamHudDemoStop => 'Стоп демо';
 
   @override
-  String get speedcamDbSection => 'Локальный пакет / БД';
+  String get speedcamDbSection => 'Локальная БД / карта';
 
   @override
   String get speedcamDbRegion => 'Регион';
+
+  @override
+  String get speedcamDbCoverage => 'Охват';
 
   @override
   String get speedcamDbSource => 'Источник';
@@ -530,7 +533,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamDbAge => 'Возраст';
 
   @override
-  String get speedcamDbCount => 'Камер в пакете';
+  String get speedcamDbCount => 'Камер в кэше';
 
   @override
   String get speedcamDbSample => 'Примеры камер';

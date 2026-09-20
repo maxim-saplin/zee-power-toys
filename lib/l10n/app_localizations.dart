@@ -1001,7 +1001,7 @@ abstract class AppLocalizations {
   /// Speedcam pack section heading
   ///
   /// In en, this message translates to:
-  /// **'Region pack'**
+  /// **'Camera cache'**
   String get speedcamPackSection;
 
   /// BY OSM pack label
@@ -1013,7 +1013,7 @@ abstract class AppLocalizations {
   /// Shown when no BY pack on disk
   ///
   /// In en, this message translates to:
-  /// **'No pack cached — tap Update'**
+  /// **'No cameras cached — tap Update'**
   String get speedcamPackMissing;
 
   /// Cached pack status line
@@ -1025,7 +1025,7 @@ abstract class AppLocalizations {
   /// Manual Overpass download button
   ///
   /// In en, this message translates to:
-  /// **'Update pack'**
+  /// **'Harvest (300 km)'**
   String get speedcamPackUpdate;
 
   /// Busy label while pack downloads
@@ -1091,7 +1091,7 @@ abstract class AppLocalizations {
   /// DHU local speedcam pack state
   ///
   /// In en, this message translates to:
-  /// **'Local pack / DB'**
+  /// **'Local DB / map'**
   String get speedcamDbSection;
 
   /// Pack region label
@@ -1099,6 +1099,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Region'**
   String get speedcamDbRegion;
+
+  /// Last harvest radius honesty (e.g. within 300 km)
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get speedcamDbCoverage;
 
   /// Pack source overpass/fixture/fake
   ///
@@ -1121,7 +1127,7 @@ abstract class AppLocalizations {
   /// Cached cam count
   ///
   /// In en, this message translates to:
-  /// **'Cameras in pack'**
+  /// **'Cameras in cache'**
   String get speedcamDbCount;
 
   /// First N cams from local DB

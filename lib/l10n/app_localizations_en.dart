@@ -467,13 +467,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamTitle => 'Speedcam';
 
   @override
-  String get speedcamPackSection => 'Region pack';
+  String get speedcamPackSection => 'Camera cache';
 
   @override
   String get speedcamPackBy => 'Belarus (BY)';
 
   @override
-  String get speedcamPackMissing => 'No pack cached — tap Update';
+  String get speedcamPackMissing => 'No cameras cached — tap Update';
 
   @override
   String speedcamPackStatus(int count, String when) {
@@ -481,7 +481,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get speedcamPackUpdate => 'Update pack';
+  String get speedcamPackUpdate => 'Harvest (300 km)';
 
   @override
   String get speedcamPackUpdating => 'Updating…';
@@ -514,10 +514,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamHudDemoStop => 'Stop demo';
 
   @override
-  String get speedcamDbSection => 'Local pack / DB';
+  String get speedcamDbSection => 'Local DB / map';
 
   @override
   String get speedcamDbRegion => 'Region';
+
+  @override
+  String get speedcamDbCoverage => 'Coverage';
 
   @override
   String get speedcamDbSource => 'Source';
@@ -529,7 +532,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamDbAge => 'Age';
 
   @override
-  String get speedcamDbCount => 'Cameras in pack';
+  String get speedcamDbCount => 'Cameras in cache';
 
   @override
   String get speedcamDbSample => 'Sample cams';

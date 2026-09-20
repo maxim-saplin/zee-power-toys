@@ -106,7 +106,9 @@ void main() {
       );
       expect(after, isNotNull);
       expect(after!.version, isNot(equals('aged-for-autorfresh')));
-      expect(after.camCount, 3);
+      // Merge retains aged 'old' + 3 from Overpass fixture.
+      expect(after.camCount, 4);
+      expect(after.coverageLabel, contains('300'));
       store.dispose();
       await root.delete(recursive: true);
     });

@@ -102,6 +102,11 @@ Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](
 
 Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
 
+### Speedcam follow-ups (0046–0047)
+
+| [0046](0046-speedcam-dhu-map-preview.md) | DHU map preview of cached cams | in-progress (folded w/ 0047) |
+| [0047](0047-speedcam-harvest-300km.md) | Harvest ~300 km of host pose; merge no-purge; no BY UI | in-progress |
+
 ### Quality + publish
 
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |

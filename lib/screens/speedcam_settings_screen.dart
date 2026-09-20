@@ -10,6 +10,7 @@ import '../services/config_store.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
+import '../widgets/speedcam_pack_map_preview.dart';
 import '../services/fakes/fake_speedcam_service.dart';
 
 /// Speedcam settings — harvest/DB first (0037), then radar (0034).
@@ -25,6 +26,7 @@ class _SpeedcamSettingsScreenState
     extends ConsumerState<SpeedcamSettingsScreen> {
   SpeedcamPackMeta? _meta;
   List<SpeedcamPoint> _sampleCams = const [];
+  List<SpeedcamPoint> _allCams = const [];
   String? _error;
   bool _busy = false;
   bool _demoActive = false;
@@ -51,6 +53,7 @@ class _SpeedcamSettingsScreenState
     if (!mounted) return;
     setState(() {
       _meta = meta;
+      _allCams = cams;
       _sampleCams = cams.take(3).toList();
     });
   }
@@ -74,10 +77,13 @@ class _SpeedcamSettingsScreenState
       final before = await store.current(SpeedcamPackIds.by);
       final wasStale = before == null ||
           before.isStale(afterDays: sc.staleAfterDays);
+      final center = _harvestCenter();
       final meta = await store.refreshIfNeeded(
         packId: SpeedcamPackIds.by,
         ifStale: true,
         staleAfterDays: sc.staleAfterDays,
+        centerLat: center.lat,
+        centerLon: center.lon,
       );
       if (meta != null) {
         await ref.read(speedcamServiceProvider).reloadFromPack();
@@ -90,6 +96,7 @@ class _SpeedcamSettingsScreenState
           (meta != null && meta.fetchedAt != before.fetchedAt);
       setState(() {
         _meta = meta;
+        _allCams = cams;
         _sampleCams = cams.take(3).toList();
         _busy = false;
         if (refreshed) {
@@ -110,6 +117,13 @@ class _SpeedcamSettingsScreenState
     }
   }
 
+
+  ({double? lat, double? lon}) _harvestCenter() {
+    final host = ref.read(speedcamServiceProvider).snapshot.host;
+    if (host != null) return (lat: host.lat, lon: host.lon);
+    return (lat: _meta?.centerLat, lon: _meta?.centerLon);
+  }
+
   Future<void> _update() async {
     setState(() {
       _busy = true;
@@ -118,15 +132,22 @@ class _SpeedcamSettingsScreenState
     });
     try {
       final store = ref.read(speedcamPackStoreProvider);
-      final meta = await store.updatePack(SpeedcamPackIds.by);
+      final center = _harvestCenter();
+      final meta = await store.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: center.lat,
+        centerLon: center.lon,
+      );
       await ref.read(speedcamServiceProvider).reloadFromPack();
       final cams = await store.loadCams(SpeedcamPackIds.by);
       if (!mounted) return;
       setState(() {
         _meta = meta;
+        _allCams = cams;
         _sampleCams = cams.take(3).toList();
         _busy = false;
-        _policyNote = 'Manual update ok';
+        _policyNote =
+            'Harvest merged · ${meta.lastHarvestCount ?? meta.camCount} fetched · ${meta.camCount} in cache';
       });
     } catch (e) {
       if (!mounted) return;
@@ -311,11 +332,20 @@ class _SpeedcamSettingsScreenState
           ),          SettingsSection(
             title: l10n.speedcamDbSection,
             children: [
+              SpeedcamPackMapPreview(
+                cams: _allCams,
+                meta: meta,
+              ),
+              const SizedBox(height: 8),
               ListTile(
-                key: const ValueKey('speedcam-db-region'),
+                key: const ValueKey('speedcam-db-coverage'),
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamDbRegion),
-                subtitle: Text(meta?.regionLabel ?? l10n.speedcamPackBy),
+                title: Text(l10n.speedcamDbCoverage),
+                subtitle: Text(
+                  meta == null
+                      ? l10n.speedcamPackMissing
+                      : meta.coverageLabel,
+                ),
               ),
               ListTile(
                 key: const ValueKey('speedcam-db-source'),

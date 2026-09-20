@@ -600,7 +600,7 @@
   "@speedcamTitle": {
     "description": "Speedcam settings screen app-bar title"
   },
-  "speedcamPackSection": "Region pack",
+  "speedcamPackSection": "Camera cache",
   "@speedcamPackSection": {
     "description": "Speedcam pack section heading"
   },
@@ -608,7 +608,7 @@
   "@speedcamPackBy": {
     "description": "BY OSM pack label"
   },
-  "speedcamPackMissing": "No pack cached — tap Update",
+  "speedcamPackMissing": "No cameras cached — tap Update",
   "@speedcamPackMissing": {
     "description": "Shown when no BY pack on disk"
   },
@@ -624,7 +624,7 @@
       }
     }
   },
-  "speedcamPackUpdate": "Update pack",
+  "speedcamPackUpdate": "Harvest (300 km)",
   "@speedcamPackUpdate": {
     "description": "Manual Overpass download button"
   },
@@ -668,13 +668,17 @@
   "@speedcamHudDemoStop": {
     "description": "Clear HUD speedcam demo approach"
   },
-  "speedcamDbSection": "Local pack / DB",
+  "speedcamDbSection": "Local DB / map",
   "@speedcamDbSection": {
     "description": "DHU local speedcam pack state"
   },
   "speedcamDbRegion": "Region",
   "@speedcamDbRegion": {
     "description": "Pack region label"
+  },
+  "speedcamDbCoverage": "Coverage",
+  "@speedcamDbCoverage": {
+    "description": "Last harvest radius honesty (e.g. within 300 km)"
   },
   "speedcamDbSource": "Source",
   "@speedcamDbSource": {
@@ -688,7 +692,7 @@
   "@speedcamDbAge": {
     "description": "Pack age vs now"
   },
-  "speedcamDbCount": "Cameras in pack",
+  "speedcamDbCount": "Cameras in cache",
   "@speedcamDbCount": {
     "description": "Cached cam count"
   },
