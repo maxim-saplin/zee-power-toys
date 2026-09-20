@@ -53,3 +53,28 @@ Rect batteryClusterRect({
   final left = isLeft ? pad : (saW - pad - w).clamp(0.0, saW);
   return Rect.fromLTWH(left, top, w, h);
 }
+
+/// Horizontal stroke/pad used by the pack painter (squarish bold outline).
+/// Kept here so the dual-color % clip (0062) shares the fill boundary with paint.
+double batteryPackStrokeW(double bodyH) => bodyH * 0.14;
+
+/// Inner padding from outline stroke to continuous-fill rect.
+double batteryPackInnerPad(double bodyH) =>
+    batteryPackStrokeW(bodyH) + bodyH * 0.08;
+
+/// X of the continuous-fill right edge inside a pack of [bodyW]×[bodyH].
+///
+/// Matches `_BatteryPainter` continuous fill. Used to clip dual-color % text
+/// (black on filled portion, white on empty) at the fill boundary.
+double batteryPackFillEdgeX({
+  required double bodyW,
+  required double bodyH,
+  required double fillFrac,
+}) {
+  final innerPad = batteryPackInnerPad(bodyH);
+  final innerW = bodyW - innerPad * 2;
+  if (innerW <= 0) return 0.0;
+  final f = fillFrac.clamp(0.0, 1.0);
+  return innerPad + innerW * f;
+}
+

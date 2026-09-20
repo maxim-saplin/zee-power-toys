@@ -374,13 +374,13 @@ enum BatteryContentMode { both, iconOnly, textOnly }
 /// `outline`   — squarish bold outline + continuous fill + nub (default).
 /// `filled`    — segmented bars (4–5 blocks) inside the pack outline.
 /// `pctInside` — continuous fill with percentage text painted inside the pack
-///               (legacy; product UI maps this to [BatteryLook.batteryText]).
+///               ([BatteryLook.batteryText] / 0062 dual-color clip).
 enum BatteryStyle { outline, filled, pctInside }
 
 /// Product battery looks (0056 PDM names).
 ///
 /// 1. [battery]     — "Battery" — filled pack (icon only, continuous fill)
-/// 2. [batteryText] — "Battery + text" — pack with %
+/// 2. [batteryText] — "Battery + text" — pack with % inside (0062 dual-color)
 /// 3. [batteryBars] — "Battery with bars" — segmented
 /// 4. [justText]    — "Just text" — % only
 enum BatteryLook { battery, batteryText, batteryBars, justText }
@@ -396,7 +396,8 @@ enum BatteryLook { battery, batteryText, batteryBars, justText }
         ),
       BatteryLook.batteryText => (
           contentMode: BatteryContentMode.both,
-          style: BatteryStyle.outline,
+          // 0062: % lives inside the pack (dual-color clip), not below.
+          style: BatteryStyle.pctInside,
         ),
       BatteryLook.batteryBars => (
           contentMode: BatteryContentMode.iconOnly,
@@ -460,7 +461,7 @@ enum BatteryPlacement {
 /// Battery widget appearance + placement config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// look = batteryText (PDM "Battery + text"), sizeScale = 1.0, placement =
+/// look = batteryText (PDM "Battery + text", % inside pack), sizeScale = 1.0, placement =
 /// rightTop with vertFrac/sidePadFrac matching today's hard-coded top-right
 /// slot. The charging stats panel is show-while-charging — it appears
 /// automatically when the car reports charging and is hidden otherwise (app
@@ -474,7 +475,7 @@ class BatteryConfig {
     this.sizeScale = 1.0,
     this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
-    this.style = BatteryStyle.outline,
+    this.style = BatteryStyle.pctInside,
     this.placement = BatteryPlacement.rightTop,
     this.vertFrac = 0.010,
     this.sidePadFrac = 0.04,
@@ -609,9 +610,9 @@ class BatteryConfig {
     final style = styleName != null
         ? BatteryStyle.values.firstWhere(
             (e) => e.name == styleName,
-            orElse: () => BatteryStyle.outline,
+            orElse: () => BatteryStyle.pctInside,
           )
-        : BatteryStyle.outline;
+        : BatteryStyle.pctInside;
     final lookName = json['look'] as String?;
     final hasLook = lookName != null;
     final look = hasLook

@@ -24,7 +24,7 @@ void main() {
       expect(cfg.sizeScale, 1.0);
       expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);
-      expect(cfg.style, BatteryStyle.outline);
+      expect(cfg.style, BatteryStyle.pctInside);
       expect(cfg.placement, BatteryPlacement.rightTop);
       expect(cfg.vertFrac, 0.010);
       expect(cfg.sidePadFrac, 0.04);
@@ -51,6 +51,7 @@ void main() {
       expect(base.withLook(BatteryLook.battery).contentMode,
           BatteryContentMode.iconOnly);
       expect(base.withLook(BatteryLook.battery).style, BatteryStyle.outline);
+      expect(base.withLook(BatteryLook.batteryText).style, BatteryStyle.pctInside);
       expect(base.withLook(BatteryLook.batteryBars).style, BatteryStyle.filled);
       expect(base.withLook(BatteryLook.justText).contentMode,
           BatteryContentMode.textOnly);
@@ -205,8 +206,11 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
-      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
-      expect(find.text('50%'), findsOneWidget);
+      // 0062: Battery + text puts % inside the pack (dual-color), not below.
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      // Two Text nodes (white + black layers) share the same label.
+      expect(find.text('50%'), findsNWidgets(2));
     });
 
     // battery fill ∝ pct: test 0%, 50%, 100% all render the icon without crash.
@@ -224,7 +228,7 @@ void main() {
       signals.emitBattery(levelPct: 0, tempC: 20.0);
       await tester.pump();
 
-      expect(find.text('0%'), findsOneWidget);
+      expect(find.text('0%'), findsWidgets);
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
     });
 
@@ -242,7 +246,7 @@ void main() {
       signals.emitBattery(levelPct: 50, tempC: 22.0);
       await tester.pump();
 
-      expect(find.text('50%'), findsOneWidget);
+      expect(find.text('50%'), findsWidgets);
     });
 
     testWidgets('battery renders at pct=100', (tester) async {
@@ -259,7 +263,7 @@ void main() {
       signals.emitBattery(levelPct: 100, tempC: 25.0);
       await tester.pump();
 
-      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('100%'), findsWidgets);
     });
 
     // Temperature tests.
@@ -479,7 +483,33 @@ void main() {
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
-      expect(find.text('88%'), findsOneWidget);
+      // Dual-color layers: white (empty) + black (filled) share the label.
+      expect(find.text('88%'), findsNWidgets(2));
+    });
+
+    testWidgets('0062 batteryText look: dual-color inline %, ClipRect at fill',
+        (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig().withLook(BatteryLook.batteryText),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 42, tempC: 21.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      expect(find.byType(ClipRect), findsWidgets);
+      expect(find.text('42%'), findsNWidgets(2));
     });
 
     testWidgets('filled style still paints icon', (tester) async {

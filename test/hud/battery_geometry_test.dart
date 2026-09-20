@@ -144,4 +144,45 @@ void main() {
       expect(BatteryConfig.fromJson(cfg.toJson()), equals(cfg));
     });
   });
+
+
+  group('batteryPackFillEdgeX (0062 dual-color clip)', () {
+    test('0% → left inner pad; 100% → right inner pad edge', () {
+      const bodyW = 40.0;
+      const bodyH = 20.0;
+      final pad = batteryPackInnerPad(bodyH);
+      expect(
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 0),
+        closeTo(pad, 1e-9),
+      );
+      expect(
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 1),
+        closeTo(bodyW - pad, 1e-9),
+      );
+    });
+
+    test('50% is midpoint of inner fill span', () {
+      const bodyW = 40.0;
+      const bodyH = 20.0;
+      final pad = batteryPackInnerPad(bodyH);
+      final mid = pad + (bodyW - pad * 2) * 0.5;
+      expect(
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 0.5),
+        closeTo(mid, 1e-9),
+      );
+    });
+
+    test('clamps fillFrac outside 0..1', () {
+      const bodyW = 40.0;
+      const bodyH = 20.0;
+      expect(
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: -1),
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 0),
+      );
+      expect(
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 2),
+        batteryPackFillEdgeX(bodyW: bodyW, bodyH: bodyH, fillFrac: 1),
+      );
+    });
+  });
 }

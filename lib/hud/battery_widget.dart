@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
+import 'battery_geometry.dart';
 
 /// Emissive HUD battery indicator for the BATTERY slot.
 ///
@@ -14,7 +15,7 @@ import '../services/config_store.dart';
 /// Pack styles ([BatteryStyle]) — driven by [BatteryLook] (0056 PDM):
 ///   outline   — squarish bold outline + continuous fill + nub (default)
 ///   filled    — 5 segment bars inside the pack ("Battery with bars")
-///   pctInside — continuous fill with % text inside the pack (legacy)
+///   pctInside — continuous fill with % text inside the pack (0062 dual-color)
 ///
 /// Low-battery colour ramp (mirrors Steam Deck UX):
 ///   ≥ 30 %  → [_kFillGreen]   (emissive green)
@@ -121,16 +122,6 @@ class BatteryWidget extends ConsumerWidget {
       fontSize: base * 0.45,
       height: 1.0,
     );
-    final inlinePctStyle = TextStyle(
-      color: _kTextPrimary,
-      fontSize: bodyH * 0.48,
-      fontWeight: FontWeight.w700,
-      height: 1.0,
-      shadows: const <Shadow>[
-        Shadow(color: Color(0xFF000000), blurRadius: 2),
-      ],
-    );
-
     final pctLabel = pct != null ? '$pct%' : '--%';
 
     // Align the cluster toward the active edge so left placement mirrors
@@ -189,13 +180,14 @@ class BatteryWidget extends ConsumerWidget {
                         width: bodyW,
                         top: 0,
                         bottom: 0,
-                        child: Center(
-                          child: Text(
-                            pctLabel,
-                            key: const ValueKey('battery-inline-pct'),
-                            style: inlinePctStyle,
-                            textAlign: TextAlign.center,
-                          ),
+                        child: _DualColorPctLabel(
+                          key: const ValueKey('battery-inline-pct'),
+                          label: pctLabel,
+                          bodyW: bodyW,
+                          bodyH: bodyH,
+                          fillFrac: fillFrac,
+                          filledColor: const Color(0xFF000000),
+                          emptyColor: _kTextPrimary,
                         ),
                       ),
                   ],
@@ -277,7 +269,8 @@ class _BatteryPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // 0056 PDM: squarish bold outline (thicker stroke, tight corners).
-    final strokeW = bodyH * 0.14;
+    // Stroke/pad shared with batteryPackFillEdgeX so 0062 % clip matches fill.
+    final strokeW = batteryPackStrokeW(bodyH);
     final radius = bodyH * 0.08;
 
     // ---- Body outline ----
@@ -303,7 +296,7 @@ class _BatteryPainter extends CustomPainter {
     );
     canvas.drawRRect(nubRect, nubPaint);
 
-    final innerPad = strokeW + bodyH * 0.08;
+    final innerPad = batteryPackInnerPad(bodyH);
     final innerW = bodyW - innerPad * 2;
     final innerH = bodyH - innerPad * 2;
 
@@ -382,6 +375,85 @@ class _BatteryPainter extends CustomPainter {
       old.showBolt != showBolt ||
       old.outlineColor != outlineColor ||
       old.style != style;
+}
+
+// ---------------------------------------------------------------------------
+// Dual-color % inside pack (0062) — black on fill, white on empty, clipped.
+// ---------------------------------------------------------------------------
+
+/// Percentage label painted twice and clipped at the pack fill boundary so
+/// the glyphs read black over the filled portion and white over the empty.
+class _DualColorPctLabel extends StatelessWidget {
+  const _DualColorPctLabel({
+    super.key,
+    required this.label,
+    required this.bodyW,
+    required this.bodyH,
+    required this.fillFrac,
+    required this.filledColor,
+    required this.emptyColor,
+  });
+
+  final String label;
+  final double bodyW;
+  final double bodyH;
+  final double fillFrac;
+  final Color filledColor;
+  final Color emptyColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: bodyH * 0.48,
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+    );
+    final fillEdge = batteryPackFillEdgeX(
+      bodyW: bodyW,
+      bodyH: bodyH,
+      fillFrac: fillFrac,
+    );
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        // Empty portion (right of fill) — white / near-white.
+        Text(
+          label,
+          style: style.copyWith(color: emptyColor),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          softWrap: false,
+        ),
+        // Filled portion (left of fill edge) — black, clipped at boundary.
+        ClipRect(
+          clipper: _LeftEdgeClipper(fillEdge),
+          child: Text(
+            label,
+            style: style.copyWith(color: filledColor),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            softWrap: false,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Clips to [0, edgeX] × full height so dual-color text splits at fill edge.
+class _LeftEdgeClipper extends CustomClipper<Rect> {
+  const _LeftEdgeClipper(this.edgeX);
+
+  final double edgeX;
+
+  @override
+  Rect getClip(Size size) {
+    final w = edgeX.clamp(0.0, size.width);
+    return Rect.fromLTWH(0, 0, w, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant _LeftEdgeClipper old) => old.edgeX != edgeX;
 }
 
 // ---------------------------------------------------------------------------

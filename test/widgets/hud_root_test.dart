@@ -262,8 +262,8 @@ void main() {
           reason: 'demo override forces hazard — left mark must be visible with no signal injected');
       expect(find.byKey(const ValueKey('blinker-mark-right')), findsOneWidget,
           reason: 'demo override forces hazard — right mark must be visible with no signal injected');
-      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget,
-          reason: 'battery content must render with no signal injected');
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget,
+          reason: 'battery content must render with no signal injected (0062 % inside)');
       expect(find.byKey(const ValueKey('charging-kw-text')), findsOneWidget,
           reason: 'demo override forces charging=true — the kW panel must be visible');
     });
