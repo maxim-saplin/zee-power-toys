@@ -413,34 +413,38 @@ class _DualColorPctLabel extends StatelessWidget {
       bodyH: bodyH,
       fillFrac: fillFrac,
     );
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        // Empty portion (right of fill) — white / near-white.
-        Text(
-          label,
-          style: style.copyWith(color: emptyColor),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          softWrap: false,
-        ),
-        // Filled portion (left of fill edge) — black, clipped at boundary.
-        ClipRect(
-          clipper: _LeftEdgeClipper(fillEdge),
+    // StackFit.expand: clip X is in pack-body coords (same as fillEdge).
+    // Without expand, ClipRect sizes to the Text and fillEdge (pack space)
+    // often covers the whole glyph — white on empty never shows (0062 FAIL).
+    Widget pct(Color color) => Center(
           child: Text(
             label,
-            style: style.copyWith(color: filledColor),
+            style: style.copyWith(color: color),
             textAlign: TextAlign.center,
             maxLines: 1,
             softWrap: false,
           ),
+        );
+    return Stack(
+      fit: StackFit.expand,
+      alignment: Alignment.center,
+      children: <Widget>[
+        // Empty portion (right of fill) — white, clipped to empty side.
+        ClipRect(
+          clipper: _RightOfEdgeClipper(fillEdge),
+          child: pct(emptyColor),
+        ),
+        // Filled portion (left of fill edge) — black, clipped at boundary.
+        ClipRect(
+          clipper: _LeftEdgeClipper(fillEdge),
+          child: pct(filledColor),
         ),
       ],
     );
   }
 }
 
-/// Clips to [0, edgeX] × full height so dual-color text splits at fill edge.
+/// Clips to [0, edgeX] × full height — filled / left side of dual-color %.
 class _LeftEdgeClipper extends CustomClipper<Rect> {
   const _LeftEdgeClipper(this.edgeX);
 
@@ -454,6 +458,22 @@ class _LeftEdgeClipper extends CustomClipper<Rect> {
 
   @override
   bool shouldReclip(covariant _LeftEdgeClipper old) => old.edgeX != edgeX;
+}
+
+/// Clips to [edgeX, width] × full height — empty / right side of dual-color %.
+class _RightOfEdgeClipper extends CustomClipper<Rect> {
+  const _RightOfEdgeClipper(this.edgeX);
+
+  final double edgeX;
+
+  @override
+  Rect getClip(Size size) {
+    final x = edgeX.clamp(0.0, size.width);
+    return Rect.fromLTWH(x, 0, size.width - x, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant _RightOfEdgeClipper old) => old.edgeX != edgeX;
 }
 
 // ---------------------------------------------------------------------------

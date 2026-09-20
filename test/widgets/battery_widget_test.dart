@@ -508,8 +508,17 @@ void main() {
 
       expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
-      expect(find.byType(ClipRect), findsWidgets);
+      // Empty (white) + filled (black) each get a ClipRect in pack coords.
+      final inline = find.byKey(const ValueKey('battery-inline-pct'));
+      expect(find.descendant(of: inline, matching: find.byType(ClipRect)),
+          findsNWidgets(2));
       expect(find.text('42%'), findsNWidgets(2));
+
+      // Colors must stay black-on-fill / white-on-empty (not inverted).
+      final texts = tester.widgetList<Text>(find.text('42%')).toList();
+      final colors = texts.map((t) => t.style?.color).toSet();
+      expect(colors, contains(const Color(0xFF000000)));
+      expect(colors, contains(const Color(0xFFEEEEEE)));
     });
 
     testWidgets('filled style still paints icon', (tester) async {

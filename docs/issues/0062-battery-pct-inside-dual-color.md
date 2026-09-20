@@ -29,7 +29,7 @@ icon with a dual-color / masked effect:
 ## Definition of Done
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 - [x] `BatteryLook.batteryText` maps to `BatteryStyle.pctInside` (default look)
-- [x] Dual-color %: black on fill / white on empty, `ClipRect` at fill edge
+- [x] Dual-color %: black on fill / white on empty, pack-sized dual `ClipRect` at fill edge
 - [x] Fill-edge math shared with painter (`batteryPackFillEdgeX`)
 - [x] Widget + geometry tests green
 - [x] Issue + BACKLOG
@@ -40,6 +40,22 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 wanted % **inside**; 0062 flips the look mapping and adds the clip effect.
 Other looks (Battery / bars / Just text) unchanged. Tip stays on
 `0044-publish-prep`; car install = `adb install -r` only (0054).
+
+
+## FAIL write-up (Maxim / PDM, 2026-09-20)
+
+On-car: **black on fill (left) OK**; **white on empty (right) invisible**.
+
+**Do not** invert fill to white / swap so fill becomes white. Keep green fill
+L→R; black on fill; white on empty; clip at fill edge.
+
+**Root cause:** `_DualColorPctLabel` clipped black with pack-space `fillEdge`
+while `ClipRect` sized to the Text (centered). `fillEdge` often ≥ text width →
+black covered the whole glyph; empty-side white never showed. Empty side also
+had no clip of its own.
+
+**Fix:** `StackFit.expand` so clip X matches pack body; clip white with
+`_RightOfEdgeClipper(fillEdge)` and black with `_LeftEdgeClipper(fillEdge)`.
 
 ## Notes
 Amber/red low-battery fill still uses black-on-fill (readable on amber/red).
