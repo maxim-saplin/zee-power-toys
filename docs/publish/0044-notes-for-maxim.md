@@ -49,3 +49,11 @@ flutter build apk --release -PuseAospDebugKey=true
 - GitHub Releases upload
 - Enabling the workflow on `push`/`tag`
 - Claiming Install is production-ready while YNavi v11 is the target
+
+## Sibling NOTES (local commits, not pushed)
+
+| Repo | Branch | Local tip | File |
+|------|--------|-----------|------|
+| ynavi-zee | `hud` | `8ffe0aed6` | `NOTES-for-Maxim-0044.md` |
+| zee_hud_2 | `main` | `72651e1c5f` | `NOTES-for-Maxim-0044.md` |
+| zee-power-toys | `0044-publish-prep` | this branch | `docs/publish/0044-notes-for-maxim.md` |
