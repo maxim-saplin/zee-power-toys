@@ -491,6 +491,8 @@ class MainActivity : FlutterActivity() {
 
     /** Push a location map to Dart; Log.i so `adb logcat -s ZEE` shows the path. */
     private fun emitSpeedcamLocation(loc: android.location.Location, source: String) {
+        lastSpeedcamLocation = loc
+        lastSpeedcamSource = source
         val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null
         val heading = if (loc.hasBearing()) loc.bearing.toDouble() else null
         val event = hashMapOf<String, Any?>(
@@ -507,6 +509,64 @@ class MainActivity : FlutterActivity() {
                 "speedKmh=$speedKmh headingDeg=$heading sink=${sink != null}",
         )
         sink?.success(event)
+    }
+
+    /** Runtime ACCESS_FINE/COARSE via system dialog (0050 HARD — no ADB grant). */
+    private fun handleRequestLocationPermission(result: MethodChannel.Result) {
+        val gps = ensureAndroidGpsLocationSource()
+        if (gps.hasFineOrCoarseLocation()) {
+            result.success(mapOf("granted" to true, "already" to true))
+            return
+        }
+        if (pendingLocationPermissionResult != null) {
+            result.success(mapOf("granted" to false, "reason" to "already-requesting"))
+            return
+        }
+        pendingLocationPermissionResult = result
+        Log.i(TAG, "requesting ACCESS_FINE/COARSE_LOCATION (req=$LOCATION_PERMISSION_REQ)")
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ),
+            LOCATION_PERMISSION_REQ,
+        )
+    }
+
+    /** Re-push last YNavi/GPS fix after clearPose / permission grant. */
+    private fun reemitSpeedcamLastKnown() {
+        val cached = lastSpeedcamLocation
+        val source = lastSpeedcamSource
+        if (cached != null && source != null) {
+            Log.i(TAG, "reemitSpeedcamLastKnown: cached source=$source")
+            emitSpeedcamLocation(cached, source)
+            return
+        }
+        Log.i(TAG, "reemitSpeedcamLastKnown: no Activity cache — asking GPS lastKnown")
+        ensureAndroidGpsLocationSource().reemitLastKnown()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (requestCode != LOCATION_PERMISSION_REQ) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            return
+        }
+        val granted = grantResults.isNotEmpty() &&
+            grantResults.any { it == PackageManager.PERMISSION_GRANTED }
+        Log.i(TAG, "location permission result granted=$granted")
+        val pending = pendingLocationPermissionResult
+        pendingLocationPermissionResult = null
+        if (granted) {
+            val gps = ensureAndroidGpsLocationSource()
+            gps.start()
+            gps.reemitLastKnown()
+            reemitSpeedcamLastKnown()
+        }
+        pending?.success(mapOf("granted" to granted))
     }
 
     // -------------------------------------------------------------------------
