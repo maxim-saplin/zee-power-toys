@@ -52,7 +52,7 @@ void main() {
 
     test('updatePack downloads, caches, loadCams round-trip', () async {
       expect(await store.current(SpeedcamPackIds.by), isNull);
-      final meta = await store.updatePack(SpeedcamPackIds.by);
+      final meta = await store.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(meta.camCount, 3);
       expect(meta.id, SpeedcamPackIds.by);
       expect(await store.current(SpeedcamPackIds.by), isNotNull);
@@ -89,7 +89,7 @@ void main() {
           return http.Response(fixture, 200);
         }),
       );
-      await store.updatePack(SpeedcamPackIds.by);
+      await store.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(seen, isNotNull);
       expect(seen!.headers['user-agent'], contains('zee-power-toys'));
       expect(seen!.headers['accept'], 'application/json');
@@ -106,11 +106,11 @@ void main() {
     test('updatePack then loadCams; offline fails', () async {
       final fake = FakeSpeedcamPackStore();
       expect(await fake.current(SpeedcamPackIds.by), isNull);
-      final meta = await fake.updatePack(SpeedcamPackIds.by);
+      final meta = await fake.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(meta.camCount, greaterThan(0));
       expect(await fake.loadCams(SpeedcamPackIds.by), isNotEmpty);
       fake.offline = true;
-      expect(() => fake.updatePack(SpeedcamPackIds.by), throwsStateError);
+      expect(() => fake.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon), throwsStateError);
       fake.dispose();
     });
   });
@@ -200,4 +200,30 @@ void main() {
     });
   });
 
+
+  group('0050 harvest center honesty', () {
+    test('updatePack without center or prior throws (no silent Minsk)', () async {
+      final fake = FakeSpeedcamPackStore();
+      expect(
+        () => fake.updatePack(SpeedcamPackIds.by),
+        throwsA(isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          contains('No harvest center'),
+        )),
+      );
+    });
+
+    test('updatePack uses prior center when pose absent', () async {
+      final fake = FakeSpeedcamPackStore();
+      await fake.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: 53.9,
+        centerLon: 27.5,
+      );
+      final again = await fake.updatePack(SpeedcamPackIds.by);
+      expect(again.centerLat, 53.9);
+      expect(again.centerLon, 27.5);
+    });
+  });
 }

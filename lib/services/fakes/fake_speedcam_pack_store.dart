@@ -67,12 +67,14 @@ class FakeSpeedcamPackStore implements SpeedcamPackStore {
     if (offline) {
       throw StateError('offline');
     }
-    final lat = centerLat ??
-        _meta?.centerLat ??
-        kSpeedcamDefaultCenterLat;
-    final lon = centerLon ??
-        _meta?.centerLon ??
-        kSpeedcamDefaultCenterLon;
+    final lat = centerLat ?? _meta?.centerLat;
+    final lon = centerLon ?? _meta?.centerLon;
+    if (lat == null || lon == null) {
+      throw StateError(
+        'No harvest center: need live host pose or a prior pack center '
+        '(refusing silent Minsk fallback)',
+      );
+    }
     final merged = SpeedcamHarvestArea.mergeById(_cams, _seed);
     _cams
       ..clear()

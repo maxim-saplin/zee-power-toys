@@ -19,6 +19,7 @@ import 'services/adapters/native_hud_host.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_package_status.dart';
 import 'services/adapters/native_minimap_host.dart';
+import 'services/adapters/native_speedcam_location.dart';
 import 'services/adapters/native_system_config.dart';
 import 'services/adapters/native_usb_mode.dart';
 import 'services/car_signals.dart';
@@ -129,6 +130,11 @@ Future<void> dhuMain(List<String> args) async {
   final SpeedcamService speedcamRaw = DefaultSpeedcamService(
     packStore: speedcamPackRaw,
   );
+
+  // 0050: YNavi sendLocation → Speedcam host pose (Android only).
+  if (!kIsWeb && Platform.isAndroid) {
+    NativeSpeedcamLocation(speedcamRaw).start();
+  }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
 
   // On Android, use NativeSystemConfig which reads the real system locale

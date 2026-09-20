@@ -33,4 +33,4 @@ Maxim HARD:
 
 ## Out of scope
 - Multi-region selectors
-- GPS wiring (host pose remains inject / drive / demo until later)
+- ~~GPS wiring~~ → [0050](0050-speedcam-car-location.md)

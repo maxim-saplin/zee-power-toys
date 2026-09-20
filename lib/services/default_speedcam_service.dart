@@ -33,6 +33,8 @@ class DefaultSpeedcamService implements SpeedcamService {
   String _camSource = 'none';
   bool _enabled = true;
   SpeedcamHostPose? _host;
+  /// When true, live GPS/YNavi poses are ignored until [clearHostPose].
+  bool _holdManualPose = false;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
 
   @override
@@ -48,7 +50,9 @@ class DefaultSpeedcamService implements SpeedcamService {
   }
 
   @override
-  Future<void> setHostPose(SpeedcamHostPose pose) async {
+  Future<void> setHostPose(SpeedcamHostPose pose, {bool fromLive = false}) async {
+    if (fromLive && _holdManualPose) return;
+    if (!fromLive) _holdManualPose = true;
     _host = pose;
     _emit();
   }
@@ -56,6 +60,7 @@ class DefaultSpeedcamService implements SpeedcamService {
   @override
   Future<void> clearHostPose() async {
     _host = null;
+    _holdManualPose = false;
     _emit();
   }
 

@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference
  *       setSurfaceCallback the SurfaceContainer(surface,w,h,dpi) is dispatched back to YNavi.
  *   stop()                             — ordered teardown.
  *   onTrip: ((Trip)->Unit)?            — fired on main thread each trip update (~1 s).
+ *   onLocation: ((Location)->Unit)?    — fired on main thread each YNavi sendLocation.
  *   onNavState: ((Boolean)->Unit)?     — fired on main thread when navigation starts/ends.
  */
 @SuppressLint("RestrictedApi")
@@ -78,12 +79,22 @@ class YNaviCarAppHost(
      */
     var onBindFailed: (() -> Unit)? = null
 
+    /** Called on the main thread with each YNavi location (IAppHost.sendLocation). */
+    var onLocation: ((android.location.Location) -> Unit)? = null
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------
 
     private var worker = Executors.newSingleThreadExecutor()
     private val appHostStub = IAppHostStub(mainHandler, TAG)
+
+    init {
+        // Forward YNavi sendLocation → MainActivity EventChannel.
+        appHostStub.onLocation = { loc ->
+            mainHandler.post { onLocation?.invoke(loc) }
+        }
+    }
     private val carHostStub = ICarHostStub(
         appHostStub = appHostStub,
         onFinishRequested = { mainHandler.post { stop() } },

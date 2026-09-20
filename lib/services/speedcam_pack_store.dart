@@ -18,7 +18,8 @@ abstract final class SpeedcamPackIds {
 /// Default harvest radius (Maxim 0047).
 const double kSpeedcamHarvestRadiusKm = 300;
 
-/// Fallback harvest center when no host pose / prior center (Minsk).
+/// Fixture-only Minsk center — NOT used as silent harvest fallback (0050).
+/// Prefer live host pose, else prior pack center, else fail honestly.
 const double kSpeedcamDefaultCenterLat = 53.9045;
 const double kSpeedcamDefaultCenterLon = 27.5615;
 
@@ -228,12 +229,14 @@ class FileSpeedcamPackStore implements SpeedcamPackStore {
     await root.create(recursive: true);
 
     final prior = await current(packId);
-    final lat = centerLat ??
-        prior?.centerLat ??
-        kSpeedcamDefaultCenterLat;
-    final lon = centerLon ??
-        prior?.centerLon ??
-        kSpeedcamDefaultCenterLon;
+    final lat = centerLat ?? prior?.centerLat;
+    final lon = centerLon ?? prior?.centerLon;
+    if (lat == null || lon == null) {
+      throw StateError(
+        'No harvest center: need live host pose or a prior pack center '
+        '(refusing silent Minsk fallback)',
+      );
+    }
 
     final harvested = await _downloadAround(
       lat: lat,

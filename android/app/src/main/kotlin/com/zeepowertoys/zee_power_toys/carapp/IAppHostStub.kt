@@ -43,6 +43,8 @@ class IAppHostStub(
     @Volatile private var surfaceCallback: ISurfaceCallback? = null
     @Volatile private var currentSurfaceContainer: SurfaceContainer? = null
     @Volatile var onInvalidate: (() -> Unit)? = null
+    /** Fired on the binder thread when YNavi pushes a location update. */
+    @Volatile var onLocation: ((Location) -> Unit)? = null
     @Volatile private var minimapViewportMode: MinimapViewportMode = MinimapViewportMode.FULL_SCREEN
     @Volatile private var squareSizeFraction: Float = DEFAULT_SQUARE_HEIGHT_FRACTION
     @Volatile private var squarePaddingDp: Float = DEFAULT_SQUARE_EDGE_PADDING_DP
@@ -64,6 +66,9 @@ class IAppHostStub(
 
     override fun sendLocation(location: Location?) {
         Log.v(loggerTag, "IAppHost.sendLocation location=$location")
+        if (location != null) {
+            onLocation?.invoke(location)
+        }
     }
 
     override fun showAlert(alert: Bundleable?) {

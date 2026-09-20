@@ -58,6 +58,7 @@ class FakeSpeedcamService implements SpeedcamService {
 
   bool _enabled = true;
   SpeedcamHostPose? _host;
+  bool _holdManualPose = false;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
 
   @override
@@ -73,7 +74,9 @@ class FakeSpeedcamService implements SpeedcamService {
   }
 
   @override
-  Future<void> setHostPose(SpeedcamHostPose pose) async {
+  Future<void> setHostPose(SpeedcamHostPose pose, {bool fromLive = false}) async {
+    if (fromLive && _holdManualPose) return;
+    if (!fromLive) _holdManualPose = true;
     _host = pose;
     _emit();
   }
@@ -81,6 +84,7 @@ class FakeSpeedcamService implements SpeedcamService {
   @override
   Future<void> clearHostPose() async {
     _host = null;
+    _holdManualPose = false;
     _emit();
   }
 

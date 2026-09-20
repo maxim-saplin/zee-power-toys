@@ -597,7 +597,12 @@ void registerZeeExtensions({
               }),
             );
           }
-          final meta = await speedcamPack.updatePack(SpeedcamPackIds.by);
+          final host = speedcam?.snapshot.host;
+          final meta = await speedcamPack.updatePack(
+            SpeedcamPackIds.by,
+            centerLat: host?.lat,
+            centerLon: host?.lon,
+          );
           await speedcam?.reloadFromPack();
           return developer.ServiceExtensionResponse.result(
             jsonEncode(<String, Object?>{

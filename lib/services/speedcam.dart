@@ -307,7 +307,9 @@ abstract class SpeedcamService {
   Stream<SpeedcamSnapshot> get snapshots;
   SpeedcamSnapshot get snapshot;
   Future<void> setEnabled(bool on);
-  Future<void> setHostPose(SpeedcamHostPose pose);
+  /// [fromLive] marks GPS/YNavi updates. Manual inject/demo/drive omit it and
+  /// hold off live until [clearHostPose] (T1 tools must keep working on-car).
+  Future<void> setHostPose(SpeedcamHostPose pose, {bool fromLive = false});
   Future<void> clearHostPose();
 
   /// Reload cams from the wired pack store (no-op if none).

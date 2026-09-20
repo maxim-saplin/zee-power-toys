@@ -79,6 +79,7 @@ class MainActivity : FlutterActivity() {
         private const val HUB_CHANNEL = "zee/hub"
         private const val MINIMAP_CHANNEL = "zee/minimap"
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
+        private const val SPEEDCAM_LOCATION_CHANNEL = "zee/speedcam/location"
         private const val BOOT_CHANNEL = "zee/boot"
         // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
         private const val HUD_LIFECYCLE_CHANNEL = "zee/hud_lifecycle"
@@ -132,6 +133,8 @@ class MainActivity : FlutterActivity() {
 
     // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
     @Volatile private var guidanceSink: EventChannel.EventSink? = null
+    // Speedcam location EventChannel sink — YNavi sendLocation → Dart setHostPose.
+    @Volatile private var speedcamLocationSink: EventChannel.EventSink? = null
 
     // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
     private var dhuMinimapChannel: MethodChannel? = null
@@ -196,6 +199,19 @@ class MainActivity : FlutterActivity() {
                 override fun onCancel(arguments: Any?) {
                     guidanceSink = null
                     Log.i(TAG, "guidance EventChannel: Dart unsubscribed")
+                }
+            })
+
+        // YNavi IAppHost.sendLocation → Dart Speedcam host pose (0050).
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_LOCATION_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    speedcamLocationSink = sink
+                    Log.i(TAG, "speedcam location EventChannel: Dart subscribed")
+                }
+                override fun onCancel(arguments: Any?) {
+                    speedcamLocationSink = null
+                    Log.i(TAG, "speedcam location EventChannel: Dart unsubscribed")
                 }
             })
 
@@ -363,6 +379,18 @@ class MainActivity : FlutterActivity() {
                 host.onBindFailed = {
                     minimapView?.visibility = View.INVISIBLE
                     Log.w(TAG, "YNavi bind failed — MinimapView forced INVISIBLE")
+                }
+                host.onLocation = { loc ->
+                    val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null
+                    val heading = if (loc.hasBearing()) loc.bearing.toDouble() else null
+                    val event = hashMapOf<String, Any?>(
+                        "lat" to loc.latitude,
+                        "lon" to loc.longitude,
+                        "source" to "ynavi",
+                    )
+                    if (speedKmh != null) event["speedKmh"] = speedKmh
+                    if (heading != null) event["headingDeg"] = heading
+                    speedcamLocationSink?.success(event)
                 }
             }
 
