@@ -9,6 +9,8 @@ import 'battery_geometry.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
+import 'minimap_guidance_overlay.dart';
+import '../providers/guidance.dart';
 
 /// The root of the HUD widget subtree.
 ///
@@ -30,8 +32,9 @@ import 'speedcam_radar_widget.dart';
 /// `MinimapHost`, not something HudRoot paints; the glyph is a debug aid so
 /// the reserved area is visible during layout work, shown only when
 /// [showSafeAreaBorder] is true so it never emits a ghost rectangle onto the
-/// real windshield. There is no separate GUIDANCE slot — the HUD only shows
-/// the YNavi map; a turn-by-turn overlay is out of scope (owner decision).
+/// real windshield. Street + ETA are painted by [MinimapGuidanceOverlay]
+/// (0055): MinimapHost crop/scale clips YNavi's native chrome; trip data
+/// still arrives via [GuidanceEvent].
 /// The BLINKER layer spans the full Safe Area so hazard can render both sides;
 /// marks are positioned at the edges by [BlinkerWidget] via its own layout.
 ///
@@ -219,6 +222,29 @@ class _HudSlots extends ConsumerWidget {
             height: minimapRect.height * saHeight,
             child: const _MinimapGlyph(),
           ),
+
+        // STREET + ETA — Flutter chrome replacing YNavi panels cropped by
+        // MinimapHost scale/letterbox (0055 Zee HUD 2 parity).
+        if (minimapCfg.enabled) ...[
+          Builder(
+            builder: (context) {
+              final g = ref.watch(latestGuidanceProvider);
+              if (g == null) return const SizedBox.shrink();
+              final left = minimapRect.left * saWidth;
+              final top = minimapRect.top * saHeight;
+              final width = minimapRect.width * saWidth;
+              final height = minimapRect.height * saHeight;
+              return Positioned(
+                key: const ValueKey('hud-minimap-guidance-slot'),
+                left: left,
+                // Sit just under the minimap square (or clamp into bottom of SA).
+                top: (top + height + 4).clamp(0.0, saHeight - 36),
+                width: width,
+                child: MinimapGuidanceOverlay(event: g),
+              );
+            },
+          ),
+        ],
       ],
     );
   }
