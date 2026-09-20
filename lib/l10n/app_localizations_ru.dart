@@ -431,7 +431,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeWelcomeBody =>
-      'HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.';
+      'Оверлеи HUD и миникарта для Zeekr. Проверьте приложения ниже, затем выберите раздел слева.';
 
   @override
   String get homeCompanionsTitle => 'Сопутствующие приложения';

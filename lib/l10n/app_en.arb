@@ -552,7 +552,7 @@
   "@homeWelcomeTitle": {
     "description": "Welcome column heading"
   },
-  "homeWelcomeBody": "HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.",
+  "homeWelcomeBody": "HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the left.",
   "@homeWelcomeBody": {
     "description": "Short product intro on the home welcome column"
   },
