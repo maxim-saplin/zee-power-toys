@@ -172,12 +172,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                     val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
                     val event = (args.get(1) as? Int) ?: return@InvocationHandler null
                     if (id == CHARGE_STATE) {
-                        val charging = event == 1  // 1=charging by convention
-                        lastSnapshot = lastSnapshot.copy(charging = charging)
-                        emitter?.invoke(SignalEvent.Charge(
-                            charging, lastSnapshot.chargeVolts,
-                            lastSnapshot.chargeAmps, lastSnapshot.chargeKw,
-                        ))
+                        publishChargeState(event)
                     }
                 }
                 "onSensorSupportChanged" -> { /* ignore */ }
@@ -327,8 +322,9 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
 
     /**
      * Seed CHARGE_STATE + live V/A/kW.
-     * CHARGE_STATE enum (docs/knowledge/car-signals-adaptapi.md + EnergyProbe):
-     *   getSensorEvent(0x00201500) — treat event==1 as charging (idle/other = not).
+     * CHARGE_STATE = SENSOR_TYPE_EV_BATTERY_STATE (0x00201500).
+     * Event values are full ISensorEvent enums (zee_hud_2 ENERGY_SIGNAL_ANALYSIS),
+     * NOT 0/1 — e.g. CHARGING=2102530, FAST=2102545, SUPER_FAST=2102546.
      * Listeners alone often never fire until change — same gap as SoC before seed/poll.
      */
     private fun seedChargeFromLatest() {
@@ -343,9 +339,14 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                 chargeAmps = a?.toDouble() ?: lastSnapshot.chargeAmps,
                 chargeKw = kw?.toDouble() ?: lastSnapshot.chargeKw,
             )
+            val derived = (lastSnapshot.charging == true) ||
+                ((lastSnapshot.chargeKw ?: 0.0) > 0.05)
+            if (lastSnapshot.charging != derived) {
+                lastSnapshot = lastSnapshot.copy(charging = derived)
+            }
             emitter?.invoke(
                 SignalEvent.Charge(
-                    lastSnapshot.charging ?: false,
+                    derived,
                     lastSnapshot.chargeVolts,
                     lastSnapshot.chargeAmps,
                     lastSnapshot.chargeKw,
@@ -359,11 +360,30 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         )
     }
 
-    /** event==1 → charging (convention from AdaptApiCarSignals + car-signals docs). */
+    /**
+     * Map SENSOR_TYPE_EV_BATTERY_STATE event → charging bool.
+     * Source: zee_hud_2 docs/research/ENERGY_SIGNAL_ANALYSIS.md §2.
+     */
+    private fun isChargingBatteryState(event: Int): Boolean = when (event) {
+        2102529, // BATTERY_STATE_CHARGING_PREPARED
+        2102530, // BATTERY_STATE_CHARGING
+        2102545, // BATTERY_STATE_FAST_CHARGING
+        2102546, // BATTERY_STATE_SUPER_FAST_CHARGING
+        2102550, // BATTERY_STATE_CHARGE_PREHEATING
+        2102551, // BATTERY_STATE_CHARGE_BOOKING
+        2102552, // BATTERY_STATE_CHARGE_BOOSTING
+        2102553, // BATTERY_STATE_CHARGE_WIRELESS
+        -> true
+        else -> false
+    }
+
     private fun publishChargeState(event: Int) {
-        val charging = event == 1
+        // Belt: live chargeKw already proves charging even if enum surprises us.
+        val kw = lastSnapshot.chargeKw
+        val charging = isChargingBatteryState(event) || (kw != null && kw > 0.05)
         if (lastSnapshot.charging == charging) return
         lastSnapshot = lastSnapshot.copy(charging = charging)
+        Log.i(TAG, "Charge state: event=$event charging=$charging kW=$kw")
         emitter?.invoke(
             SignalEvent.Charge(
                 charging,

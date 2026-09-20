@@ -49,3 +49,8 @@ Source: existing AdaptApi comment + `docs/knowledge/car-signals-adaptapi.md`
 2. Diagnostics → Energy: **Charging true**, Charge power shows kW (not `—`).
 3. HUD: bolt + charging stats row when `showChargingStats` on.
 4. Logcat `ZEE`: `Charge seed: event=1 charging=true ... kW=...`
+
+## FAIL follow-up (Maxim 2026-09-20)
+`event == 1` was wrong. zee_hud_2 ENERGY_SIGNAL_ANALYSIS: charging enums are
+2102530 / 2102545 / 2102546 (etc.). Maxim saw `chargeKw` in raw snapshot while
+`charging: false` — confirms V/A/kW path OK, flag decode broken.
