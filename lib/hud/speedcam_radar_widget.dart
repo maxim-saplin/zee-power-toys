@@ -48,6 +48,12 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
   static const Color phosphorDim = Color(0xFF1A7A0A);
   static const Color phosphorGlow = Color(0xFF00FF66);
 
+  /// Dangerous / current target blip (0064).
+  static const Color blipDanger = Color(0xFFFFFFFF);
+
+  /// Other in-range scan blips — greenish phosphor (0064).
+  static const Color blipOther = phosphor;
+
   static final demoDanger = SpeedcamDanger(
     cam: const SpeedcamPoint(
       id: 'demo-cam',
@@ -266,6 +272,7 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     final bearing = bearingDeg;
     final arrow = _bearingArrow(bearing);
     final distLabel = dist == null ? '—' : '${dist.round()} m';
+    // Dangerous / approach target readout is white (0064; Default has no multi-blip).
     final style = TextStyle(
       color: Colors.white.withValues(alpha: 0.92),
       fontSize: compact ? 18 : 28,
@@ -344,6 +351,11 @@ double alienBlipAlphaForDistanceM(
   final frac = (distanceM / displayRadiusM).clamp(0.0, 1.0);
   return (0.95 - frac * 0.55).clamp(0.35, 0.95);
 }
+
+/// 0064: dangerous highlight → white; other scan-set cams → greenish.
+Color alienBlipFillColor({required bool highlight}) => highlight
+    ? SpeedcamRadarWidget.blipDanger
+    : SpeedcamRadarWidget.blipOther;
 
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 class _AlienWedgePainter extends CustomPainter {
@@ -569,21 +581,22 @@ class _AlienWedgePainter extends CustomPainter {
       final blink = 0.72 + 0.28 * (0.5 + 0.5 * math.sin(blinkT * math.pi * 2 * 2));
       final alpha = (baseA * blink).clamp(0.12, 1.0);
       final glowA = b.highlight ? alpha * 0.4 : alpha * 0.2;
+      final fill = alienBlipFillColor(highlight: b.highlight);
+      // Soft halo: white for danger, phosphor glow for other cams (0064).
+      final glowColor = b.highlight
+          ? SpeedcamRadarWidget.blipDanger
+          : SpeedcamRadarWidget.phosphorGlow;
       canvas.drawCircle(
         p,
         rad + (b.highlight ? 2.4 : 1.4),
         Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: glowA)
+          ..color = glowColor.withValues(alpha: glowA)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
       canvas.drawCircle(
         p,
         b.highlight ? rad : rad * 0.85,
-        Paint()
-          ..color = (b.highlight
-                  ? SpeedcamRadarWidget.phosphorGlow
-                  : SpeedcamRadarWidget.phosphor)
-              .withValues(alpha: alpha),
+        Paint()..color = fill.withValues(alpha: alpha),
       );
     }
 
