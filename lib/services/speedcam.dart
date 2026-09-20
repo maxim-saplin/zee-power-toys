@@ -222,6 +222,20 @@ double initialBearingDegrees(
 }
 
 
+
+/// Signed relative bearing: absolute cam bearing minus host heading, degrees
+/// in (-180, 180]. Unknown heading → treat absolute as already relative
+/// (north-up / demo).
+double relativeBearingDegrees(double absoluteBearingDeg, double? headingDeg) {
+  final raw = headingDeg == null
+      ? absoluteBearingDeg
+      : absoluteBearingDeg - headingDeg;
+  var b = raw % 360;
+  if (b > 180) b -= 360;
+  if (b < -180) b += 360;
+  return b;
+}
+
 /// Smallest absolute angle between two bearings [0, 180].
 double smallestAngleDeg(double a, double b) {
   var d = (a - b).abs() % 360;

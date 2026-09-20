@@ -100,6 +100,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
         maxspeed: 50,
       ));
     } else if (snap.host != null) {
+      final heading = snap.host!.headingDeg;
       for (final cam in snap.cams) {
         final d = haversineMetres(
           snap.host!.lat,
@@ -109,13 +110,15 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
         );
         if (d > range) continue;
         final isDanger = danger != null && danger.cam.id == cam.id;
+        final absBearing = initialBearingDegrees(
+          snap.host!.lat,
+          snap.host!.lon,
+          cam.lat,
+          cam.lon,
+        );
         blips.add(SpeedcamRadarBlip(
-          bearingDeg: initialBearingDegrees(
-            snap.host!.lat,
-            snap.host!.lon,
-            cam.lat,
-            cam.lon,
-          ),
+          // Alien fan + Default arrow expect forward-relative degrees.
+          bearingDeg: relativeBearingDegrees(absBearing, heading),
           distanceM: d,
           highlight: isDanger,
           maxspeed: cam.maxspeed,
@@ -125,15 +128,17 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
           danger.insideApproach &&
           !blips.any((b) => b.highlight)) {
         blips.add(SpeedcamRadarBlip(
-          bearingDeg: danger.bearingDeg,
+          bearingDeg: relativeBearingDegrees(danger.bearingDeg, heading),
           distanceM: danger.distanceM,
           highlight: true,
           maxspeed: danger.cam.maxspeed,
         ));
       }
     } else if (danger != null && danger.insideApproach) {
+      // No host pose — danger.bearingDeg may be absolute; treat as relative
+      // (fail-open) so the approach blip still paints near center.
       blips.add(SpeedcamRadarBlip(
-        bearingDeg: danger.bearingDeg,
+        bearingDeg: relativeBearingDegrees(danger.bearingDeg, null),
         distanceM: danger.distanceM,
         highlight: true,
         maxspeed: danger.cam.maxspeed,
@@ -298,8 +303,7 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     // Map bearing relative to host forward (0 = ahead) into 8-way arrow.
     var b = bearingDeg % 360;
     if (b < 0) b += 360;
-    // Relative: assume host heading folded into bearing already for danger.
-    // Use absolute pie slices for demo.
+    // Bearing is forward-relative (0058); 0 = ahead on screen.
     if (b >= 337.5 || b < 22.5) return '↑';
     if (b < 67.5) return '↗';
     if (b < 112.5) return '→';
@@ -520,11 +524,15 @@ class _AlienWedgePainter extends CustomPainter {
       Paint()..color = const Color(0xFFE8FFE8),
     );
 
-    // Blips — round dots (Maxim: not squares)
+    // Blips — round dots (Maxim: not squares). Bearings are forward-relative
+    // (0058). On-route highlight clamps to fan edge so it never vanishes.
     for (final b in blips) {
-      final rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
+      var rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
+      if (rel.abs() > wedgeHalf) {
+        if (!b.highlight) continue;
+        rel = rel.isNegative ? -wedgeHalf : wedgeHalf;
+      }
       final a = baseAngle + rel;
-      if (rel.abs() > wedgeHalf) continue;
       final frac = (b.distanceM / displayRadiusM).clamp(0.0, 1.0);
       final p = Offset(
         c.dx + r * frac * math.cos(a),
