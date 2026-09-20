@@ -28,9 +28,9 @@ flutter build apk --release -PuseAospDebugKey=true
 | Item | Reality | Pending action (you / agent after go) |
 |------|---------|----------------------------------------|
 | Published LFS | `modded_apks/zeekr_signed_v11.apk` — **pre-P1**, cannot bind (`Unrecognized host`) | Replace with post-P1 build |
-| Working local | `builds/zeekr_signed.apk` (~202 MB, gitignored) from `hud` @ `879c70b3c` | Copy → `modded_apks/zeekr_v12_margined.apk`, `git lfs track`, commit on `hud` |
+| Working local | `builds/zeekr_v12_margined.apk` / `builds/zeekr_v12_os7_nomargin.apk` | Upload to **draft Release** only — not git |
 | OS7+ unpadded | Not in tree as a named artifact yet | Confirm whether `zeekr_no_keepalive_signed.apk` or a separate unpadded build is the OS7+ variant; publish under clear name |
-| Install bump | After v12 on LFS | Point `kYnaviAsset.path` to `modded_apks/zeekr_v12_margined.apk` |
+| Install bump | Done on prep | `kYnaviAsset` → Release `zeekr_v12_margined.apk` |
 
 ## 3. launcher — zee_hud_2 (`main`)
 
