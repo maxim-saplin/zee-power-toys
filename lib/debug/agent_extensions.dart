@@ -366,13 +366,19 @@ void registerZeeExtensions({
 
     // Minimap config: minimapEnabled=true|false,
     // minimapOnlyWhileGuidance=true|false (0057),
+    // guidanceOverlay / etaBar (0055 Zee HUD 2),
     // minimapPreset=compact|balanced|large.
     final rawMinimapEnabled = params['minimapEnabled'];
     final rawMinimapOnlyWhileGuidance =
         params['minimapOnlyWhileGuidance'] ?? params['onlyWhileGuidance'];
+    final rawGuidanceOverlay =
+        params['guidanceOverlay'] ?? params['guidance_overlay'];
+    final rawEtaBar = params['etaBar'] ?? params['eta_bar'];
     final rawMinimapPreset = params['minimapPreset'];
     if (rawMinimapEnabled != null ||
         rawMinimapOnlyWhileGuidance != null ||
+        rawGuidanceOverlay != null ||
+        rawEtaBar != null ||
         rawMinimapPreset != null) {
       final mm = next.minimap;
       next = next.copyWith(
@@ -383,6 +389,10 @@ void registerZeeExtensions({
           onlyWhileGuidance: rawMinimapOnlyWhileGuidance != null
               ? rawMinimapOnlyWhileGuidance == 'true'
               : null,
+          guidanceOverlay: rawGuidanceOverlay != null
+              ? rawGuidanceOverlay == 'true'
+              : null,
+          etaBar: rawEtaBar != null ? rawEtaBar == 'true' : null,
           preset: rawMinimapPreset,
         ),
       );

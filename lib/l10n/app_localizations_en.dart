@@ -334,6 +334,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'When on, the minimap appears only while YNavi navigation is active';
 
   @override
+  String get minimapGuidanceOverlay => 'Turn-by-turn overlay';
+
+  @override
+  String get minimapGuidanceOverlayHint =>
+      'Arrow, distance, and street name on the minimap (from YNavi trip data)';
+
+  @override
+  String get minimapEtaBar => 'ETA bar';
+
+  @override
+  String get minimapEtaBarHint =>
+      'Remaining distance, time, and arrival on the minimap';
+
+  @override
   String get minimapPreset => 'Preset';
 
   @override

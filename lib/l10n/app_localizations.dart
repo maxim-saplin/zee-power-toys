@@ -740,6 +740,30 @@ abstract class AppLocalizations {
   /// **'When on, the minimap appears only while YNavi navigation is active'**
   String get minimapOnlyWhileGuidanceHint;
 
+  /// 0055: Zee HUD 2 guidance_overlay toggle (native Views)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn-by-turn overlay'**
+  String get minimapGuidanceOverlay;
+
+  /// Hint for guidance overlay toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow, distance, and street name on the minimap (from YNavi trip data)'**
+  String get minimapGuidanceOverlayHint;
+
+  /// 0055: Zee HUD 2 eta_bar toggle (native Views)
+  ///
+  /// In en, this message translates to:
+  /// **'ETA bar'**
+  String get minimapEtaBar;
+
+  /// Hint for ETA bar toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining distance, time, and arrival on the minimap'**
+  String get minimapEtaBarHint;
+
   /// Minimap preset selector label
   ///
   /// In en, this message translates to:

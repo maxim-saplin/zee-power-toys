@@ -115,7 +115,7 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 | [0054](0054-settings-survive-reinstall.md) | Settings survive reinstall via `adb install -r` (no uninstall / no sdcard mirror) | **done** |
 | [0056](0056-battery-looks-pdm.md) | Battery looks — PDM names + squarish bold outline | **done** |
 | [0057](0057-minimap-only-while-guidance.md) | Show minimap only while YNavi guidance active (default off) | **done** |
-| [0055](0055-ynavi-minimap-info-overlay.md) | YNavi street/ETA via native map-pixel chrome (Flutter plate deleted) | **done** (redirect) |
+| [0055](0055-ynavi-minimap-info-overlay.md) | Street/ETA via native GuidanceOverlayView (Zee HUD 2 updateTrip) | in-progress (FAIL redirect) |
 | [0058](0058-hud-approach-cam-blip.md) | HUD approach cam blip — relative bearing fold | **done** |
 | [0059](0059-speedcam-alert-loudness.md) | Alert loudness — NAV stream + real slider gain | **done** |
 

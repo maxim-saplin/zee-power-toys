@@ -26,6 +26,8 @@ import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.boot.BootRemediation
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
+import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlaySettings
+import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlayView
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
 import com.zeepowertoys.zee_power_toys.location.AndroidGpsLocationSource
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
@@ -63,9 +65,11 @@ import io.flutter.plugin.common.MethodChannel
 //
 // Minimap under-layer (Block 0009, ADR 0001 exception):
 //   The HUD Presentation uses a FrameLayout with a native MinimapView (TextureView,
-//   parametric ColorMatrix filter) UNDER a transparent FlutterTextureView overlay.
-//   The zee/minimap MethodChannel is registered on the DHU engine (primary) so
-//   the DHU Dart isolate drives the native Minimap surface.
+//   parametric ColorMatrix filter) UNDER a transparent FlutterTextureView overlay,
+//   with GuidanceOverlayView (0055 / Zee HUD 2 parity) on top of Flutter inside the
+//   minimap viewport — TBT/ETA from updateTrip, not map-pixel street chrome and not
+//   a Flutter plate. The zee/minimap MethodChannel is registered on the DHU engine
+//   (primary) so the DHU Dart isolate drives the native Minimap surface.
 //
 //   MinimapView carries NO placeholder content of its own (the animated rainbow
 //   gradient render thread was removed — it violated the emissive-black-only
@@ -123,6 +127,14 @@ class MainActivity : FlutterActivity() {
 
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
+
+    // 0055: Zee HUD 2 GuidanceOverlayView on the Presentation (updateTrip → Views).
+    // Sized to the minimap viewport; painted ABOVE the FlutterTextureView so the
+    // Maxim bar is never covered by Flutter chrome. Not the deleted Flutter plate.
+    private var guidanceOverlay: GuidanceOverlayView? = null
+    private var guidanceOverlaySettings = GuidanceOverlaySettings()
+    // Last minimap viewport — overlay layout tracks setMinimapBounds.
+    private var lastMinimapBounds: IntArray? = null // x,y,w,h
 
     // Mutable filter + zoom parameters — single source of truth for the HUD
     // ColorMatrix paint and the YNavi oversample/dpi levers. Rebuilt into a
@@ -406,10 +418,12 @@ class MainActivity : FlutterActivity() {
             // It is started (bound) when the Dart side calls setMinimap(enabled=true)
             // and YNavi is available; the MinimapView's SurfaceTexture is the surface.
             yNaviCarAppHost = YNaviCarAppHost(this).also { host ->
-                // Trip updates → guidance EventChannel → Dart GuidanceEvent.
+                // Trip updates → (1) native GuidanceOverlayView (0055 / Zee HUD 2)
+                // and (2) guidance EventChannel → Dart GuidanceEvent (FL / 0057).
                 host.onTrip = { trip ->
-                    // Zee HUD 2 parity: street = step.cue (then step.road /
-                    // currentRoad); ETA from destination remainingTimeSeconds.
+                    guidanceOverlay?.updateFromTrip(trip)
+                    // Street = step.cue (then step.road / currentRoad); ETA from
+                    // destination remainingTimeSeconds — same mapping as overlay.
                     val step = trip.steps.firstOrNull()
                     val stepEst = trip.stepTravelEstimates.firstOrNull()
                     val destEst = trip.destinationTravelEstimates.firstOrNull()
@@ -427,6 +441,7 @@ class MainActivity : FlutterActivity() {
                 }
                 host.onNavState = { active ->
                     Log.i(TAG, "YNavi navigation active=$active")
+                    if (!active) guidanceOverlay?.clearGuidance()
                     // 0057: real guidance-session truth for onlyWhileGuidance.
                     guidanceSink?.success(mapOf("navActive" to active))
                 }
@@ -443,7 +458,7 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
-            // Layer 2 (top): transparent Flutter overlay.
+            // Layer 2: transparent Flutter overlay (blinker / battery / speedcam).
             // isOpaque=false is what enables compositing over the MinimapView;
             // without this the SurfaceTexture renders opaque black.
             val ftv = FlutterTextureView(pres.context)
@@ -453,6 +468,17 @@ class MainActivity : FlutterActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ))
+
+            // Layer 3 (top, viewport-sized): GuidanceOverlayView — Zee HUD 2 path.
+            // Above Flutter so Maxim street+ETA bar is never covered. Sized later
+            // by setMinimapBounds to the same rect as filterWrapper.
+            val gov = GuidanceOverlayView(pres.context)
+            gov.applySettings(guidanceOverlaySettings)
+            gov.visibility = View.GONE // shown once bounds + trip data arrive
+            guidanceOverlay = gov
+            root.addView(gov, FrameLayout.LayoutParams(0, 0).apply {
+                gravity = Gravity.TOP or Gravity.START
+            })
 
             pres.setContentView(root)
             pres.show()
@@ -592,6 +618,8 @@ class MainActivity : FlutterActivity() {
             minimapView = null
         }
         yNaviCarAppHost = null
+        guidanceOverlay = null
+        lastMinimapBounds = null
         guidanceSink = null
         hudDisplay = null
         hudHub = null
@@ -735,6 +763,40 @@ class MainActivity : FlutterActivity() {
         return Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
     }
 
+
+    /**
+     * Size/position [guidanceOverlay] to the minimap viewport (Zee HUD 2
+     * updateSurfaceLayout overlayScale parity). Layout is viewport/overlayScale
+     * then scaleX/Y compresses back so bars stay edge-anchored while text
+     * shrinks to fit the square.
+     */
+    private fun layoutGuidanceOverlay(x: Int, y: Int, w: Int, h: Int) {
+        val gov = guidanceOverlay ?: return
+        if (w <= 0 || h <= 0) {
+            gov.visibility = View.GONE
+            return
+        }
+        val oScale = guidanceOverlaySettings.overlayScale.coerceIn(0.25f, 1.0f)
+        val layoutW = (w / oScale).toInt().coerceAtLeast(1)
+        val layoutH = (h / oScale).toInt().coerceAtLeast(1)
+        gov.layoutParams = FrameLayout.LayoutParams(layoutW, layoutH).apply {
+            leftMargin = x
+            topMargin = y
+            gravity = Gravity.TOP or Gravity.START
+        }
+        gov.pivotX = 0f
+        gov.pivotY = 0f
+        gov.scaleX = oScale
+        gov.scaleY = oScale
+        // Keep GONE only when surface gate hid us; otherwise VISIBLE (bars
+        // themselves GONE until trip data via updateFromTrip).
+        if (minimapView?.visibility == View.VISIBLE) {
+            gov.visibility = View.VISIBLE
+        }
+        gov.requestLayout()
+        Log.i(TAG, "layoutGuidanceOverlay($x,$y,$w,$h) oScale=$oScale layout=${layoutW}x${layoutH}")
+    }
+
     /**
      * Rebuild the ColorMatrix Paint from the current [minimapParams] and re-apply
      * it to filterWrapper's hardware layer. This is the entire "retune without a
@@ -844,6 +906,8 @@ class MainActivity : FlutterActivity() {
                         val available = host != null && isYnaviAvailable()
                         if (!available) {
                             if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                            guidanceOverlay?.visibility = View.GONE
+                            guidanceOverlay?.clearGuidance()
                             Log.i(TAG, "setMinimap(true): YNavi unavailable — native gate APPLIED, view INVISIBLE")
                             result.success("unavailable")
                             return@post
@@ -866,6 +930,8 @@ class MainActivity : FlutterActivity() {
                         result.success("applied:true")
                     } else {
                         if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        guidanceOverlay?.visibility = View.GONE
+                        guidanceOverlay?.clearGuidance()
                         val host = yNaviCarAppHost
                         if (host != null && host.isActive) {
                             host.stop()
@@ -882,8 +948,13 @@ class MainActivity : FlutterActivity() {
                     val visible = call.argument<Boolean>("visible") ?: true
                     if (visible) {
                         if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+                        // Overlay follows surface gate; trip data re-shows bars.
+                        guidanceOverlay?.visibility = View.VISIBLE
+                        lastMinimapBounds?.let { layoutGuidanceOverlay(it[0], it[1], it[2], it[3]) }
                     } else {
                         if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        guidanceOverlay?.visibility = View.GONE
+                        guidanceOverlay?.clearGuidance()
                     }
                     Log.i(TAG, "setMinimapSurfaceVisible($visible): APPLIED")
                     result.success("applied:$visible")
@@ -924,6 +995,10 @@ class MainActivity : FlutterActivity() {
                     // the YNavi surface too, or YNavi keeps rendering into a stale buffer
                     // sized for the OLD viewport (updateSurface previously had zero callers).
                     resizeYNaviSurface(w, h, bufW, bufH, dpiArg)
+                    // 0055: GuidanceOverlayView tracks the same viewport as filterWrapper
+                    // (Zee HUD 2 updateSurfaceLayout parity).
+                    lastMinimapBounds = intArrayOf(x, y, w, h)
+                    layoutGuidanceOverlay(x, y, w, h)
                     result.success("bounds:$x,$y,$w,$h")
                 }
                 "setMinimapParam" -> {
@@ -976,11 +1051,37 @@ class MainActivity : FlutterActivity() {
                             minimapParams.bufScale = 1f / minimapParams.minimapScale
                         }
                         "dpiScale"   -> asFloat()?.let { minimapParams.dpiScale = it }
+                        // 0055 / Zee HUD 2 toggles — live, no rebind.
+                        "guidance_overlay", "guidanceOverlay" -> asBool()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(guidanceOverlay = it)
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                        }
+                        "eta_bar", "etaBar" -> asBool()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(etaBar = it)
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                        }
+                        "overlay_scale", "overlayScale" -> asFloat()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(
+                                overlayScale = it.coerceIn(0.25f, 1.0f),
+                            )
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                            lastMinimapBounds?.let { b -> layoutGuidanceOverlay(b[0], b[1], b[2], b[3]) }
+                        }
                         else -> recognized = false
                     }
                     if (!recognized) {
                         Log.i(TAG, "setMinimapParam($key): ignored")
                         result.success("ignored:$key")
+                        return@post
+                    }
+                    if (key in listOf(
+                            "guidance_overlay", "guidanceOverlay",
+                            "eta_bar", "etaBar",
+                            "overlay_scale", "overlayScale",
+                        )
+                    ) {
+                        Log.i(TAG, "setMinimapParam($key=$raw): APPLIED guidance overlay settings")
+                        result.success("applied:$key")
                         return@post
                     }
                     when (key) {

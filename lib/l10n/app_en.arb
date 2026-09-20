@@ -428,6 +428,22 @@
   "@minimapOnlyWhileGuidanceHint": {
     "description": "Hint for only-while-guidance toggle"
   },
+  "minimapGuidanceOverlay": "Turn-by-turn overlay",
+  "@minimapGuidanceOverlay": {
+    "description": "0055: Zee HUD 2 guidance_overlay toggle (native Views)"
+  },
+  "minimapGuidanceOverlayHint": "Arrow, distance, and street name on the minimap (from YNavi trip data)",
+  "@minimapGuidanceOverlayHint": {
+    "description": "Hint for guidance overlay toggle"
+  },
+  "minimapEtaBar": "ETA bar",
+  "@minimapEtaBar": {
+    "description": "0055: Zee HUD 2 eta_bar toggle (native Views)"
+  },
+  "minimapEtaBarHint": "Remaining distance, time, and arrival on the minimap",
+  "@minimapEtaBarHint": {
+    "description": "Hint for ETA bar toggle"
+  },
   "minimapPreset": "Preset",
   "@minimapPreset": {
     "description": "Minimap preset selector label"

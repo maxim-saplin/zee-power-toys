@@ -203,6 +203,9 @@ class MinimapConfig {
   const MinimapConfig({
     this.enabled = false,
     this.onlyWhileGuidance = false,
+    this.guidanceOverlay = true,
+    this.etaBar = true,
+    this.overlayScale = 0.5,
     this.preset = 'balanced',
     this.advanced = false,
     this.sizeFraction,
@@ -216,6 +219,18 @@ class MinimapConfig {
   /// When true, show the minimap surface only while YNavi reports an active
   /// navigation session (0057). Default false = always show when [enabled].
   final bool onlyWhileGuidance;
+
+  /// 0055 / Zee HUD 2: show turn-by-turn top bar on native GuidanceOverlayView
+  /// (arrow + distance + road). Default true.
+  final bool guidanceOverlay;
+
+  /// 0055 / Zee HUD 2: show bottom ETA bar (remain dist + time + arrival).
+  /// Default true.
+  final bool etaBar;
+
+  /// Zee HUD 2 overlayScale (0.25–1.0). Independent of [contentScale]/ shrinks
+  /// guidance bars to fit the square viewport. Default 0.5.
+  final double overlayScale;
 
   /// Preset name: 'compact', 'balanced', or 'large'.
   final String preset;
@@ -261,6 +276,9 @@ class MinimapConfig {
   MinimapConfig copyWith({
     bool? enabled,
     bool? onlyWhileGuidance,
+    bool? guidanceOverlay,
+    bool? etaBar,
+    double? overlayScale,
     String? preset,
     bool? advanced,
     Object? sizeFraction = _unset,
@@ -269,6 +287,9 @@ class MinimapConfig {
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
     onlyWhileGuidance: onlyWhileGuidance ?? this.onlyWhileGuidance,
+    guidanceOverlay: guidanceOverlay ?? this.guidanceOverlay,
+    etaBar: etaBar ?? this.etaBar,
+    overlayScale: overlayScale ?? this.overlayScale,
     preset: preset ?? this.preset,
     advanced: advanced ?? this.advanced,
     sizeFraction: identical(sizeFraction, _unset)
@@ -281,6 +302,9 @@ class MinimapConfig {
   Map<String, Object?> toJson() => <String, Object?>{
     'enabled': enabled,
     'onlyWhileGuidance': onlyWhileGuidance,
+    'guidanceOverlay': guidanceOverlay,
+    'etaBar': etaBar,
+    'overlayScale': overlayScale,
     'preset': preset,
     'advanced': advanced,
     if (sizeFraction != null) 'sizeFraction': sizeFraction,
@@ -291,6 +315,9 @@ class MinimapConfig {
   factory MinimapConfig.fromJson(Map<String, Object?> json) => MinimapConfig(
     enabled: json['enabled'] as bool? ?? false,
     onlyWhileGuidance: json['onlyWhileGuidance'] as bool? ?? false,
+    guidanceOverlay: json['guidanceOverlay'] as bool? ?? true,
+    etaBar: json['etaBar'] as bool? ?? true,
+    overlayScale: (json['overlayScale'] as num?)?.toDouble() ?? 0.5,
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
@@ -308,6 +335,9 @@ class MinimapConfig {
       other is MinimapConfig &&
       other.enabled == enabled &&
       other.onlyWhileGuidance == onlyWhileGuidance &&
+      other.guidanceOverlay == guidanceOverlay &&
+      other.etaBar == etaBar &&
+      other.overlayScale == overlayScale &&
       other.preset == preset &&
       other.advanced == advanced &&
       other.sizeFraction == sizeFraction &&
@@ -316,8 +346,8 @@ class MinimapConfig {
 
   @override
   int get hashCode =>
-      Object.hash(enabled, onlyWhileGuidance, preset, advanced, sizeFraction,
-          contentScale, looks);
+      Object.hash(enabled, onlyWhileGuidance, guidanceOverlay, etaBar,
+          overlayScale, preset, advanced, sizeFraction, contentScale, looks);
 }
 
 

@@ -334,6 +334,20 @@ class AppLocalizationsRu extends AppLocalizations {
       'Если включено, миникарта видна только при активной навигации YNavi';
 
   @override
+  String get minimapGuidanceOverlay => 'Подсказки манёвров';
+
+  @override
+  String get minimapGuidanceOverlayHint =>
+      'Стрелка, дистанция и улица на миникарте (из данных маршрута YNavi)';
+
+  @override
+  String get minimapEtaBar => 'Полоса ETA';
+
+  @override
+  String get minimapEtaBarHint =>
+      'Оставшиеся дистанция, время и прибытие на миникарте';
+
+  @override
   String get minimapPreset => 'Пресет';
 
   @override

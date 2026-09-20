@@ -109,6 +109,46 @@ class MinimapSettingsScreen extends ConsumerWidget {
                     : null,
               ),
             ),
+            SettingsToggleRow(
+              label: l10n.minimapGuidanceOverlay,
+              subtitle: Text(
+                l10n.minimapGuidanceOverlayHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-guidance-overlay-toggle'),
+                value: cfg.guidanceOverlay,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(guidanceOverlay: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
+            SettingsToggleRow(
+              label: l10n.minimapEtaBar,
+              subtitle: Text(
+                l10n.minimapEtaBarHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-eta-bar-toggle'),
+                value: cfg.etaBar,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(etaBar: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
           ],
         ),
 

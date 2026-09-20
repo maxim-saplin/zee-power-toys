@@ -541,6 +541,10 @@ void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   final params = <String, Object?>{
     ...mm.looks.toParams(),
     'minimapScale': scale,
+    // 0055 / Zee HUD 2: native GuidanceOverlayView toggles (not Flutter plate).
+    'guidance_overlay': mm.guidanceOverlay,
+    'eta_bar': mm.etaBar,
+    'overlay_scale': mm.overlayScale.clamp(0.25, 1.0),
   };
   host.setParams(params).catchError((_) {});
 }

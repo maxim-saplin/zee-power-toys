@@ -412,6 +412,25 @@ void main() {
     });
   });
 
+  group('guidanceOverlay / etaBar (0055)', () {
+    test('defaults on (Zee HUD 2 parity)', () {
+      const cfg = MinimapConfig();
+      expect(cfg.guidanceOverlay, isTrue);
+      expect(cfg.etaBar, isTrue);
+      expect(cfg.overlayScale, 0.5);
+    });
+
+    test('JSON round-trip', () {
+      const cfg = MinimapConfig(
+        enabled: true,
+        guidanceOverlay: false,
+        etaBar: true,
+        overlayScale: 0.7,
+      );
+      expect(MinimapConfig.fromJson(cfg.toJson()), equals(cfg));
+    });
+  });
+
   group('onlyWhileGuidance (0057)', () {
     test('defaults off', () {
       expect(const MinimapConfig().onlyWhileGuidance, isFalse);

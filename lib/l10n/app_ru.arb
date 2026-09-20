@@ -428,6 +428,22 @@
   "@minimapOnlyWhileGuidanceHint": {
     "description": "Hint for only-while-guidance toggle"
   },
+  "minimapGuidanceOverlay": "Подсказки манёвров",
+  "@minimapGuidanceOverlay": {
+    "description": "0055: Zee HUD 2 guidance_overlay toggle (native Views)"
+  },
+  "minimapGuidanceOverlayHint": "Стрелка, дистанция и улица на миникарте (из данных маршрута YNavi)",
+  "@minimapGuidanceOverlayHint": {
+    "description": "Hint for guidance overlay toggle"
+  },
+  "minimapEtaBar": "Полоса ETA",
+  "@minimapEtaBar": {
+    "description": "0055: Zee HUD 2 eta_bar toggle (native Views)"
+  },
+  "minimapEtaBarHint": "Оставшиеся дистанция, время и прибытие на миникарте",
+  "@minimapEtaBarHint": {
+    "description": "Hint for ETA bar toggle"
+  },
   "minimapPreset": "Пресет",
   "@minimapPreset": {
     "description": "Minimap preset selector label"
