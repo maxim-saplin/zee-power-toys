@@ -44,6 +44,26 @@ uv run dev/feedback_loop.py whoami-all
 
 
 
+
+## Features
+
+- **HUD** — blinkers, battery/charge looks, Safe-Area layout, Config Preview
+- **Minimap** — YNavi map on the windshield (needs companion YNavi mod + usually Launcher)
+- **Speedcam** — OSM packs, approach alerts, Default/Alien radar looks, Demo on HUD  
+  **Does not require YNavi** (or Launcher) — works with OSM packs alone
+- **DHU** — language/cluster, Install companions, diagnostics, USB/ADB helpers, Simulate
+
+## Dependencies (companion APKs)
+
+These are **optional for Speedcam**. They unlock minimap / default-nav integration:
+
+| Companion | Source repo | Why |
+|-----------|-------------|-----|
+| **YNavi mod** (margined default / OS7+ no-margin) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | HUD minimap surface + CarApp bind |
+| **XCLauncher** (modded) | [zee_hud_2](https://github.com/maxim-saplin/zee_hud_2) | YNavi as default nav / launcher integration |
+
+Platform: Zeekr DHU Android (T3); T1 desktop / T2 emulator for bring-up. Speedcam data: OpenStreetMap (ODbL).
+
 ## Install / Get the APKs (landing draft — 0044)
 
 **Not a public store listing yet.** APKs live in **source repos** only (ynavi-zee, zee_hud_2). Install uses GitHub **Release** asset URLs once Maxim greens the prep-branch workflows.
