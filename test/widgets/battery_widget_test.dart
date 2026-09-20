@@ -16,7 +16,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0, outline+both', () {
+    test('defaults are all-on, sizeScale 1.0, outline+both, rightTop', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
@@ -24,6 +24,10 @@ void main() {
       expect(cfg.sizeScale, 1.0);
       expect(cfg.contentMode, BatteryContentMode.both);
       expect(cfg.style, BatteryStyle.outline);
+      expect(cfg.placement, BatteryPlacement.rightTop);
+      expect(cfg.vertFrac, 0.010);
+      expect(cfg.sidePadFrac, 0.04);
+      expect(cfg.horizBiasFrac, 0.0);
     });
 
     test('round-trips through JSON', () {

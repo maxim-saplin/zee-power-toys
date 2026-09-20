@@ -479,6 +479,140 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                 ),
               ),
               const SizedBox(height: Insets.md),
+              Text(
+                l10n.batteryPlacement,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: Insets.sm),
+              SegmentedButton<BatteryPlacement>(
+                segments: <ButtonSegment<BatteryPlacement>>[
+                  ButtonSegment(
+                    value: BatteryPlacement.left,
+                    label: Text(l10n.batteryPlacementLeft),
+                    icon: const Icon(Icons.align_horizontal_left),
+                  ),
+                  ButtonSegment(
+                    value: BatteryPlacement.right,
+                    label: Text(l10n.batteryPlacementRight),
+                    icon: const Icon(Icons.align_horizontal_right),
+                  ),
+                  ButtonSegment(
+                    value: BatteryPlacement.rightTop,
+                    label: Text(l10n.batteryPlacementRightTop),
+                    icon: const Icon(Icons.vertical_align_top),
+                  ),
+                ],
+                selected: <BatteryPlacement>{batteryCfg.placement},
+                onSelectionChanged: (Set<BatteryPlacement> sel) {
+                  if (sel.isEmpty) return;
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.withPlacement(sel.first),
+                    ),
+                  );
+                },
+              ),
+              Opacity(
+                opacity: 0,
+                child: Row(
+                  children: <Widget>[
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-left'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.left,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-right'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.right,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-right-top'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.rightTop,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batteryVerticalPosition,
+                valueLabel:
+                    '${(batteryCfg.vertFrac * 100).toStringAsFixed(0)}%',
+                minLabel: l10n.positionTop,
+                maxLabel: l10n.positionBottom,
+                sliderKey: const ValueKey('battery-vert'),
+                min: 0.0,
+                max: 0.7,
+                divisions: 70,
+                value: batteryCfg.vertFrac.clamp(0.0, 0.7),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(vertFrac: v),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batterySidePadding,
+                valueLabel:
+                    '${(batteryCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
+                minLabel: l10n.positionEdge,
+                maxLabel: '35%',
+                sliderKey: const ValueKey('battery-side-pad'),
+                min: 0.0,
+                max: 0.35,
+                divisions: 35,
+                value: batteryCfg.sidePadFrac.clamp(0.0, 0.35),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(sidePadFrac: v),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batteryHorizBias,
+                valueLabel:
+                    '${(batteryCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
+                minLabel: '←',
+                maxLabel: '→',
+                sliderKey: const ValueKey('battery-horiz-bias'),
+                min: -0.25,
+                max: 0.25,
+                divisions: 50,
+                value: batteryCfg.horizBiasFrac.clamp(-0.25, 0.25),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(horizBiasFrac: v),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Insets.md),
               SettingsSlider(
                 label: l10n.batterySize,
                 valueLabel: '${batteryCfg.sizeScale.toStringAsFixed(2)}×',

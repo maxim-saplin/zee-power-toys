@@ -254,6 +254,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get batteryStylePctInside => '% внутри';
 
   @override
+  String get batteryPlacement => 'Положение';
+
+  @override
+  String get batteryPlacementLeft => 'Слева';
+
+  @override
+  String get batteryPlacementRight => 'Справа';
+
+  @override
+  String get batteryPlacementRightTop => 'Справа сверху';
+
+  @override
+  String get batteryVerticalPosition => 'Вертикальное положение';
+
+  @override
+  String get batterySidePadding => 'Боковой отступ (от края)';
+
+  @override
+  String get batteryHorizBias => 'Горизонтальный сдвиг';
+
+  @override
   String get batterySize => 'Размер';
 
   @override

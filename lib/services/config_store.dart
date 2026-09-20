@@ -325,14 +325,46 @@ enum BatteryContentMode { both, iconOnly, textOnly }
 ///               (suppresses the separate % below when content includes icon).
 enum BatteryStyle { outline, filled, pctInside }
 
-/// Battery widget appearance config.
+/// Named placement for the battery cluster (icon + % + temp + charging kW).
+///
+/// Fine adjust (`vertFrac` / `sidePadFrac` / `horizBiasFrac`) rides on top of
+/// the preset's side. Selecting a preset in the DHU resets the fine knobs to
+/// that preset's defaults (see `batteryPlacementDefaults`).
+///
+/// `rightTop` is today's hard-coded top-right look and the config default.
+enum BatteryPlacement {
+  /// Left Safe-Area edge, top (mirror of [rightTop]).
+  left,
+
+  /// Right Safe-Area edge, mid-upper (below [rightTop]).
+  right,
+
+  /// Right Safe-Area edge, top — default / prior hard-coded placement.
+  rightTop,
+}
+
+/// Default fine-adjust knobs for a named [BatteryPlacement] preset.
+///
+/// Kept next to the enum so ConfigStore and `battery_geometry` share one
+/// source of truth (no hud/ → services cycle).
+({double vertFrac, double sidePadFrac}) batteryPlacementDefaults(
+  BatteryPlacement placement,
+) =>
+    switch (placement) {
+      BatteryPlacement.left => (vertFrac: 0.010, sidePadFrac: 0.04),
+      BatteryPlacement.right => (vertFrac: 0.35, sidePadFrac: 0.04),
+      BatteryPlacement.rightTop => (vertFrac: 0.010, sidePadFrac: 0.04),
+    };
+
+/// Battery widget appearance + placement config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// contentMode = both, style = outline, sizeScale = 1.0.  The charging stats
-/// panel is show-while-charging — it appears automatically when the car
-/// reports charging and is hidden otherwise (app policy per ADR 0003);
-/// showChargingStats merely lets the user suppress the panel entirely if they
-/// prefer.
+/// contentMode = both, style = outline, sizeScale = 1.0, placement = rightTop
+/// with vertFrac/sidePadFrac matching today's hard-coded top-right slot.
+/// The charging stats panel is show-while-charging — it appears automatically
+/// when the car reports charging and is hidden otherwise (app policy per
+/// ADR 0003); showChargingStats merely lets the user suppress the panel
+/// entirely if they prefer.
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
@@ -341,6 +373,10 @@ class BatteryConfig {
     this.sizeScale = 1.0,
     this.contentMode = BatteryContentMode.both,
     this.style = BatteryStyle.outline,
+    this.placement = BatteryPlacement.rightTop,
+    this.vertFrac = 0.010,
+    this.sidePadFrac = 0.04,
+    this.horizBiasFrac = 0.0,
   });
 
   /// Whether to render the battery indicator at all.
@@ -363,6 +399,20 @@ class BatteryConfig {
   /// Pack visual style (outline / filled segments / % inside).
   final BatteryStyle style;
 
+  /// Named side/corner preset. Fine adjust fields below override the preset's
+  /// default fractions without changing the active side.
+  final BatteryPlacement placement;
+
+  /// Top edge of the battery slot as a fraction of Safe Area height (0 = top).
+  final double vertFrac;
+
+  /// Inward padding from the active edge as a fraction of Safe Area width.
+  final double sidePadFrac;
+
+  /// Horizontal bias as a fraction of Safe Area width (−0.25…0.25). Positive
+  /// shifts the cluster toward the right (same convention as blinker).
+  final double horizBiasFrac;
+
   BatteryConfig copyWith({
     bool? showBattery,
     bool? showTemp,
@@ -370,6 +420,10 @@ class BatteryConfig {
     double? sizeScale,
     BatteryContentMode? contentMode,
     BatteryStyle? style,
+    BatteryPlacement? placement,
+    double? vertFrac,
+    double? sidePadFrac,
+    double? horizBiasFrac,
   }) => BatteryConfig(
     showBattery: showBattery ?? this.showBattery,
     showTemp: showTemp ?? this.showTemp,
@@ -377,7 +431,23 @@ class BatteryConfig {
     sizeScale: sizeScale ?? this.sizeScale,
     contentMode: contentMode ?? this.contentMode,
     style: style ?? this.style,
+    placement: placement ?? this.placement,
+    vertFrac: vertFrac ?? this.vertFrac,
+    sidePadFrac: sidePadFrac ?? this.sidePadFrac,
+    horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
   );
+
+  /// Apply a named [placement] and reset fine-adjust knobs to that preset's
+  /// defaults (left / right / rightTop).
+  BatteryConfig withPlacement(BatteryPlacement placement) {
+    final defaults = batteryPlacementDefaults(placement);
+    return copyWith(
+      placement: placement,
+      vertFrac: defaults.vertFrac,
+      sidePadFrac: defaults.sidePadFrac,
+      horizBiasFrac: 0.0,
+    );
+  }
 
   Map<String, Object?> toJson() => <String, Object?>{
     'showBattery': showBattery,
@@ -386,6 +456,10 @@ class BatteryConfig {
     'sizeScale': sizeScale,
     'contentMode': contentMode.name,
     'style': style.name,
+    'placement': placement.name,
+    'vertFrac': vertFrac,
+    'sidePadFrac': sidePadFrac,
+    'horizBiasFrac': horizBiasFrac,
   };
 
   factory BatteryConfig.fromJson(Map<String, Object?> json) {
@@ -403,6 +477,13 @@ class BatteryConfig {
             orElse: () => BatteryStyle.outline,
           )
         : BatteryStyle.outline;
+    final placementName = json['placement'] as String?;
+    final placement = placementName != null
+        ? BatteryPlacement.values.firstWhere(
+            (e) => e.name == placementName,
+            orElse: () => BatteryPlacement.rightTop,
+          )
+        : BatteryPlacement.rightTop;
     return BatteryConfig(
       showBattery: json['showBattery'] as bool? ?? true,
       showTemp: json['showTemp'] as bool? ?? true,
@@ -410,6 +491,10 @@ class BatteryConfig {
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       contentMode: contentMode,
       style: style,
+      placement: placement,
+      vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.010,
+      sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
+      horizBiasFrac: (json['horizBiasFrac'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -421,7 +506,11 @@ class BatteryConfig {
       other.showChargingStats == showChargingStats &&
       other.sizeScale == sizeScale &&
       other.contentMode == contentMode &&
-      other.style == style;
+      other.style == style &&
+      other.placement == placement &&
+      other.vertFrac == vertFrac &&
+      other.sidePadFrac == sidePadFrac &&
+      other.horizBiasFrac == horizBiasFrac;
 
   @override
   int get hashCode => Object.hash(
@@ -431,6 +520,10 @@ class BatteryConfig {
     sizeScale,
     contentMode,
     style,
+    placement,
+    vertFrac,
+    sidePadFrac,
+    horizBiasFrac,
   );
 }
 

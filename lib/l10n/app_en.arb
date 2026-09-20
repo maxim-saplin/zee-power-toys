@@ -324,6 +324,34 @@
   "@batteryStylePctInside": {
     "description": "Battery style: percentage inside pack"
   },
+  "batteryPlacement": "Position",
+  "@batteryPlacement": {
+    "description": "Battery placement preset selector label"
+  },
+  "batteryPlacementLeft": "Left",
+  "@batteryPlacementLeft": {
+    "description": "Battery placement preset: left"
+  },
+  "batteryPlacementRight": "Right",
+  "@batteryPlacementRight": {
+    "description": "Battery placement preset: right mid"
+  },
+  "batteryPlacementRightTop": "Right top",
+  "@batteryPlacementRightTop": {
+    "description": "Battery placement preset: right top (default)"
+  },
+  "batteryVerticalPosition": "Vertical position",
+  "@batteryVerticalPosition": {
+    "description": "Battery vertical position slider label"
+  },
+  "batterySidePadding": "Side padding (from edge)",
+  "@batterySidePadding": {
+    "description": "Battery side-padding slider label"
+  },
+  "batteryHorizBias": "Horizontal bias",
+  "@batteryHorizBias": {
+    "description": "Battery horizontal bias slider label"
+  },
   "batterySize": "Size",
   "@batterySize": {
     "description": "Battery size slider label"

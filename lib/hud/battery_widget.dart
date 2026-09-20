@@ -134,6 +134,15 @@ class BatteryWidget extends ConsumerWidget {
 
     final pctLabel = pct != null ? '$pct%' : '--%';
 
+    // Align the cluster toward the active edge so left placement mirrors
+    // right without changing pack/styles (0051). Temp + charging stay in
+    // this Column, so they move with the battery.
+    final alignEnd = cfg.placement != BatteryPlacement.left;
+    final clusterAlign =
+        alignEnd ? Alignment.topRight : Alignment.topLeft;
+    final clusterCross =
+        alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
@@ -142,11 +151,11 @@ class BatteryWidget extends ConsumerWidget {
       // this way). See prior layout notes: vertical stack so sizeScale remains
       // honest against the tall-narrow BATTERY slot.
       child: FittedBox(
-        alignment: Alignment.topRight,
+        alignment: clusterAlign,
         fit: BoxFit.scaleDown,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: clusterCross,
           children: <Widget>[
             // ---- Battery icon (pack) ----
             if (showIcon)
@@ -223,6 +232,7 @@ class BatteryWidget extends ConsumerWidget {
                 base: base,
                 kwColor: _kKwColor,
                 secondaryColor: _kTextSecondary,
+                crossAxisAlignment: clusterCross,
               ),
             ],
           ],
@@ -390,12 +400,14 @@ class _ChargingStats extends StatelessWidget {
     required this.base,
     required this.kwColor,
     required this.secondaryColor,
+    this.crossAxisAlignment = CrossAxisAlignment.end,
   });
 
   final double? kw;
   final double base;
   final Color kwColor;
   final Color secondaryColor;
+  final CrossAxisAlignment crossAxisAlignment;
 
   @override
   Widget build(BuildContext context) {
@@ -404,7 +416,7 @@ class _ChargingStats extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: crossAxisAlignment,
       children: <Widget>[
         Text(
           kwText,

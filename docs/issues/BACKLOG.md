@@ -111,6 +111,8 @@ Related deferred: installer Robolectric guard (below); YNavi zoom still upstream
 
 ### Quality + publish
 
+| [0051](0051-battery-free-placement.md) | Battery HUD free placement (left / right / right-top + fine adjust) | **done** |
+
 | [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
 | [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |
 

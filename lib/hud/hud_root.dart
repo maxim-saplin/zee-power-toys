@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
 import '../services/minimap_viewport.dart';
+import 'battery_geometry.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
@@ -150,11 +151,6 @@ class _HudSlots extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Proportional slot geometry inside the Safe Area.
-    // Battery: right 12% wide, upper 60% tall.
-    final upperH = saHeight * 0.6;
-    final batteryW = saWidth * 0.12;
-
     // Pass resolvedSizeFraction, not just the preset, so the schematic glyph
     // tracks the Size slider in advanced mode too — otherwise the preview
     // silently disagrees with the rect actually handed to the native host.
@@ -162,6 +158,18 @@ class _HudSlots extends ConsumerWidget {
     final minimapRect = minimapRectInSafeArea(
       preset: minimapCfg.preset,
       sizeFraction: minimapCfg.resolvedSizeFraction,
+    );
+
+    // Battery cluster placement — presets (left / right / rightTop) + fine
+    // adjust. Default rightTop matches today's hard-coded top-right.
+    final batteryCfg = ref.watch(batteryConfigProvider);
+    final batteryRect = batteryClusterRect(
+      saW: saWidth,
+      saH: saHeight,
+      placement: batteryCfg.placement,
+      vertFrac: batteryCfg.vertFrac,
+      sidePadFrac: batteryCfg.sidePadFrac,
+      horizBiasFrac: batteryCfg.horizBiasFrac,
     );
 
     return Stack(
@@ -173,14 +181,14 @@ class _HudSlots extends ConsumerWidget {
           child: BlinkerWidget(forceBlinkOn: forceBlinkOn),
         ),
 
-        // BATTERY — top-right corner (Steam-Deck-style battery + temp + charging stats).
-        // sidePadFrac-equivalent (0.04) keeps the indicator safely inside the Safe Area
-        // on all display sizes, matching the blinker's lateral inset (QA1-7).
+        // BATTERY — freely placeable cluster (icon + % + temp + charging kW).
+        // Geometry from batteryClusterRect; default = prior top-right look.
         Positioned(
-          right: saWidth * 0.04,
-          top: saHeight * 0.010,
-          width: batteryW,
-          height: upperH,
+          key: const ValueKey('hud-battery-slot'),
+          left: batteryRect.left,
+          top: batteryRect.top,
+          width: batteryRect.width,
+          height: batteryRect.height,
           child: const BatteryWidget(),
         ),
 

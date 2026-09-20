@@ -584,6 +584,48 @@ abstract class AppLocalizations {
   /// **'% inside'**
   String get batteryStylePctInside;
 
+  /// Battery placement preset selector label
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get batteryPlacement;
+
+  /// Battery placement preset: left
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get batteryPlacementLeft;
+
+  /// Battery placement preset: right mid
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get batteryPlacementRight;
+
+  /// Battery placement preset: right top (default)
+  ///
+  /// In en, this message translates to:
+  /// **'Right top'**
+  String get batteryPlacementRightTop;
+
+  /// Battery vertical position slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical position'**
+  String get batteryVerticalPosition;
+
+  /// Battery side-padding slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Side padding (from edge)'**
+  String get batterySidePadding;
+
+  /// Battery horizontal bias slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Horizontal bias'**
+  String get batteryHorizBias;
+
   /// Battery size slider label
   ///
   /// In en, this message translates to:

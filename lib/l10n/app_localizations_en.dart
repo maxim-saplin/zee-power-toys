@@ -254,6 +254,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get batteryStylePctInside => '% inside';
 
   @override
+  String get batteryPlacement => 'Position';
+
+  @override
+  String get batteryPlacementLeft => 'Left';
+
+  @override
+  String get batteryPlacementRight => 'Right';
+
+  @override
+  String get batteryPlacementRightTop => 'Right top';
+
+  @override
+  String get batteryVerticalPosition => 'Vertical position';
+
+  @override
+  String get batterySidePadding => 'Side padding (from edge)';
+
+  @override
+  String get batteryHorizBias => 'Horizontal bias';
+
+  @override
   String get batterySize => 'Size';
 
   @override

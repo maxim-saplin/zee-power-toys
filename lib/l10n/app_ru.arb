@@ -324,6 +324,34 @@
   "@batteryStylePctInside": {
     "description": "Battery style: percentage inside pack"
   },
+  "batteryPlacement": "Положение",
+  "@batteryPlacement": {
+    "description": "Battery placement preset selector label"
+  },
+  "batteryPlacementLeft": "Слева",
+  "@batteryPlacementLeft": {
+    "description": "Battery placement preset: left"
+  },
+  "batteryPlacementRight": "Справа",
+  "@batteryPlacementRight": {
+    "description": "Battery placement preset: right mid"
+  },
+  "batteryPlacementRightTop": "Справа сверху",
+  "@batteryPlacementRightTop": {
+    "description": "Battery placement preset: right top (default)"
+  },
+  "batteryVerticalPosition": "Вертикальное положение",
+  "@batteryVerticalPosition": {
+    "description": "Battery vertical position slider label"
+  },
+  "batterySidePadding": "Боковой отступ (от края)",
+  "@batterySidePadding": {
+    "description": "Battery side-padding slider label"
+  },
+  "batteryHorizBias": "Горизонтальный сдвиг",
+  "@batteryHorizBias": {
+    "description": "Battery horizontal bias slider label"
+  },
   "batterySize": "Размер",
   "@batterySize": {
     "description": "Battery size slider label"
