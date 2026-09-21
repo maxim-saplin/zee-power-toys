@@ -5,6 +5,11 @@ All notable changes to Zee Power Toys are documented here.
 Versioning: `MAJOR.MINOR.PATCH+BUILD` in `pubspec.yaml`.
 Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing releases.
 
+## [Unreleased]
+
+### Added
+- `README_RU.md` — Russian product landing; EN/RU switch at top of both READMEs
+
 ## [1.0.0+5] — 2026-09-20
 
 ### Changed

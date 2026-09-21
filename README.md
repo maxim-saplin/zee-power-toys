@@ -1,5 +1,7 @@
 # Zee Power Toys
 
+**[EN](README.md) | [RU](README_RU.md)**
+
 **Windshield HUD + DHU utilities for Zeekr Android head units.**
 
 Customization app for the car’s central display (DHU) and the windshield HUD:
@@ -42,7 +44,7 @@ When a public Release exists for this repo:
 - **Asset:** `zee-power-toys.apk` (fallback `app-release.apk`)  
 - In-app: **Install → Check for updates → Update now**
 
-`release.yml` stays Maxim-gated until go-live.
+CI: push a tag `1.0.0+N` (or `workflow_dispatch`) → `release.yml` uploads `zee-power-toys.apk`.
 
 ### Desktop bring-up (T1)
 
@@ -79,7 +81,7 @@ Drop PNGs under `docs/assets/` (e.g. `dhu-home.png`) and link them here when rea
 
 Optional for Speedcam; required for minimap / default-nav integration.
 
-| Companion | Repo | Release (prep) |
+| Companion | Repo | Release |
 |-----------|------|----------------|
 | YNavi margined (default) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | tag `ynavi-zeekr-v12` / `zeekr_v12_margined.apk` |
 | YNavi OS7+ (no left margin) | same | same tag / `zeekr_v12_os7_nomargin.apk` |
