@@ -7,7 +7,10 @@ Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing
 
 ## [Unreleased]
 
-## [1.0.0+8] — 2026-09-21
+## [1.0.0+9] — 2026-09-21
+
+### Fixed
+- Analyzer: drop unnecessary `!` on YNavi enrich start (CI)
 
 ### Added
 - YNavi speedcam enrich (ghost idle-drive + route on Go) behind Speedcam **YNavi enrich** toggle — **default OFF**

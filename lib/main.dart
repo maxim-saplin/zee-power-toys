@@ -154,7 +154,7 @@ Future<void> dhuMain(List<String> args) async {
     speedcamLocationRaw = NativeSpeedcamLocation(speedcamRaw)..start();
     speedcamYnaviRaw = NativeSpeedcamYnavi(speedcamRaw);
     // 0071: start EventChannel listen immediately; enrich gated default OFF.
-    speedcamYnaviRaw!.start();
+    speedcamYnaviRaw.start();
   }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
   final SpeedcamSystemOverlay speedcamOverlayRaw =
