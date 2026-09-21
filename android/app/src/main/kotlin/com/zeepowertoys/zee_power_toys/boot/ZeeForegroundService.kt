@@ -1,13 +1,14 @@
 package com.zeepowertoys.zee_power_toys.boot
 
 import android.app.Notification
+import android.content.Intent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import com.zeepowertoys.zee_power_toys.MainActivity
 
 /**
  * Lean foreground service — background keepalive for Zee Power Toys.
@@ -76,7 +77,18 @@ class ZeeForegroundService : Service() {
 
         if (hudEnabled) {
             Log.i(TAG, "ZeeForegroundService: onStartCommand — hudEnabled=true " +
-                "(HUD engine is Activity responsibility, not FGS)")
+                "(HUD engine is Activity responsibility, not FGS) — ensuring MainActivity")
+            // START_STICKY restart / boot: Activity may be gone while FGS survives.
+            // Re-launch so Presentation can (re)attach to secondary display.
+            val launch = Intent(this, MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+            }
+            runCatching { startActivity(launch) }
+                .onFailure { Log.w(TAG, "ZeeForegroundService: MainActivity launch failed", it) }
         } else {
             Log.i(TAG, "ZeeForegroundService: onStartCommand — hudEnabled=false, " +
                 "HUD engine will not be spawned")

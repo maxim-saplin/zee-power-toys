@@ -134,9 +134,7 @@ class DiagnosticsScreen extends ConsumerWidget {
             children: <Widget>[
               _SignalRow(
                 label: l10n.diagCharging,
-                value: charging == null
-                    ? '—'
-                    : (charging ? l10n.diagYes : l10n.diagNo),
+                value: charging ? l10n.diagYes : l10n.diagNo,
                 unit: '',
               ),
               _SignalRow(
@@ -339,7 +337,7 @@ class _RawSnapshotTile extends StatelessWidget {
 
   final int? speed;
   final BlinkerState blinker;
-  final bool? charging;
+  final bool charging;
   final double? chargeKw;
   final int? batteryPct;
   final double? batteryTempC;
@@ -353,7 +351,7 @@ class _RawSnapshotTile extends StatelessWidget {
     final lines = <String>[
       'speedKmh: ${speed ?? 'null'}',
       'blinker: ${blinker.name}',
-      'charging: ${charging ?? 'null'}',
+      'charging: $charging',
       'chargeKw: ${chargeKw ?? 'null'}',
       'batteryPct: ${batteryPct ?? 'null'}',
       'batteryTempC: ${batteryTempC ?? 'null'}',

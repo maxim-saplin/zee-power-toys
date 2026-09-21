@@ -96,6 +96,8 @@ class MainActivity : FlutterActivity() {
         // Delay (ms) before spawning the HUD engine; lets the primary view
         // finish its first layout pass so the FlutterView is fully attached.
         private const val HUD_SPAWN_DELAY_MS = 1500L
+        /** Max retries when secondary display is absent at spawn (leave/return / soft reboot). */
+        private const val HUD_RETRY_MAX = 12
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -165,6 +167,34 @@ class MainActivity : FlutterActivity() {
     // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
     private var dhuMinimapChannel: MethodChannel? = null
 
+    // Display reconnect hardening (leave/return / DHU soft reboot):
+    // Android dismisses Presentation when the secondary display goes away, but
+    // our hudEngine reference can linger — show() then NOOPs. Mirror zee_hud_2
+    // ensureHudPresentation: DisplayListener + ensure + retry.
+    private var displayListenerRegistered = false
+    private var hudRetryAttempt = 0
+    private val hudRetryRunnable = Runnable {
+        ensureHudPresentation("retry:$hudRetryAttempt")
+    }
+    private val hudDisplayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {
+            handler.post { ensureHudPresentation("displayAdded:$displayId") }
+        }
+        override fun onDisplayRemoved(displayId: Int) {
+            handler.post {
+                val current = hudDisplay?.displayId
+                if (current != null && current == displayId) {
+                    Log.w(TAG, "HUD display $displayId removed — tearDown + await reconnect")
+                    tearDownHud()
+                }
+                ensureHudPresentation("displayRemoved:$displayId")
+            }
+        }
+        override fun onDisplayChanged(displayId: Int) {
+            handler.post { ensureHudPresentation("displayChanged:$displayId") }
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         Log.i(TAG, "configureFlutterEngine: primary DHU engine = $flutterEngine")
@@ -204,10 +234,11 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "show" -> handler.post {
-                        if (hudEngine == null) setupHud()
+                        ensureHudPresentation("lifecycle.show")
                         result.success(null)
                     }
                     "hide" -> handler.post {
+                        cancelHudRetry()
                         tearDownHud()
                         result.success(null)
                     }
@@ -335,7 +366,91 @@ class MainActivity : FlutterActivity() {
         usbModeController = UsbModeController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Defer HUD setup: give the primary view time to attach and render.
-        handler.postDelayed({ setupHud() }, HUD_SPAWN_DELAY_MS)
+        registerHudDisplayListener()
+        handler.postDelayed({ ensureHudPresentation("initial") }, HUD_SPAWN_DELAY_MS)
+    }
+
+    // -------------------------------------------------------------------------
+    // HUD ensure / reconnect (P0 leave-return hardening)
+    // -------------------------------------------------------------------------
+
+    private fun registerHudDisplayListener() {
+        if (displayListenerRegistered) return
+        val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        dm.registerDisplayListener(hudDisplayListener, handler)
+        displayListenerRegistered = true
+        Log.i(TAG, "registerHudDisplayListener: listening for secondary display changes")
+    }
+
+    private fun unregisterHudDisplayListener() {
+        if (!displayListenerRegistered) return
+        val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        dm.unregisterDisplayListener(hudDisplayListener)
+        displayListenerRegistered = false
+    }
+
+    private fun cancelHudRetry() {
+        handler.removeCallbacks(hudRetryRunnable)
+        hudRetryAttempt = 0
+    }
+
+    private fun scheduleHudRetry() {
+        if (hudRetryAttempt >= HUD_RETRY_MAX) {
+            Log.w(TAG, "scheduleHudRetry: exhausted $HUD_RETRY_MAX attempts — waiting for DisplayListener")
+            return
+        }
+        hudRetryAttempt++
+        val delayMs = (1000L * hudRetryAttempt).coerceAtMost(15_000L)
+        handler.removeCallbacks(hudRetryRunnable)
+        handler.postDelayed(hudRetryRunnable, delayMs)
+        Log.i(TAG, "scheduleHudRetry: attempt=$hudRetryAttempt in ${delayMs}ms")
+    }
+
+    /**
+     * Idempotent: (re)create Presentation + HUD engine whenever process is
+     * alive / display returns and hudEnabled. Mirrors zee_hud_2 ensureHudPresentation.
+     */
+    private fun ensureHudPresentation(reason: String) {
+        Log.i(TAG, "ensureHudPresentation: reason=$reason")
+        val hudEnabled = ConfigShim.readHudEnabled(applicationContext)
+        if (!hudEnabled) {
+            cancelHudRetry()
+            if (hudEngine != null || hudPresentation != null) {
+                Log.i(TAG, "ensureHudPresentation: hudEnabled=false — tearDown")
+                tearDownHud()
+            }
+            return
+        }
+
+        val secondary = findSecondaryDisplay()
+        val showing = try {
+            hudPresentation?.isShowing == true
+        } catch (_: Throwable) {
+            false
+        }
+        val displayOk = secondary != null && hudDisplay?.displayId == secondary.displayId
+        if (hudEngine != null && showing && displayOk) {
+            cancelHudRetry()
+            Log.i(TAG, "ensureHudPresentation: healthy (displayId=${hudDisplay?.displayId})")
+            return
+        }
+
+        if (hudEngine != null || hudPresentation != null) {
+            Log.w(
+                TAG,
+                "ensureHudPresentation: stale HUD (engine=${hudEngine != null} " +
+                    "showing=$showing displayOk=$displayOk) — recreate",
+            )
+            tearDownHud()
+        }
+
+        setupHud()
+        if (hudEngine != null) {
+            cancelHudRetry()
+        } else {
+            // No secondary yet (or setup failed) — retry + DisplayListener will recover.
+            scheduleHudRetry()
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -1230,7 +1345,15 @@ class MainActivity : FlutterActivity() {
     // Lifecycle cleanup
     // -------------------------------------------------------------------------
 
+    override fun onResume() {
+        super.onResume()
+        // Soft reboot / return-to-car: Activity may survive with a dead Presentation.
+        ensureHudPresentation("onResume")
+    }
+
     override fun onDestroy() {
+        cancelHudRetry()
+        unregisterHudDisplayListener()
         speedcamSystemOverlay?.dispose()
         speedcamSystemOverlay = null
         SimulateReceiver.controllerRef = null

@@ -68,13 +68,13 @@ class BatteryWidget extends ConsumerWidget {
 
     final pct = ref.watch(batteryPctProvider); // int? 0-100
     final tempC = ref.watch(batteryTempCProvider); // double? °C
-    final charging = ref.watch(chargingProvider); // bool?
+    final charging = ref.watch(chargingProvider);
     final kw = ref.watch(chargeKwProvider); // double?
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
     // fine; a hollow outline that looks broken is not.
-    final isCharging = charging == true;
+    final isCharging = charging;
     if (pct == null && tempC == null && !isCharging) {
       return const SizedBox.shrink();
     }

@@ -82,7 +82,7 @@ class CarSnapshot {
   const CarSnapshot({
     this.speedKmh,
     this.blinker = BlinkerState.off,
-    this.charging,
+    this.charging = false,
     this.chargeKw,
     this.batteryPct,
     this.batteryTempC,
@@ -91,7 +91,8 @@ class CarSnapshot {
 
   final int? speedKmh;
   final BlinkerState blinker;
-  final bool? charging;
+  /// Always true/false — unknown/absent AdaptAPI state coalesces to false.
+  final bool charging;
   final double? chargeKw;
   final int? batteryPct;
   final double? batteryTempC;

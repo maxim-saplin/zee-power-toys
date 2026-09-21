@@ -54,6 +54,21 @@ class NativeCarSignals implements CarSignals {
           if (!_sourceKindCompleter.isCompleted) {
             _sourceKindCompleter.complete(source ?? 'unknown');
           }
+          // Seed Dart snapshot from native (incl. charging bool — never null).
+          if (raw != null) {
+            final charging = raw['charging'] as bool? ?? false;
+            final kw = _asDouble(raw['chargeKw']);
+            final pct = _asInt(raw['batteryPct']);
+            final tempC = _asDouble(raw['batteryTempC']);
+            final speed = _asInt(raw['speedKmh']);
+            _snapshot = _snapshot.copyWith(
+              charging: charging,
+              chargeKw: kw,
+              batteryPct: pct,
+              batteryTempC: tempC,
+              speedKmh: speed,
+            );
+          }
         })
         .catchError((Object e) {
           debugPrintNativeEvent('NativeCarSignals: start() failed: $e');

@@ -10,7 +10,7 @@ object SimulatorState {
 
     @Volatile var speedKmh: Int? = null
     @Volatile var blinker: String = "off"
-    @Volatile var charging: Boolean? = null
+    @Volatile var charging: Boolean = false
     @Volatile var chargeVolts: Double? = null
     @Volatile var chargeAmps: Double? = null
     @Volatile var chargeKw: Double? = null

@@ -29,8 +29,8 @@ final blinkerProvider = Provider<BlinkerState>((ref) {
   return ref.watch(carSignalsProvider).snapshot.blinker;
 });
 
-/// Charging flag; null until known.
-final chargingProvider = Provider<bool?>((ref) {
+/// Charging flag — always true/false (never null).
+final chargingProvider = Provider<bool>((ref) {
   _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.charging;
 });

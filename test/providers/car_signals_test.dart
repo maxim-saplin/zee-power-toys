@@ -67,7 +67,7 @@ void main() {
     test('reflects ChargeEvent charging=true with kw', () async {
       final (container, fake) = makeContainer();
 
-      expect(container.read(chargingProvider), isNull);
+      expect(container.read(chargingProvider), isFalse);
 
       fake.emitCharge(charging: true, kw: 50.0);
       await Future<void>.delayed(Duration.zero);

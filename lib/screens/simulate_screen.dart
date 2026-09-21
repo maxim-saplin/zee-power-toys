@@ -72,7 +72,7 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
     final l10n = AppLocalizations.of(context);
     final carSignals = ref.watch(carSignalsProvider);
     final blinkerState = ref.watch(blinkerProvider);
-    final charging = ref.watch(chargingProvider) ?? false;
+    final charging = ref.watch(chargingProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.simulateTitle)),

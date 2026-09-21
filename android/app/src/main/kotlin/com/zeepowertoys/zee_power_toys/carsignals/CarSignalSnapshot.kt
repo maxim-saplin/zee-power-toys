@@ -11,7 +11,7 @@ package com.zeepowertoys.zee_power_toys.carsignals
 data class CarSignalSnapshot(
     val speedKmh: Int? = null,
     val blinker: String = "off",   // off | left | right | hazard
-    val charging: Boolean? = null,
+    val charging: Boolean = false,
     val chargeVolts: Double? = null,
     val chargeAmps: Double? = null,
     val chargeKw: Double? = null,
@@ -37,7 +37,7 @@ data class CarSignalSnapshot(
         append("{")
         append("\"speedKmh\":${speedKmh ?: "null"},")
         append("\"blinker\":\"$blinker\",")
-        append("\"charging\":${charging ?: "null"},")
+        append("\"charging\":$charging,")
         append("\"chargeVolts\":${chargeVolts ?: "null"},")
         append("\"chargeAmps\":${chargeAmps ?: "null"},")
         append("\"chargeKw\":${chargeKw ?: "null"},")

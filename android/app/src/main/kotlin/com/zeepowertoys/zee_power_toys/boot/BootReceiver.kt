@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.zeepowertoys.zee_power_toys.MainActivity
 import com.zeepowertoys.zee_power_toys.usb.UsbModeController
 
 /**
@@ -59,6 +60,21 @@ class BootReceiver : BroadcastReceiver() {
             context.startForegroundService(serviceIntent)
         } else {
             context.startService(serviceIntent)
+        }
+
+        // P0: HUD Presentation lives on MainActivity — FGS alone cannot show it.
+        // Bring Activity up on boot so ensureHudPresentation can attach display-2.
+        if (hudEnabled) {
+            val launch = Intent(context, MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+            }
+            runCatching { context.startActivity(launch) }
+                .onSuccess { Log.i(TAG, "BootReceiver: launched MainActivity for HUD") }
+                .onFailure { Log.w(TAG, "BootReceiver: MainActivity launch failed", it) }
         }
 
         // Block 0016: auto USB peripheral on boot.
