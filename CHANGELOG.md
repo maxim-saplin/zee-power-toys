@@ -7,6 +7,17 @@ Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing
 
 ## [Unreleased]
 
+## [1.0.0+7] — 2026-09-21
+
+### Added
+- DHU appearance: Auto (follow system) / Dark / Light Material 3 theme; HUD stays emissive black
+- Dangerous speedcam: ±45° front cone + facing when host heading known (unknown heading → cone-only)
+
+### Fixed
+- Charge Dig/HUD: EventChannel seed after AdaptAPI start; always emit live kW; HUD seed on hudReady/config
+- Leave/return HUD: Presentation reattach (DisplayListener + ensureHudPresentation); boot/FGS bring Activity
+- Charge bool never null in diagnostics; CI Cluster language tests scroll past Appearance
+
 ### Added
 - 0070 DHU system overlay shows full Speedcam UI (Alien|Default radar) via Flutter surface in TYPE_APPLICATION_OVERLAY
 - `README_RU.md` — Russian product landing; EN/RU switch at top of both READMEs
