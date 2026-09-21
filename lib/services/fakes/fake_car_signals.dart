@@ -48,12 +48,7 @@ class FakeCarSignals implements CarSignals {
     double? amps,
     double? kw,
   }) {
-    _snapshot = _snapshot.copyWith(
-      charging: charging,
-      chargeVolts: volts,
-      chargeAmps: amps,
-      chargeKw: kw,
-    );
+    _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
     _ctrl.add(
       ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw),
     );
@@ -76,13 +71,8 @@ class FakeCarSignals implements CarSignals {
         _snapshot = _snapshot.copyWith(speedKmh: kmh);
       case BlinkerEvent(:final state):
         _snapshot = _snapshot.copyWith(blinker: state);
-      case ChargeEvent(:final charging, :final volts, :final amps, :final kw):
-        _snapshot = _snapshot.copyWith(
-          charging: charging,
-          chargeVolts: volts,
-          chargeAmps: amps,
-          chargeKw: kw,
-        );
+      case ChargeEvent(:final charging, :final kw):
+        _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
       case BatteryEvent(:final levelPct, :final tempC):
         _snapshot = _snapshot.copyWith(
           batteryPct: levelPct,

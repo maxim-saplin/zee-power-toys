@@ -145,12 +145,7 @@ class NativeCarSignals implements CarSignals {
           final volts = _asDouble(m['volts']);
           final amps = _asDouble(m['amps']);
           final kw = _asDouble(m['kw']);
-          _snapshot = _snapshot.copyWith(
-            charging: charging,
-            chargeVolts: volts,
-            chargeAmps: amps,
-            chargeKw: kw,
-          );
+          _snapshot = _snapshot.copyWith(charging: charging, chargeKw: kw);
           _ctrl.add(
             ChargeEvent(charging: charging, volts: volts, amps: amps, kw: kw),
           );
