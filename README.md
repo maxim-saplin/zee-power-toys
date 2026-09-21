@@ -32,49 +32,18 @@ Honest split: we dogfood on 007 / 6.7. 001 and 6.3+ should work the same DHU sta
 
 ### On the car (DHU)
 
-1. Install a **platform-signed** release APK (`sharedUserId` / AOSP debug key).
+1. Install a **platform-signed** release APK from [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) (`zee-power-toys.apk`).
 2. Open **Zee Power Toys** → grant location when Speedcam asks.
 3. Optional companions via **Install**: YNavi mod + Launcher mod (GitHub Releases).
 4. Toggle HUD / Speedcam / Minimap in Settings. Self-update: **Install → Check for updates**.
 
-```bash
-flutter build apk --release -PuseAospDebugKey=true
-adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk
-```
-
-**Never `adb uninstall`** day-to-day — it wipes prefs. Prefer `install -r`.
+**Never `adb uninstall`** day-to-day — it wipes prefs. Prefer `adb install -r`.
 See [0054](docs/issues/0054-settings-survive-reinstall.md).
 
 ### Self-update (GitHub Releases)
 
-When a public Release exists for this repo:
-
-- **Tag:** `1.0.0+N` (or `v1.0.0+N`) — `N` = build / versionCode  
-- **Asset:** `zee-power-toys.apk` (fallback `app-release.apk`)  
+- **Latest asset:** `zee-power-toys.apk` on tag `1.0.0+N`
 - In-app: **Install → Check for updates → Update now**
-
-CI: push a tag `1.0.0+N` (or `workflow_dispatch`) → `release.yml` uploads `zee-power-toys.apk`.
-
-**Release CI secrets / signing**
-
-| | |
-|---|---|
-| **Keystore** | Committed `android/tools/zeekr/androiddebugkey.jks` (public AOSP debug; **no GH secret**) |
-| **Alias / pass** | `androiddebugkey` / from `android/gradle.properties` |
-| **Build flag** | `flutter build apk --release -PuseAospDebugKey=true` (fails loud if keystore missing) |
-| **Tag** | `1.0.0+N` or `v1.0.0+N` (`N` = versionCode) — or Actions → `release` → `workflow_dispatch` with optional tag |
-| **Asset** | `zee-power-toys.apk` |
-
-Push CI (`ci.yml` on `main`): `flutter analyze` + `flutter test` only.
-
-
-### Desktop bring-up (T1)
-
-```bash
-uv run dev/zee_run.py up    # Linux (or macOS with macos/ runner)
-```
-
-T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
 
 ---
 
@@ -133,6 +102,30 @@ Keep `lib/app_version.dart` in sync. See [CHANGELOG.md](CHANGELOG.md).
 ## For contributors
 
 Domain glossary: [`CONTEXT.md`](CONTEXT.md) · Requirements: [`REQUIREMENTS.md`](REQUIREMENTS.md) · ADRs: [`docs/adr/`](docs/adr/) · Blocks: [`docs/issues/`](docs/issues/).
+
+
+### Release signing / CI
+
+Local / car APKs use the **committed** AOSP platform debug keystore:
+
+| | |
+|---|---|
+| **Keystore** | `android/tools/zeekr/androiddebugkey.jks` |
+| **Alias / pass** | from `android/gradle.properties` |
+| **Build** | `flutter build apk --release -PuseAospDebugKey=true` |
+| **Install** | `adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk` |
+| **Publish** | tag `1.0.0+N` (or Actions → **release** → `workflow_dispatch`) → `release.yml` uploads `zee-power-toys.apk` |
+| **Push CI** | `ci.yml` on `main`: analyze + test only |
+
+Details: [docs/publish/ci-release.md](docs/publish/ci-release.md).
+
+### Desktop bring-up (T1)
+
+```bash
+uv run dev/zee_run.py up    # Linux (or macOS with macos/ runner)
+```
+
+T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
 
 ### Architecture (last)
 

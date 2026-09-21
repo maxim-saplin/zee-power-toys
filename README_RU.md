@@ -32,36 +32,18 @@
 
 ### В машине (DHU)
 
-1. Установите **platform-signed** release APK (`sharedUserId` / AOSP debug key).
+1. Установите **platform-signed** release APK из [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) (`zee-power-toys.apk`).
 2. Откройте **Zee Power Toys** → разрешите геолокацию, когда спросит Speedcam.
 3. Опционально компаньоны через **Install**: мод YNavi + мод лаунчера (GitHub Releases).
 4. Включите HUD / Speedcam / Minimap в настройках. Самообновление: **Install → Check for updates**.
 
-```bash
-flutter build apk --release -PuseAospDebugKey=true
-adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk
-```
-
-**Не делайте `adb uninstall`** в повседневной работе — сотрёт настройки. Предпочитайте `install -r`.
+**Не делайте `adb uninstall`** в повседневной работе — сотрёт настройки. Предпочитайте `adb install -r`.
 См. [0054](docs/issues/0054-settings-survive-reinstall.md).
 
 ### Самообновление (GitHub Releases)
 
-Когда есть публичный Release этого репозитория:
-
-- **Тег:** `1.0.0+N` (или `v1.0.0+N`) — `N` = build / versionCode  
-- **Ассет:** `zee-power-toys.apk` (запасной `app-release.apk`)  
+- **Актуальный ассет:** `zee-power-toys.apk` на теге `1.0.0+N`
 - В приложении: **Install → Check for updates → Update now**
-
-CI: тег `1.0.0+N` (или `workflow_dispatch`) → `release.yml` загружает `zee-power-toys.apk`.
-
-### Рабочий стол (T1)
-
-```bash
-uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
-```
-
-На T1 миникарта — фейк; для поверхности YNavi нужны T2 эмулятор / T3 машина.
 
 ---
 
@@ -80,7 +62,7 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 
 | Главная DHU | Speedcam | Превью HUD |
 |-------------|----------|------------|
-| _заглушка — иконки Maxim_ | _заглушка_ | _заглушка_ |
+| _скриншот TBD_ | _заглушка_ | _заглушка_ |
 
 Кладите PNG в `docs/assets/` (например `dhu-home.png`) и ссылайтесь здесь, когда будут готовы.
 
@@ -120,6 +102,30 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 ## Для контрибьюторов
 
 Глоссарий: [`CONTEXT.md`](CONTEXT.md) · Требования: [`REQUIREMENTS.md`](REQUIREMENTS.md) · ADR: [`docs/adr/`](docs/adr/) · Блоки: [`docs/issues/`](docs/issues/).
+
+
+### Подпись релиза / CI
+
+Локальные / car APK используют **закоммиченный** AOSP platform debug keystore:
+
+| | |
+|---|---|
+| **Keystore** | `android/tools/zeekr/androiddebugkey.jks` |
+| **Alias / pass** | из `android/gradle.properties` |
+| **Сборка** | `flutter build apk --release -PuseAospDebugKey=true` |
+| **Установка** | `adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk` |
+| **Публикация** | тег `1.0.0+N` (или Actions → **release** → `workflow_dispatch`) → `release.yml` загружает `zee-power-toys.apk` |
+| **Push CI** | `ci.yml` на `main`: analyze + test |
+
+Подробнее: [docs/publish/ci-release.md](docs/publish/ci-release.md).
+
+### Рабочий стол (T1)
+
+```bash
+uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
+```
+
+На T1 миникарта — фейк; для поверхности YNavi нужны T2 эмулятор / T3 машина.
 
 ### Архитектура (в конце)
 
