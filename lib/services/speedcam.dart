@@ -283,21 +283,30 @@ double? parseCamFacingDegrees(String? raw) {
 
 /// Independent HUD paint / alert-sound presence gate (0060).
 ///
-/// **Scan set** = front hemisphere ([isCamAheadOfTravel]) ∩ approach radius.
-/// - [any]: all scan candidates (no facing mute)
-/// - [dangerous]: scan ∩ facing our traffic ([isCamRelevantForHost])
-/// - [off]: channel silent / hidden
+/// **Any scan set** = front hemisphere ([kScanHemisphereHalfAngleDeg] ±90°) ∩
+/// approach radius (no facing mute).
+/// **Dangerous** = 90° front cone ([kDangerousFrontConeHalfAngleDeg] ±45°) ∩
+/// approach radius ∩ facing our traffic when heading is known. If heading is
+/// unknown → do **not** apply facing; cone-only (cone also fail-opens without
+/// heading). [off]: channel silent / hidden.
 enum SpeedcamPresenceMode {
   any,
   dangerous,
   off,
 }
 
-/// Whether [cam] should alert for [host] travel direction.
+/// Front-hemisphere half-angle for [SpeedcamPresenceMode.any] / scan set (°).
+const double kScanHemisphereHalfAngleDeg = 90;
+
+/// Dangerous front-cone half-angle: heading ±45° → 90° total cone (°).
+const double kDangerousFrontConeHalfAngleDeg = 45;
+
+/// Whether [cam] should alert for [host] travel direction (facing gate).
 ///
 /// Camera facing into our traffic (≈ opposite our heading) → relevant.
 /// Camera facing same way we travel (other line) → muted.
-/// Unknown heading or facing → **fail-open** (relevant).
+/// **Unknown heading → do not apply facing** (caller uses cone-only).
+/// Unknown facing with known heading → **fail-open** (relevant).
 bool isCamRelevantForHost(SpeedcamHostPose host, SpeedcamPoint cam) {
   final heading = host.headingDeg;
   if (heading == null) return true;
@@ -307,12 +316,19 @@ bool isCamRelevantForHost(SpeedcamHostPose host, SpeedcamPoint cam) {
   return smallestAngleDeg(facing, intoOurTraffic) <= 90;
 }
 
-/// Whether the cam lies ahead of host travel (relative bearing ≤ 90°).
-/// Unknown heading → fail-open (treat as ahead).
-bool isCamAheadOfTravel(SpeedcamHostPose host, double bearingToCamDeg) {
+/// Whether the cam lies within [halfAngleDeg] of host travel heading.
+///
+/// Default [kScanHemisphereHalfAngleDeg] (±90°) = front hemisphere for Any.
+/// Dangerous uses [kDangerousFrontConeHalfAngleDeg] (±45°).
+/// Unknown heading → fail-open (treat as in cone / ahead).
+bool isCamAheadOfTravel(
+  SpeedcamHostPose host,
+  double bearingToCamDeg, {
+  double halfAngleDeg = kScanHemisphereHalfAngleDeg,
+}) {
   final heading = host.headingDeg;
   if (heading == null) return true;
-  return smallestAngleDeg(bearingToCamDeg, heading) <= 90;
+  return smallestAngleDeg(bearingToCamDeg, heading) <= halfAngleDeg;
 }
 
 /// Whether [cam] is in the 0060 scan set: ahead of travel and within [radiusM].
@@ -343,18 +359,17 @@ bool camPassesPresenceMode({
   if (mode == SpeedcamPresenceMode.off) return false;
   final d = distanceM ??
       haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+  if (d > approachRadiusM) return false;
   final bearing = bearingDeg ??
       initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
-  if (!isCamInScanSet(
-    host: host,
-    cam: cam,
-    radiusM: approachRadiusM,
-    distanceM: d,
-    bearingDeg: bearing,
-  )) {
+  final halfAngle = mode == SpeedcamPresenceMode.dangerous
+      ? kDangerousFrontConeHalfAngleDeg
+      : kScanHemisphereHalfAngleDeg;
+  if (!isCamAheadOfTravel(host, bearing, halfAngleDeg: halfAngle)) {
     return false;
   }
   if (mode == SpeedcamPresenceMode.dangerous) {
+    // Facing only when heading known; unknown heading → cone-only.
     return isCamRelevantForHost(host, cam);
   }
   // any
@@ -374,6 +389,9 @@ SpeedcamDanger? nearestForPresenceMode({
 }) {
   if (mode == SpeedcamPresenceMode.off) return null;
   final requireFacing = mode == SpeedcamPresenceMode.dangerous;
+  final aheadHalf = mode == SpeedcamPresenceMode.dangerous
+      ? kDangerousFrontConeHalfAngleDeg
+      : kScanHemisphereHalfAngleDeg;
   return nearestDanger(
     host: host,
     cams: cams,
@@ -381,14 +399,18 @@ SpeedcamDanger? nearestForPresenceMode({
     skipIds: skipIds,
     requireFacing: requireFacing,
     requireAhead: true,
+    aheadHalfAngleDeg: aheadHalf,
     onlyInsideApproach: true,
   );
 }
 
-/// Nearest relevant cam (0060: front hemisphere by default).
+/// Nearest relevant cam.
 ///
-/// When [requireFacing] is true (default), applies [isCamRelevantForHost].
-/// When [requireAhead] is true (default), applies [isCamAheadOfTravel].
+/// When [requireFacing] is true (default), applies [isCamRelevantForHost]
+/// (no-op / fail-open when heading unknown).
+/// When [requireAhead] is true (default), applies [isCamAheadOfTravel] with
+/// [aheadHalfAngleDeg] (default Dangerous ±45° cone; pass
+/// [kScanHemisphereHalfAngleDeg] for Any).
 /// When [onlyInsideApproach] is true, skips cams outside [approachRadiusM].
 SpeedcamDanger? nearestDanger({
   required SpeedcamHostPose host,
@@ -397,6 +419,7 @@ SpeedcamDanger? nearestDanger({
   Set<String> skipIds = const <String>{},
   bool requireFacing = true,
   bool requireAhead = true,
+  double aheadHalfAngleDeg = kDangerousFrontConeHalfAngleDeg,
   bool onlyInsideApproach = false,
 }) {
   SpeedcamDanger? best;
@@ -406,7 +429,14 @@ SpeedcamDanger? nearestDanger({
     final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
     if (onlyInsideApproach && d > approachRadiusM) continue;
     final bearing = initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
-    if (requireAhead && !isCamAheadOfTravel(host, bearing)) continue;
+    if (requireAhead &&
+        !isCamAheadOfTravel(
+          host,
+          bearing,
+          halfAngleDeg: aheadHalfAngleDeg,
+        )) {
+      continue;
+    }
     if (best == null || d < best.distanceM) {
       best = SpeedcamDanger(
         cam: cam,

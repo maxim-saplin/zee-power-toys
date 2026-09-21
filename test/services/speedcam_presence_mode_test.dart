@@ -178,6 +178,104 @@ void main() {
     });
   });
 
+
+  group('Dangerous front cone (±45°) + facing', () {
+    /// ~111 m north-east — relative bearing ~45° when heading north.
+    /// Slightly past 45° so it sits outside the Dangerous cone but still in
+    /// the Any hemisphere (±90°).
+    const wideCam = SpeedcamPoint(
+      id: 'wide',
+      lat: hostLat + 0.0007,
+      lon: hostLon + 0.0018,
+      direction: 'S',
+    );
+
+    test('Dangerous rejects facing cam outside ±45° cone', () {
+      // Bearing host→wide is roughly NE; heading 0 → relative ~60°.
+      final bearing = initialBearingDegrees(
+        hostLat,
+        hostLon,
+        wideCam.lat,
+        wideCam.lon,
+      );
+      expect(bearing, greaterThan(45));
+      expect(bearing, lessThan(90));
+      expect(
+        isCamAheadOfTravel(
+          hostNorth,
+          bearing,
+          halfAngleDeg: kDangerousFrontConeHalfAngleDeg,
+        ),
+        isFalse,
+      );
+      expect(
+        camPassesPresenceMode(
+          mode: SpeedcamPresenceMode.dangerous,
+          host: hostNorth,
+          cam: wideCam,
+          approachRadiusM: 500,
+        ),
+        isFalse,
+      );
+      // Any still accepts (hemisphere ±90).
+      expect(
+        camPassesPresenceMode(
+          mode: SpeedcamPresenceMode.any,
+          host: hostNorth,
+          cam: wideCam,
+          approachRadiusM: 500,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Dangerous accepts facing cam inside ±45° cone', () {
+      expect(
+        camPassesPresenceMode(
+          mode: SpeedcamPresenceMode.dangerous,
+          host: hostNorth,
+          cam: aheadCamFacingUs,
+          approachRadiusM: 500,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Dangerous with unknown heading: cone-only, no facing mute', () {
+      const hostNoHeading = SpeedcamHostPose(lat: hostLat, lon: hostLon);
+      // Same-way facing would mute when heading known; without heading, alert.
+      expect(
+        camPassesPresenceMode(
+          mode: SpeedcamPresenceMode.dangerous,
+          host: hostNoHeading,
+          cam: aheadCamSameWay,
+          approachRadiusM: 500,
+        ),
+        isTrue,
+      );
+      expect(
+        nearestForPresenceMode(
+          mode: SpeedcamPresenceMode.dangerous,
+          host: hostNoHeading,
+          cams: const [aheadCamSameWay],
+        )?.cam.id,
+        'away',
+      );
+    });
+
+    test('Dangerous with known heading still mutes same-way facing', () {
+      expect(
+        camPassesPresenceMode(
+          mode: SpeedcamPresenceMode.dangerous,
+          host: hostNorth,
+          cam: aheadCamSameWay,
+          approachRadiusM: 500,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('SpeedcamConfig prefs (0060)', () {
     test('defaults HUD=Any, sound=Dangerous', () {
       const cfg = SpeedcamConfig();
