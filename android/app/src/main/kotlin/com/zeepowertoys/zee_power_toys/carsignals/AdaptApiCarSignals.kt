@@ -242,23 +242,31 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                     when (id) {
                         CHARGE_VOLTS -> {
                             lastSnapshot = lastSnapshot.copy(chargeVolts = value.toDouble())
+                            val charging = lastSnapshot.charging ||
+                                ((lastSnapshot.chargeKw ?: 0.0) > 0.05)
+                            lastSnapshot = lastSnapshot.copy(charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
-                                lastSnapshot.charging,
+                                charging,
                                 value.toDouble(), lastSnapshot.chargeAmps, lastSnapshot.chargeKw,
                             ))
                         }
                         CHARGE_AMPS -> {
                             lastSnapshot = lastSnapshot.copy(chargeAmps = value.toDouble())
+                            val charging = lastSnapshot.charging ||
+                                ((lastSnapshot.chargeKw ?: 0.0) > 0.05) || value > 0.05f
+                            lastSnapshot = lastSnapshot.copy(charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
-                                lastSnapshot.charging,
+                                charging,
                                 lastSnapshot.chargeVolts, value.toDouble(), lastSnapshot.chargeKw,
                             ))
                         }
                         CHARGE_KW -> {
-                            lastSnapshot = lastSnapshot.copy(chargeKw = value.toDouble())
+                            val kw = value.toDouble()
+                            val charging = lastSnapshot.charging || kw > 0.05
+                            lastSnapshot = lastSnapshot.copy(chargeKw = kw, charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
-                                lastSnapshot.charging,
-                                lastSnapshot.chargeVolts, lastSnapshot.chargeAmps, value.toDouble(),
+                                charging,
+                                lastSnapshot.chargeVolts, lastSnapshot.chargeAmps, kw,
                             ))
                         }
                     }
@@ -386,9 +394,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         // Belt: live chargeKw already proves charging even if enum surprises us.
         val kw = lastSnapshot.chargeKw
         val charging = isChargingBatteryState(event) || (kw != null && kw > 0.05)
-        if (lastSnapshot.charging == charging) return
         lastSnapshot = lastSnapshot.copy(charging = charging)
         Log.i(TAG, "Charge state: event=$event charging=$charging kW=$kw")
+        // Always emit — Dart may have missed earlier events (EventChannel resubscribe /
+        // HUD relay). Early-return on unchanged bool starved V/A/kW updates.
         emitter?.invoke(
             SignalEvent.Charge(
                 charging,

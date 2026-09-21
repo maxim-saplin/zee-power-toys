@@ -55,7 +55,9 @@ class CarSignalsController(
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                 Log.i(TAG, "CarSignals EventChannel: Dart listening")
                 eventSink = sink
-                // If already started (race on connect), replay nothing — next event will arrive.
+                // Seed Dart immediately — otherwise publishChargeState early-return /
+                // missed ticks leave Diagnostics/HUD empty while AdaptAPI is live.
+                seedSinkFromSnapshot()
             }
             override fun onCancel(arguments: Any?) {
                 Log.i(TAG, "CarSignals EventChannel: Dart unsubscribed")
@@ -148,9 +150,37 @@ class CarSignalsController(
         }
     }
 
+    /** Push current native snapshot as discrete events so Dart/HUD catch up. */
+    private fun seedSinkFromSnapshot() {
+        val snap = source?.snapshot() ?: return
+        Log.i(
+            TAG,
+            "CarSignals seed→Dart: charging=${snap.charging} kW=${snap.chargeKw} " +
+                "pct=${snap.batteryPct} temp=${snap.batteryTempC}",
+        )
+        emitEvent(
+            SignalEvent.Charge(
+                snap.charging,
+                snap.chargeVolts,
+                snap.chargeAmps,
+                snap.chargeKw,
+            ),
+        )
+        val pct = snap.batteryPct
+        if (pct != null) {
+            emitEvent(SignalEvent.Battery(pct, snap.batteryTempC ?: 25.0))
+        }
+        snap.speedKmh?.let { emitEvent(SignalEvent.Speed(it)) }
+        emitEvent(SignalEvent.Blinker(snap.blinker))
+    }
+
     // Push a SignalEvent to Flutter via the EventChannel sink.
     private fun emitEvent(event: SignalEvent) {
-        val sink = eventSink ?: return
+        val sink = eventSink
+        if (sink == null) {
+            Log.w(TAG, "CarSignals emit dropped (no Dart sink): ${event::class.simpleName}")
+            return
+        }
         // Encode as a discriminated map — matches NativeCarSignals.dart decoder.
         val map: Map<String, Any?> = when (event) {
             is SignalEvent.Speed -> mapOf("type" to "speed", "kmh" to event.kmh)
