@@ -194,7 +194,7 @@ class MinimapLooks {
 /// is a bright wash on black glass, precisely the defect 0021 fixed (see
 /// CONTEXT.md's HUD glossary entry: "black pixels emit no light... never
 /// light-on-dark UI"). A "light" *HUD* theme contradicts that rule outright
-/// (DHU can be light via [AppConfig.themeMode]; HUD isolate stays dark).
+/// (DHU theme via [AppConfig.themeMode]: auto/dark/light; HUD stays dark).
 /// 'auto' just meant "maybe silently give you the broken one". After the Look
 /// section (colorPreset/contrast/threshold, see [MinimapLooks]) the honest
 /// colour control is the colour preset — so this control was removed rather
@@ -1059,7 +1059,7 @@ class AppConfig {
     this.minimap = const MinimapConfig(),
     this.speedcam = const SpeedcamConfig(),
     this.locale,
-    this.themeMode = 'dark',
+    this.themeMode = 'auto',
     this.autoUsbPeripheral = false,
   });
 
@@ -1090,7 +1090,7 @@ class AppConfig {
   /// future locale codes need no schema change.
   final String? locale;
 
-  /// DHU MaterialApp theme: `'dark'` (default) or `'light'`.
+  /// DHU MaterialApp theme: `'auto'` (default, follow system), `'dark'`, or `'light'`.
   ///
   /// Persisted for cold-boot restore. **HUD isolate ignores this** — [HudApp]
   /// stays emissive-black / ThemeMode.dark (CONTEXT.md).
@@ -1209,8 +1209,10 @@ const Object _unset = Object();
 
 
 String _themeModeFromJson(Object? raw) {
-  if (raw == 'light' || raw == 'dark') return raw as String;
-  return 'dark';
+  // 'auto' = follow system (default). 'system' accepted as alias.
+  if (raw == 'light' || raw == 'dark' || raw == 'auto') return raw as String;
+  if (raw == 'system') return 'auto';
+  return 'auto';
 }
 
 

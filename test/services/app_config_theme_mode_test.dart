@@ -3,21 +3,24 @@ import 'package:zee_power_toys/services/config_store.dart';
 
 void main() {
   group('AppConfig.themeMode', () {
-    test('default is dark', () {
+    test('default is auto (follow system)', () {
       const cfg = AppConfig();
-      expect(cfg.themeMode, 'dark');
+      expect(cfg.themeMode, 'auto');
     });
 
-    test('JSON round-trip preserves light', () {
-      const src = AppConfig(themeMode: 'light');
-      final restored = AppConfig.fromJson(src.toJson());
-      expect(restored.themeMode, 'light');
-      expect(restored, equals(src));
+    test('JSON round-trip preserves light / dark / auto', () {
+      for (final mode in ['light', 'dark', 'auto']) {
+        final src = AppConfig(themeMode: mode);
+        final restored = AppConfig.fromJson(src.toJson());
+        expect(restored.themeMode, mode);
+        expect(restored, equals(src));
+      }
     });
 
-    test('unknown / missing themeMode falls back to dark', () {
-      expect(AppConfig.fromJson({}).themeMode, 'dark');
-      expect(AppConfig.fromJson({'themeMode': 'auto'}).themeMode, 'dark');
+    test('missing / unknown / system alias → auto', () {
+      expect(AppConfig.fromJson({}).themeMode, 'auto');
+      expect(AppConfig.fromJson({'themeMode': 'bogus'}).themeMode, 'auto');
+      expect(AppConfig.fromJson({'themeMode': 'system'}).themeMode, 'auto');
     });
 
     test('copyWith updates themeMode', () {
@@ -26,6 +29,10 @@ void main() {
       expect(
         base.copyWith(themeMode: 'light').copyWith(themeMode: 'dark').themeMode,
         'dark',
+      );
+      expect(
+        base.copyWith(themeMode: 'dark').copyWith(themeMode: 'auto').themeMode,
+        'auto',
       );
     });
   });

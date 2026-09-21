@@ -206,7 +206,11 @@
   },
   "themeSectionTitle": "Appearance",
   "@themeSectionTitle": {
-    "description": "DHU theme section title (Dark/Light)"
+    "description": "DHU theme section title (Auto/Dark/Light)"
+  },
+  "themeAuto": "Auto",
+  "@themeAuto": {
+    "description": "Auto theme option — follow system (Follow system brightness)"
   },
   "themeDark": "Dark",
   "@themeDark": {

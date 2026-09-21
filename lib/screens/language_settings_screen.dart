@@ -10,7 +10,8 @@ import '../widgets/settings_layout.dart';
 
 /// Language & appearance settings — clearly separated sections:
 ///
-///   0. Appearance     — ConfigStore.themeMode ('dark' / 'light'); live-reloads
+///   0. Appearance     — ConfigStore.themeMode ('auto' / 'dark' / 'light');
+///      Auto follows system; Dark/Light are manual overrides. Live-reloads
 ///      DHU MaterialApp via appThemeModeProvider (HUD isolate unchanged).
 ///
 ///   1. App language   — sets ConfigStore.locale (null=system / 'en' / 'ru').
@@ -153,7 +154,11 @@ class _LanguageSettingsScreenState
       error: (e, st) => ref.read(configStoreProvider).value,
     );
     final appLocale = cfg.locale;
-    final themeMode = cfg.themeMode == 'light' ? 'light' : 'dark';
+    final themeMode = switch (cfg.themeMode) {
+      'light' => 'light',
+      'dark' => 'dark',
+      _ => 'auto',
+    };
 
     // System locale — read directly from SystemConfig (not stored in ConfigStore).
     final systemLocale = ref.read(systemConfigProvider).systemLocale;
@@ -166,7 +171,7 @@ class _LanguageSettingsScreenState
         padding: const EdgeInsets.all(Insets.lg),
         children: <Widget>[
           // ──────────────────────────────────────────────────────────────
-          // Section 0 — Appearance (DHU Dark / Light)
+          // Section 0 — Appearance (DHU Auto / Dark / Light)
           // ──────────────────────────────────────────────────────────────
           SettingsSection(
             title: l10n.themeSectionTitle,
@@ -182,6 +187,11 @@ class _LanguageSettingsScreenState
                 child: SegmentedButton<String>(
                   key: const ValueKey('theme-mode-segmented'),
                   segments: <ButtonSegment<String>>[
+                    ButtonSegment<String>(
+                      value: 'auto',
+                      label: Text(l10n.themeAuto),
+                      icon: const Icon(Icons.brightness_auto_outlined),
+                    ),
                     ButtonSegment<String>(
                       value: 'dark',
                       label: Text(l10n.themeDark),

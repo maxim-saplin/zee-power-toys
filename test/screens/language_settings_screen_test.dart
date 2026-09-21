@@ -113,9 +113,14 @@ void main() {
       // Allow the async clusterSupported() call to resolve.
       await tester.pumpAndSettle();
 
-      // All three section headings must appear.
+      // Appearance section pushed Cluster below the fold — scroll first.
       expect(find.text('App language'), findsOneWidget);
       expect(find.text('System language'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Cluster language'),
+        200,
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Cluster language'), findsOneWidget);
     });
 
@@ -179,6 +184,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Appearance section pushed Cluster below the fold.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('cluster-lang-en')),
+        200,
+      );
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('cluster-lang-en')), findsOneWidget);
       expect(find.byKey(const ValueKey('cluster-lang-ru')), findsOneWidget);
     });

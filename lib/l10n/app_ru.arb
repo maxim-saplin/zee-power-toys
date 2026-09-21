@@ -206,7 +206,11 @@
   },
   "themeSectionTitle": "Оформление",
   "@themeSectionTitle": {
-    "description": "DHU theme section title (Dark/Light)"
+    "description": "DHU theme section title (Auto/Dark/Light)"
+  },
+  "themeAuto": "Авто",
+  "@themeAuto": {
+    "description": "Auto theme option — follow system (Следовать системной теме)"
   },
   "themeDark": "Тёмная",
   "@themeDark": {

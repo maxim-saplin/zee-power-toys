@@ -4,7 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'config.dart';
 import 'services.dart';
 
-/// Resolves the DHU [ThemeMode] from ConfigStore (`dark` / `light`).
+/// Resolves the DHU [ThemeMode] from ConfigStore (`auto` / `dark` / `light`).
+///
+/// - `auto` (default) → [ThemeMode.system] (follow platform brightness)
+/// - `dark` / `light` → manual override
 ///
 /// HUD isolate must not watch this — [HudApp] is pinned to [ThemeMode.dark].
 final appThemeModeProvider = Provider<ThemeMode>((ref) {
@@ -14,5 +17,12 @@ final appThemeModeProvider = Provider<ThemeMode>((ref) {
     loading: () => ref.watch(configStoreProvider).value.themeMode,
     error: (err, st) => ref.watch(configStoreProvider).value.themeMode,
   );
-  return raw == 'light' ? ThemeMode.light : ThemeMode.dark;
+  switch (raw) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    default:
+      return ThemeMode.system; // auto / unknown
+  }
 });

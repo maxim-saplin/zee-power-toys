@@ -167,6 +167,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSectionTitle => 'Appearance';
 
   @override
+  String get themeAuto => 'Auto';
+
+  @override
   String get themeDark => 'Dark';
 
   @override

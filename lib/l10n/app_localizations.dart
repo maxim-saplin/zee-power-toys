@@ -404,11 +404,17 @@ abstract class AppLocalizations {
   /// **'Language & appearance'**
   String get languageTitle;
 
-  /// DHU theme section title (Dark/Light)
+  /// DHU theme section title (Auto/Dark/Light)
   ///
   /// In en, this message translates to:
   /// **'Appearance'**
   String get themeSectionTitle;
+
+  /// Auto theme option — follow system (Follow system brightness)
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get themeAuto;
 
   /// Dark theme option label
   ///
