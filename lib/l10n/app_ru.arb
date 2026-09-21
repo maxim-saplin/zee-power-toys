@@ -12,7 +12,7 @@
   "@sectionHud": {
     "description": "HUD settings section label"
   },
-  "sectionHudSubtitle": "Поворотники, аккумулятор, компоновка",
+  "sectionHudSubtitle": "Поворотники, батарея, компоновка",
   "@sectionHudSubtitle": {
     "description": "HUD settings section subtitle"
   },
@@ -68,7 +68,7 @@
   "@diagSectionEnergy": {
     "description": "Diagnostics: Energy section heading"
   },
-  "diagSectionBattery": "Аккумулятор",
+  "diagSectionBattery": "Батарея",
   "@diagSectionBattery": {
     "description": "Diagnostics: Battery section heading"
   },
@@ -276,7 +276,7 @@
   "@blinkerSidePadding": {
     "description": "Blinker side-padding slider label"
   },
-  "batterySection": "Аккумулятор",
+  "batterySection": "Батарея",
   "@batterySection": {
     "description": "Battery section heading"
   },
@@ -328,15 +328,15 @@
   "@batteryLook": {
     "description": "Battery look picker label (0056 PDM)"
   },
-  "batteryLookBattery": "Аккумулятор",
+  "batteryLookBattery": "Батарея",
   "@batteryLookBattery": {
     "description": "PDM: Battery — filled pack"
   },
-  "batteryLookBatteryText": "Аккумулятор + текст",
+  "batteryLookBatteryText": "Батарея + текст",
   "@batteryLookBatteryText": {
     "description": "PDM: Battery + text — pack with %"
   },
-  "batteryLookBatteryBars": "Аккумулятор с полосками",
+  "batteryLookBatteryBars": "Батарея с полосками",
   "@batteryLookBatteryBars": {
     "description": "PDM: Battery with bars — segmented"
   },

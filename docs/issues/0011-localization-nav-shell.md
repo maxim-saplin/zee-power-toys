@@ -52,5 +52,5 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md).
 
 **AppConfig.copyWith locale sentinel:** A `const Object _unset` sentinel distinguishes `copyWith(locale: null)` (clear the override) from `copyWith()` (leave unchanged), because `null` is a valid value for `locale`.
 
-**RU translations:** Natural, concise Russian. "Поворотники" for Blinker (the standard automotive term for turn signals), "Аккумулятор" for Battery, "Безопасная область" for Safe Area, "По умолчанию" for System default (idiomatic).
+**RU translations:** Natural, concise Russian. "Поворотники" for Blinker (the standard automotive term for turn signals), "Батарея" for Battery (HV pack; not «аккумулятор»), "Безопасная область" for Safe Area, "По умолчанию" for System default (idiomatic).
 

@@ -18,7 +18,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionHud => 'HUD';
 
   @override
-  String get sectionHudSubtitle => 'Поворотники, аккумулятор, компоновка';
+  String get sectionHudSubtitle => 'Поворотники, батарея, компоновка';
 
   @override
   String get sectionDiagnostics => 'Диагностика';
@@ -60,7 +60,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get diagSectionEnergy => 'Энергия';
 
   @override
-  String get diagSectionBattery => 'Аккумулятор';
+  String get diagSectionBattery => 'Батарея';
 
   @override
   String get diagSpeed => 'Скорость';
@@ -218,7 +218,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get blinkerSidePadding => 'Боковой отступ (от края)';
 
   @override
-  String get batterySection => 'Аккумулятор';
+  String get batterySection => 'Батарея';
 
   @override
   String get showBattery => 'Показывать индикатор заряда';
@@ -257,13 +257,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get batteryLook => 'Вид';
 
   @override
-  String get batteryLookBattery => 'Аккумулятор';
+  String get batteryLookBattery => 'Батарея';
 
   @override
-  String get batteryLookBatteryText => 'Аккумулятор + текст';
+  String get batteryLookBatteryText => 'Батарея + текст';
 
   @override
-  String get batteryLookBatteryBars => 'Аккумулятор с полосками';
+  String get batteryLookBatteryBars => 'Батарея с полосками';
 
   @override
   String get batteryLookJustText => 'Только текст';
