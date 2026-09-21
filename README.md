@@ -50,8 +50,8 @@ CI: push a tag `1.0.0+N` (or `workflow_dispatch`) → `release.yml` uploads `zee
 
 | | |
 |---|---|
-| **Secret** | `AOSP_DEBUG_KEYSTORE_BASE64` — `base64` of `androiddebugkey.jks` (not committed; see `android/tools/zeekr/README.md`) |
-| **Alias / pass** | `platformkey` / `android` (via `android/gradle.properties`) |
+| **Keystore** | Committed `android/tools/zeekr/androiddebugkey.jks` (public AOSP debug; **no GH secret**) |
+| **Alias / pass** | `androiddebugkey` / from `android/gradle.properties` |
 | **Build flag** | `flutter build apk --release -PuseAospDebugKey=true` (fails loud if keystore missing) |
 | **Tag** | `1.0.0+N` or `v1.0.0+N` (`N` = versionCode) — or Actions → `release` → `workflow_dispatch` with optional tag |
 | **Asset** | `zee-power-toys.apk` |

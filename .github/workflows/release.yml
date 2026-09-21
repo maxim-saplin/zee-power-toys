@@ -1,5 +1,5 @@
 # Publish platform-signed APK as zee-power-toys.apk on tag 1.0.0+N (or v1.0.0+N).
-# Requires repo secret AOSP_DEBUG_KEYSTORE_BASE64 (base64 of androiddebugkey.jks).
+# Uses committed android/tools/zeekr/androiddebugkey.jks (public AOSP debug key; no secret).
 name: release
 on:
   push:
@@ -22,23 +22,12 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Install AOSP platform keystore
-        env:
-          AOSP_DEBUG_KEYSTORE_BASE64: ${{ secrets.AOSP_DEBUG_KEYSTORE_BASE64 }}
+      - name: Assert in-repo AOSP platform keystore
         run: |
           set -euo pipefail
           DEST="android/tools/zeekr/androiddebugkey.jks"
-          mkdir -p android/tools/zeekr
-          if [[ -z "${AOSP_DEBUG_KEYSTORE_BASE64:-}" ]]; then
-            echo "::error::Missing secret AOSP_DEBUG_KEYSTORE_BASE64 — base64-encode androiddebugkey.jks (alias platformkey, see android/tools/zeekr/README.md)"
-            exit 1
-          fi
-          echo "$AOSP_DEBUG_KEYSTORE_BASE64" | base64 -d > "$DEST"
-          if [[ ! -s "$DEST" ]]; then
-            echo "::error::Decoded keystore is empty at $DEST"
-            exit 1
-          fi
-          echo "Wrote $(wc -c < "$DEST") bytes to $DEST"
+          test -s "$DEST"
+          echo "Using committed keystore ($DEST, $(wc -c < "$DEST") bytes)"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test

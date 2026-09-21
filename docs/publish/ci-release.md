@@ -6,15 +6,13 @@
 - Pushing the tag runs `.github/workflows/release.yml`.
 - Or: Actions → **release** → Run workflow (optional `tag` input).
 
-## Required secret
+## Signing
 
-| Name | Value |
-|------|--------|
-| `AOSP_DEBUG_KEYSTORE_BASE64` | `base64 -w0 android/tools/zeekr/androiddebugkey.jks` (local; file is gitignored) |
+Uses the **committed** AOSP debug keystore at `android/tools/zeekr/androiddebugkey.jks`
+(explicitly tracked; same public platform debug key used for car `sharedUserId` installs).
+**No GitHub Actions secret required.**
 
-Add under GitHub → Settings → Secrets and variables → Actions.
-
-Without the secret, release fails loudly (car APKs must use the AOSP/platform key for `sharedUserId`).
+Build: `flutter build apk --release -PuseAospDebugKey=true`.
 
 ## Asset contract
 
