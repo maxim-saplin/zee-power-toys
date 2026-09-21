@@ -270,4 +270,47 @@ class SpeedcamSystemOverlayController(
         }
         engineGroup = null
     }
+    private fun applyPlacement(lp: WindowManager.LayoutParams, density: Float) {
+        val marginX = (16 * density).toInt()
+        val marginY = (72 * density).toInt()
+        when (placement) {
+            "topStart" -> {
+                lp.gravity = Gravity.TOP or Gravity.START
+                lp.x = marginX
+                lp.y = marginY
+            }
+            "bottomStart" -> {
+                lp.gravity = Gravity.BOTTOM or Gravity.START
+                lp.x = marginX
+                lp.y = marginY
+            }
+            "bottomEnd" -> {
+                lp.gravity = Gravity.BOTTOM or Gravity.END
+                lp.x = marginX
+                lp.y = marginY
+            }
+            else -> {
+                lp.gravity = Gravity.TOP or Gravity.END
+                lp.x = marginX
+                lp.y = marginY
+            }
+        }
+    }
+
+    private fun applyLayoutToWindow() {
+        val container = root ?: return
+        val density = appContext.resources.displayMetrics.density
+        val sidePx = (OVERLAY_SIDE_DP * sizeScale * density).toInt()
+        val lp = container.layoutParams as? WindowManager.LayoutParams ?: return
+        lp.width = sidePx
+        lp.height = sidePx
+        applyPlacement(lp, density)
+        try {
+            wm.updateViewLayout(container, lp)
+            Log.i(TAG, "setLayout scale=$sizeScale place=$placement side=${sidePx}px")
+        } catch (e: Exception) {
+            Log.e(TAG, "updateViewLayout failed", e)
+        }
+    }
+
 }
