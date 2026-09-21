@@ -61,6 +61,10 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
 
         lastBridgeFireEpochMs = tMs
         lastError = null
+        if (!seenEventIds.add(eventId)) {
+            Log.d(TAG, "ynavi cam skip duplicate eventId=$eventId")
+            return
+        }
         sessionEventCount += 1
 
         emit(
@@ -98,6 +102,8 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
         @Volatile var lastBridgeFireEpochMs: Long = 0L
         @Volatile var sessionEventCount: Int = 0
         @Volatile var lastError: String? = null
+        /** Session eventId gate — Windshield/ghost/route must not re-log same id. */
+        private val seenEventIds = java.util.Collections.synchronizedSet(mutableSetOf<String>())
 
         private val mainHandler = Handler(Looper.getMainLooper())
 
