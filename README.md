@@ -30,22 +30,40 @@ Honest split: we dogfood on 007 / 6.7. 001 and 6.3+ should work the same DHU sta
 
 ## Quick start
 
-### On the car (DHU)
+### A. Install on the DHU (no PC)
 
-1. Install a **platform-signed** release APK from [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) (`zee-power-toys.apk`).
-2. Open **Zee Power Toys** → grant location when Speedcam asks.
-3. Optional companions via **Install**: YNavi mod + Launcher mod (GitHub Releases).
-4. Toggle HUD / Speedcam / Minimap in Settings. Self-update: **Install → Check for updates**.
+1. On the car tablet, open the [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) page (browser) and download **`zee-power-toys.apk`** from the latest tag (`1.0.0+N`).
+2. Open the downloaded APK (Files / Downloads) and install with the system installer.
+3. If Android blocks it: allow **install from this source** (browser / Files) when prompted — normal for sideloads.
+4. Open **Zee Power Toys**. Grant **location** when Speedcam asks (runtime dialog — not an install-time permission).
+5. Optional: companions via in-app **Install** (YNavi / Launcher from their Releases). Self-update later: **Install → Check for updates**.
 
-**Never `adb uninstall`** day-to-day — it wipes prefs. Prefer `adb install -r`.
-See [0054](docs/issues/0054-settings-survive-reinstall.md).
+**Permissions that can need an extra UI tap (not CLI):**
+- **Location** — in-app dialog the first time Speedcam needs it.
+- **Display over other apps** (`SYSTEM_ALERT_WINDOW`) — only if you enable the DHU Speedcam system overlay; Android opens a Settings screen to allow it.
+- Unknown-sources / “install unknown apps” — once per installer app (browser/Files).
 
-### Self-update (GitHub Releases)
+Day-to-day: never uninstall to “refresh” — it wipes prefs. Prefer replace/update installs. See [0054](docs/issues/0054-settings-survive-reinstall.md).
 
-- **Latest asset:** `zee-power-toys.apk` on tag `1.0.0+N`
+### B. Install from a workstation (`adb`)
+
+1. On a PC/Mac, download **`zee-power-toys.apk`** from [Releases](https://github.com/maxim-saplin/zee-power-toys/releases).
+2. On the DHU: Engineering menu (bright orange button at top center — tap ~10 times) → set ADB to **Peripheral**, then USB-connect the car to the workstation.
+3. Install [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) so `adb` is on your `PATH`.
+4. Confirm the device and install (keep data):
+
+```bash
+adb devices
+adb install -g -r -d zee-power-toys.apk
+```
+
+`-g` grants runtime permissions where the platform allows; you may still get the location / overlay prompts above.
+
+### Self-update (already installed)
+
+- Latest asset: `zee-power-toys.apk` on tag `1.0.0+N`
 - In-app: **Install → Check for updates → Update now**
 
----
 
 ## What you get
 
@@ -126,6 +144,18 @@ uv run dev/zee_run.py up    # Linux (or macOS with macos/ runner)
 ```
 
 T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
+
+### Build from source
+
+Needs a Flutter SDK ([install Flutter](https://docs.flutter.dev/get-started/install)), JDK 17+, and Android SDK / Platform Tools. Then:
+
+```bash
+flutter pub get
+flutter build apk --release -PuseAospDebugKey=true
+adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk
+```
+
+Uses the committed keystore at `android/tools/zeekr/androiddebugkey.jks` (see **Release signing / CI** above).
 
 ### Architecture (last)
 

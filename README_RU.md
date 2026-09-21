@@ -30,22 +30,40 @@
 
 ## Быстрый старт
 
-### В машине (DHU)
+### A. Установка на DHU (без ПК)
 
-1. Установите **platform-signed** release APK из [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) (`zee-power-toys.apk`).
-2. Откройте **Zee Power Toys** → разрешите геолокацию, когда спросит Speedcam.
-3. Опционально компаньоны через **Install**: мод YNavi + мод лаунчера (GitHub Releases).
-4. Включите HUD / Speedcam / Minimap в настройках. Самообновление: **Install → Check for updates**.
+1. На планшете авто откройте страницу [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) в браузере и скачайте **`zee-power-toys.apk`** с последнего тега (`1.0.0+N`).
+2. Откройте скачанный APK (Файлы / Загрузки) и установите системным установщиком.
+3. Если Android блокирует: разрешите **установку из этого источника** (браузер / Файлы) по запросу — обычное дело для sideload.
+4. Откройте **Zee Power Toys**. Разрешите **геолокацию**, когда спросит Speedcam (runtime-диалог, не на этапе установки).
+5. Опционально: компаньоны через **Install** в приложении (YNavi / лаунчер с их Releases). Самообновление позже: **Install → Check for updates**.
 
-**Не делайте `adb uninstall`** в повседневной работе — сотрёт настройки. Предпочитайте `adb install -r`.
-См. [0054](docs/issues/0054-settings-survive-reinstall.md).
+**Права, которые могут потребовать отдельный экран (не CLI):**
+- **Геолокация** — диалог в приложении при первом запросе Speedcam.
+- **Показ поверх других окон** (`SYSTEM_ALERT_WINDOW`) — только если включите системный оверлей Speedcam на DHU; Android откроет Settings.
+- «Неизвестные источники» / install unknown apps — один раз на приложение-установщик (браузер/Файлы).
 
-### Самообновление (GitHub Releases)
+В повседневной работе не делайте uninstall «для обновления» — сотрёт настройки. Предпочитайте replace/update. См. [0054](docs/issues/0054-settings-survive-reinstall.md).
 
-- **Актуальный ассет:** `zee-power-toys.apk` на теге `1.0.0+N`
+### B. Установка с рабочей станции (`adb`)
+
+1. На ПК/Mac скачайте **`zee-power-toys.apk`** с [Releases](https://github.com/maxim-saplin/zee-power-toys/releases).
+2. На DHU: инженерное меню (яркая оранжевая кнопка сверху по центру — ~10 нажатий) → ADB в режим **Peripheral**, затем USB к рабочей станции.
+3. Установите [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools), чтобы `adb` был в `PATH`.
+4. Проверьте устройство и установите (с сохранением данных):
+
+```bash
+adb devices
+adb install -g -r -d zee-power-toys.apk
+```
+
+`-g` выдаёт runtime-права, где позволяет платформа; диалоги геолокации / оверлея выше всё равно могут появиться.
+
+### Самообновление (уже установлено)
+
+- Актуальный ассет: `zee-power-toys.apk` на теге `1.0.0+N`
 - В приложении: **Install → Check for updates → Update now**
 
----
 
 ## Что внутри
 
@@ -126,6 +144,18 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 ```
 
 На T1 миникарта — фейк; для поверхности YNavi нужны T2 эмулятор / T3 машина.
+
+### Сборка из исходников
+
+Нужны Flutter SDK ([установка Flutter](https://docs.flutter.dev/get-started/install)), JDK 17+ и Android SDK / Platform Tools. Далее:
+
+```bash
+flutter pub get
+flutter build apk --release -PuseAospDebugKey=true
+adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk
+```
+
+Используется закоммиченный keystore `android/tools/zeekr/androiddebugkey.jks` (см. **Подпись релиза / CI** выше).
 
 ### Архитектура (в конце)
 
