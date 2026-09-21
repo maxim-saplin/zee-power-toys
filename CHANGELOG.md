@@ -7,6 +7,17 @@ Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing
 
 ## [Unreleased]
 
+## [1.0.0+8] — 2026-09-21
+
+### Added
+- YNavi speedcam enrich (ghost idle-drive + route on Go) behind Speedcam **YNavi enrich** toggle — **default OFF**
+- Cancel→ghost revive via `Guidance.start(null)` (wire-assisted STOP_GUIDANCE); Windshield path closed
+- OSM · YNavi counters; YNavi point aging TTL (default 7d); collect/alert gates for YNavi
+- Speedcam map expand/collapse + go to my location
+
+### Notes
+- Motion-backed DoD; not true free-roam. Pair with ynavi-zee tip on main (`4d93cf2eb` lineage).
+
 ## [1.0.0+7] — 2026-09-21
 
 ### Added
