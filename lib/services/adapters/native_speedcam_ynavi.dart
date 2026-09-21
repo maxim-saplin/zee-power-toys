@@ -11,17 +11,43 @@ import '../speedcam.dart';
 /// EventChannel `zee/speedcam/ynavi` maps:
 ///   kind: heartbeat | cam | status
 ///   lat/lon/speedLimit/distance/eventId/source/t_ms/...
+///
+/// 0071: gated by [setEnrichEnabled] (default OFF). Native drops SPEEDCAM_DATA
+/// when disabled; Dart also ignores ingest.
 class NativeSpeedcamYnavi {
   NativeSpeedcamYnavi(this._service);
 
   static const EventChannel _events = EventChannel('zee/speedcam/ynavi');
+  static const MethodChannel _ctl = MethodChannel('zee/speedcam/ynavi_ctl');
 
   final SpeedcamService _service;
   StreamSubscription<dynamic>? _sub;
   int eventCount = 0;
   DateTime? lastBridgeFire;
+  bool _enrichEnabled = false;
 
   bool get isListening => _sub != null;
+  bool get enrichEnabled => _enrichEnabled;
+
+  Future<void> setEnrichEnabled(bool enabled) async {
+    _enrichEnabled = enabled;
+    final svc = _service;
+    if (svc is DefaultSpeedcamService) {
+      svc.setYnaviEnrichEnabled(enabled);
+    }
+    try {
+      await _ctl.invokeMethod<void>('setEnrichEnabled', <String, Object?>{
+        'enabled': enabled,
+      });
+    } catch (e) {
+      debugPrint('NativeSpeedcamYnavi setEnrichEnabled native: $e');
+    }
+    if (enabled) {
+      start();
+    } else {
+      // Keep EventChannel subscribed so re-enable is instant; native drops.
+    }
+  }
 
   void start() {
     if (_sub != null) return;
@@ -32,6 +58,7 @@ class NativeSpeedcamYnavi {
     }
     _sub = _events.receiveBroadcastStream().listen(
       (dynamic raw) {
+        if (!_enrichEnabled) return;
         if (raw is! Map) return;
         final map = Map<Object?, Object?>.from(raw);
         eventCount += 1;

@@ -26,3 +26,7 @@ See earlier tip `0e306e7` section. Payload yes; tip lacked Broadcaster; toys had
 2. Route-sim T2: prove broadcasts land Dig/HUD without double blips
 3. Dig surface for last bridge fire / session count
 4. Stale prune for YNavi-only overlay (time policy)
+
+## 0071 productization
+YNavi enrich behind Speedcam toggle **default OFF**. Ghost = freeDriveRoute idle-drive, not true free-roam. Windshield closed.
+

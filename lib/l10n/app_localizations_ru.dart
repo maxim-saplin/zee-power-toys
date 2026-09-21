@@ -723,6 +723,13 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get speedcamYnaviEnrich => 'Обогащение YNavi';
+
+  @override
+  String get speedcamYnaviEnrichHint =>
+      'Камеры из мода YNavi при движении (ghost без маршрута + маршрут). Не свободный роуминг. По умолчанию выкл.';
+
+  @override
   String get speedcamDhuSystemOverlay => 'Системный оверлей DHU';
 
   @override

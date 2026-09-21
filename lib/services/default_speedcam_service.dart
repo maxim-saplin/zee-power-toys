@@ -56,6 +56,35 @@ class DefaultSpeedcamService implements SpeedcamService {
   final List<SpeedcamPoint> _ynaviOverlay = <SpeedcamPoint>[];
   DateTime? lastYnaviBridgeFire;
   int ynaviSessionEvents = 0;
+  bool _ynaviEnrichEnabled = false;
+
+  /// 0071: master gate for YNavi ingest (default OFF via config).
+  bool get ynaviEnrichEnabled => _ynaviEnrichEnabled;
+
+  void setYnaviEnrichEnabled(bool enabled) {
+    if (_ynaviEnrichEnabled == enabled) return;
+    _ynaviEnrichEnabled = enabled;
+    if (!enabled) {
+      clearYnaviOverlay();
+    }
+  }
+
+  void clearYnaviOverlay() {
+    if (_ynaviOverlay.isEmpty) return;
+    _ynaviOverlay.clear();
+    // Rebuild cams without ynavi points.
+    final base = _cams
+        .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
+        .toList();
+    if (base.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(base);
+      _camSource = 'pack';
+    } else if (_camSource.contains('ynavi')) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+      _camSource = 'fallback';
+    }
+    _emit();
+  }
 
   @override
   Stream<SpeedcamSnapshot> get snapshots => _ctrl.stream;
@@ -130,6 +159,7 @@ class DefaultSpeedcamService implements SpeedcamService {
 
   /// Spike: route-only YNavi Windshield events beside OSM.
   void ingestYnaviEvent(Map<Object?, Object?> raw) {
+    if (!_ynaviEnrichEnabled) return;
     final kind = raw['kind'] as String? ?? '';
     final tMs = (raw['t_ms'] as num?)?.toInt();
     if (tMs != null) {

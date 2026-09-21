@@ -91,6 +91,7 @@ class MainActivity : FlutterActivity() {
         private const val SPEEDCAM_LOCATION_CHANNEL = "zee/speedcam/location"
         private const val SPEEDCAM_LOCATION_CTL_CHANNEL = "zee/speedcam/location_ctl"
         private const val SPEEDCAM_YNAVI_CHANNEL = SpeedcamYnaviReceiver.EVENT_CHANNEL
+        private const val SPEEDCAM_YNAVI_CTL_CHANNEL = "zee/speedcam/ynavi_ctl"
         private const val LOCATION_PERMISSION_REQ = 5050
         private const val BOOT_CHANNEL = "zee/boot"
         // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
@@ -339,6 +340,18 @@ class MainActivity : FlutterActivity() {
                 }
             })
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_YNAVI_CTL_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "setEnrichEnabled" -> {
+                        val enabled = call.argument<Boolean>("enabled") ?: false
+                        SpeedcamYnaviReceiver.setEnrichEnabled(enabled)
+                        result.success(null)
+                    }
+                    "isEnrichEnabled" -> result.success(SpeedcamYnaviReceiver.enrichEnabled)
+                    else -> result.notImplemented()
+                }
+            }
 
         // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
         // for ext.zee.bootState (Block 0010).

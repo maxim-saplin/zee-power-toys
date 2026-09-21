@@ -1478,6 +1478,18 @@ abstract class AppLocalizations {
   /// **'Update check failed: {message}'**
   String updateStatusFailed(String message);
 
+  /// 0071 master toggle: ingest YNavi speedcams (default off)
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi enrich'**
+  String get speedcamYnaviEnrich;
+
+  /// Subtitle for YNavi enrich toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.'**
+  String get speedcamYnaviEnrichHint;
+
   /// 0065 toggle title
   ///
   /// In en, this message translates to:

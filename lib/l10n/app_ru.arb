@@ -930,6 +930,14 @@
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
   },
+  "speedcamYnaviEnrich": "Обогащение YNavi",
+  "@speedcamYnaviEnrich": {
+    "description": "0071 master toggle: ingest YNavi speedcams (default off)"
+  },
+  "speedcamYnaviEnrichHint": "Камеры из мода YNavi при движении (ghost без маршрута + маршрут). Не свободный роуминг. По умолчанию выкл.",
+  "@speedcamYnaviEnrichHint": {
+    "description": "Subtitle for YNavi enrich toggle"
+  },
   "speedcamDhuSystemOverlay": "Системный оверлей DHU",
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"

@@ -722,6 +722,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get speedcamYnaviEnrich => 'YNavi enrich';
+
+  @override
+  String get speedcamYnaviEnrichHint =>
+      'Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.';
+
+  @override
   String get speedcamDhuSystemOverlay => 'DHU system overlay';
 
   @override

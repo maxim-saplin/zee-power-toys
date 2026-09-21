@@ -21,6 +21,10 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_SPEEDCAM_DATA) return
+        if (!enrichEnabled) {
+            Log.d(TAG, "ynavi enrich OFF — drop SPEEDCAM_DATA")
+            return
+        }
 
         val tMs = intent.getLongExtra("t_ms", System.currentTimeMillis())
         val count = if (intent.hasExtra("count")) intent.getIntExtra("count", -1) else -1
@@ -98,6 +102,9 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
         const val ACTION_SPEEDCAM_DATA = "com.zeekr.phase0.SPEEDCAM_DATA"
         const val EVENT_CHANNEL = "zee/speedcam/ynavi"
 
+        /** 0071: master toggle — default false (no collect until user opts in). */
+        @Volatile var enrichEnabled: Boolean = false
+
         @Volatile var eventSink: EventChannel.EventSink? = null
         @Volatile var lastBridgeFireEpochMs: Long = 0L
         @Volatile var sessionEventCount: Int = 0
@@ -135,6 +142,16 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
             processReceiver = receiver
             Log.i(TAG, "SpeedcamYnaviReceiver registered (action=$ACTION_SPEEDCAM_DATA)")
             return receiver
+        }
+
+        fun setEnrichEnabled(enabled: Boolean) {
+            enrichEnabled = enabled
+            if (!enabled) {
+                seenEventIds.clear()
+                Log.i(TAG, "ynavi enrich disabled (session eventIds cleared)")
+            } else {
+                Log.i(TAG, "ynavi enrich enabled")
+            }
         }
 
         fun register(context: Context): SpeedcamYnaviReceiver = ensureRegistered(context)

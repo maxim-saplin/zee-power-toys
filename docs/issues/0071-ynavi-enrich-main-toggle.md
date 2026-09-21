@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: tipped
 labels: [speedcam, ynavi, product]
 created: 2026-09-21
 satisfies: YNavi cam enrich on main behind Speedcam setup toggle (default off)
@@ -33,3 +33,7 @@ Spike proved motion-backed YNavi cams (ghost idle-drive + route on Go). Maxim: s
 - [ ] Toggle ON + moving → YNavi cams into store with `source=ynavi`
 - [ ] Default OFF on fresh install
 - [ ] QA T2 cut + PDM sign-off
+
+## Tip
+- toys: see tip SHA in room (Speedcam setup → **YNavi enrich**, default OFF)
+- ynavi spike tip remains `4d93cf2eb` (0076 revive) — Windshield closed; ghost ≠ free-roam

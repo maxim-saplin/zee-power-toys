@@ -930,6 +930,14 @@
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
   },
+  "speedcamYnaviEnrich": "YNavi enrich",
+  "@speedcamYnaviEnrich": {
+    "description": "0071 master toggle: ingest YNavi speedcams (default off)"
+  },
+  "speedcamYnaviEnrichHint": "Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.",
+  "@speedcamYnaviEnrichHint": {
+    "description": "Subtitle for YNavi enrich toggle"
+  },
   "speedcamDhuSystemOverlay": "DHU system overlay",
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"

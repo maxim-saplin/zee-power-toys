@@ -890,6 +890,7 @@ class SpeedcamConfig {
     this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
     this.staleAfterDays = 7,
     this.dhuSystemOverlay = false,
+    this.ynaviEnrichEnabled = false,
   });
 
   /// HUD radar/presence mode (default [SpeedcamPresenceMode.any]).
@@ -916,6 +917,9 @@ class SpeedcamConfig {
   /// 0065: always-on-top Speedcam plate on the DHU (SYSTEM_ALERT_WINDOW).
   final bool dhuSystemOverlay;
 
+  /// 0071: ingest YNavi SPEEDCAM_DATA (ghost+route). Default OFF until user opts in.
+  final bool ynaviEnrichEnabled;
+
   /// Legacy: HUD paint not Off (0060 migration / dumpState).
   bool get hudRadarEnabled => hudMode != SpeedcamPresenceMode.off;
 
@@ -931,6 +935,7 @@ class SpeedcamConfig {
     SpeedcamRefreshPolicy? refreshPolicy,
     int? staleAfterDays,
     bool? dhuSystemOverlay,
+    bool? ynaviEnrichEnabled,
     // Legacy bool shims — prefer [hudMode] / [soundMode].
     bool? hudRadarEnabled,
     bool? soundEnabled,
@@ -956,6 +961,7 @@ class SpeedcamConfig {
       refreshPolicy: refreshPolicy ?? this.refreshPolicy,
       staleAfterDays: staleAfterDays ?? this.staleAfterDays,
       dhuSystemOverlay: dhuSystemOverlay ?? this.dhuSystemOverlay,
+      ynaviEnrichEnabled: ynaviEnrichEnabled ?? this.ynaviEnrichEnabled,
     );
   }
 
@@ -971,6 +977,7 @@ class SpeedcamConfig {
         'refreshPolicy': refreshPolicy.name,
         'staleAfterDays': staleAfterDays,
         'dhuSystemOverlay': dhuSystemOverlay,
+        'ynaviEnrichEnabled': ynaviEnrichEnabled,
       };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
@@ -1004,6 +1011,7 @@ class SpeedcamConfig {
       refreshPolicy: policy,
       staleAfterDays: (json['staleAfterDays'] as num?)?.toInt() ?? 7,
       dhuSystemOverlay: json['dhuSystemOverlay'] as bool? ?? false,
+      ynaviEnrichEnabled: json['ynaviEnrichEnabled'] as bool? ?? false,
     );
   }
 
@@ -1017,7 +1025,8 @@ class SpeedcamConfig {
       other.radarLook == radarLook &&
       other.refreshPolicy == refreshPolicy &&
       other.staleAfterDays == staleAfterDays &&
-      other.dhuSystemOverlay == dhuSystemOverlay;
+      other.dhuSystemOverlay == dhuSystemOverlay &&
+      other.ynaviEnrichEnabled == ynaviEnrichEnabled;
 
   @override
   int get hashCode => Object.hash(
@@ -1029,6 +1038,7 @@ class SpeedcamConfig {
         refreshPolicy,
         staleAfterDays,
         dhuSystemOverlay,
+        ynaviEnrichEnabled,
       );
 }
 

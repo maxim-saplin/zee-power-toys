@@ -315,6 +315,14 @@ class _SpeedcamSettingsScreenState
               ),
               const SizedBox(height: 12),
               SwitchListTile(
+                key: const ValueKey('speedcam-ynavi-enrich'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamYnaviEnrich),
+                subtitle: Text(l10n.speedcamYnaviEnrichHint),
+                value: sc.ynaviEnrichEnabled,
+                onChanged: (v) => _patchSpeedcam((c) => c.copyWith(ynaviEnrichEnabled: v)),
+              ),
+              SwitchListTile(
                 key: const ValueKey('speedcam-dhu-system-overlay'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.speedcamDhuSystemOverlay),
