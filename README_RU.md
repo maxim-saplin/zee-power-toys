@@ -145,6 +145,20 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 
 На T1 миникарта — фейк; для поверхности YNavi нужны T2 эмулятор / T3 машина.
 
+### T2 эмулятор (как DHU)
+
+Только AVD **`Tablet_Android_12L`** (API 32 / Android 12L, `medium_tablet`, **2560×1600** @ 320dpi) — то же поколение и разрешение, что у DHU. Не `Medium_Phone` и не `ROOTED_Android_12L` для смоука DHU UI.
+
+```bash
+$ANDROID_HOME/emulator/emulator -avd Tablet_Android_12L -gpu host -no-snapshot-load
+adb shell wm size   # ожидай Physical size: 2560x1600
+```
+
+`adb` может писать `sdk_gphone64_arm64` — это строка Play-образа, не форм-фактор. Смотри `wm size` / пропорции окна.
+
+На google_apis AVD ставь **debug** (или Google-keyed) APK; AOSP-platform **release** с машины сюда не встанет.
+
+
 ### Сборка из исходников
 
 Нужны Flutter SDK ([установка Flutter](https://docs.flutter.dev/get-started/install)), JDK 17+ и Android SDK / Platform Tools. Далее:

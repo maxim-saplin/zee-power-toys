@@ -145,6 +145,20 @@ uv run dev/zee_run.py up    # Linux (or macOS with macos/ runner)
 
 T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
 
+### T2 emulator (DHU-matched)
+
+Use **only** AVD `Tablet_Android_12L` (API 32 / Android 12L, `medium_tablet`, **2560×1600** @ 320dpi) — same generation + res as the DHU. Do **not** use `Medium_Phone` or `ROOTED_Android_12L` for DHU UI smoke.
+
+```bash
+$ANDROID_HOME/emulator/emulator -avd Tablet_Android_12L -gpu host -no-snapshot-load
+adb shell wm size   # expect Physical size: 2560x1600
+```
+
+`adb` may still report `sdk_gphone64_arm64` — that is the Play-system-image product string, not the form factor. Trust `wm size` / the window aspect.
+
+google_apis AVDs expect a **debug** (or Google-keyed) APK; the AOSP-platform-signed **release** APK used on the car will fail to install here.
+
+
 ### Build from source
 
 Needs a Flutter SDK ([install Flutter](https://docs.flutter.dev/get-started/install)), JDK 17+, and Android SDK / Platform Tools. Then:
