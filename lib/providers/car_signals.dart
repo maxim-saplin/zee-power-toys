@@ -4,63 +4,62 @@ import '../services/car_signals.dart';
 import 'services.dart';
 
 /// All [CarSignalEvent]s from the injected [CarSignals] service.
+///
+/// Watch this to rebuild on any event; **read values from [CarSignals.snapshot]**.
+/// Using `AsyncValue.value` as the source of truth was wrong: the latest stream
+/// event may be a Speed/Battery tick (or a ChargeEvent with null kW), so
+/// Diagnostics Energy showed "—" while snapshot/raw still had charging + kW.
 final carSignalEventsProvider = StreamProvider<CarSignalEvent>((ref) {
   return ref.watch(carSignalsProvider).events;
 });
 
-/// Latest speed in km/h; null until a SpeedEvent has been received.
-/// Falls back to snapshot so that reads before the first stream emission work.
+void _touchEvents(Ref ref) {
+  ref.watch(carSignalEventsProvider);
+}
+
+/// Latest speed in km/h; null until known.
 final speedProvider = Provider<int?>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is SpeedEvent) return event.kmh;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.speedKmh;
 });
 
-/// Current blinker state; falls back to snapshot.
+/// Current blinker state.
 final blinkerProvider = Provider<BlinkerState>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is BlinkerEvent) return event.state;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.blinker;
 });
 
-/// Charging flag; null until a ChargeEvent has been received.
+/// Charging flag; null until known.
 final chargingProvider = Provider<bool?>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is ChargeEvent) return event.charging;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.charging;
 });
 
-/// Latest charging power in kW; null when not charging or no event yet.
+/// Instant charge/discharge power in kW (signed); null until known.
 final chargeKwProvider = Provider<double?>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is ChargeEvent) return event.kw;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.chargeKw;
 });
 
-/// Battery level in percent; null until a BatteryEvent has been received.
+/// Battery level in percent; null until known.
 final batteryPctProvider = Provider<int?>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is BatteryEvent) return event.levelPct;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.batteryPct;
 });
 
-/// Battery temperature in °C; null until a BatteryEvent has been received.
+/// Battery temperature in °C; null until known.
 final batteryTempCProvider = Provider<double?>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is BatteryEvent) return event.tempC;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.batteryTempC;
 });
 
-/// Current power-flow state (drive/regen/standstill/unknown); falls back to snapshot.
+/// Power-flow enum from snapshot.
 final powerFlowProvider = Provider<PowerFlow>((ref) {
-  final event = ref.watch(carSignalEventsProvider).value;
-  if (event is PowerFlowEvent) return event.flow;
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.powerFlow;
 });
 
-/// Which car-signal source is actually live: 'adaptapi' | 'simulated' (T2/T3
-/// native — the native CarSignalsController's own auto-detected choice) or
-/// 'fake' (T1 desktop / HUD isolate). Resolves once; see [CarSignals.sourceKind].
+/// Which car-signal source is live: 'adaptapi' | 'simulated' | 'fake'.
 final signalSourceProvider = FutureProvider<String>((ref) {
   return ref.watch(carSignalsProvider).sourceKind;
 });

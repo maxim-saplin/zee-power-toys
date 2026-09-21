@@ -98,14 +98,35 @@ Mechanism for Install is **done** ([0014](0014-install-from-github.md) / [0020](
 | — | **Proper GH links in Install UI** — show repo/branch/path (or release URL) on each Install card; openable | **backlog** | `InstallScreen` today: name + desc + Install button only — no visible GitHub coordinates. |
 | — | **YNavi build variant without left letterbox** — ZeekrOS 7+ layout; `ZEEAPP_LETTERBOX_LEFT_DIP` (480dp) no longer wanted; ship a separate APK (or preset) without left padding | **backlog** | Upstream `ynavi-zee` (`features/1.mapactivity_letterbox_padding`, `dimens.xml` zeeapp_letterbox_left). Dual publish: legacy padded + OS7+ unpadded. Wire second Install target or selector. |
 | — | **GH Actions for zee-power-toys + release process** — CI (analyze/test/apk) and tagged release artifacts | **backlog** | No `.github/workflows` in this repo today. |
-| — | **README as product landing** — intro, quick start, screenshots, guide, links to sibling repos (ynavi-zee / launcher / phase0), architecture at the bottom | **backlog** | Current README is status/layout for agents, not a GH landing page. |
+| — | **README as product landing** — intro, quick start, screenshots, guide, links to sibling repos (ynavi-zee / launcher / phase0), architecture at the bottom | **done** (`1.0.0+5`) | Front face + quick start + companions; screenshot placeholders until Maxim icons; arch last. |
 
 Related deferred: installer Robolectric guard (below); YNavi zoom still upstream (`ZEEAPP_MAP_SCALE_PERCENT`).
 
+### Speedcam follow-ups (0046–0050)
+
+| [0050](0050-speedcam-car-location.md) | YNavi/car GPS → Speedcam pose + harvest center (no silent Minsk) | in-progress |
+
+| [0046](0046-speedcam-dhu-map-preview.md) | DHU map preview of cached cams | in-progress (folded w/ 0047) |
+| [0047](0047-speedcam-harvest-300km.md) | Harvest ~300 km of host pose; merge no-purge; no BY UI | in-progress |
+
 ### Quality + publish
 
-| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | F tipped — awaiting ACCEPT |
-| [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | blocked-by 0043 |
+| [0051](0051-battery-free-placement.md) | Battery HUD free placement (left / right / right-top + fine adjust) | **done** |
+| [0054](0054-settings-survive-reinstall.md) | Settings survive reinstall via `adb install -r` (no uninstall / no sdcard mirror) | **done** |
+| [0056](0056-battery-looks-pdm.md) | Battery looks — PDM names + squarish bold outline | **done** |
+| [0057](0057-minimap-only-while-guidance.md) | Show minimap only while YNavi guidance active (default off) | **done** |
+| [0055](0055-ynavi-minimap-info-overlay.md) | Street/ETA via native GuidanceOverlayView (Zee HUD 2 updateTrip) | in-progress (FAIL redirect) |
+| [0058](0058-hud-approach-cam-blip.md) | HUD approach cam blip — relative bearing fold | **done** |
+| [0059](0059-speedcam-alert-loudness.md) | Alert loudness — NAV stream + real slider gain | **done** |
+| [0061](0061-guidance-overlay-scale-slider.md) | GuidanceOverlayView overlay scale slider (Zee HUD 2 0.25–1.0) | **done** |
+| [0060](0060-speedcam-hud-sound-modes.md) | Speedcam HUD + sound modes (Any / Dangerous / Off) | **done** |
+| [0062](0062-battery-pct-inside-dual-color.md) | Battery + % inside pack — dual-color clip at fill (FAIL: empty white) | **done** |
+| [0063](0063-battery-outline-pct-height.md) | Battery polish — thinner outline + full-height % (keep 0062 clip) | **done** |
+| [0064](0064-speedcam-blip-colors.md) | Speedcam HUD blip colors — danger white / others greenish | **done** |
+| [0066](0066-hud-charging-indicator.md) | HUD charging indicator — register+seed/poll CHARGE_STATE (live bolt/kW) | **done** (code; T3 QA pending) |
+
+| [0043](0043-quality-sweep-pre-publish.md) | Quality sweep pre-publish (deps, T1/T2 matrix, debt, coverage, docs) | **done** @ 1bed77b (ACCEPTed) |
+| [0044](0044-publish-prep-three-repos.md) | Publish prep 3 repos — review-ready, await Maxim go | in-progress (zee-dev) |
 
 ### Speedcam (0029–0042) — **done** on T1/T2
 
@@ -142,3 +163,6 @@ Measured conclusions, so this is not re-litigated:
 - **Behaviour-boundary test cleanups** (QA5-12/13) — `native_car_signals_test` asserts `snapshot.*` internals and `hud_root_test` pins `AspectRatio` type; prefer the event stream / rendered bounds.
 - **Conventions-doc dep snapshot** (QA5-11) — `docs/knowledge/flutter-conventions-riverpod-testing.md` lists illustrative deps (`go_router`, `logging`, `mockito`, `build_runner`) the app deliberately does not use.
 - **System-language OTA write — T3-only verification** (Block 0015 follow-up) — `SystemConfigController.setSystemLanguage` now routes through the AdaptAPI/OTA path (`IOtaSession.setSystemHMILanguage`, with an `AdaptInternalManager` fallback) instead of the previous in-process resource-configuration mutation that reported success without actually changing anything persistent or system-wide. T1/T2 correctly report `unsupported-on-device` (no AdaptAPI) via a dedicated `systemSupported()` capability probe, replacing the old ungrantable-permission gate. **Whether the OTA call actually changes the car's system language has not been runtime-verified anywhere but T3** — it may still fail there this wave without platform signing (no `sharedUserId` in the manifest; release signs with the debug key). Do not accrete further fallback mechanisms to paper over this gap; confirm on-car instead.
+- [ ] 0067 HUD battery cluster grow while charging (3 lines)
+- [ ] 0067b battery sizeScale grows slot (monotonic)
+- [x] 0068 charge UI snapshot providers + CI keystore

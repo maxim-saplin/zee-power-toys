@@ -24,10 +24,11 @@ Do **not** verify a moving tip. Re-freeze explicitly if the SHA changes.
 ```bash
 cd /path/to/zee-power-toys
 git checkout <TIP>   # see Frozen tip; after signing port, tip advances
-# Ensure android/gradle.properties has useAospDebugKey=true
-flutter build apk --debug    # or --release — both use aospDebug when the key is present
-# APK: build/app/outputs/flutter-apk/app-debug.apk (or app-release.apk)
-apksigner verify --print-certs build/app/outputs/flutter-apk/app-debug.apk
+# Ensure android/gradle.properties has useAospDebugKey=true (+ androiddebugkey.jks)
+# Car: always --release (keeps sharedUserId). Debug overlay removes sharedUserId → SHARED_USER trap.
+flutter build apk --release -PuseAospDebugKey=true
+# APK: build/app/outputs/flutter-apk/app-release.apk
+apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk
 ```
 
 ## 1. Prove phase0 is out of the way
@@ -58,11 +59,14 @@ adb -s "$CAR" shell pm grant ru.yandex.yandexnavi android.permission.ACCESS_COAR
 ## 3. Install our APK
 
 ```bash
-adb -s "$CAR" install -r build/app/outputs/flutter-apk/app-debug.apk
+adb -s "$CAR" install -r build/app/outputs/flutter-apk/app-release.apk
 adb -s "$CAR" shell am start -n com.zeepowertoys.zee_power_toys/.MainActivity
 ```
 
 Confirm package present: `pm list packages | grep zeepowertoys`
+
+**0054 keep-data:** never `adb uninstall com.zeepowertoys.zee_power_toys` to clear
+SHARED_USER / signature errors — that wipes settings. Fix signing and retry `-r`.
 
 ## 4. Feedback Loop (optional but preferred)
 

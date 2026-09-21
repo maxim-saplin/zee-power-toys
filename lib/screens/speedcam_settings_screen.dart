@@ -10,6 +10,7 @@ import '../services/config_store.dart';
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
+import '../widgets/speedcam_pack_map_preview.dart';
 import '../services/fakes/fake_speedcam_service.dart';
 
 /// Speedcam settings — harvest/DB first (0037), then radar (0034).
@@ -25,6 +26,7 @@ class _SpeedcamSettingsScreenState
     extends ConsumerState<SpeedcamSettingsScreen> {
   SpeedcamPackMeta? _meta;
   List<SpeedcamPoint> _sampleCams = const [];
+  List<SpeedcamPoint> _allCams = const [];
   String? _error;
   bool _busy = false;
   bool _demoActive = false;
@@ -41,7 +43,34 @@ class _SpeedcamSettingsScreenState
 
   Future<void> _bootstrap() async {
     await _reloadLocal();
+    // 0050 HARD: prompt for location before GPS fallback / auto-harvest on open.
+    final locOk = await _ensureLocationPermission(showDeniedError: true);
+    if (!locOk) {
+      // Honest empty — do not auto-harvest around a stale Demo/Minsk prior.
+      return;
+    }
     await _applyRefreshPolicy(reason: 'open');
+  }
+
+  /// Runtime location prompt (in-app). Null [speedcamLocationProvider] = T1 desktop.
+  Future<bool> _ensureLocationPermission({required bool showDeniedError}) async {
+    final loc = ref.read(speedcamLocationProvider);
+    if (loc == null) return true;
+    final granted = await loc.ensurePermission();
+    if (!granted) {
+      if (showDeniedError && mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() {
+          _error = l10n.speedcamLocationDenied;
+          _busy = false;
+          _policyNote = null;
+        });
+      }
+      return false;
+    }
+    // Give native a beat to push lastKnown into the host pose.
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    return true;
   }
 
   Future<void> _reloadLocal() async {
@@ -51,6 +80,7 @@ class _SpeedcamSettingsScreenState
     if (!mounted) return;
     setState(() {
       _meta = meta;
+      _allCams = cams;
       _sampleCams = cams.take(3).toList();
     });
   }
@@ -70,14 +100,19 @@ class _SpeedcamSettingsScreenState
       _policyNote = 'Checking freshness…';
     });
     try {
+      final locOk = await _ensureLocationPermission(showDeniedError: true);
+      if (!locOk) return;
       final store = ref.read(speedcamPackStoreProvider);
       final before = await store.current(SpeedcamPackIds.by);
       final wasStale = before == null ||
           before.isStale(afterDays: sc.staleAfterDays);
+      final center = _harvestCenter();
       final meta = await store.refreshIfNeeded(
         packId: SpeedcamPackIds.by,
         ifStale: true,
         staleAfterDays: sc.staleAfterDays,
+        centerLat: center.lat,
+        centerLon: center.lon,
       );
       if (meta != null) {
         await ref.read(speedcamServiceProvider).reloadFromPack();
@@ -90,6 +125,7 @@ class _SpeedcamSettingsScreenState
           (meta != null && meta.fetchedAt != before.fetchedAt);
       setState(() {
         _meta = meta;
+        _allCams = cams;
         _sampleCams = cams.take(3).toList();
         _busy = false;
         if (refreshed) {
@@ -110,6 +146,13 @@ class _SpeedcamSettingsScreenState
     }
   }
 
+
+  ({double? lat, double? lon}) _harvestCenter() {
+    final host = ref.read(speedcamServiceProvider).snapshot.host;
+    if (host != null) return (lat: host.lat, lon: host.lon);
+    return (lat: _meta?.centerLat, lon: _meta?.centerLon);
+  }
+
   Future<void> _update() async {
     setState(() {
       _busy = true;
@@ -117,16 +160,27 @@ class _SpeedcamSettingsScreenState
       _policyNote = null;
     });
     try {
+      final locOk = await _ensureLocationPermission(showDeniedError: true);
+      if (!locOk) return;
       final store = ref.read(speedcamPackStoreProvider);
-      final meta = await store.updatePack(SpeedcamPackIds.by);
+      final center = _harvestCenter();
+      // Permission ok but no live pose and no prior center → pack store StateError
+      // (honest — no silent Minsk). Denied path never reaches here.
+      final meta = await store.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: center.lat,
+        centerLon: center.lon,
+      );
       await ref.read(speedcamServiceProvider).reloadFromPack();
       final cams = await store.loadCams(SpeedcamPackIds.by);
       if (!mounted) return;
       setState(() {
         _meta = meta;
+        _allCams = cams;
         _sampleCams = cams.take(3).toList();
         _busy = false;
-        _policyNote = 'Manual update ok';
+        _policyNote =
+            'Harvest merged · ${meta.lastHarvestCount ?? meta.camCount} fetched · ${meta.camCount} in cache';
       });
     } catch (e) {
       if (!mounted) return;
@@ -232,15 +286,58 @@ class _SpeedcamSettingsScreenState
                 },
               ),
               const SizedBox(height: 12),
-              SwitchListTile(
-                key: const ValueKey('speedcam-hud-radar'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamHudRadarEnable),
-                value: sc.hudRadarEnabled,
-                onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(hudRadarEnabled: v),
-                ),
+              Text(
+                l10n.speedcamHudMode,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
+              const SizedBox(height: 8),
+              SegmentedButton<SpeedcamPresenceMode>(
+                key: const ValueKey('speedcam-hud-mode'),
+                segments: [
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.any,
+                    label: Text(l10n.speedcamPresenceAny),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.dangerous,
+                    label: Text(l10n.speedcamPresenceDangerous),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.off,
+                    label: Text(l10n.speedcamPresenceOff),
+                  ),
+                ],
+                selected: {sc.hudMode},
+                onSelectionChanged: (sel) {
+                  if (sel.isEmpty) return;
+                  _patchSpeedcam((c) => c.copyWith(hudMode: sel.first));
+                },
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                key: const ValueKey('speedcam-dhu-system-overlay'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamDhuSystemOverlay),
+                subtitle: Text(l10n.speedcamDhuSystemOverlayHint),
+                value: sc.dhuSystemOverlay,
+                onChanged: (v) async {
+                  if (v) {
+                    final overlay = ref.read(speedcamSystemOverlayProvider);
+                    final ok = await overlay.canDrawOverlays();
+                    if (!ok) {
+                      await overlay.openPermissionSettings();
+                      final granted = await overlay.canDrawOverlays();
+                      if (!granted) {
+                        if (!mounted) return;
+                        setState(() => _error = l10n.speedcamOverlayPermissionDenied);
+                        return;
+                      }
+                    }
+                  }
+                  _patchSpeedcam((c) => c.copyWith(dhuSystemOverlay: v));
+                },
+              ),
+              const SizedBox(height: 12),
               Text(
                 l10n.speedcamRadarLook,
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -264,13 +361,46 @@ class _SpeedcamSettingsScreenState
                   _patchSpeedcam((c) => c.copyWith(radarLook: sel.first));
                 },
               ),
-              SwitchListTile(
-                key: const ValueKey('speedcam-sound'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamSoundEnable),
-                value: sc.soundEnabled,
+              const SizedBox(height: 12),
+              Text(
+                l10n.speedcamSoundMode,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<SpeedcamPresenceMode>(
+                key: const ValueKey('speedcam-sound-mode'),
+                segments: [
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.any,
+                    label: Text(l10n.speedcamPresenceAny),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.dangerous,
+                    label: Text(l10n.speedcamPresenceDangerous),
+                  ),
+                  ButtonSegment(
+                    value: SpeedcamPresenceMode.off,
+                    label: Text(l10n.speedcamPresenceOff),
+                  ),
+                ],
+                selected: {sc.soundMode},
+                onSelectionChanged: (sel) {
+                  if (sel.isEmpty) return;
+                  _patchSpeedcam((c) => c.copyWith(soundMode: sel.first));
+                },
+              ),
+              SettingsSlider(
+                label: l10n.speedcamSoundVolume,
+                valueLabel: '${(sc.soundVolume * 100).round()}%',
+                minLabel: '0',
+                maxLabel: '100',
+                sliderKey: const ValueKey('speedcam-sound-volume'),
+                min: 0,
+                max: 1,
+                divisions: 20,
+                value: sc.soundVolume.clamp(0.0, 1.0),
                 onChanged: (v) => _patchSpeedcam(
-                  (c) => c.copyWith(soundEnabled: v),
+                  (c) => c.copyWith(soundVolume: v),
                 ),
               ),
               const SizedBox(height: 8),
@@ -311,11 +441,20 @@ class _SpeedcamSettingsScreenState
           ),          SettingsSection(
             title: l10n.speedcamDbSection,
             children: [
+              SpeedcamPackMapPreview(
+                cams: _allCams,
+                meta: meta,
+              ),
+              const SizedBox(height: 8),
               ListTile(
-                key: const ValueKey('speedcam-db-region'),
+                key: const ValueKey('speedcam-db-coverage'),
                 contentPadding: EdgeInsets.zero,
-                title: Text(l10n.speedcamDbRegion),
-                subtitle: Text(meta?.regionLabel ?? l10n.speedcamPackBy),
+                title: Text(l10n.speedcamDbCoverage),
+                subtitle: Text(
+                  meta == null
+                      ? l10n.speedcamPackMissing
+                      : meta.coverageLabel,
+                ),
               ),
               ListTile(
                 key: const ValueKey('speedcam-db-source'),

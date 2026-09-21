@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
+import '../services/minimap_host.dart';
 import '../services/speedcam.dart';
 
 /// The cross-engine relay abstraction.
@@ -114,6 +115,16 @@ Future<void> pushSpeedcamToHud(SpeedcamSnapshot snapshot) async {
   await _push('speedcam', jsonEncode(snapshot.toRelayJson()));
 }
 
+/// Push a [GuidanceEvent] to the HUD isolate (0055 FAIL: overlay lives on HUD).
+Future<void> pushGuidanceToHud(GuidanceEvent event) async {
+  await _push('guidance', jsonEncode(event.toJson()));
+}
+
+/// Push YNavi navigation-session truth to the HUD (0057 gating chrome).
+Future<void> pushNavActiveToHud(bool active) async {
+  await _push('navActive', jsonEncode(<String, Object?>{'navActive': active}));
+}
+
 Future<void> _push(String kind, String payload) async {
   try {
     await _relay.push(kind, payload);
@@ -129,6 +140,8 @@ void listenForRelay({
   void Function(AppConfig)? onConfig,
   void Function(CarSignalEvent)? onCarSignal,
   void Function(SpeedcamSnapshot)? onSpeedcam,
+  void Function(GuidanceEvent)? onGuidance,
+  void Function(bool)? onNavActive,
 }) {
   _relay.listen((kind, payload) {
     try {
@@ -151,6 +164,17 @@ void listenForRelay({
             onSpeedcam(SpeedcamSnapshot.fromJson(
               Map<String, Object?>.from(jsonDecode(payload) as Map),
             ));
+          }
+        case 'guidance':
+          if (onGuidance != null) {
+            onGuidance(GuidanceEvent.fromJson(
+              Map<String, Object?>.from(jsonDecode(payload) as Map),
+            ));
+          }
+        case 'navActive':
+          if (onNavActive != null) {
+            final m = Map<String, Object?>.from(jsonDecode(payload) as Map);
+            onNavActive(m['navActive'] == true);
           }
       }
     } catch (_) {

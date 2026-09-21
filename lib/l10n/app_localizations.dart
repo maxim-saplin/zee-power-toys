@@ -359,13 +359,13 @@ abstract class AppLocalizations {
   /// Install target: YNavi mod name
   ///
   /// In en, this message translates to:
-  /// **'YNavi mod (HUD)'**
+  /// **'YNavi mod (margined / default)'**
   String get installYnaviName;
 
   /// Install target: YNavi mod description
   ///
   /// In en, this message translates to:
-  /// **'Yandex.Navi mod with HUD support and minimap broadcast'**
+  /// **'HUD-capable YNavi with left letterbox for Zeekr side panel. Prefer this unless on OS7+.'**
   String get installYnaviDesc;
 
   /// Install button label (used for first install and updates)
@@ -584,6 +584,78 @@ abstract class AppLocalizations {
   /// **'% inside'**
   String get batteryStylePctInside;
 
+  /// Battery look picker label (0056 PDM)
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get batteryLook;
+
+  /// PDM: Battery — filled pack
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get batteryLookBattery;
+
+  /// PDM: Battery + text — pack with %
+  ///
+  /// In en, this message translates to:
+  /// **'Battery + text'**
+  String get batteryLookBatteryText;
+
+  /// PDM: Battery with bars — segmented
+  ///
+  /// In en, this message translates to:
+  /// **'Battery with bars'**
+  String get batteryLookBatteryBars;
+
+  /// PDM: Just text — % only
+  ///
+  /// In en, this message translates to:
+  /// **'Just text'**
+  String get batteryLookJustText;
+
+  /// Battery placement preset selector label
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get batteryPlacement;
+
+  /// Battery placement preset: left
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get batteryPlacementLeft;
+
+  /// Battery placement preset: right mid
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get batteryPlacementRight;
+
+  /// Battery placement preset: right top (default)
+  ///
+  /// In en, this message translates to:
+  /// **'Right top'**
+  String get batteryPlacementRightTop;
+
+  /// Battery vertical position slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical position'**
+  String get batteryVerticalPosition;
+
+  /// Battery side-padding slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Side padding (from edge)'**
+  String get batterySidePadding;
+
+  /// Battery horizontal bias slider label
+  ///
+  /// In en, this message translates to:
+  /// **'Horizontal bias'**
+  String get batteryHorizBias;
+
   /// Battery size slider label
   ///
   /// In en, this message translates to:
@@ -655,6 +727,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install a compatible YNavi mod to enable the minimap'**
   String get minimapYnaviUnavailableHint;
+
+  /// 0057: show minimap only while YNavi guidance active
+  ///
+  /// In en, this message translates to:
+  /// **'Show only during guidance'**
+  String get minimapOnlyWhileGuidance;
+
+  /// Hint for only-while-guidance toggle
+  ///
+  /// In en, this message translates to:
+  /// **'When on, the minimap appears only while YNavi navigation is active'**
+  String get minimapOnlyWhileGuidanceHint;
+
+  /// 0055: Zee HUD 2 guidance_overlay toggle (native Views)
+  ///
+  /// In en, this message translates to:
+  /// **'Turn-by-turn overlay'**
+  String get minimapGuidanceOverlay;
+
+  /// Hint for guidance overlay toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow, distance, and street name on the minimap (from YNavi trip data)'**
+  String get minimapGuidanceOverlayHint;
+
+  /// 0055: Zee HUD 2 eta_bar toggle (native Views)
+  ///
+  /// In en, this message translates to:
+  /// **'ETA bar'**
+  String get minimapEtaBar;
+
+  /// Hint for ETA bar toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining distance, time, and arrival on the minimap'**
+  String get minimapEtaBarHint;
+
+  /// 0055: Zee HUD 2 overlayScale slider (guidance/ETA bars)
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay scale'**
+  String get minimapOverlayScale;
+
+  /// Hint for overlay scale slider
+  ///
+  /// In en, this message translates to:
+  /// **'Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)'**
+  String get minimapOverlayScaleHint;
 
   /// Minimap preset selector label
   ///
@@ -929,7 +1049,7 @@ abstract class AppLocalizations {
   /// Short product intro on the home welcome column
   ///
   /// In en, this message translates to:
-  /// **'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.'**
+  /// **'HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the right.'**
   String get homeWelcomeBody;
 
   /// Companion APK status section heading
@@ -1001,7 +1121,7 @@ abstract class AppLocalizations {
   /// Speedcam pack section heading
   ///
   /// In en, this message translates to:
-  /// **'Region pack'**
+  /// **'Camera cache'**
   String get speedcamPackSection;
 
   /// BY OSM pack label
@@ -1013,7 +1133,7 @@ abstract class AppLocalizations {
   /// Shown when no BY pack on disk
   ///
   /// In en, this message translates to:
-  /// **'No pack cached — tap Update'**
+  /// **'No cameras cached — tap Update'**
   String get speedcamPackMissing;
 
   /// Cached pack status line
@@ -1025,7 +1145,7 @@ abstract class AppLocalizations {
   /// Manual Overpass download button
   ///
   /// In en, this message translates to:
-  /// **'Update pack'**
+  /// **'Harvest (300 km)'**
   String get speedcamPackUpdate;
 
   /// Busy label while pack downloads
@@ -1040,16 +1160,46 @@ abstract class AppLocalizations {
   /// **'Radar'**
   String get speedcamRadarSection;
 
-  /// Toggle CRT on windshield HUD
+  /// Toggle CRT on windshield HUD (legacy; prefer presence mode)
   ///
   /// In en, this message translates to:
   /// **'Show radar on HUD'**
   String get speedcamHudRadarEnable;
 
-  /// Zoom-out display radius metres
+  /// 0060: HUD presence mode Any/Dangerous/Off
   ///
   /// In en, this message translates to:
-  /// **'DHU radar range'**
+  /// **'HUD radar'**
+  String get speedcamHudMode;
+
+  /// 0060: sound presence mode Any/Dangerous/Off
+  ///
+  /// In en, this message translates to:
+  /// **'Alert sound'**
+  String get speedcamSoundMode;
+
+  /// 0060 presence mode: any ahead cam
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get speedcamPresenceAny;
+
+  /// 0060 presence mode: facing-relevant ahead
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous'**
+  String get speedcamPresenceDangerous;
+
+  /// 0060 presence mode: channel off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get speedcamPresenceOff;
+
+  /// Presence and alert radius metres (DHU + approach)
+  ///
+  /// In en, this message translates to:
+  /// **'Alert / radar range'**
   String get speedcamDhuRange;
 
   /// Toggle sting on insideApproach enter
@@ -1057,6 +1207,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approach alert sound'**
   String get speedcamSoundEnable;
+
+  /// Speedcam sting/ping volume 0-100%
+  ///
+  /// In en, this message translates to:
+  /// **'Alert volume'**
+  String get speedcamSoundVolume;
 
   /// Speedcam radar visual look picker
   ///
@@ -1091,7 +1247,7 @@ abstract class AppLocalizations {
   /// DHU local speedcam pack state
   ///
   /// In en, this message translates to:
-  /// **'Local pack / DB'**
+  /// **'Local DB / map'**
   String get speedcamDbSection;
 
   /// Pack region label
@@ -1099,6 +1255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Region'**
   String get speedcamDbRegion;
+
+  /// Last harvest radius honesty (e.g. within 300 km)
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage'**
+  String get speedcamDbCoverage;
 
   /// Pack source overpass/fixture/fake
   ///
@@ -1121,7 +1283,7 @@ abstract class AppLocalizations {
   /// Cached cam count
   ///
   /// In en, this message translates to:
-  /// **'Cameras in pack'**
+  /// **'Cameras in cache'**
   String get speedcamDbCount;
 
   /// First N cams from local DB
@@ -1159,6 +1321,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stale after (days)'**
   String get speedcamStaleDays;
+
+  /// Honest error when runtime location permission is denied (0050 HARD)
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.'**
+  String get speedcamLocationDenied;
+
+  /// Hint before/with location permission prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location so Speedcam can track the car and center harvest.'**
+  String get speedcamLocationNeeded;
 
   /// Home tile — About
   ///
@@ -1213,6 +1387,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).'**
   String get aboutSpeedcamCreditBody;
+
+  /// Install card — OS7 YNavi variant
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi mod (OS7+ no left margin)'**
+  String get installYnaviOs7Name;
+
+  /// Install card desc OS7 YNavi
+  ///
+  /// In en, this message translates to:
+  /// **'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.'**
+  String get installYnaviOs7Desc;
+
+  /// Self-update card title
+  ///
+  /// In en, this message translates to:
+  /// **'Zee Power Toys'**
+  String get updateCardName;
+
+  /// Self-update card description
+  ///
+  /// In en, this message translates to:
+  /// **'Check GitHub Releases for a newer build of this app, then download and install.'**
+  String get updateCardDesc;
+
+  /// Probe GitHub for newer release
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get updateCheckButton;
+
+  /// Download and install newer APK
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateInstallButton;
+
+  /// Self-update checking status
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get updateStatusChecking;
+
+  /// No newer release
+  ///
+  /// In en, this message translates to:
+  /// **'You are on the latest build.'**
+  String get updateStatusUpToDate;
+
+  /// Newer release found
+  ///
+  /// In en, this message translates to:
+  /// **'Update available: {label}'**
+  String updateStatusAvailable(String label);
+
+  /// Empty releases list
+  ///
+  /// In en, this message translates to:
+  /// **'No public releases published yet.'**
+  String get updateStatusNone;
+
+  /// Check error
+  ///
+  /// In en, this message translates to:
+  /// **'Update check failed: {message}'**
+  String updateStatusFailed(String message);
+
+  /// 0065 toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'DHU system overlay'**
+  String get speedcamDhuSystemOverlay;
+
+  /// 0065 toggle hint
+  ///
+  /// In en, this message translates to:
+  /// **'Show a floating Speedcam alert over other apps (needs display-over permission).'**
+  String get speedcamDhuSystemOverlayHint;
+
+  /// 0065 permission denied
+  ///
+  /// In en, this message translates to:
+  /// **'Display-over permission required for the system overlay.'**
+  String get speedcamOverlayPermissionDenied;
 }
 
 class _AppLocalizationsDelegate

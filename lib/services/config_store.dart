@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'minimap_viewport.dart' show hudPresetSizeFraction;
+import 'speedcam.dart' show SpeedcamPresenceMode;
 
 
 /// jsonDecode nests are [Map<String, dynamic>], which fail `is Map<String, Object?>`.
@@ -202,6 +203,10 @@ class MinimapLooks {
 class MinimapConfig {
   const MinimapConfig({
     this.enabled = false,
+    this.onlyWhileGuidance = false,
+    this.guidanceOverlay = true,
+    this.etaBar = true,
+    this.overlayScale = 0.5,
     this.preset = 'balanced',
     this.advanced = false,
     this.sizeFraction,
@@ -211,6 +216,22 @@ class MinimapConfig {
 
   /// Whether the minimap is enabled. Only meaningful when YNavi mod is present.
   final bool enabled;
+
+  /// When true, show the minimap surface only while YNavi reports an active
+  /// navigation session (0057). Default false = always show when [enabled].
+  final bool onlyWhileGuidance;
+
+  /// 0055 / Zee HUD 2: show turn-by-turn top bar on native GuidanceOverlayView
+  /// (arrow + distance + road). Default true.
+  final bool guidanceOverlay;
+
+  /// 0055 / Zee HUD 2: show bottom ETA bar (remain dist + time + arrival).
+  /// Default true.
+  final bool etaBar;
+
+  /// Zee HUD 2 overlayScale (0.25–1.0). Independent of [contentScale]/ shrinks
+  /// guidance bars to fit the square viewport. Default 0.5.
+  final double overlayScale;
 
   /// Preset name: 'compact', 'balanced', or 'large'.
   final String preset;
@@ -255,6 +276,10 @@ class MinimapConfig {
 
   MinimapConfig copyWith({
     bool? enabled,
+    bool? onlyWhileGuidance,
+    bool? guidanceOverlay,
+    bool? etaBar,
+    double? overlayScale,
     String? preset,
     bool? advanced,
     Object? sizeFraction = _unset,
@@ -262,6 +287,10 @@ class MinimapConfig {
     MinimapLooks? looks,
   }) => MinimapConfig(
     enabled: enabled ?? this.enabled,
+    onlyWhileGuidance: onlyWhileGuidance ?? this.onlyWhileGuidance,
+    guidanceOverlay: guidanceOverlay ?? this.guidanceOverlay,
+    etaBar: etaBar ?? this.etaBar,
+    overlayScale: overlayScale ?? this.overlayScale,
     preset: preset ?? this.preset,
     advanced: advanced ?? this.advanced,
     sizeFraction: identical(sizeFraction, _unset)
@@ -273,6 +302,10 @@ class MinimapConfig {
 
   Map<String, Object?> toJson() => <String, Object?>{
     'enabled': enabled,
+    'onlyWhileGuidance': onlyWhileGuidance,
+    'guidanceOverlay': guidanceOverlay,
+    'etaBar': etaBar,
+    'overlayScale': overlayScale,
     'preset': preset,
     'advanced': advanced,
     if (sizeFraction != null) 'sizeFraction': sizeFraction,
@@ -282,6 +315,10 @@ class MinimapConfig {
 
   factory MinimapConfig.fromJson(Map<String, Object?> json) => MinimapConfig(
     enabled: json['enabled'] as bool? ?? false,
+    onlyWhileGuidance: json['onlyWhileGuidance'] as bool? ?? false,
+    guidanceOverlay: json['guidanceOverlay'] as bool? ?? true,
+    etaBar: json['etaBar'] as bool? ?? true,
+    overlayScale: ((json['overlayScale'] as num?)?.toDouble() ?? 0.5).clamp(0.25, 1.0),
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
@@ -298,6 +335,10 @@ class MinimapConfig {
   bool operator ==(Object other) =>
       other is MinimapConfig &&
       other.enabled == enabled &&
+      other.onlyWhileGuidance == onlyWhileGuidance &&
+      other.guidanceOverlay == guidanceOverlay &&
+      other.etaBar == etaBar &&
+      other.overlayScale == overlayScale &&
       other.preset == preset &&
       other.advanced == advanced &&
       other.sizeFraction == sizeFraction &&
@@ -306,41 +347,139 @@ class MinimapConfig {
 
   @override
   int get hashCode =>
-      Object.hash(enabled, preset, advanced, sizeFraction, contentScale, looks);
+      Object.hash(enabled, onlyWhileGuidance, guidanceOverlay, etaBar,
+          overlayScale, preset, advanced, sizeFraction, contentScale, looks);
 }
+
+
+/// Effective minimap surface visibility (0057).
+///
+/// [navActive] is YNavi navigation-session truth (`navigationActive` stream).
+bool minimapSurfaceWanted(MinimapConfig mm, {required bool navActive}) =>
+    mm.enabled && (!mm.onlyWhileGuidance || navActive);
 
 /// What parts of the battery mark to show (icon pack vs percentage label).
 ///
-/// `both`     — pack + percentage (default).
+/// Kept as the low-level rendering axes; product UI picks a [BatteryLook]
+/// which maps onto these (0056 PDM names).
+///
+/// `both`     — pack + percentage.
 /// `iconOnly` — pack only (no separate % label below; [BatteryStyle.pctInside]
 ///              still paints % inside the pack).
 /// `textOnly` — percentage label only (no pack icon).
 enum BatteryContentMode { both, iconOnly, textOnly }
 
-/// Visual look of the battery pack icon.
+/// Visual look of the battery pack icon (low-level).
 ///
-/// `outline`   — Steam-Deck outline + continuous fill + nub (default / current).
+/// `outline`   — squarish bold outline + continuous fill + nub (default).
 /// `filled`    — segmented bars (4–5 blocks) inside the pack outline.
 /// `pctInside` — continuous fill with percentage text painted inside the pack
-///               (suppresses the separate % below when content includes icon).
+///               ([BatteryLook.batteryText] / 0062 dual-color clip).
 enum BatteryStyle { outline, filled, pctInside }
 
-/// Battery widget appearance config.
+/// Product battery looks (0056 PDM names).
+///
+/// 1. [battery]     — "Battery" — filled pack (icon only, continuous fill)
+/// 2. [batteryText] — "Battery + text" — pack with % inside (0062 dual-color)
+/// 3. [batteryBars] — "Battery with bars" — segmented
+/// 4. [justText]    — "Just text" — % only
+enum BatteryLook { battery, batteryText, batteryBars, justText }
+
+/// Map a [BatteryLook] onto contentMode + style.
+({BatteryContentMode contentMode, BatteryStyle style}) batteryLookParts(
+  BatteryLook look,
+) =>
+    switch (look) {
+      BatteryLook.battery => (
+          contentMode: BatteryContentMode.iconOnly,
+          style: BatteryStyle.outline,
+        ),
+      BatteryLook.batteryText => (
+          contentMode: BatteryContentMode.both,
+          // 0062: % lives inside the pack (dual-color clip), not below.
+          style: BatteryStyle.pctInside,
+        ),
+      BatteryLook.batteryBars => (
+          contentMode: BatteryContentMode.iconOnly,
+          style: BatteryStyle.filled,
+        ),
+      BatteryLook.justText => (
+          contentMode: BatteryContentMode.textOnly,
+          style: BatteryStyle.outline,
+        ),
+    };
+
+/// Derive [BatteryLook] from legacy contentMode + style (prefs migration).
+BatteryLook batteryLookFromParts(
+  BatteryContentMode contentMode,
+  BatteryStyle style,
+) {
+  if (contentMode == BatteryContentMode.textOnly) {
+    return BatteryLook.justText;
+  }
+  if (style == BatteryStyle.filled) {
+    return BatteryLook.batteryBars;
+  }
+  if (contentMode == BatteryContentMode.iconOnly) {
+    return BatteryLook.battery;
+  }
+  // both + outline/pctInside → Battery + text
+  return BatteryLook.batteryText;
+}
+
+/// Named placement for the battery cluster (icon + % + temp + charging kW).
+///
+/// Fine adjust (`vertFrac` / `sidePadFrac` / `horizBiasFrac`) rides on top of
+/// the preset's side. Selecting a preset in the DHU resets the fine knobs to
+/// that preset's defaults (see `batteryPlacementDefaults`).
+///
+/// `rightTop` is today's hard-coded top-right look and the config default.
+enum BatteryPlacement {
+  /// Left Safe-Area edge, top (mirror of [rightTop]).
+  left,
+
+  /// Right Safe-Area edge, mid-upper (below [rightTop]).
+  right,
+
+  /// Right Safe-Area edge, top — default / prior hard-coded placement.
+  rightTop,
+}
+
+/// Default fine-adjust knobs for a named [BatteryPlacement] preset.
+///
+/// Kept next to the enum so ConfigStore and `battery_geometry` share one
+/// source of truth (no hud/ → services cycle).
+({double vertFrac, double sidePadFrac}) batteryPlacementDefaults(
+  BatteryPlacement placement,
+) =>
+    switch (placement) {
+      BatteryPlacement.left => (vertFrac: 0.010, sidePadFrac: 0.04),
+      BatteryPlacement.right => (vertFrac: 0.35, sidePadFrac: 0.04),
+      BatteryPlacement.rightTop => (vertFrac: 0.010, sidePadFrac: 0.04),
+    };
+
+/// Battery widget appearance + placement config.
 ///
 /// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// contentMode = both, style = outline, sizeScale = 1.0.  The charging stats
-/// panel is show-while-charging — it appears automatically when the car
-/// reports charging and is hidden otherwise (app policy per ADR 0003);
-/// showChargingStats merely lets the user suppress the panel entirely if they
-/// prefer.
+/// look = batteryText (PDM "Battery + text", % inside pack), sizeScale = 1.0, placement =
+/// rightTop with vertFrac/sidePadFrac matching today's hard-coded top-right
+/// slot. The charging stats panel is show-while-charging — it appears
+/// automatically when the car reports charging and is hidden otherwise (app
+/// policy per ADR 0003); showChargingStats merely lets the user suppress the
+/// panel entirely if they prefer.
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
     this.sizeScale = 1.0,
+    this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
-    this.style = BatteryStyle.outline,
+    this.style = BatteryStyle.pctInside,
+    this.placement = BatteryPlacement.rightTop,
+    this.vertFrac = 0.010,
+    this.sidePadFrac = 0.04,
+    this.horizBiasFrac = 0.0,
   });
 
   /// Whether to render the battery indicator at all.
@@ -357,35 +496,106 @@ class BatteryConfig {
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
 
-  /// Icon vs text content mode (pack / percentage / both).
+  /// Product look (0056 PDM). Source of truth for contentMode + style when
+  /// set via [withLook] / [copyWith] `look:`.
+  final BatteryLook look;
+
+  /// Icon vs text content mode (pack / percentage / both). Kept in sync with
+  /// [look] by [withLook]; still writable for Feedback Loop / legacy prefs.
   final BatteryContentMode contentMode;
 
-  /// Pack visual style (outline / filled segments / % inside).
+  /// Pack visual style (outline / filled segments / % inside). Kept in sync
+  /// with [look] by [withLook].
   final BatteryStyle style;
+
+  /// Named side/corner preset. Fine adjust fields below override the preset's
+  /// default fractions without changing the active side.
+  final BatteryPlacement placement;
+
+  /// Top edge of the battery slot as a fraction of Safe Area height (0 = top).
+  final double vertFrac;
+
+  /// Inward padding from the active edge as a fraction of Safe Area width.
+  final double sidePadFrac;
+
+  /// Horizontal bias as a fraction of Safe Area width (−0.25…0.25). Positive
+  /// shifts the cluster toward the right (same convention as blinker).
+  final double horizBiasFrac;
 
   BatteryConfig copyWith({
     bool? showBattery,
     bool? showTemp,
     bool? showChargingStats,
     double? sizeScale,
+    BatteryLook? look,
     BatteryContentMode? contentMode,
     BatteryStyle? style,
-  }) => BatteryConfig(
-    showBattery: showBattery ?? this.showBattery,
-    showTemp: showTemp ?? this.showTemp,
-    showChargingStats: showChargingStats ?? this.showChargingStats,
-    sizeScale: sizeScale ?? this.sizeScale,
-    contentMode: contentMode ?? this.contentMode,
-    style: style ?? this.style,
-  );
+    BatteryPlacement? placement,
+    double? vertFrac,
+    double? sidePadFrac,
+    double? horizBiasFrac,
+  }) {
+    // Prefer explicit look; else if contentMode/style change without look,
+    // re-derive look so product picker stays coherent.
+    final BatteryLook nextLook;
+    final BatteryContentMode nextMode;
+    final BatteryStyle nextStyle;
+    if (look != null) {
+      nextLook = look;
+      final parts = batteryLookParts(look);
+      nextMode = parts.contentMode;
+      nextStyle = parts.style;
+    } else if (contentMode != null || style != null) {
+      nextMode = contentMode ?? this.contentMode;
+      nextStyle = style ?? this.style;
+      nextLook = batteryLookFromParts(nextMode, nextStyle);
+    } else {
+      nextLook = this.look;
+      nextMode = this.contentMode;
+      nextStyle = this.style;
+    }
+    return BatteryConfig(
+      showBattery: showBattery ?? this.showBattery,
+      showTemp: showTemp ?? this.showTemp,
+      showChargingStats: showChargingStats ?? this.showChargingStats,
+      sizeScale: sizeScale ?? this.sizeScale,
+      look: nextLook,
+      contentMode: nextMode,
+      style: nextStyle,
+      placement: placement ?? this.placement,
+      vertFrac: vertFrac ?? this.vertFrac,
+      sidePadFrac: sidePadFrac ?? this.sidePadFrac,
+      horizBiasFrac: horizBiasFrac ?? this.horizBiasFrac,
+    );
+  }
+
+  /// Apply a named product [look] (0056 PDM) and sync contentMode + style.
+  BatteryConfig withLook(BatteryLook look) => copyWith(look: look);
+
+  /// Apply a named [placement] and reset fine-adjust knobs to that preset's
+  /// defaults (left / right / rightTop).
+  BatteryConfig withPlacement(BatteryPlacement placement) {
+    final defaults = batteryPlacementDefaults(placement);
+    return copyWith(
+      placement: placement,
+      vertFrac: defaults.vertFrac,
+      sidePadFrac: defaults.sidePadFrac,
+      horizBiasFrac: 0.0,
+    );
+  }
 
   Map<String, Object?> toJson() => <String, Object?>{
     'showBattery': showBattery,
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'sizeScale': sizeScale,
+    'look': look.name,
     'contentMode': contentMode.name,
     'style': style.name,
+    'placement': placement.name,
+    'vertFrac': vertFrac,
+    'sidePadFrac': sidePadFrac,
+    'horizBiasFrac': horizBiasFrac,
   };
 
   factory BatteryConfig.fromJson(Map<String, Object?> json) {
@@ -400,16 +610,41 @@ class BatteryConfig {
     final style = styleName != null
         ? BatteryStyle.values.firstWhere(
             (e) => e.name == styleName,
-            orElse: () => BatteryStyle.outline,
+            orElse: () => BatteryStyle.pctInside,
           )
-        : BatteryStyle.outline;
+        : BatteryStyle.pctInside;
+    final lookName = json['look'] as String?;
+    final hasLook = lookName != null;
+    final look = hasLook
+        ? BatteryLook.values.firstWhere(
+            (e) => e.name == lookName,
+            orElse: () => batteryLookFromParts(contentMode, style),
+          )
+        : batteryLookFromParts(contentMode, style);
+    // look key present → parts follow look (product source of truth).
+    // Legacy prefs without look → keep contentMode/style (e.g. pctInside).
+    final parts = batteryLookParts(look);
+    final resolvedMode = hasLook ? parts.contentMode : contentMode;
+    final resolvedStyle = hasLook ? parts.style : style;
+    final placementName = json['placement'] as String?;
+    final placement = placementName != null
+        ? BatteryPlacement.values.firstWhere(
+            (e) => e.name == placementName,
+            orElse: () => BatteryPlacement.rightTop,
+          )
+        : BatteryPlacement.rightTop;
     return BatteryConfig(
       showBattery: json['showBattery'] as bool? ?? true,
       showTemp: json['showTemp'] as bool? ?? true,
       showChargingStats: json['showChargingStats'] as bool? ?? true,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
-      contentMode: contentMode,
-      style: style,
+      look: look,
+      contentMode: resolvedMode,
+      style: resolvedStyle,
+      placement: placement,
+      vertFrac: (json['vertFrac'] as num?)?.toDouble() ?? 0.010,
+      sidePadFrac: (json['sidePadFrac'] as num?)?.toDouble() ?? 0.04,
+      horizBiasFrac: (json['horizBiasFrac'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -420,8 +655,13 @@ class BatteryConfig {
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
       other.sizeScale == sizeScale &&
+      other.look == look &&
       other.contentMode == contentMode &&
-      other.style == style;
+      other.style == style &&
+      other.placement == placement &&
+      other.vertFrac == vertFrac &&
+      other.sidePadFrac == sidePadFrac &&
+      other.horizBiasFrac == horizBiasFrac;
 
   @override
   int get hashCode => Object.hash(
@@ -429,8 +669,13 @@ class BatteryConfig {
     showTemp,
     showChargingStats,
     sizeScale,
+    look,
     contentMode,
     style,
+    placement,
+    vertFrac,
+    sidePadFrac,
+    horizBiasFrac,
   );
 }
 
@@ -638,22 +883,27 @@ enum SpeedcamRefreshPolicy {
 
 class SpeedcamConfig {
   const SpeedcamConfig({
-    this.hudRadarEnabled = true,
+    this.hudMode = SpeedcamPresenceMode.any,
+    this.soundMode = SpeedcamPresenceMode.dangerous,
     this.dhuRangeM = 2000,
-    this.soundEnabled = true,
+    this.soundVolume = 0.85,
     this.radarLook = SpeedcamRadarLook.defaultLook,
     this.refreshPolicy = SpeedcamRefreshPolicy.manualOnly,
     this.staleAfterDays = 7,
+    this.dhuSystemOverlay = false,
   });
 
-  /// Paint radar on the HUD windshield when enabled (idle frame OK).
-  final bool hudRadarEnabled;
+  /// HUD radar/presence mode (default [SpeedcamPresenceMode.any]).
+  final SpeedcamPresenceMode hudMode;
 
-  /// DHU large-radar display radius in metres (zoom-out; approach stays 500 m).
+  /// Alert sound mode (default [SpeedcamPresenceMode.dangerous]).
+  final SpeedcamPresenceMode soundMode;
+
+  /// Alert presence + DHU radar radius in metres (prefs → approachRadiusM).
   final double dhuRangeM;
 
-  /// Play approach sting when [insideApproach] flips true.
-  final bool soundEnabled;
+  /// Alert sound volume 0.0 (mute) … 1.0. Applied to sting + Alien ping.
+  final double soundVolume;
 
   /// Visual language: Default (HUD-clean) vs Alien (motion-tracker CRT).
   final SpeedcamRadarLook radarLook;
@@ -664,30 +914,64 @@ class SpeedcamConfig {
   /// Age in days after which [SpeedcamRefreshPolicy.ifStale] refetches.
   final int staleAfterDays;
 
+  /// 0065: always-on-top Speedcam plate on the DHU (SYSTEM_ALERT_WINDOW).
+  final bool dhuSystemOverlay;
+
+  /// Legacy: HUD paint not Off (0060 migration / dumpState).
+  bool get hudRadarEnabled => hudMode != SpeedcamPresenceMode.off;
+
+  /// Legacy: sound not Off (0060 migration / dumpState).
+  bool get soundEnabled => soundMode != SpeedcamPresenceMode.off;
+
   SpeedcamConfig copyWith({
-    bool? hudRadarEnabled,
+    SpeedcamPresenceMode? hudMode,
+    SpeedcamPresenceMode? soundMode,
     double? dhuRangeM,
-    bool? soundEnabled,
+    double? soundVolume,
     SpeedcamRadarLook? radarLook,
     SpeedcamRefreshPolicy? refreshPolicy,
     int? staleAfterDays,
-  }) =>
-      SpeedcamConfig(
-        hudRadarEnabled: hudRadarEnabled ?? this.hudRadarEnabled,
-        dhuRangeM: dhuRangeM ?? this.dhuRangeM,
-        soundEnabled: soundEnabled ?? this.soundEnabled,
-        radarLook: radarLook ?? this.radarLook,
-        refreshPolicy: refreshPolicy ?? this.refreshPolicy,
-        staleAfterDays: staleAfterDays ?? this.staleAfterDays,
-      );
+    bool? dhuSystemOverlay,
+    // Legacy bool shims — prefer [hudMode] / [soundMode].
+    bool? hudRadarEnabled,
+    bool? soundEnabled,
+  }) {
+    var nextHud = hudMode ?? this.hudMode;
+    var nextSound = soundMode ?? this.soundMode;
+    if (hudMode == null && hudRadarEnabled != null) {
+      nextHud = hudRadarEnabled
+          ? SpeedcamPresenceMode.any
+          : SpeedcamPresenceMode.off;
+    }
+    if (soundMode == null && soundEnabled != null) {
+      nextSound = soundEnabled
+          ? SpeedcamPresenceMode.dangerous
+          : SpeedcamPresenceMode.off;
+    }
+    return SpeedcamConfig(
+      hudMode: nextHud,
+      soundMode: nextSound,
+      dhuRangeM: dhuRangeM ?? this.dhuRangeM,
+      soundVolume: soundVolume ?? this.soundVolume,
+      radarLook: radarLook ?? this.radarLook,
+      refreshPolicy: refreshPolicy ?? this.refreshPolicy,
+      staleAfterDays: staleAfterDays ?? this.staleAfterDays,
+      dhuSystemOverlay: dhuSystemOverlay ?? this.dhuSystemOverlay,
+    );
+  }
 
   Map<String, Object?> toJson() => <String, Object?>{
+        'hudMode': hudMode.name,
+        'soundMode': soundMode.name,
+        // Legacy mirrors for older readers / dumpState.
         'hudRadarEnabled': hudRadarEnabled,
         'dhuRangeM': dhuRangeM,
         'soundEnabled': soundEnabled,
+        'soundVolume': soundVolume,
         'radarLook': radarLook.name,
         'refreshPolicy': refreshPolicy.name,
         'staleAfterDays': staleAfterDays,
+        'dhuSystemOverlay': dhuSystemOverlay,
       };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
@@ -701,35 +985,68 @@ class SpeedcamConfig {
       (e) => e.name == lookName || (lookName == 'default' && e == SpeedcamRadarLook.defaultLook),
       orElse: () => SpeedcamRadarLook.defaultLook,
     );
+    final vol = (json['soundVolume'] as num?)?.toDouble() ?? 0.85;
     return SpeedcamConfig(
-      hudRadarEnabled: json['hudRadarEnabled'] as bool? ?? true,
+      hudMode: _presenceModeFromJson(
+        json['hudMode'],
+        legacyBool: json['hudRadarEnabled'] as bool?,
+        legacyTrue: SpeedcamPresenceMode.any,
+        defaultMode: SpeedcamPresenceMode.any,
+      ),
+      soundMode: _presenceModeFromJson(
+        json['soundMode'],
+        legacyBool: json['soundEnabled'] as bool?,
+        legacyTrue: SpeedcamPresenceMode.dangerous,
+        defaultMode: SpeedcamPresenceMode.dangerous,
+      ),
       dhuRangeM: (json['dhuRangeM'] as num?)?.toDouble() ?? 2000,
-      soundEnabled: json['soundEnabled'] as bool? ?? true,
+      soundVolume: vol.clamp(0.0, 1.0),
       radarLook: look,
       refreshPolicy: policy,
       staleAfterDays: (json['staleAfterDays'] as num?)?.toInt() ?? 7,
+      dhuSystemOverlay: json['dhuSystemOverlay'] as bool? ?? false,
     );
   }
 
   @override
   bool operator ==(Object other) =>
       other is SpeedcamConfig &&
-      other.hudRadarEnabled == hudRadarEnabled &&
+      other.hudMode == hudMode &&
+      other.soundMode == soundMode &&
       other.dhuRangeM == dhuRangeM &&
-      other.soundEnabled == soundEnabled &&
+      other.soundVolume == soundVolume &&
       other.radarLook == radarLook &&
       other.refreshPolicy == refreshPolicy &&
-      other.staleAfterDays == staleAfterDays;
+      other.staleAfterDays == staleAfterDays &&
+      other.dhuSystemOverlay == dhuSystemOverlay;
 
   @override
   int get hashCode => Object.hash(
-        hudRadarEnabled,
+        hudMode,
+        soundMode,
         dhuRangeM,
-        soundEnabled,
+        soundVolume,
         radarLook,
         refreshPolicy,
         staleAfterDays,
+        dhuSystemOverlay,
       );
+}
+
+SpeedcamPresenceMode _presenceModeFromJson(
+  Object? raw, {
+  required bool? legacyBool,
+  required SpeedcamPresenceMode legacyTrue,
+  required SpeedcamPresenceMode defaultMode,
+}) {
+  if (raw is String) {
+    for (final m in SpeedcamPresenceMode.values) {
+      if (m.name == raw) return m;
+    }
+  }
+  if (legacyBool == false) return SpeedcamPresenceMode.off;
+  if (legacyBool == true) return legacyTrue;
+  return defaultMode;
 }
 
 /// Minimal app configuration.

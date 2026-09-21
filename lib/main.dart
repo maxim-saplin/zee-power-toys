@@ -19,6 +19,10 @@ import 'services/adapters/native_hud_host.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_package_status.dart';
 import 'services/adapters/native_minimap_host.dart';
+import 'services/adapters/native_speedcam_location.dart';
+import 'services/adapters/native_speedcam_system_overlay.dart';
+import 'services/fakes/fake_speedcam_system_overlay.dart';
+import 'services/speedcam_system_overlay.dart';
 import 'services/adapters/native_system_config.dart';
 import 'services/adapters/native_usb_mode.dart';
 import 'services/car_signals.dart';
@@ -129,7 +133,19 @@ Future<void> dhuMain(List<String> args) async {
   final SpeedcamService speedcamRaw = DefaultSpeedcamService(
     packStore: speedcamPackRaw,
   );
+
+  // 0050: YNavi sendLocation + Android GPS fallback → Speedcam host pose.
+  // Runtime permission via zee/speedcam/location_ctl (0050 HARD) — not ADB.
+  NativeSpeedcamLocation? speedcamLocationRaw;
+  if (!kIsWeb && Platform.isAndroid) {
+    speedcamLocationRaw = NativeSpeedcamLocation(speedcamRaw)..start();
+  }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
+  final SpeedcamSystemOverlay speedcamOverlayRaw =
+      (!kIsWeb && Platform.isAndroid)
+      ? NativeSpeedcamSystemOverlay()
+      : FakeSpeedcamSystemOverlay();
+  _speedcamOverlay = speedcamOverlayRaw;
 
   // On Android, use NativeSystemConfig which reads the real system locale
   // and attempts privileged writes via AdaptAPI (guarded; T3-only on success).
@@ -175,6 +191,8 @@ Future<void> dhuMain(List<String> args) async {
       speedcamServiceProvider.overrideWithValue(speedcamRaw),
       speedcamPackStoreProvider.overrideWithValue(speedcamPackRaw),
       speedcamAlertProvider.overrideWithValue(speedcamAlertRaw),
+      speedcamSystemOverlayProvider.overrideWithValue(speedcamOverlayRaw),
+      speedcamLocationProvider.overrideWithValue(speedcamLocationRaw),
       systemConfigProvider.overrideWithValue(systemConfigRaw),
       usbModeProvider.overrideWithValue(usbModeRaw),
     ],
@@ -192,6 +210,7 @@ Future<void> dhuMain(List<String> args) async {
   // Idempotent on the native side (setMinimap is a NOOP when already in state).
   // Fires once on startup (persisted config) and on every subsequent change.
   _applyMinimapConfig(minimapHostRaw, store.value);
+  _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, store.value, speedcamOverlayRaw);
 
   // Listen for dynamic hudEnabled toggles: show()/hide() the HUD engine.
   // store.changes only fires on explicit setConfig; the initial state at boot
@@ -208,6 +227,7 @@ Future<void> dhuMain(List<String> args) async {
       }
     }
     _applyMinimapConfig(minimapHostRaw, cfg);
+    _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg, speedcamOverlayRaw);
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
@@ -259,7 +279,20 @@ Future<void> dhuMain(List<String> args) async {
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
   carSignalsRaw.events.listen(pushCarSignalToHud);
   // Speedcam (0033): DHU owns pack+pose; HUD paints CRT from relay.
-  speedcamRaw.snapshots.listen(pushSpeedcamToHud);
+  speedcamRaw.snapshots.listen((snap) {
+    pushSpeedcamToHud(snap);
+    _pushSpeedcamSystemOverlay(snap, store.value.speedcam);
+  });
+  // Guidance (0055 FAIL): NativeMinimapHost EventChannel lives on DHU only;
+  // hudMain overrides minimapHost with FakeMinimapHost — relay trip events so
+  // latestGuidanceProvider on the HUD engine (FL/diagnostics; 0055 no Flutter plate).
+  minimapHostRaw.guidance.listen(pushGuidanceToHud);
+  // 0057: real navigation-session truth → surface gate + HUD chrome relay.
+  minimapHostRaw.navigationActive.listen((active) {
+    _ynaviNavActive = active;
+    _applyMinimapConfig(minimapHostRaw, store.value);
+    pushNavActiveToHud(active);
+  });
 
   registerZeeExtensions(
     surface: 'dhu',
@@ -309,6 +342,10 @@ void hudMain(List<String> args) {
   final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
   final speedcamAlert = AudioSpeedcamAlert();
+  // HUD MinimapHost is a relay sink for GuidanceEvent (0055 FAIL). Native
+  // EventChannel is registered on the DHU engine only; this fake re-emits
+  // relayed trip rows for latestGuidanceProvider (FL; paint is YNavi native).
+  final minimapHost = FakeMinimapHost();
 
   registerZeeExtensions(
     surface: 'hud',
@@ -321,10 +358,18 @@ void hudMain(List<String> args) {
 
   // Seed from persisted prefs, then arm the relay listener.
   store.load().then((_) {
+    // Apply persisted alert volume before any approach (0059 slider).
+    speedcamAlert.setVolume(store.value.speedcam.soundVolume);
     listenForRelay(
-      onConfig: (cfg) => store.setConfig(cfg),
+      onConfig: (cfg) {
+        store.setConfig(cfg);
+        speedcamAlert.setVolume(cfg.speedcam.soundVolume);
+        speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
+      },
       onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
       onSpeedcam: speedcam.applyRelaySnapshot,
+      onGuidance: minimapHost.emitGuidance,
+      onNavActive: minimapHost.emitNavigationActive,
     );
   });
 
@@ -333,13 +378,14 @@ void hudMain(List<String> args) {
       overrides: [
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(carSignals),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
+        minimapHostProvider.overrideWithValue(minimapHost),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
         packageStatusProvider.overrideWithValue(FakePackageStatus()),
         speedcamServiceProvider.overrideWithValue(speedcam),
         speedcamPackStoreProvider.overrideWithValue(speedcamPack),
         speedcamAlertProvider.overrideWithValue(speedcamAlert),
+        speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],
@@ -425,6 +471,10 @@ int _hudDpi = 213; // Zeekr S2 / T2 emulator density; updated from onHudReady.
 /// displayId — the app is the source of truth for its own geometry.
 int? _hudDisplayId;
 
+/// Latest YNavi navigation-session flag (0057). Updated from
+/// [MinimapHost.navigationActive]; drives onlyWhileGuidance surface gating.
+bool _ynaviNavActive = false;
+
 /// Last minimap viewport [Rect] computed by [_applyMinimapConfig] (Block
 /// 0027) — the exact ROI the pixel verifier must crop to check the minimap,
 /// regardless of whether the minimap is currently enabled (the geometry is
@@ -455,6 +505,69 @@ String? _lastMinimapNative;
 /// the viewport rect before parkForYNavi triggers the YNavi surface start.
 ///
 /// Called once on startup and on every config change (both paths are idempotent).
+SpeedcamSystemOverlay? _speedcamOverlay;
+
+void _pushSpeedcamSystemOverlay(SpeedcamSnapshot snap, SpeedcamConfig sc) {
+  final overlay = _speedcamOverlay;
+  if (overlay == null || !sc.dhuSystemOverlay) return;
+  final danger = snap.danger;
+  final host = snap.host;
+  final visible = snap.enabled &&
+      danger != null &&
+      host != null &&
+      danger.insideApproach &&
+      camPassesPresenceMode(
+        mode: sc.hudMode,
+        cam: danger.cam,
+        host: host,
+        approachRadiusM: snap.approachRadiusM,
+        distanceM: danger.distanceM,
+      );
+  final title = danger == null
+      ? ''
+      : (danger.cam.maxspeed != null
+          ? '${danger.distanceM.round()} m · ${danger.cam.maxspeed} km/h'
+          : '${danger.distanceM.round()} m');
+  final subtitle = danger == null ? '' : 'Speedcam';
+  final dangerous = danger != null &&
+      host != null &&
+      camPassesPresenceMode(
+        mode: SpeedcamPresenceMode.dangerous,
+        cam: danger.cam,
+        host: host,
+        approachRadiusM: snap.approachRadiusM,
+        distanceM: danger.distanceM,
+      );
+  overlay
+      .update(
+        visible: visible,
+        title: title,
+        subtitle: subtitle,
+        distanceM: danger?.distanceM,
+        dangerous: dangerous,
+      )
+      .catchError((_) {});
+}
+
+void _applySpeedcamConfig(
+  SpeedcamService speedcam,
+  SpeedcamAlert alert,
+  AppConfig cfg, [
+  SpeedcamSystemOverlay? overlay,
+]) {
+  final sc = cfg.speedcam;
+  if (speedcam is DefaultSpeedcamService) {
+    speedcam.setApproachRadiusM(sc.dhuRangeM);
+  } else if (speedcam is FakeSpeedcamService) {
+    speedcam.setApproachRadiusM(sc.dhuRangeM);
+  }
+  alert.setVolume(sc.soundVolume);
+  overlay?.setEnabled(sc.dhuSystemOverlay).catchError((_) {});
+  if (!sc.dhuSystemOverlay) {
+    overlay?.hide().catchError((_) {});
+  }
+}
+
 void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   final mm = cfg.minimap;
   // Compute the phase0 square viewport from dp constants × real density.
@@ -473,16 +586,27 @@ void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {
   if (mm.enabled) {
     host.setBounds(bounds).catchError((_) {});
   }
+  // 0057: keep YNavi bind alive whenever minimap is enabled so navigationStarted
+  // still arrives while onlyWhileGuidance is hiding the TextureView. Soft-hide
+  // via setSurfaceVisible — never enable(false) solely for guidance gating.
   host
       .enable(mm.enabled)
       .then((r) => _lastMinimapNative = r)
       .catchError((e) => _lastMinimapNative = 'error:$e');
+  if (mm.enabled) {
+    final show = minimapSurfaceWanted(mm, navActive: _ynaviNavActive);
+    host.setSurfaceVisible(show).catchError((_) {});
+  }
   // Look + content density (Block 0028): colour filter knobs + phase0
   // minimapScale (contentScale). Native cold-rebinds YNavi when scale changes.
   final scale = mm.contentScale.clamp(0.3, 1.0);
   final params = <String, Object?>{
     ...mm.looks.toParams(),
     'minimapScale': scale,
+    // 0055 / Zee HUD 2: native GuidanceOverlayView toggles (not Flutter plate).
+    'guidance_overlay': mm.guidanceOverlay,
+    'eta_bar': mm.etaBar,
+    'overlay_scale': mm.overlayScale.clamp(0.25, 1.0),
   };
   host.setParams(params).catchError((_) {});
 }

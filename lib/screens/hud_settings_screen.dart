@@ -308,38 +308,58 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
               ),
               const SizedBox(height: Insets.md),
               Text(
-                l10n.batteryContentMode,
+                l10n.batteryLook,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: Insets.sm),
-              SegmentedButton<BatteryContentMode>(
-                segments: <ButtonSegment<BatteryContentMode>>[
-                  ButtonSegment(
-                    value: BatteryContentMode.both,
-                    label: Text(l10n.batteryContentBoth),
-                    icon: const Icon(Icons.battery_full),
+              // 0056 PDM names — Wrap so long labels fit DHU width.
+              Wrap(
+                spacing: Insets.sm,
+                runSpacing: Insets.sm,
+                children: <Widget>[
+                  ChoiceChip(
+                    key: const ValueKey('battery-look-battery'),
+                    label: Text(l10n.batteryLookBattery),
+                    selected: batteryCfg.look == BatteryLook.battery,
+                    onSelected: (_) => store.setConfig(
+                      store.value.copyWith(
+                        battery: batteryCfg.withLook(BatteryLook.battery),
+                      ),
+                    ),
                   ),
-                  ButtonSegment(
-                    value: BatteryContentMode.iconOnly,
-                    label: Text(l10n.batteryContentIconOnly),
-                    icon: const Icon(Icons.battery_std),
+                  ChoiceChip(
+                    key: const ValueKey('battery-look-battery-text'),
+                    label: Text(l10n.batteryLookBatteryText),
+                    selected: batteryCfg.look == BatteryLook.batteryText,
+                    onSelected: (_) => store.setConfig(
+                      store.value.copyWith(
+                        battery: batteryCfg.withLook(BatteryLook.batteryText),
+                      ),
+                    ),
                   ),
-                  ButtonSegment(
-                    value: BatteryContentMode.textOnly,
-                    label: Text(l10n.batteryContentTextOnly),
-                    icon: const Icon(Icons.text_fields),
+                  ChoiceChip(
+                    key: const ValueKey('battery-look-battery-bars'),
+                    label: Text(l10n.batteryLookBatteryBars),
+                    selected: batteryCfg.look == BatteryLook.batteryBars,
+                    onSelected: (_) => store.setConfig(
+                      store.value.copyWith(
+                        battery: batteryCfg.withLook(BatteryLook.batteryBars),
+                      ),
+                    ),
+                  ),
+                  ChoiceChip(
+                    key: const ValueKey('battery-look-just-text'),
+                    label: Text(l10n.batteryLookJustText),
+                    selected: batteryCfg.look == BatteryLook.justText,
+                    onSelected: (_) => store.setConfig(
+                      store.value.copyWith(
+                        battery: batteryCfg.withLook(BatteryLook.justText),
+                      ),
+                    ),
                   ),
                 ],
-                selected: <BatteryContentMode>{batteryCfg.contentMode},
-                onSelectionChanged: (Set<BatteryContentMode> sel) {
-                  if (sel.isEmpty) return;
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(contentMode: sel.first),
-                    ),
-                  );
-                },
               ),
+              // Legacy FL keys — map onto PDM looks (keep Feedback Loop taps).
               Opacity(
                 opacity: 0,
                 child: Row(
@@ -348,9 +368,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                       key: const ValueKey('battery-content-both'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            contentMode: BatteryContentMode.both,
-                          ),
+                          battery: batteryCfg.withLook(BatteryLook.batteryText),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
@@ -359,9 +377,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                       key: const ValueKey('battery-content-icon-only'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            contentMode: BatteryContentMode.iconOnly,
-                          ),
+                          battery: batteryCfg.withLook(BatteryLook.battery),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
@@ -370,60 +386,22 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                       key: const ValueKey('battery-content-text-only'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            contentMode: BatteryContentMode.textOnly,
-                          ),
+                          battery: batteryCfg.withLook(BatteryLook.justText),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Insets.md),
-              Text(
-                l10n.batteryStyle,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: Insets.sm),
-              SegmentedButton<BatteryStyle>(
-                segments: <ButtonSegment<BatteryStyle>>[
-                  ButtonSegment(
-                    value: BatteryStyle.outline,
-                    label: Text(l10n.batteryStyleOutline),
-                    icon: const Icon(Icons.battery_saver_outlined),
-                  ),
-                  ButtonSegment(
-                    value: BatteryStyle.filled,
-                    label: Text(l10n.batteryStyleFilled),
-                    icon: const Icon(Icons.view_column),
-                  ),
-                  ButtonSegment(
-                    value: BatteryStyle.pctInside,
-                    label: Text(l10n.batteryStylePctInside),
-                    icon: const Icon(Icons.pin),
-                  ),
-                ],
-                selected: <BatteryStyle>{batteryCfg.style},
-                onSelectionChanged: (Set<BatteryStyle> sel) {
-                  if (sel.isEmpty) return;
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(style: sel.first),
-                    ),
-                  );
-                },
-              ),
-              Opacity(
-                opacity: 0,
-                child: Row(
-                  children: <Widget>[
                     GestureDetector(
                       key: const ValueKey('battery-style-outline'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            style: BatteryStyle.outline,
+                          battery: batteryCfg.withLook(
+                            batteryCfg.contentMode == BatteryContentMode.textOnly
+                                ? BatteryLook.justText
+                                : batteryCfg.contentMode ==
+                                        BatteryContentMode.iconOnly
+                                    ? BatteryLook.battery
+                                    : BatteryLook.batteryText,
                           ),
                         ),
                       ),
@@ -433,9 +411,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                       key: const ValueKey('battery-style-filled'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            style: BatteryStyle.filled,
-                          ),
+                          battery: batteryCfg.withLook(BatteryLook.batteryBars),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
@@ -444,9 +420,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                       key: const ValueKey('battery-style-pct-inside'),
                       onTap: () => store.setConfig(
                         store.value.copyWith(
-                          battery: batteryCfg.copyWith(
-                            style: BatteryStyle.pctInside,
-                          ),
+                          battery: batteryCfg.withLook(BatteryLook.batteryText),
                         ),
                       ),
                       child: const SizedBox(width: 1, height: 1),
@@ -477,6 +451,140 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                     ),
                   ),
                 ),
+              ),
+              const SizedBox(height: Insets.md),
+              Text(
+                l10n.batteryPlacement,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: Insets.sm),
+              SegmentedButton<BatteryPlacement>(
+                segments: <ButtonSegment<BatteryPlacement>>[
+                  ButtonSegment(
+                    value: BatteryPlacement.left,
+                    label: Text(l10n.batteryPlacementLeft),
+                    icon: const Icon(Icons.align_horizontal_left),
+                  ),
+                  ButtonSegment(
+                    value: BatteryPlacement.right,
+                    label: Text(l10n.batteryPlacementRight),
+                    icon: const Icon(Icons.align_horizontal_right),
+                  ),
+                  ButtonSegment(
+                    value: BatteryPlacement.rightTop,
+                    label: Text(l10n.batteryPlacementRightTop),
+                    icon: const Icon(Icons.vertical_align_top),
+                  ),
+                ],
+                selected: <BatteryPlacement>{batteryCfg.placement},
+                onSelectionChanged: (Set<BatteryPlacement> sel) {
+                  if (sel.isEmpty) return;
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.withPlacement(sel.first),
+                    ),
+                  );
+                },
+              ),
+              Opacity(
+                opacity: 0,
+                child: Row(
+                  children: <Widget>[
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-left'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.left,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-right'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.right,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-right-top'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.rightTop,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batteryVerticalPosition,
+                valueLabel:
+                    '${(batteryCfg.vertFrac * 100).toStringAsFixed(0)}%',
+                minLabel: l10n.positionTop,
+                maxLabel: l10n.positionBottom,
+                sliderKey: const ValueKey('battery-vert'),
+                min: 0.0,
+                max: 0.7,
+                divisions: 70,
+                value: batteryCfg.vertFrac.clamp(0.0, 0.7),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(vertFrac: v),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batterySidePadding,
+                valueLabel:
+                    '${(batteryCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
+                minLabel: l10n.positionEdge,
+                maxLabel: '35%',
+                sliderKey: const ValueKey('battery-side-pad'),
+                min: 0.0,
+                max: 0.35,
+                divisions: 35,
+                value: batteryCfg.sidePadFrac.clamp(0.0, 0.35),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(sidePadFrac: v),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Insets.md),
+              SettingsSlider(
+                label: l10n.batteryHorizBias,
+                valueLabel:
+                    '${(batteryCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
+                minLabel: '←',
+                maxLabel: '→',
+                sliderKey: const ValueKey('battery-horiz-bias'),
+                min: -0.25,
+                max: 0.25,
+                divisions: 50,
+                value: batteryCfg.horizBiasFrac.clamp(-0.25, 0.25),
+                onChanged: (v) {
+                  store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(horizBiasFrac: v),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: Insets.md),
               SettingsSlider(

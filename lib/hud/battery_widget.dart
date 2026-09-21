@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
+import 'battery_geometry.dart';
 
 /// Emissive HUD battery indicator for the BATTERY slot.
 ///
@@ -11,11 +12,10 @@ import '../services/config_store.dart';
 /// [BatteryConfig.contentMode] / [BatteryConfig.style]. Temperature
 /// [batteryTempCProvider] is shown when [BatteryConfig.showTemp] is set.
 ///
-/// Pack styles ([BatteryStyle]):
-///   outline   — Steam-Deck outline + continuous fill + nub (default)
-///   filled    — 5 segment bars inside the pack
-///   pctInside — continuous fill with % text painted inside the pack
-///               (no duplicate % below when content includes the icon)
+/// Pack styles ([BatteryStyle]) — driven by [BatteryLook] (0056 PDM):
+///   outline   — squarish outline + continuous fill + nub (default)
+///   filled    — 5 segment bars inside the pack ("Battery with bars")
+///   pctInside — continuous fill with % text inside the pack (0062 dual-color)
 ///
 /// Low-battery colour ramp (mirrors Steam Deck UX):
 ///   ≥ 30 %  → [_kFillGreen]   (emissive green)
@@ -122,31 +122,29 @@ class BatteryWidget extends ConsumerWidget {
       fontSize: base * 0.45,
       height: 1.0,
     );
-    final inlinePctStyle = TextStyle(
-      color: _kTextPrimary,
-      fontSize: bodyH * 0.48,
-      fontWeight: FontWeight.w700,
-      height: 1.0,
-      shadows: const <Shadow>[
-        Shadow(color: Color(0xFF000000), blurRadius: 2),
-      ],
-    );
-
     final pctLabel = pct != null ? '$pct%' : '--%';
+
+    // Align the cluster toward the active edge so left placement mirrors
+    // right without changing pack/styles (0051). Temp + charging stay in
+    // this Column, so they move with the battery.
+    final alignEnd = cfg.placement != BatteryPlacement.left;
+    final clusterAlign =
+        alignEnd ? Alignment.topRight : Alignment.topLeft;
+    final clusterCross =
+        alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
     return Padding(
       // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
-      // FittedBox around the WHOLE panel (icon, pct, temp, charging-stats) —
-      // kept as a safety net, not removed (Block 0026 fixed a real overflow
-      // this way). See prior layout notes: vertical stack so sizeScale remains
-      // honest against the tall-narrow BATTERY slot.
-      child: FittedBox(
-        alignment: Alignment.topRight,
-        fit: BoxFit.scaleDown,
+      // 0067b: no FittedBox(scaleDown) — it reversed sizeScale past ~1.5×
+      // once content exceeded the slot. Slot grows with sizeScale in
+      // batteryClusterSlotFracs; Align keeps marks at their true size.
+      child: ClipRect(
+        child: Align(
+        alignment: clusterAlign,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: clusterCross,
           children: <Widget>[
             // ---- Battery icon (pack) ----
             if (showIcon)
@@ -181,13 +179,14 @@ class BatteryWidget extends ConsumerWidget {
                         width: bodyW,
                         top: 0,
                         bottom: 0,
-                        child: Center(
-                          child: Text(
-                            pctLabel,
-                            key: const ValueKey('battery-inline-pct'),
-                            style: inlinePctStyle,
-                            textAlign: TextAlign.center,
-                          ),
+                        child: _DualColorPctLabel(
+                          key: const ValueKey('battery-inline-pct'),
+                          label: pctLabel,
+                          bodyW: bodyW,
+                          bodyH: bodyH,
+                          fillFrac: fillFrac,
+                          filledColor: const Color(0xFF000000),
+                          emptyColor: _kTextPrimary,
                         ),
                       ),
                   ],
@@ -223,9 +222,11 @@ class BatteryWidget extends ConsumerWidget {
                 base: base,
                 kwColor: _kKwColor,
                 secondaryColor: _kTextSecondary,
+                crossAxisAlignment: clusterCross,
               ),
             ],
           ],
+        ),
         ),
       ),
     );
@@ -237,9 +238,9 @@ class BatteryWidget extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 /// Paints the battery body per [BatteryStyle]:
-/// - [BatteryStyle.outline]: rounded outline + continuous fill + nub + bolt
+/// - [BatteryStyle.outline]/[BatteryStyle.pctInside]: squarish outline
+///   + continuous fill + nub + bolt
 /// - [BatteryStyle.filled]: outline + 5 segment bars + nub + bolt
-/// - [BatteryStyle.pctInside]: same as outline (inline % is a Text overlay)
 class _BatteryPainter extends CustomPainter {
   const _BatteryPainter({
     required this.fillFrac,
@@ -267,8 +268,10 @@ class _BatteryPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final strokeW = bodyH * 0.07;
-    final radius = bodyH * 0.22;
+    // 0056 PDM squarish corners; 0063 thinner outline (stroke toned down).
+    // Stroke/pad shared with batteryPackFillEdgeX so 0062 % clip matches fill.
+    final strokeW = batteryPackStrokeW(bodyH);
+    final radius = bodyH * 0.08;
 
     // ---- Body outline ----
     final outlinePaint = Paint()
@@ -293,7 +296,7 @@ class _BatteryPainter extends CustomPainter {
     );
     canvas.drawRRect(nubRect, nubPaint);
 
-    final innerPad = strokeW + bodyH * 0.08;
+    final innerPad = batteryPackInnerPad(bodyH);
     final innerW = bodyW - innerPad * 2;
     final innerH = bodyH - innerPad * 2;
 
@@ -375,6 +378,106 @@ class _BatteryPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------------------
+// Dual-color % inside pack (0062) — black on fill, white on empty, clipped.
+// ---------------------------------------------------------------------------
+
+/// Percentage label painted twice and clipped at the pack fill boundary so
+/// the glyphs read black over the filled portion and white over the empty.
+class _DualColorPctLabel extends StatelessWidget {
+  const _DualColorPctLabel({
+    super.key,
+    required this.label,
+    required this.bodyW,
+    required this.bodyH,
+    required this.fillFrac,
+    required this.filledColor,
+    required this.emptyColor,
+  });
+
+  final String label;
+  final double bodyW;
+  final double bodyH;
+  final double fillFrac;
+  final Color filledColor;
+  final Color emptyColor;
+
+  @override
+  Widget build(BuildContext context) {
+    // 0063: % fills the inner fill height (taller glyph inside the pack).
+    final style = TextStyle(
+      fontSize: batteryPackInnerH(bodyH),
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+    );
+    final fillEdge = batteryPackFillEdgeX(
+      bodyW: bodyW,
+      bodyH: bodyH,
+      fillFrac: fillFrac,
+    );
+    // StackFit.expand: clip X is in pack-body coords (same as fillEdge).
+    // Without expand, ClipRect sizes to the Text and fillEdge (pack space)
+    // often covers the whole glyph — white on empty never shows (0062 FAIL).
+    Widget pct(Color color) => Center(
+          child: Text(
+            label,
+            style: style.copyWith(color: color),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            softWrap: false,
+          ),
+        );
+    return Stack(
+      fit: StackFit.expand,
+      alignment: Alignment.center,
+      children: <Widget>[
+        // Empty portion (right of fill) — white, clipped to empty side.
+        ClipRect(
+          clipper: _RightOfEdgeClipper(fillEdge),
+          child: pct(emptyColor),
+        ),
+        // Filled portion (left of fill edge) — black, clipped at boundary.
+        ClipRect(
+          clipper: _LeftEdgeClipper(fillEdge),
+          child: pct(filledColor),
+        ),
+      ],
+    );
+  }
+}
+
+/// Clips to [0, edgeX] × full height — filled / left side of dual-color %.
+class _LeftEdgeClipper extends CustomClipper<Rect> {
+  const _LeftEdgeClipper(this.edgeX);
+
+  final double edgeX;
+
+  @override
+  Rect getClip(Size size) {
+    final w = edgeX.clamp(0.0, size.width);
+    return Rect.fromLTWH(0, 0, w, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant _LeftEdgeClipper old) => old.edgeX != edgeX;
+}
+
+/// Clips to [edgeX, width] × full height — empty / right side of dual-color %.
+class _RightOfEdgeClipper extends CustomClipper<Rect> {
+  const _RightOfEdgeClipper(this.edgeX);
+
+  final double edgeX;
+
+  @override
+  Rect getClip(Size size) {
+    final x = edgeX.clamp(0.0, size.width);
+    return Rect.fromLTWH(x, 0, size.width - x, size.height);
+  }
+
+  @override
+  bool shouldReclip(covariant _RightOfEdgeClipper old) => old.edgeX != edgeX;
+}
+
+// ---------------------------------------------------------------------------
 // Charging stats panel (show-while-charging).
 // ---------------------------------------------------------------------------
 
@@ -390,12 +493,14 @@ class _ChargingStats extends StatelessWidget {
     required this.base,
     required this.kwColor,
     required this.secondaryColor,
+    this.crossAxisAlignment = CrossAxisAlignment.end,
   });
 
   final double? kw;
   final double base;
   final Color kwColor;
   final Color secondaryColor;
+  final CrossAxisAlignment crossAxisAlignment;
 
   @override
   Widget build(BuildContext context) {
@@ -404,7 +509,7 @@ class _ChargingStats extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: crossAxisAlignment,
       children: <Widget>[
         Text(
           kwText,

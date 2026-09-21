@@ -20,6 +20,7 @@ import '../minimap_host.dart';
 ///   distanceM  : int?   — metres to next maneuver
 ///   roadName   : String? — next road / cue text
 ///   etaMin     : int?   — minutes to destination
+///   navActive  : bool?  — navigation session start/end (0057); not a trip row
 ///
 /// Native also calls `hudReady({w, h, dpi})` on this channel after [setupHud()]
 /// completes.  Subscribers listen via [onHudReady] to re-apply minimap config
@@ -29,6 +30,7 @@ class NativeMinimapHost implements MinimapHost {
   static const EventChannel _guidanceCh = EventChannel('zee/minimap/guidance');
 
   late final Stream<GuidanceEvent> _guidanceStream;
+  late final Stream<bool> _navigationActiveStream;
 
   // Non-broadcast: buffers events so hudReady is not lost if Dart startup is
   // slower than the native 1500ms HUD_SPAWN_DELAY (QA1-2).
@@ -47,8 +49,17 @@ class NativeMinimapHost implements MinimapHost {
       _hudReadyController.stream;
 
   NativeMinimapHost() {
-    _guidanceStream = _guidanceCh
-        .receiveBroadcastStream()
+    final raw = _guidanceCh.receiveBroadcastStream().asBroadcastStream();
+    // Trip maps → GuidanceEvent. Maps with only navActive → navigationActive.
+    _guidanceStream = raw
+        .where((dynamic e) {
+          final m = (e as Map?)?.cast<String, dynamic>() ?? {};
+          return !m.containsKey('navActive') ||
+              m.containsKey('turnIcon') ||
+              m.containsKey('roadName') ||
+              m.containsKey('distanceM') ||
+              m.containsKey('etaMin');
+        })
         .map((dynamic raw) {
           final m = (raw as Map?)?.cast<String, dynamic>() ?? {};
           return GuidanceEvent(
@@ -57,6 +68,16 @@ class NativeMinimapHost implements MinimapHost {
             roadName: m['roadName'] as String?,
             etaMin: m['etaMin'] as int?,
           );
+        })
+        .asBroadcastStream();
+    _navigationActiveStream = raw
+        .where((dynamic e) {
+          final m = (e as Map?)?.cast<String, dynamic>() ?? {};
+          return m.containsKey('navActive');
+        })
+        .map((dynamic raw) {
+          final m = (raw as Map?)?.cast<String, dynamic>() ?? {};
+          return m['navActive'] == true;
         })
         .asBroadcastStream();
 
@@ -82,6 +103,14 @@ class NativeMinimapHost implements MinimapHost {
   }
 
   @override
+  Future<void> setSurfaceVisible(bool visible) async {
+    await _ch.invokeMethod<Object?>(
+      'setMinimapSurfaceVisible',
+      {'visible': visible},
+    );
+  }
+
+  @override
   Future<void> setBounds(Rect r) async {
     await _ch.invokeMethod<Object?>('setMinimapBounds', {
       'x': r.left.toInt(),
@@ -103,6 +132,9 @@ class NativeMinimapHost implements MinimapHost {
 
   @override
   Stream<GuidanceEvent> get guidance => _guidanceStream;
+
+  @override
+  Stream<bool> get navigationActive => _navigationActiveStream;
 
   /// Delegates to the native PackageManager check over zee/minimap.
   /// Returns false on any channel error (safe default: toggle stays disabled).

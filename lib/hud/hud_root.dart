@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/config_store.dart';
 import '../services/minimap_viewport.dart';
+import 'battery_geometry.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
+import '../providers/guidance.dart';
 
 /// The root of the HUD widget subtree.
 ///
@@ -29,8 +32,9 @@ import 'speedcam_radar_widget.dart';
 /// `MinimapHost`, not something HudRoot paints; the glyph is a debug aid so
 /// the reserved area is visible during layout work, shown only when
 /// [showSafeAreaBorder] is true so it never emits a ghost rectangle onto the
-/// real windshield. There is no separate GUIDANCE slot — the HUD only shows
-/// the YNavi map; a turn-by-turn overlay is out of scope (owner decision).
+/// real windshield. Street + ETA come from **YNavi native** map-pixel chrome
+/// (`NaviGuidanceLayer.setManeuverStreetInfoVisible`, 0055 redirect) — not a
+/// Flutter plate. Trip [GuidanceEvent]s still relay for FL/diagnostics.
 /// The BLINKER layer spans the full Safe Area so hazard can render both sides;
 /// marks are positioned at the edges by [BlinkerWidget] via its own layout.
 ///
@@ -150,11 +154,6 @@ class _HudSlots extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Proportional slot geometry inside the Safe Area.
-    // Battery: right 12% wide, upper 60% tall.
-    final upperH = saHeight * 0.6;
-    final batteryW = saWidth * 0.12;
-
     // Pass resolvedSizeFraction, not just the preset, so the schematic glyph
     // tracks the Size slider in advanced mode too — otherwise the preview
     // silently disagrees with the rect actually handed to the native host.
@@ -162,6 +161,27 @@ class _HudSlots extends ConsumerWidget {
     final minimapRect = minimapRectInSafeArea(
       preset: minimapCfg.preset,
       sizeFraction: minimapCfg.resolvedSizeFraction,
+    );
+
+    // Battery cluster placement — presets (left / right / rightTop) + fine
+    // adjust. Default rightTop matches today's hard-coded top-right.
+    final batteryCfg = ref.watch(batteryConfigProvider);
+    // 0067: grow slot when charging stats are shown (3 lines vs 2).
+    final chargingStatsVisible =
+        ref.watch(chargingProvider) == true && batteryCfg.showChargingStats;
+    final slotFracs = batteryClusterSlotFracs(
+      chargingStatsVisible: chargingStatsVisible,
+      sizeScale: batteryCfg.sizeScale,
+    );
+    final batteryRect = batteryClusterRect(
+      saW: saWidth,
+      saH: saHeight,
+      placement: batteryCfg.placement,
+      vertFrac: batteryCfg.vertFrac,
+      sidePadFrac: batteryCfg.sidePadFrac,
+      horizBiasFrac: batteryCfg.horizBiasFrac,
+      widthFrac: slotFracs.widthFrac,
+      heightFrac: slotFracs.heightFrac,
     );
 
     return Stack(
@@ -173,14 +193,14 @@ class _HudSlots extends ConsumerWidget {
           child: BlinkerWidget(forceBlinkOn: forceBlinkOn),
         ),
 
-        // BATTERY — top-right corner (Steam-Deck-style battery + temp + charging stats).
-        // sidePadFrac-equivalent (0.04) keeps the indicator safely inside the Safe Area
-        // on all display sizes, matching the blinker's lateral inset (QA1-7).
+        // BATTERY — freely placeable cluster (icon + % + temp + charging kW).
+        // Geometry from batteryClusterRect; default = prior top-right look.
         Positioned(
-          right: saWidth * 0.04,
-          top: saHeight * 0.010,
-          width: batteryW,
-          height: upperH,
+          key: const ValueKey('hud-battery-slot'),
+          left: batteryRect.left,
+          top: batteryRect.top,
+          width: batteryRect.width,
+          height: batteryRect.height,
           child: const BatteryWidget(),
         ),
 
@@ -202,7 +222,8 @@ class _HudSlots extends ConsumerWidget {
         // MinimapHost applies natively, so the debug glyph sits exactly where
         // the real Minimap would. F4: omit when minimap is disabled — the stub
         // must not pretend to be content while Minimap is off.
-        if (showStubs && minimapCfg.enabled)
+        // 0057: glyph follows surface gate (onlyWhileGuidance ∧ navActive).
+        if (showStubs && ref.watch(minimapSurfaceActiveProvider))
           Positioned(
             key: const ValueKey('hud-minimap-glyph'),
             left: minimapRect.left * saWidth,
@@ -211,6 +232,7 @@ class _HudSlots extends ConsumerWidget {
             height: minimapRect.height * saHeight,
             child: const _MinimapGlyph(),
           ),
+
       ],
     );
   }

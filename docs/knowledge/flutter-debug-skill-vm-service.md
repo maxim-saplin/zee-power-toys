@@ -617,7 +617,7 @@ For the `ext.zee.screenshot` extension: the `RenderRepaintBoundary.toImage()` ap
 - Breakpoint pauses the entire UI isolate — ALL ext.zee.* extensions on that isolate freeze. Never use breakpoint concurrently with any other driver. The always-resume-in-finally pattern is mandatory; orphaned paused isolates require WS cache deletion + hot restart to recover.
 - Velocity-gated Flutter gestures (PageView fling, Dismissible, hero swipe) cannot be driven via adb input swipe or synthetic PointerMoveEvent — the computed velocity is below the threshold. These must be tested with flutter test using tester.fling(). Don't try to drive them via the VM service.
 - Android scoped storage (API 29+): raw file paths under /storage/emulated/0/ may not be loadable if not MediaStore-indexed. Verify with `adb shell content query --uri content://media/external/audio/media --projection _data`. App-sandbox paths (/data/user/0/<pkg>/files/) bypass MediaStore.
-- INSTALL_FAILED_UPDATE_INCOMPATIBLE: if the APK signing key changes between builds (or debug vs release), adb install -r fails. Must `adb uninstall <pkg>` first.
+- INSTALL_FAILED_UPDATE_INCOMPATIBLE / SHARED_USER_INCOMPATIBLE: signing or `sharedUserId` mismatch vs the installed APK. For **zee-power-toys on car**: do **not** `adb uninstall` (wipes prefs — see 0054). Rebuild release with AOSP/platform key (`useAospDebugKey=true`) matching the installed sharedUserId and retry `adb install -r`. Uninstall only on throwaway AVD lab installs where wipe is acceptable.
 
 ## Open questions
 

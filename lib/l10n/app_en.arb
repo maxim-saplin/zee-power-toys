@@ -1,543 +1,929 @@
 {
   "@@locale": "en",
-
   "appTitle": "Zee Power Toys",
-  "@appTitle": { "description": "Application title" },
-
+  "@appTitle": {
+    "description": "Application title"
+  },
   "settingsTitle": "Settings",
-  "@settingsTitle": { "description": "Settings hub screen title" },
-
+  "@settingsTitle": {
+    "description": "Settings hub screen title"
+  },
   "sectionHud": "HUD",
-  "@sectionHud": { "description": "HUD settings section label" },
-
+  "@sectionHud": {
+    "description": "HUD settings section label"
+  },
   "sectionHudSubtitle": "Blinker, battery, layout",
-  "@sectionHudSubtitle": { "description": "HUD settings section subtitle" },
-
+  "@sectionHudSubtitle": {
+    "description": "HUD settings section subtitle"
+  },
   "sectionDiagnostics": "Diagnostics",
-  "@sectionDiagnostics": { "description": "Diagnostics section label" },
-
+  "@sectionDiagnostics": {
+    "description": "Diagnostics section label"
+  },
   "sectionDiagnosticsSubtitle": "Live car-signal values",
-  "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
-
+  "@sectionDiagnosticsSubtitle": {
+    "description": "Diagnostics section subtitle"
+  },
   "diagnosticsTitle": "Diagnostics",
-  "@diagnosticsTitle": { "description": "Diagnostics screen app-bar title" },
-
+  "@diagnosticsTitle": {
+    "description": "Diagnostics screen app-bar title"
+  },
   "diagSectionSource": "Signal source",
-  "@diagSectionSource": { "description": "Diagnostics: Signal source section heading" },
-
+  "@diagSectionSource": {
+    "description": "Diagnostics: Signal source section heading"
+  },
   "diagSignalSource": "Source",
-  "@diagSignalSource": { "description": "Diagnostics: signal source row label" },
-
+  "@diagSignalSource": {
+    "description": "Diagnostics: signal source row label"
+  },
   "diagSignalSourceAdaptApi": "AdaptAPI (car)",
-  "@diagSignalSourceAdaptApi": { "description": "Signal source: native AdaptAPI (real car signals)" },
-
+  "@diagSignalSourceAdaptApi": {
+    "description": "Signal source: native AdaptAPI (real car signals)"
+  },
   "diagSignalSourceSimulated": "Simulated (emulator)",
-  "@diagSignalSourceSimulated": { "description": "Signal source: native simulator fallback, no AdaptAPI" },
-
+  "@diagSignalSourceSimulated": {
+    "description": "Signal source: native simulator fallback, no AdaptAPI"
+  },
   "diagSignalSourceFake": "Fake (desktop)",
-  "@diagSignalSourceFake": { "description": "Signal source: T1 pure-Dart fake" },
-
+  "@diagSignalSourceFake": {
+    "description": "Signal source: T1 pure-Dart fake"
+  },
   "diagSignalSourceUnknown": "Unknown",
-  "@diagSignalSourceUnknown": { "description": "Signal source: not yet resolved or a decode error" },
-
+  "@diagSignalSourceUnknown": {
+    "description": "Signal source: not yet resolved or a decode error"
+  },
   "diagHudDisplay": "HUD display",
-  "@diagHudDisplay": { "description": "Diagnostics: HUD backing-display geometry row label" },
-
+  "@diagHudDisplay": {
+    "description": "Diagnostics: HUD backing-display geometry row label"
+  },
   "diagSectionMotion": "Motion",
-  "@diagSectionMotion": { "description": "Diagnostics: Motion section heading" },
-
+  "@diagSectionMotion": {
+    "description": "Diagnostics: Motion section heading"
+  },
   "diagSectionLighting": "Lighting",
-  "@diagSectionLighting": { "description": "Diagnostics: Lighting section heading" },
-
+  "@diagSectionLighting": {
+    "description": "Diagnostics: Lighting section heading"
+  },
   "diagSectionEnergy": "Energy",
-  "@diagSectionEnergy": { "description": "Diagnostics: Energy section heading" },
-
+  "@diagSectionEnergy": {
+    "description": "Diagnostics: Energy section heading"
+  },
   "diagSectionBattery": "Battery",
-  "@diagSectionBattery": { "description": "Diagnostics: Battery section heading" },
-
+  "@diagSectionBattery": {
+    "description": "Diagnostics: Battery section heading"
+  },
   "diagSpeed": "Speed",
-  "@diagSpeed": { "description": "Diagnostics: speed row label" },
-
+  "@diagSpeed": {
+    "description": "Diagnostics: speed row label"
+  },
   "diagPowerFlow": "Power flow",
-  "@diagPowerFlow": { "description": "Diagnostics: power-flow row label" },
-
+  "@diagPowerFlow": {
+    "description": "Diagnostics: power-flow row label"
+  },
   "diagPowerFlowUnknown": "unknown",
-  "@diagPowerFlowUnknown": { "description": "Power-flow state: unknown" },
-
+  "@diagPowerFlowUnknown": {
+    "description": "Power-flow state: unknown"
+  },
   "diagPowerFlowDrive": "drive",
-  "@diagPowerFlowDrive": { "description": "Power-flow state: drive" },
-
+  "@diagPowerFlowDrive": {
+    "description": "Power-flow state: drive"
+  },
   "diagPowerFlowRegen": "regen",
-  "@diagPowerFlowRegen": { "description": "Power-flow state: regen" },
-
+  "@diagPowerFlowRegen": {
+    "description": "Power-flow state: regen"
+  },
   "diagPowerFlowStandstill": "standstill",
-  "@diagPowerFlowStandstill": { "description": "Power-flow state: standstill" },
-
+  "@diagPowerFlowStandstill": {
+    "description": "Power-flow state: standstill"
+  },
   "diagBlinker": "Blinker",
-  "@diagBlinker": { "description": "Diagnostics: blinker row label" },
-
+  "@diagBlinker": {
+    "description": "Diagnostics: blinker row label"
+  },
   "diagBlinkerOff": "off",
-  "@diagBlinkerOff": { "description": "Blinker state: off" },
-
+  "@diagBlinkerOff": {
+    "description": "Blinker state: off"
+  },
   "diagBlinkerLeft": "left",
-  "@diagBlinkerLeft": { "description": "Blinker state: left" },
-
+  "@diagBlinkerLeft": {
+    "description": "Blinker state: left"
+  },
   "diagBlinkerRight": "right",
-  "@diagBlinkerRight": { "description": "Blinker state: right" },
-
+  "@diagBlinkerRight": {
+    "description": "Blinker state: right"
+  },
   "diagBlinkerHazard": "hazard",
-  "@diagBlinkerHazard": { "description": "Blinker state: hazard" },
-
+  "@diagBlinkerHazard": {
+    "description": "Blinker state: hazard"
+  },
   "diagCharging": "Charging",
-  "@diagCharging": { "description": "Diagnostics: charging state row label" },
-
+  "@diagCharging": {
+    "description": "Diagnostics: charging state row label"
+  },
   "diagChargePower": "Charge power",
-  "@diagChargePower": { "description": "Diagnostics: charging power (kW) row label" },
-
+  "@diagChargePower": {
+    "description": "Diagnostics: charging power (kW) row label"
+  },
   "diagYes": "yes",
-  "@diagYes": { "description": "Generic yes value" },
-
+  "@diagYes": {
+    "description": "Generic yes value"
+  },
   "diagNo": "no",
-  "@diagNo": { "description": "Generic no value" },
-
+  "@diagNo": {
+    "description": "Generic no value"
+  },
   "diagBatteryLevel": "Battery level",
-  "@diagBatteryLevel": { "description": "Diagnostics: battery level row label" },
-
+  "@diagBatteryLevel": {
+    "description": "Diagnostics: battery level row label"
+  },
   "diagBatteryTemp": "Battery temperature",
-  "@diagBatteryTemp": { "description": "Diagnostics: battery temperature row label" },
-
+  "@diagBatteryTemp": {
+    "description": "Diagnostics: battery temperature row label"
+  },
   "diagRawSnapshot": "Raw snapshot",
-  "@diagRawSnapshot": { "description": "Diagnostics: raw snapshot expansion tile title" },
-
+  "@diagRawSnapshot": {
+    "description": "Diagnostics: raw snapshot expansion tile title"
+  },
   "sectionLanguage": "Language",
-  "@sectionLanguage": { "description": "Language settings section label" },
-
+  "@sectionLanguage": {
+    "description": "Language settings section label"
+  },
   "sectionLanguageSubtitle": "App display language",
-  "@sectionLanguageSubtitle": { "description": "Language section subtitle" },
-
+  "@sectionLanguageSubtitle": {
+    "description": "Language section subtitle"
+  },
   "sectionInstall": "Install",
-  "@sectionInstall": { "description": "Install section label" },
-
+  "@sectionInstall": {
+    "description": "Install section label"
+  },
   "sectionInstallSubtitle": "Modded Launcher & YNavi mod",
-  "@sectionInstallSubtitle": { "description": "Install section subtitle" },
-
+  "@sectionInstallSubtitle": {
+    "description": "Install section subtitle"
+  },
   "installTitle": "Install",
-  "@installTitle": { "description": "Install screen app-bar title" },
-
+  "@installTitle": {
+    "description": "Install screen app-bar title"
+  },
   "installLauncherName": "Modded Launcher",
-  "@installLauncherName": { "description": "Install target: modded launcher name" },
-
+  "@installLauncherName": {
+    "description": "Install target: modded launcher name"
+  },
   "installLauncherDesc": "Launcher with YNavi set as the default navigation app",
-  "@installLauncherDesc": { "description": "Install target: modded launcher description" },
-
-  "installYnaviName": "YNavi mod (HUD)",
-  "@installYnaviName": { "description": "Install target: YNavi mod name" },
-
-  "installYnaviDesc": "Yandex.Navi mod with HUD support and minimap broadcast",
-  "@installYnaviDesc": { "description": "Install target: YNavi mod description" },
-
+  "@installLauncherDesc": {
+    "description": "Install target: modded launcher description"
+  },
+  "installYnaviName": "YNavi mod (margined / default)",
+  "@installYnaviName": {
+    "description": "Install target: YNavi mod name"
+  },
+  "installYnaviDesc": "HUD-capable YNavi with left letterbox for Zeekr side panel. Prefer this unless on OS7+.",
+  "@installYnaviDesc": {
+    "description": "Install target: YNavi mod description"
+  },
   "installButtonLabel": "Install / Update",
-  "@installButtonLabel": { "description": "Install button label (used for first install and updates)" },
-
+  "@installButtonLabel": {
+    "description": "Install button label (used for first install and updates)"
+  },
   "installPhaseDownloading": "Downloading…",
-  "@installPhaseDownloading": { "description": "Install progress phase: downloading" },
-
+  "@installPhaseDownloading": {
+    "description": "Install progress phase: downloading"
+  },
   "installPhaseInstalling": "Installing…",
-  "@installPhaseInstalling": { "description": "Install progress phase: installing" },
-
+  "@installPhaseInstalling": {
+    "description": "Install progress phase: installing"
+  },
   "installPhaseDone": "Done",
-  "@installPhaseDone": { "description": "Install progress phase: done" },
-
+  "@installPhaseDone": {
+    "description": "Install progress phase: done"
+  },
   "installPhaseFailed": "Failed",
-  "@installPhaseFailed": { "description": "Install progress phase: failed" },
-
+  "@installPhaseFailed": {
+    "description": "Install progress phase: failed"
+  },
   "languageTitle": "Language",
-  "@languageTitle": { "description": "Language picker screen title" },
-
+  "@languageTitle": {
+    "description": "Language picker screen title"
+  },
   "languageSystem": "System default",
-  "@languageSystem": { "description": "Option: follow the system locale" },
-
+  "@languageSystem": {
+    "description": "Option: follow the system locale"
+  },
   "languageEnglish": "English",
-  "@languageEnglish": { "description": "Option: English language" },
-
+  "@languageEnglish": {
+    "description": "Option: English language"
+  },
   "languageRussian": "Русский",
-  "@languageRussian": { "description": "Option: Russian language" },
-
+  "@languageRussian": {
+    "description": "Option: Russian language"
+  },
   "langSectionApp": "App language",
-  "@langSectionApp": { "description": "Language screen: App language section heading" },
-
+  "@langSectionApp": {
+    "description": "Language screen: App language section heading"
+  },
   "langSectionSystem": "System language",
-  "@langSectionSystem": { "description": "Language screen: System language section heading" },
-
+  "@langSectionSystem": {
+    "description": "Language screen: System language section heading"
+  },
   "langSectionCluster": "Cluster language",
-  "@langSectionCluster": { "description": "Language screen: Instrument-cluster language section heading" },
-
+  "@langSectionCluster": {
+    "description": "Language screen: Instrument-cluster language section heading"
+  },
   "langCarOnly": "Available on the car only",
-  "@langCarOnly": { "description": "Hint shown when system/cluster write is T3-only (unsupported on emulator)" },
-
+  "@langCarOnly": {
+    "description": "Hint shown when system/cluster write is T3-only (unsupported on emulator)"
+  },
   "langCurrentValue": "Current",
-  "@langCurrentValue": { "description": "Prefix label for the current system locale readout" },
-
+  "@langCurrentValue": {
+    "description": "Prefix label for the current system locale readout"
+  },
   "comingSoon": "Coming soon",
-  "@comingSoon": { "description": "Placeholder text for unimplemented sections" },
-
+  "@comingSoon": {
+    "description": "Placeholder text for unimplemented sections"
+  },
   "hudSettingsTitle": "HUD Settings",
-  "@hudSettingsTitle": { "description": "HUD settings screen app-bar title" },
-
+  "@hudSettingsTitle": {
+    "description": "HUD settings screen app-bar title"
+  },
   "blinkerSection": "Blinker",
-  "@blinkerSection": { "description": "Blinker section heading" },
-
+  "@blinkerSection": {
+    "description": "Blinker section heading"
+  },
   "blinkerShape": "Shape",
-  "@blinkerShape": { "description": "Blinker shape label" },
-
+  "@blinkerShape": {
+    "description": "Blinker shape label"
+  },
   "blinkerShapeDots": "Dots",
-  "@blinkerShapeDots": { "description": "Blinker shape: dots" },
-
+  "@blinkerShapeDots": {
+    "description": "Blinker shape: dots"
+  },
   "blinkerShapeArrows": "Arrows",
-  "@blinkerShapeArrows": { "description": "Blinker shape: arrows" },
-
+  "@blinkerShapeArrows": {
+    "description": "Blinker shape: arrows"
+  },
   "blinkerShapeSmiley": "Smiley",
-  "@blinkerShapeSmiley": { "description": "Blinker shape: smiley" },
-
+  "@blinkerShapeSmiley": {
+    "description": "Blinker shape: smiley"
+  },
   "blinkerSize": "Size",
-  "@blinkerSize": { "description": "Blinker size slider label" },
-
+  "@blinkerSize": {
+    "description": "Blinker size slider label"
+  },
   "blinkerVerticalPosition": "Vertical position",
-  "@blinkerVerticalPosition": { "description": "Blinker vertical position slider label" },
-
+  "@blinkerVerticalPosition": {
+    "description": "Blinker vertical position slider label"
+  },
   "blinkerSidePadding": "Side padding (from edge)",
-  "@blinkerSidePadding": { "description": "Blinker side-padding slider label" },
-
+  "@blinkerSidePadding": {
+    "description": "Blinker side-padding slider label"
+  },
   "batterySection": "Battery",
-  "@batterySection": { "description": "Battery section heading" },
-
+  "@batterySection": {
+    "description": "Battery section heading"
+  },
   "showBattery": "Show battery indicator",
-  "@showBattery": { "description": "Toggle: show battery indicator" },
-
+  "@showBattery": {
+    "description": "Toggle: show battery indicator"
+  },
   "showTemp": "Show temperature",
-  "@showTemp": { "description": "Toggle: show battery temperature" },
-
+  "@showTemp": {
+    "description": "Toggle: show battery temperature"
+  },
   "showChargingStats": "Show charging stats (while charging)",
-  "@showChargingStats": { "description": "Toggle: show charging stats panel" },
-
-
+  "@showChargingStats": {
+    "description": "Toggle: show charging stats panel"
+  },
   "batteryContentMode": "Content",
-  "@batteryContentMode": { "description": "Battery content mode label" },
-
+  "@batteryContentMode": {
+    "description": "Battery content mode label"
+  },
   "batteryContentBoth": "Both",
-  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
-
+  "@batteryContentBoth": {
+    "description": "Battery content: icon + percentage"
+  },
   "batteryContentIconOnly": "Icon",
-  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
-
+  "@batteryContentIconOnly": {
+    "description": "Battery content: icon only"
+  },
   "batteryContentTextOnly": "Text",
-  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
-
+  "@batteryContentTextOnly": {
+    "description": "Battery content: percentage text only"
+  },
   "batteryStyle": "Look",
-  "@batteryStyle": { "description": "Battery pack style label" },
-
+  "@batteryStyle": {
+    "description": "Battery pack style label"
+  },
   "batteryStyleOutline": "Outline",
-  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
-
+  "@batteryStyleOutline": {
+    "description": "Battery style: Steam Deck outline"
+  },
   "batteryStyleFilled": "Blocks",
-  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
-
+  "@batteryStyleFilled": {
+    "description": "Battery style: segmented blocks"
+  },
   "batteryStylePctInside": "% inside",
-  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
-
+  "@batteryStylePctInside": {
+    "description": "Battery style: percentage inside pack"
+  },
+  "batteryLook": "Look",
+  "@batteryLook": {
+    "description": "Battery look picker label (0056 PDM)"
+  },
+  "batteryLookBattery": "Battery",
+  "@batteryLookBattery": {
+    "description": "PDM: Battery — filled pack"
+  },
+  "batteryLookBatteryText": "Battery + text",
+  "@batteryLookBatteryText": {
+    "description": "PDM: Battery + text — pack with %"
+  },
+  "batteryLookBatteryBars": "Battery with bars",
+  "@batteryLookBatteryBars": {
+    "description": "PDM: Battery with bars — segmented"
+  },
+  "batteryLookJustText": "Just text",
+  "@batteryLookJustText": {
+    "description": "PDM: Just text — % only"
+  },
+  "batteryPlacement": "Position",
+  "@batteryPlacement": {
+    "description": "Battery placement preset selector label"
+  },
+  "batteryPlacementLeft": "Left",
+  "@batteryPlacementLeft": {
+    "description": "Battery placement preset: left"
+  },
+  "batteryPlacementRight": "Right",
+  "@batteryPlacementRight": {
+    "description": "Battery placement preset: right mid"
+  },
+  "batteryPlacementRightTop": "Right top",
+  "@batteryPlacementRightTop": {
+    "description": "Battery placement preset: right top (default)"
+  },
+  "batteryVerticalPosition": "Vertical position",
+  "@batteryVerticalPosition": {
+    "description": "Battery vertical position slider label"
+  },
+  "batterySidePadding": "Side padding (from edge)",
+  "@batterySidePadding": {
+    "description": "Battery side-padding slider label"
+  },
+  "batteryHorizBias": "Horizontal bias",
+  "@batteryHorizBias": {
+    "description": "Battery horizontal bias slider label"
+  },
   "batterySize": "Size",
-  "@batterySize": { "description": "Battery size slider label" },
-
+  "@batterySize": {
+    "description": "Battery size slider label"
+  },
   "safeAreaSection": "Safe Area (fractions)",
-  "@safeAreaSection": { "description": "Safe Area readout heading" },
-
+  "@safeAreaSection": {
+    "description": "Safe Area readout heading"
+  },
   "safeAreaInset": "Safe Area inset",
-  "@safeAreaInset": { "description": "Safe Area inset slider label" },
-
+  "@safeAreaInset": {
+    "description": "Safe Area inset slider label"
+  },
   "positionTop": "Top",
-  "@positionTop": { "description": "Slider start label: top" },
-
+  "@positionTop": {
+    "description": "Slider start label: top"
+  },
   "positionBottom": "Bottom",
-  "@positionBottom": { "description": "Slider end label: bottom" },
-
+  "@positionBottom": {
+    "description": "Slider end label: bottom"
+  },
   "positionEdge": "Edge",
-  "@positionEdge": { "description": "Slider start label: edge" },
-
+  "@positionEdge": {
+    "description": "Slider start label: edge"
+  },
   "sectionMinimap": "Minimap",
-  "@sectionMinimap": { "description": "Minimap settings section label" },
-
+  "@sectionMinimap": {
+    "description": "Minimap settings section label"
+  },
   "sectionMinimapSubtitle": "YNavi minimap, size, colour look",
-  "@sectionMinimapSubtitle": { "description": "Minimap settings section subtitle" },
-
+  "@sectionMinimapSubtitle": {
+    "description": "Minimap settings section subtitle"
+  },
   "minimapTitle": "Minimap",
-  "@minimapTitle": { "description": "Minimap settings screen app-bar title" },
-
+  "@minimapTitle": {
+    "description": "Minimap settings screen app-bar title"
+  },
   "minimapSection": "Minimap",
-  "@minimapSection": { "description": "Minimap section heading" },
-
+  "@minimapSection": {
+    "description": "Minimap section heading"
+  },
   "minimapEnable": "Enable minimap",
-  "@minimapEnable": { "description": "Toggle: enable the YNavi minimap" },
-
+  "@minimapEnable": {
+    "description": "Toggle: enable the YNavi minimap"
+  },
   "minimapYnaviUnavailableHint": "Install a compatible YNavi mod to enable the minimap",
-  "@minimapYnaviUnavailableHint": { "description": "Hint shown when YNavi mod is absent" },
-
+  "@minimapYnaviUnavailableHint": {
+    "description": "Hint shown when YNavi mod is absent"
+  },
+  "minimapOnlyWhileGuidance": "Show only during guidance",
+  "@minimapOnlyWhileGuidance": {
+    "description": "0057: show minimap only while YNavi guidance active"
+  },
+  "minimapOnlyWhileGuidanceHint": "When on, the minimap appears only while YNavi navigation is active",
+  "@minimapOnlyWhileGuidanceHint": {
+    "description": "Hint for only-while-guidance toggle"
+  },
+  "minimapGuidanceOverlay": "Turn-by-turn overlay",
+  "@minimapGuidanceOverlay": {
+    "description": "0055: Zee HUD 2 guidance_overlay toggle (native Views)"
+  },
+  "minimapGuidanceOverlayHint": "Arrow, distance, and street name on the minimap (from YNavi trip data)",
+  "@minimapGuidanceOverlayHint": {
+    "description": "Hint for guidance overlay toggle"
+  },
+  "minimapEtaBar": "ETA bar",
+  "@minimapEtaBar": {
+    "description": "0055: Zee HUD 2 eta_bar toggle (native Views)"
+  },
+  "minimapEtaBarHint": "Remaining distance, time, and arrival on the minimap",
+  "@minimapEtaBarHint": {
+    "description": "Hint for ETA bar toggle"
+  },
+  "minimapOverlayScale": "Overlay scale",
+  "@minimapOverlayScale": {
+    "description": "0055: Zee HUD 2 overlayScale slider (guidance/ETA bars)"
+  },
+  "minimapOverlayScaleHint": "Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)",
+  "@minimapOverlayScaleHint": {
+    "description": "Hint for overlay scale slider"
+  },
   "minimapPreset": "Preset",
-  "@minimapPreset": { "description": "Minimap preset selector label" },
-
+  "@minimapPreset": {
+    "description": "Minimap preset selector label"
+  },
   "minimapPresetCompact": "Compact",
-  "@minimapPresetCompact": { "description": "Minimap preset: compact" },
-
+  "@minimapPresetCompact": {
+    "description": "Minimap preset: compact"
+  },
   "minimapPresetBalanced": "Balanced",
-  "@minimapPresetBalanced": { "description": "Minimap preset: balanced" },
-
+  "@minimapPresetBalanced": {
+    "description": "Minimap preset: balanced"
+  },
   "minimapPresetLarge": "Large",
-  "@minimapPresetLarge": { "description": "Minimap preset: large" },
-
+  "@minimapPresetLarge": {
+    "description": "Minimap preset: large"
+  },
   "minimapAdvanced": "Advanced",
-  "@minimapAdvanced": { "description": "Minimap advanced expansion tile title" },
-
+  "@minimapAdvanced": {
+    "description": "Minimap advanced expansion tile title"
+  },
   "minimapSize": "Size (fraction of safe area)",
-  "@minimapSize": { "description": "Minimap manual size slider label" },
-
+  "@minimapSize": {
+    "description": "Minimap manual size slider label"
+  },
   "minimapLookSection": "Look",
-  "@minimapLookSection": { "description": "Minimap Look section heading (colour preset, brightness, contrast)" },
-
+  "@minimapLookSection": {
+    "description": "Minimap Look section heading (colour preset, brightness, contrast)"
+  },
   "minimapLookPreset": "Colour preset",
-  "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
-
+  "@minimapLookPreset": {
+    "description": "Minimap colour preset selector label"
+  },
   "minimapLookPresetDefault": "Default",
-  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
-
+  "@minimapLookPresetDefault": {
+    "description": "Phase0 White look bundle (hue pass keeps yellow cursor)"
+  },
   "minimapLookPresetGreenYellow": "Green-yellow",
-  "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
-
+  "@minimapLookPresetGreenYellow": {
+    "description": "Minimap colour preset: green-yellow"
+  },
   "minimapLookPresetWhite": "White",
-  "@minimapLookPresetWhite": { "description": "Minimap colour preset: white" },
-
+  "@minimapLookPresetWhite": {
+    "description": "Minimap colour preset: white"
+  },
   "minimapLookPresetAmber": "Amber",
-  "@minimapLookPresetAmber": { "description": "Minimap colour preset: amber" },
-
+  "@minimapLookPresetAmber": {
+    "description": "Minimap colour preset: amber"
+  },
   "minimapLookPresetCyan": "Cyan",
-  "@minimapLookPresetCyan": { "description": "Minimap colour preset: cyan" },
-
+  "@minimapLookPresetCyan": {
+    "description": "Minimap colour preset: cyan"
+  },
   "minimapLookBrightness": "Brightness",
-  "@minimapLookBrightness": { "description": "Minimap brightness slider label (backed by the native threshold param)" },
-
+  "@minimapLookBrightness": {
+    "description": "Minimap brightness slider label (backed by the native threshold param)"
+  },
   "minimapLookContrast": "Contrast",
-  "@minimapLookContrast": { "description": "Minimap contrast slider label" },
-
+  "@minimapLookContrast": {
+    "description": "Minimap contrast slider label"
+  },
   "sectionUsbAdb": "USB / ADB",
-  "@sectionUsbAdb": { "description": "USB/ADB settings section label" },
-
+  "@sectionUsbAdb": {
+    "description": "USB/ADB settings section label"
+  },
   "sectionUsbAdbSubtitle": "USB host/peripheral mode",
-  "@sectionUsbAdbSubtitle": { "description": "USB/ADB section subtitle" },
-
+  "@sectionUsbAdbSubtitle": {
+    "description": "USB/ADB section subtitle"
+  },
   "usbAdbTitle": "USB / ADB",
-  "@usbAdbTitle": { "description": "USB/ADB screen app-bar title (also used as section heading)" },
-
+  "@usbAdbTitle": {
+    "description": "USB/ADB screen app-bar title (also used as section heading)"
+  },
   "usbModePeripheral": "Peripheral",
-  "@usbModePeripheral": { "description": "USB mode: peripheral (ADB target, DHU is the USB device)" },
-
+  "@usbModePeripheral": {
+    "description": "USB mode: peripheral (ADB target, DHU is the USB device)"
+  },
   "usbModeHost": "Host",
-  "@usbModeHost": { "description": "USB mode: host (DHU is the USB host)" },
-
+  "@usbModeHost": {
+    "description": "USB mode: host (DHU is the USB host)"
+  },
   "usbModeAuto": "Auto",
-  "@usbModeAuto": { "description": "USB mode: auto (peripheral restored on every boot)" },
-
+  "@usbModeAuto": {
+    "description": "USB mode: auto (peripheral restored on every boot)"
+  },
   "usbCurrentMode": "Current",
-  "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
-
+  "@usbCurrentMode": {
+    "description": "Prefix label for current USB mode readout"
+  },
   "usbPlatformSigningRequired": "Actually changing the USB mode requires platform (system) signing, which this build does not have — on the emulator or the car. Your selection is saved, but the USB role itself will not change until the app is platform-signed.",
-  "@usbPlatformSigningRequired": { "description": "Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved" },
-
+  "@usbPlatformSigningRequired": {
+    "description": "Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved"
+  },
   "hudSlotMinimap": "MINIMAP",
-  "@hudSlotMinimap": { "description": "Accessibility label for the HUD minimap slot's schematic glyph (a11y only — no visible on-screen text)" },
-
+  "@hudSlotMinimap": {
+    "description": "Accessibility label for the HUD minimap slot's schematic glyph (a11y only — no visible on-screen text)"
+  },
   "hudFullDisplayToggle": "Full display",
-  "@hudFullDisplayToggle": { "description": "HUD settings screen: toggle between the Safe-Area letterbox preview (default) and the full backing-display debug view" },
-
+  "@hudFullDisplayToggle": {
+    "description": "HUD settings screen: toggle between the Safe-Area letterbox preview (default) and the full backing-display debug view"
+  },
   "hudFullDisplayToggleSubtitle": "Show the whole backing display, with the Safe Area outlined (debug)",
-  "@hudFullDisplayToggleSubtitle": { "description": "Subtitle explaining the full-display debug toggle" },
-
+  "@hudFullDisplayToggleSubtitle": {
+    "description": "Subtitle explaining the full-display debug toggle"
+  },
   "hudPreviewBadgeDemo": "PREVIEW · DEMO",
-  "@hudPreviewBadgeDemo": { "description": "HudPreview mode badge: Config Preview with forced demo CarSignal state" },
-
+  "@hudPreviewBadgeDemo": {
+    "description": "HudPreview mode badge: Config Preview with forced demo CarSignal state"
+  },
   "hudPreviewBadgeLive": "LIVE · SIMULATED",
-  "@hudPreviewBadgeLive": { "description": "HudPreview mode badge: Simulate screen's live preview driven by the real (unforced) CarSignal chain" },
-
+  "@hudPreviewBadgeLive": {
+    "description": "HudPreview mode badge: Simulate screen's live preview driven by the real (unforced) CarSignal chain"
+  },
   "minimapPresetDisabledHint": "Custom dimensions active",
-  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" },
-
+  "@minimapPresetDisabledHint": {
+    "description": "Caption shown below the preset row when advanced mode overrides it"
+  },
   "sectionSimulate": "Simulate",
-  "@sectionSimulate": { "description": "Simulate nav tile title (debug-only screen)" },
-
+  "@sectionSimulate": {
+    "description": "Simulate nav tile title (debug-only screen)"
+  },
   "sectionSimulateSubtitle": "Fire live signals to test the HUD",
-  "@sectionSimulateSubtitle": { "description": "Simulate nav tile subtitle" },
-
+  "@sectionSimulateSubtitle": {
+    "description": "Simulate nav tile subtitle"
+  },
   "simulateTitle": "Simulate",
-  "@simulateTitle": { "description": "Simulate screen app-bar title" },
-
+  "@simulateTitle": {
+    "description": "Simulate screen app-bar title"
+  },
   "simulateDescription": "Debug only — injects live CarSignals so you can watch the HUD react in real time.",
-  "@simulateDescription": { "description": "Explanatory caption at the top of the Simulate screen" },
-
+  "@simulateDescription": {
+    "description": "Explanatory caption at the top of the Simulate screen"
+  },
   "simulateBlinkerLabel": "Blinker",
-  "@simulateBlinkerLabel": { "description": "Blinker control group label on the Simulate screen" },
-
+  "@simulateBlinkerLabel": {
+    "description": "Blinker control group label on the Simulate screen"
+  },
   "simulateOff": "Off",
-  "@simulateOff": { "description": "Simulate blinker: off" },
-
+  "@simulateOff": {
+    "description": "Simulate blinker: off"
+  },
   "simulateLeft": "Left",
-  "@simulateLeft": { "description": "Simulate blinker: left" },
-
+  "@simulateLeft": {
+    "description": "Simulate blinker: left"
+  },
   "simulateRight": "Right",
-  "@simulateRight": { "description": "Simulate blinker: right" },
-
+  "@simulateRight": {
+    "description": "Simulate blinker: right"
+  },
   "simulateHazard": "Hazard",
-  "@simulateHazard": { "description": "Simulate blinker: hazard (both sides)" },
-
+  "@simulateHazard": {
+    "description": "Simulate blinker: hazard (both sides)"
+  },
   "simulateChargingLabel": "Charging",
-  "@simulateChargingLabel": { "description": "Charging toggle label on the Simulate screen" },
-
+  "@simulateChargingLabel": {
+    "description": "Charging toggle label on the Simulate screen"
+  },
   "simulateChargeKwLabel": "Charge power",
-  "@simulateChargeKwLabel": { "description": "Charging kW slider label on the Simulate screen" },
-
+  "@simulateChargeKwLabel": {
+    "description": "Charging kW slider label on the Simulate screen"
+  },
   "simulateBatteryLabel": "Battery level",
-  "@simulateBatteryLabel": { "description": "Battery percent slider label on the Simulate screen" },
-
+  "@simulateBatteryLabel": {
+    "description": "Battery percent slider label on the Simulate screen"
+  },
   "simulateBatteryTempLabel": "Battery temperature",
-  "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
-
+  "@simulateBatteryTempLabel": {
+    "description": "Battery temperature slider label on the Simulate screen"
+  },
   "simulateSpeedLabel": "Speed",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
-
+  "@simulateSpeedLabel": {
+    "description": "Speed slider label on the Simulate screen"
+  },
   "homeTitle": "Zee Power Toys",
-  "@homeTitle": { "description": "DHU home app-bar title" },
-
+  "@homeTitle": {
+    "description": "DHU home app-bar title"
+  },
   "homeWelcomeTitle": "Welcome",
-  "@homeWelcomeTitle": { "description": "Welcome column heading" },
-
-  "homeWelcomeBody": "HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.",
-  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
-
+  "@homeWelcomeTitle": {
+    "description": "Welcome column heading"
+  },
+  "homeWelcomeBody": "HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the right.",
+  "@homeWelcomeBody": {
+    "description": "Short product intro on the home welcome column"
+  },
   "homeCompanionsTitle": "Companion apps",
-  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
-
+  "@homeCompanionsTitle": {
+    "description": "Companion APK status section heading"
+  },
   "homeSectionsTitle": "Sections",
-  "@homeSectionsTitle": { "description": "Sections column heading" },
-
+  "@homeSectionsTitle": {
+    "description": "Sections column heading"
+  },
   "homeStatusInstalled": "Installed",
-  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
-
+  "@homeStatusInstalled": {
+    "description": "Companion APK status: installed"
+  },
   "homeStatusMissing": "Missing",
-  "@homeStatusMissing": { "description": "Companion APK status: missing" },
-
+  "@homeStatusMissing": {
+    "description": "Companion APK status: missing"
+  },
   "homeStatusUnknown": "Unknown",
-  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
-
+  "@homeStatusUnknown": {
+    "description": "Companion APK status: unknown (desktop / probe failed)"
+  },
   "homeInstallAction": "Install",
-  "@homeInstallAction": { "description": "Install companion APK button on home" },
-
+  "@homeInstallAction": {
+    "description": "Install companion APK button on home"
+  },
   "minimapContentScale": "Map density",
-  "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
-
+  "@minimapContentScale": {
+    "description": "Phase0 minimapScale — lower shows more map in the square"
+  },
   "minimapContentScaleHint": "Lower = more map area (phase0 default 0.5)",
-  "@minimapContentScaleHint": { "description": "Hint under map density slider" },
-"sectionSpeedcam": "Speedcam",
-  "@sectionSpeedcam": { "description": "Speedcam settings section label" },
-
+  "@minimapContentScaleHint": {
+    "description": "Hint under map density slider"
+  },
+  "sectionSpeedcam": "Speedcam",
+  "@sectionSpeedcam": {
+    "description": "Speedcam settings section label"
+  },
   "sectionSpeedcamSubtitle": "OSM packs, approach alerts",
-  "@sectionSpeedcamSubtitle": { "description": "Speedcam settings section subtitle" },
-
+  "@sectionSpeedcamSubtitle": {
+    "description": "Speedcam settings section subtitle"
+  },
   "speedcamTitle": "Speedcam",
-  "@speedcamTitle": { "description": "Speedcam settings screen app-bar title" },
-
-  "speedcamPackSection": "Region pack",
-  "@speedcamPackSection": { "description": "Speedcam pack section heading" },
-
+  "@speedcamTitle": {
+    "description": "Speedcam settings screen app-bar title"
+  },
+  "speedcamPackSection": "Camera cache",
+  "@speedcamPackSection": {
+    "description": "Speedcam pack section heading"
+  },
   "speedcamPackBy": "Belarus (BY)",
-  "@speedcamPackBy": { "description": "BY OSM pack label" },
-
-  "speedcamPackMissing": "No pack cached — tap Update",
-  "@speedcamPackMissing": { "description": "Shown when no BY pack on disk" },
-
+  "@speedcamPackBy": {
+    "description": "BY OSM pack label"
+  },
+  "speedcamPackMissing": "No cameras cached — tap Update",
+  "@speedcamPackMissing": {
+    "description": "Shown when no BY pack on disk"
+  },
   "speedcamPackStatus": "{count} cams · fetched {when}",
   "@speedcamPackStatus": {
     "description": "Cached pack status line",
     "placeholders": {
-      "count": { "type": "int" },
-      "when": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      }
     }
   },
-
-  "speedcamPackUpdate": "Update pack",
-  "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
-
+  "speedcamPackUpdate": "Harvest (300 km)",
+  "@speedcamPackUpdate": {
+    "description": "Manual Overpass download button"
+  },
   "speedcamPackUpdating": "Updating…",
-  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" },
-"speedcamRadarSection": "Radar",
-  "@speedcamRadarSection": { "description": "DHU speedcam radar section" },
-
+  "@speedcamPackUpdating": {
+    "description": "Busy label while pack downloads"
+  },
+  "speedcamRadarSection": "Radar",
+  "@speedcamRadarSection": {
+    "description": "DHU speedcam radar section"
+  },
   "speedcamHudRadarEnable": "Show radar on HUD",
-  "@speedcamHudRadarEnable": { "description": "Toggle CRT on windshield HUD" },
-
-  "speedcamDhuRange": "DHU radar range",
-  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" },
-"speedcamSoundEnable": "Approach alert sound",
-  "@speedcamSoundEnable": { "description": "Toggle sting on insideApproach enter" },
-
-"speedcamRadarLook": "Radar look",
-  "@speedcamRadarLook": { "description": "Speedcam radar visual look picker" },
-"speedcamRadarLookDefault": "Default",
-  "@speedcamRadarLookDefault": { "description": "Default HUD-clean radar look" },
-"speedcamRadarLookAlien": "Alien",
-  "@speedcamRadarLookAlien": { "description": "Alien motion-tracker radar look" },
-
-"speedcamHudDemo": "Demo on HUD",
-  "@speedcamHudDemo": { "description": "Force approach demo onto live HUD" },
-"speedcamHudDemoStop": "Stop demo",
-  "@speedcamHudDemoStop": { "description": "Clear HUD speedcam demo approach" },
-"speedcamDbSection": "Local pack / DB",
-  "@speedcamDbSection": { "description": "DHU local speedcam pack state" },
+  "@speedcamHudRadarEnable": {
+    "description": "Toggle CRT on windshield HUD (legacy; prefer presence mode)"
+  },
+  "speedcamHudMode": "HUD radar",
+  "@speedcamHudMode": {
+    "description": "0060: HUD presence mode Any/Dangerous/Off"
+  },
+  "speedcamSoundMode": "Alert sound",
+  "@speedcamSoundMode": {
+    "description": "0060: sound presence mode Any/Dangerous/Off"
+  },
+  "speedcamPresenceAny": "Any",
+  "@speedcamPresenceAny": {
+    "description": "0060 presence mode: any ahead cam"
+  },
+  "speedcamPresenceDangerous": "Dangerous",
+  "@speedcamPresenceDangerous": {
+    "description": "0060 presence mode: facing-relevant ahead"
+  },
+  "speedcamPresenceOff": "Off",
+  "@speedcamPresenceOff": {
+    "description": "0060 presence mode: channel off"
+  },
+  "speedcamDhuRange": "Alert / radar range",
+  "@speedcamDhuRange": {
+    "description": "Presence and alert radius metres (DHU + approach)"
+  },
+  "speedcamSoundEnable": "Approach alert sound",
+  "@speedcamSoundEnable": {
+    "description": "Toggle sting on insideApproach enter"
+  },
+  "speedcamSoundVolume": "Alert volume",
+  "@speedcamSoundVolume": {
+    "description": "Speedcam sting/ping volume 0-100%"
+  },
+  "speedcamRadarLook": "Radar look",
+  "@speedcamRadarLook": {
+    "description": "Speedcam radar visual look picker"
+  },
+  "speedcamRadarLookDefault": "Default",
+  "@speedcamRadarLookDefault": {
+    "description": "Default HUD-clean radar look"
+  },
+  "speedcamRadarLookAlien": "Alien",
+  "@speedcamRadarLookAlien": {
+    "description": "Alien motion-tracker radar look"
+  },
+  "speedcamHudDemo": "Demo on HUD",
+  "@speedcamHudDemo": {
+    "description": "Force approach demo onto live HUD"
+  },
+  "speedcamHudDemoStop": "Stop demo",
+  "@speedcamHudDemoStop": {
+    "description": "Clear HUD speedcam demo approach"
+  },
+  "speedcamDbSection": "Local DB / map",
+  "@speedcamDbSection": {
+    "description": "DHU local speedcam pack state"
+  },
   "speedcamDbRegion": "Region",
-  "@speedcamDbRegion": { "description": "Pack region label" },
+  "@speedcamDbRegion": {
+    "description": "Pack region label"
+  },
+  "speedcamDbCoverage": "Coverage",
+  "@speedcamDbCoverage": {
+    "description": "Last harvest radius honesty (e.g. within 300 km)"
+  },
   "speedcamDbSource": "Source",
-  "@speedcamDbSource": { "description": "Pack source overpass/fixture/fake" },
+  "@speedcamDbSource": {
+    "description": "Pack source overpass/fixture/fake"
+  },
   "speedcamDbFetched": "Last fetched",
-  "@speedcamDbFetched": { "description": "Pack fetch timestamp" },
+  "@speedcamDbFetched": {
+    "description": "Pack fetch timestamp"
+  },
   "speedcamDbAge": "Age",
-  "@speedcamDbAge": { "description": "Pack age vs now" },
-  "speedcamDbCount": "Cameras in pack",
-  "@speedcamDbCount": { "description": "Cached cam count" },
+  "@speedcamDbAge": {
+    "description": "Pack age vs now"
+  },
+  "speedcamDbCount": "Cameras in cache",
+  "@speedcamDbCount": {
+    "description": "Cached cam count"
+  },
   "speedcamDbSample": "Sample cams",
-  "@speedcamDbSample": { "description": "First N cams from local DB" },
+  "@speedcamDbSample": {
+    "description": "First N cams from local DB"
+  },
   "speedcamHarvestSection": "Harvest / refresh",
-  "@speedcamHarvestSection": { "description": "Pack refresh policy section" },
+  "@speedcamHarvestSection": {
+    "description": "Pack refresh policy section"
+  },
   "speedcamRefreshPolicy": "Refresh policy",
-  "@speedcamRefreshPolicy": { "description": "Manual vs if-stale" },
+  "@speedcamRefreshPolicy": {
+    "description": "Manual vs if-stale"
+  },
   "speedcamRefreshManual": "Manual only",
-  "@speedcamRefreshManual": { "description": "Only Update button refreshes" },
+  "@speedcamRefreshManual": {
+    "description": "Only Update button refreshes"
+  },
   "speedcamRefreshIfStale": "If stale",
-  "@speedcamRefreshIfStale": { "description": "Auto refresh when older than N days" },
+  "@speedcamRefreshIfStale": {
+    "description": "Auto refresh when older than N days"
+  },
   "speedcamStaleDays": "Stale after (days)",
-  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" },
-
+  "@speedcamStaleDays": {
+    "description": "Days before if-stale refreshes"
+  },
+  "speedcamLocationDenied": "Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.",
+  "@speedcamLocationDenied": {
+    "description": "Honest error when runtime location permission is denied (0050 HARD)"
+  },
+  "speedcamLocationNeeded": "Allow location so Speedcam can track the car and center harvest.",
+  "@speedcamLocationNeeded": {
+    "description": "Hint before/with location permission prompt"
+  },
   "sectionAbout": "About",
-  "@sectionAbout": { "description": "Home tile — About" },
+  "@sectionAbout": {
+    "description": "Home tile — About"
+  },
   "sectionAboutSubtitle": "Version and data credits",
-  "@sectionAboutSubtitle": { "description": "About tile subtitle" },
+  "@sectionAboutSubtitle": {
+    "description": "About tile subtitle"
+  },
   "aboutTitle": "About",
-  "@aboutTitle": { "description": "About screen title" },
+  "@aboutTitle": {
+    "description": "About screen title"
+  },
   "aboutAppSection": "App",
-  "@aboutAppSection": { "description": "About app section" },
+  "@aboutAppSection": {
+    "description": "About app section"
+  },
   "aboutAppName": "Zee Power Toys",
-  "@aboutAppName": { "description": "Product name on About" },
+  "@aboutAppName": {
+    "description": "Product name on About"
+  },
   "aboutVersion": "Version",
-  "@aboutVersion": { "description": "Version label" },
+  "@aboutVersion": {
+    "description": "Version label"
+  },
   "aboutCreditsSection": "Credits",
-  "@aboutCreditsSection": { "description": "Credits section" },
+  "@aboutCreditsSection": {
+    "description": "Credits section"
+  },
   "aboutSpeedcamCreditTitle": "Speedcam / map data",
-  "@aboutSpeedcamCreditTitle": { "description": "Speedcam credit title" },
+  "@aboutSpeedcamCreditTitle": {
+    "description": "Speedcam credit title"
+  },
   "aboutSpeedcamCreditBody": "Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).",
-  "@aboutSpeedcamCreditBody": { "description": "OSM ODbL credit for Speedcam" }
-
+  "@aboutSpeedcamCreditBody": {
+    "description": "OSM ODbL credit for Speedcam"
+  },
+  "installYnaviOs7Name": "YNavi mod (OS7+ no left margin)",
+  "@installYnaviOs7Name": {
+    "description": "Install card — OS7 YNavi variant"
+  },
+  "installYnaviOs7Desc": "Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.",
+  "@installYnaviOs7Desc": {
+    "description": "Install card desc OS7 YNavi"
+  },
+  "updateCardName": "Zee Power Toys",
+  "@updateCardName": {
+    "description": "Self-update card title"
+  },
+  "updateCardDesc": "Check GitHub Releases for a newer build of this app, then download and install.",
+  "@updateCardDesc": {
+    "description": "Self-update card description"
+  },
+  "updateCheckButton": "Check for updates",
+  "@updateCheckButton": {
+    "description": "Probe GitHub for newer release"
+  },
+  "updateInstallButton": "Update now",
+  "@updateInstallButton": {
+    "description": "Download and install newer APK"
+  },
+  "updateStatusChecking": "Checking…",
+  "@updateStatusChecking": {
+    "description": "Self-update checking status"
+  },
+  "updateStatusUpToDate": "You are on the latest build.",
+  "@updateStatusUpToDate": {
+    "description": "No newer release"
+  },
+  "updateStatusAvailable": "Update available: {label}",
+  "@updateStatusAvailable": {
+    "description": "Newer release found",
+    "placeholders": {"label": {"type": "String"}}
+  },
+  "updateStatusNone": "No public releases published yet.",
+  "@updateStatusNone": {
+    "description": "Empty releases list"
+  },
+  "updateStatusFailed": "Update check failed: {message}",
+  "@updateStatusFailed": {
+    "description": "Check error",
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "speedcamDhuSystemOverlay": "DHU system overlay",
+  "@speedcamDhuSystemOverlay": {
+    "description": "0065 toggle title"
+  },
+  "speedcamDhuSystemOverlayHint": "Show a floating Speedcam alert over other apps (needs display-over permission).",
+  "@speedcamDhuSystemOverlayHint": {
+    "description": "0065 toggle hint"
+  },
+  "speedcamOverlayPermissionDenied": "Display-over permission required for the system overlay.",
+  "@speedcamOverlayPermissionDenied": {
+    "description": "0065 permission denied"
+  }
 }

@@ -18,3 +18,8 @@ Verify after build:
 apksigner verify --print-certs build/app/outputs/flutter-apk/app-debug.apk
 # expect SHA-256: c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8
 ```
+
+## 0054 keep-data
+
+Release builds with `useAospDebugKey=true` **fail** if this keystore is missing.
+Do not fall back to Flutter debug signing for car APKs (sharedUserId). Never `adb uninstall` to clear SHARED_USER — fix the key and `adb install -r`.

@@ -23,6 +23,16 @@
     <!-- Silent YNavi restart (phase0 BootActions.restartYNavi) — system/signature on DHU. -->
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
+    <!-- Speedcam live pose (0050): Android LocationManager GPS fallback when YNavi
+         sendLocation is silent (no active nav route). Declared here for install-time
+         visibility; **runtime** grant via Activity.requestPermissions / in-app dialog
+         (0050 HARD) — not install-time automatic, not ADB pm grant (lab only). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- 0065: Speedcam DHU system overlay (TYPE_APPLICATION_OVERLAY). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- YNavi CarApp host permissions (Block YNavi / YNaviCarAppHost).
          TEMPLATE_RENDERER: system/signature permission pre-granted on Zeekr OS;
          required to bind the CarApp cluster host.  Declaring it here is harmless
@@ -33,9 +43,10 @@
     <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
 
     <application
-        android:label="zee_power_toys"
+        android:label="@string/app_name"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         <activity
             android:name=".MainActivity"
             android:exported="true"

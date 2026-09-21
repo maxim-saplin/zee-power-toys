@@ -127,9 +127,12 @@ void registerZeeExtensions({
         'speedcam': speedcam?.snapshot.toJson(),
         'speedcamPack': packMeta?.toJson(),
         'speedcamConfig': <String, Object?>{
+          'hudMode': store.value.speedcam.hudMode.name,
+          'soundMode': store.value.speedcam.soundMode.name,
           'hudRadarEnabled': store.value.speedcam.hudRadarEnabled,
           'radarLook': store.value.speedcam.radarLook.name,
           'soundEnabled': store.value.speedcam.soundEnabled,
+          'soundVolume': store.value.speedcam.soundVolume,
           'dhuRangeM': store.value.speedcam.dhuRangeM,
         },
         'speedKmh': snap?.speedKmh,
@@ -146,8 +149,13 @@ void registerZeeExtensions({
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
           'showChargingStats': bat.showChargingStats,
+          'look': bat.look.name,
           'contentMode': bat.contentMode.name,
           'style': bat.style.name,
+          'placement': bat.placement.name,
+          'vertFrac': bat.vertFrac,
+          'sidePadFrac': bat.sidePadFrac,
+          'horizBiasFrac': bat.horizBiasFrac,
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
@@ -274,22 +282,43 @@ void registerZeeExtensions({
     }
 
     // Battery config: batteryShow=true|false, tempShow=..., chargingShow=...,
-    // batterySize=<double>, batteryContentMode=both|iconOnly|textOnly,
-    // batteryStyle=outline|filled|pctInside (also accepts contentMode/style aliases).
+    // batterySize=<double>,
+    // batteryLook=battery|batteryText|batteryBars|justText (0056 PDM),
+    // batteryContentMode=both|iconOnly|textOnly + batteryStyle=outline|filled|pctInside
+    // (legacy aliases; also contentMode/style),
+    // batteryPlacement=left|right|rightTop, batteryVert / batterySidePad /
+    // batteryHorizBias=<double>.
     final rawBatteryShow = params['batteryShow'];
     final rawTempShow = params['tempShow'];
     final rawChargingShow = params['chargingShow'];
     final rawBatterySize = params['batterySize'];
+    final rawBatteryLook = params['batteryLook'] ?? params['look'];
     final rawBatteryContentMode =
         params['batteryContentMode'] ?? params['contentMode'];
     final rawBatteryStyle = params['batteryStyle'] ?? params['style'];
+    final rawBatteryPlacement = params['batteryPlacement'];
+    final rawBatteryVert = params['batteryVert'];
+    final rawBatterySidePad = params['batterySidePad'];
+    final rawBatteryHorizBias = params['batteryHorizBias'];
     if (rawBatteryShow != null ||
         rawTempShow != null ||
         rawChargingShow != null ||
         rawBatterySize != null ||
+        rawBatteryLook != null ||
         rawBatteryContentMode != null ||
-        rawBatteryStyle != null) {
-      final bat = next.battery;
+        rawBatteryStyle != null ||
+        rawBatteryPlacement != null ||
+        rawBatteryVert != null ||
+        rawBatterySidePad != null ||
+        rawBatteryHorizBias != null) {
+      var bat = next.battery;
+      BatteryLook? look;
+      if (rawBatteryLook != null) {
+        look = BatteryLook.values.firstWhere(
+          (e) => e.name == rawBatteryLook,
+          orElse: () => bat.look,
+        );
+      }
       BatteryContentMode? contentMode;
       if (rawBatteryContentMode != null) {
         contentMode = BatteryContentMode.values.firstWhere(
@@ -304,6 +333,16 @@ void registerZeeExtensions({
           orElse: () => bat.style,
         );
       }
+      if (rawBatteryPlacement != null) {
+        final placement = BatteryPlacement.values.firstWhere(
+          (e) => e.name == rawBatteryPlacement,
+          orElse: () => bat.placement,
+        );
+        bat = bat.withPlacement(placement);
+      }
+      if (look != null) {
+        bat = bat.withLook(look);
+      }
       next = next.copyWith(
         battery: bat.copyWith(
           showBattery: rawBatteryShow != null ? rawBatteryShow == 'true' : null,
@@ -312,8 +351,11 @@ void registerZeeExtensions({
               ? rawChargingShow == 'true'
               : null,
           sizeScale: double.tryParse(rawBatterySize ?? ''),
-          contentMode: contentMode,
-          style: style,
+          contentMode: look == null ? contentMode : null,
+          style: look == null ? style : null,
+          vertFrac: double.tryParse(rawBatteryVert ?? ''),
+          sidePadFrac: double.tryParse(rawBatterySidePad ?? ''),
+          horizBiasFrac: double.tryParse(rawBatteryHorizBias ?? ''),
         ),
       );
     }
@@ -324,16 +366,35 @@ void registerZeeExtensions({
       next = next.copyWith(locale: rawLocale == 'system' ? null : rawLocale);
     }
 
-    // Minimap config: minimapEnabled=true|false, minimapPreset=compact|balanced|large.
+    // Minimap config: minimapEnabled=true|false,
+    // minimapOnlyWhileGuidance=true|false (0057),
+    // guidanceOverlay / etaBar (0055 Zee HUD 2),
+    // minimapPreset=compact|balanced|large.
     final rawMinimapEnabled = params['minimapEnabled'];
+    final rawMinimapOnlyWhileGuidance =
+        params['minimapOnlyWhileGuidance'] ?? params['onlyWhileGuidance'];
+    final rawGuidanceOverlay =
+        params['guidanceOverlay'] ?? params['guidance_overlay'];
+    final rawEtaBar = params['etaBar'] ?? params['eta_bar'];
     final rawMinimapPreset = params['minimapPreset'];
-    if (rawMinimapEnabled != null || rawMinimapPreset != null) {
+    if (rawMinimapEnabled != null ||
+        rawMinimapOnlyWhileGuidance != null ||
+        rawGuidanceOverlay != null ||
+        rawEtaBar != null ||
+        rawMinimapPreset != null) {
       final mm = next.minimap;
       next = next.copyWith(
         minimap: mm.copyWith(
           enabled: rawMinimapEnabled != null
               ? rawMinimapEnabled == 'true'
               : null,
+          onlyWhileGuidance: rawMinimapOnlyWhileGuidance != null
+              ? rawMinimapOnlyWhileGuidance == 'true'
+              : null,
+          guidanceOverlay: rawGuidanceOverlay != null
+              ? rawGuidanceOverlay == 'true'
+              : null,
+          etaBar: rawEtaBar != null ? rawEtaBar == 'true' : null,
           preset: rawMinimapPreset,
         ),
       );
@@ -597,7 +658,12 @@ void registerZeeExtensions({
               }),
             );
           }
-          final meta = await speedcamPack.updatePack(SpeedcamPackIds.by);
+          final host = speedcam?.snapshot.host;
+          final meta = await speedcamPack.updatePack(
+            SpeedcamPackIds.by,
+            centerLat: host?.lat,
+            centerLon: host?.lon,
+          );
           await speedcam?.reloadFromPack();
           return developer.ServiceExtensionResponse.result(
             jsonEncode(<String, Object?>{

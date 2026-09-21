@@ -139,11 +139,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Launcher with YNavi set as the default navigation app';
 
   @override
-  String get installYnaviName => 'YNavi mod (HUD)';
+  String get installYnaviName => 'YNavi mod (margined / default)';
 
   @override
   String get installYnaviDesc =>
-      'Yandex.Navi mod with HUD support and minimap broadcast';
+      'HUD-capable YNavi with left letterbox for Zeekr side panel. Prefer this unless on OS7+.';
 
   @override
   String get installButtonLabel => 'Install / Update';
@@ -254,6 +254,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get batteryStylePctInside => '% inside';
 
   @override
+  String get batteryLook => 'Look';
+
+  @override
+  String get batteryLookBattery => 'Battery';
+
+  @override
+  String get batteryLookBatteryText => 'Battery + text';
+
+  @override
+  String get batteryLookBatteryBars => 'Battery with bars';
+
+  @override
+  String get batteryLookJustText => 'Just text';
+
+  @override
+  String get batteryPlacement => 'Position';
+
+  @override
+  String get batteryPlacementLeft => 'Left';
+
+  @override
+  String get batteryPlacementRight => 'Right';
+
+  @override
+  String get batteryPlacementRightTop => 'Right top';
+
+  @override
+  String get batteryVerticalPosition => 'Vertical position';
+
+  @override
+  String get batterySidePadding => 'Side padding (from edge)';
+
+  @override
+  String get batteryHorizBias => 'Horizontal bias';
+
+  @override
   String get batterySize => 'Size';
 
   @override
@@ -289,6 +325,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get minimapYnaviUnavailableHint =>
       'Install a compatible YNavi mod to enable the minimap';
+
+  @override
+  String get minimapOnlyWhileGuidance => 'Show only during guidance';
+
+  @override
+  String get minimapOnlyWhileGuidanceHint =>
+      'When on, the minimap appears only while YNavi navigation is active';
+
+  @override
+  String get minimapGuidanceOverlay => 'Turn-by-turn overlay';
+
+  @override
+  String get minimapGuidanceOverlayHint =>
+      'Arrow, distance, and street name on the minimap (from YNavi trip data)';
+
+  @override
+  String get minimapEtaBar => 'ETA bar';
+
+  @override
+  String get minimapEtaBarHint =>
+      'Remaining distance, time, and arrival on the minimap';
+
+  @override
+  String get minimapOverlayScale => 'Overlay scale';
+
+  @override
+  String get minimapOverlayScaleHint =>
+      'Shrink turn-by-turn and ETA bars to fit the minimap (independent of map density)';
 
   @override
   String get minimapPreset => 'Preset';
@@ -430,7 +494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeWelcomeBody =>
-      'HUD overlays and minimap for Zeekr. Check companion apps below, then open a section.';
+      'HUD overlays and a minimap for Zeekr. Check the companion apps below, then pick a section on the right.';
 
   @override
   String get homeCompanionsTitle => 'Companion apps';
@@ -467,13 +531,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamTitle => 'Speedcam';
 
   @override
-  String get speedcamPackSection => 'Region pack';
+  String get speedcamPackSection => 'Camera cache';
 
   @override
   String get speedcamPackBy => 'Belarus (BY)';
 
   @override
-  String get speedcamPackMissing => 'No pack cached — tap Update';
+  String get speedcamPackMissing => 'No cameras cached — tap Update';
 
   @override
   String speedcamPackStatus(int count, String when) {
@@ -481,7 +545,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get speedcamPackUpdate => 'Update pack';
+  String get speedcamPackUpdate => 'Harvest (300 km)';
 
   @override
   String get speedcamPackUpdating => 'Updating…';
@@ -493,10 +557,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamHudRadarEnable => 'Show radar on HUD';
 
   @override
-  String get speedcamDhuRange => 'DHU radar range';
+  String get speedcamHudMode => 'HUD radar';
+
+  @override
+  String get speedcamSoundMode => 'Alert sound';
+
+  @override
+  String get speedcamPresenceAny => 'Any';
+
+  @override
+  String get speedcamPresenceDangerous => 'Dangerous';
+
+  @override
+  String get speedcamPresenceOff => 'Off';
+
+  @override
+  String get speedcamDhuRange => 'Alert / radar range';
 
   @override
   String get speedcamSoundEnable => 'Approach alert sound';
+
+  @override
+  String get speedcamSoundVolume => 'Alert volume';
 
   @override
   String get speedcamRadarLook => 'Radar look';
@@ -514,10 +596,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamHudDemoStop => 'Stop demo';
 
   @override
-  String get speedcamDbSection => 'Local pack / DB';
+  String get speedcamDbSection => 'Local DB / map';
 
   @override
   String get speedcamDbRegion => 'Region';
+
+  @override
+  String get speedcamDbCoverage => 'Coverage';
 
   @override
   String get speedcamDbSource => 'Source';
@@ -529,7 +614,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speedcamDbAge => 'Age';
 
   @override
-  String get speedcamDbCount => 'Cameras in pack';
+  String get speedcamDbCount => 'Cameras in cache';
 
   @override
   String get speedcamDbSample => 'Sample cams';
@@ -548,6 +633,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamStaleDays => 'Stale after (days)';
+
+  @override
+  String get speedcamLocationDenied =>
+      'Location permission denied — enable in Settings or allow the in-app prompt. Harvest will not use a stale Demo/Minsk center.';
+
+  @override
+  String get speedcamLocationNeeded =>
+      'Allow location so Speedcam can track the car and center harvest.';
 
   @override
   String get sectionAbout => 'About';
@@ -576,4 +669,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutSpeedcamCreditBody =>
       'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).';
+
+  @override
+  String get installYnaviOs7Name => 'YNavi mod (OS7+ no left margin)';
+
+  @override
+  String get installYnaviOs7Desc =>
+      'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.';
+
+  @override
+  String get updateCardName => 'Zee Power Toys';
+
+  @override
+  String get updateCardDesc =>
+      'Check GitHub Releases for a newer build of this app, then download and install.';
+
+  @override
+  String get updateCheckButton => 'Check for updates';
+
+  @override
+  String get updateInstallButton => 'Update now';
+
+  @override
+  String get updateStatusChecking => 'Checking…';
+
+  @override
+  String get updateStatusUpToDate => 'You are on the latest build.';
+
+  @override
+  String updateStatusAvailable(String label) {
+    return 'Update available: $label';
+  }
+
+  @override
+  String get updateStatusNone => 'No public releases published yet.';
+
+  @override
+  String updateStatusFailed(String message) {
+    return 'Update check failed: $message';
+  }
+
+  @override
+  String get speedcamDhuSystemOverlay => 'DHU system overlay';
+
+  @override
+  String get speedcamDhuSystemOverlayHint =>
+      'Show a floating Speedcam alert over other apps (needs display-over permission).';
+
+  @override
+  String get speedcamOverlayPermissionDenied =>
+      'Display-over permission required for the system overlay.';
 }

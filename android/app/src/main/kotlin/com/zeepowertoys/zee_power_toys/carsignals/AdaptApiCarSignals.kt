@@ -107,9 +107,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         }
         registerListeners()
         seedBatteryFromLatest()
+        seedChargeFromLatest()
         startBlinkerPoll()
         startBatteryPoll()
-        Log.i(TAG, "AdaptApiCarSignals started — listeners + SoC seed/poll + blinker poll")
+        Log.i(TAG, "AdaptApiCarSignals started — listeners + SoC/charge seed/poll + blinker poll")
     }
 
     override fun snapshot(): CarSignalSnapshot = lastSnapshot
@@ -171,12 +172,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                     val id = (args?.get(0) as? Int) ?: return@InvocationHandler null
                     val event = (args.get(1) as? Int) ?: return@InvocationHandler null
                     if (id == CHARGE_STATE) {
-                        val charging = event == 1  // 1=charging by convention
-                        lastSnapshot = lastSnapshot.copy(charging = charging)
-                        emitter?.invoke(SignalEvent.Charge(
-                            charging, lastSnapshot.chargeVolts,
-                            lastSnapshot.chargeAmps, lastSnapshot.chargeKw,
-                        ))
+                        publishChargeState(event)
                     }
                 }
                 "onSensorSupportChanged" -> { /* ignore */ }
@@ -190,7 +186,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             sensorHandler,
         )
         // Try 3-arg form (with rate) first; fall back to 2-arg
-        val sensorIds = intArrayOf(SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP)
+        val sensorIds = intArrayOf(SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP, CHARGE_STATE)
         for (sid in sensorIds) {
             val r3 = ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid, 0)
             if (!r3.invoked || r3.error != null) {
@@ -289,6 +285,28 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         return if (ReflectionUtils.nonSentinelFloat(v)) v else null
     }
 
+    /** Enum sensors (CHARGE_STATE) — ISensor.getSensorEvent, not getSensorLatestValue.
+     *  Do NOT use nonSentinelInt: that rejects 0, but CHARGE_STATE 0=idle is valid. */
+    private fun readSensorEvent(sensorId: Int): Int? {
+        val sm = sensorMgr ?: return null
+        val result = ReflectionUtils.callInstanceResult(sm, "getSensorEvent", sensorId)
+        if (!result.invoked || result.error != null) return null
+        val v = result.value as? Int ?: return null
+        // Only reject AdaptAPI "no data" sentinels; 0 is a real idle enum value.
+        if (v == 255 || v == -1) return null
+        return v
+    }
+
+    private fun readCustomizeFloat(functionId: Int): Float? {
+        val fm = functionMgr ?: return null
+        val result = ReflectionUtils.callInstanceResult(
+            fm, "getCustomizeFunctionValue", functionId, ZONE_GLOBAL,
+        )
+        if (!result.invoked || result.error != null) return null
+        val v = result.value as? Float ?: return null
+        return if (ReflectionUtils.nonSentinelFloat(v)) v else null
+    }
+
     /** Seed SoC + temp via getSensorLatestValue (phase0 HUD path). */
     private fun seedBatteryFromLatest() {
         val soc = readSensorFloat(BATTERY_SOC) ?: readSensorFloat(BATTERY_LEVEL)
@@ -299,6 +317,80 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             TAG,
             "Battery seed: soc=${soc ?: "null"} temp=${temp ?: "null"} " +
                 "pct=${lastSnapshot.batteryPct} tempC=${lastSnapshot.batteryTempC}",
+        )
+    }
+
+    /**
+     * Seed CHARGE_STATE + live V/A/kW.
+     * CHARGE_STATE = SENSOR_TYPE_EV_BATTERY_STATE (0x00201500).
+     * Event values are full ISensorEvent enums (zee_hud_2 ENERGY_SIGNAL_ANALYSIS),
+     * NOT 0/1 — e.g. CHARGING=2102530, FAST=2102545, SUPER_FAST=2102546.
+     * Listeners alone often never fire until change — same gap as SoC before seed/poll.
+     */
+    private fun seedChargeFromLatest() {
+        val event = readSensorEvent(CHARGE_STATE)
+        if (event != null) publishChargeState(event)
+        val v = readCustomizeFloat(CHARGE_VOLTS)
+        val a = readCustomizeFloat(CHARGE_AMPS)
+        val kw = readCustomizeFloat(CHARGE_KW)
+        if (v != null || a != null || kw != null) {
+            lastSnapshot = lastSnapshot.copy(
+                chargeVolts = v?.toDouble() ?: lastSnapshot.chargeVolts,
+                chargeAmps = a?.toDouble() ?: lastSnapshot.chargeAmps,
+                chargeKw = kw?.toDouble() ?: lastSnapshot.chargeKw,
+            )
+            val derived = (lastSnapshot.charging == true) ||
+                ((lastSnapshot.chargeKw ?: 0.0) > 0.05)
+            if (lastSnapshot.charging != derived) {
+                lastSnapshot = lastSnapshot.copy(charging = derived)
+            }
+            emitter?.invoke(
+                SignalEvent.Charge(
+                    derived,
+                    lastSnapshot.chargeVolts,
+                    lastSnapshot.chargeAmps,
+                    lastSnapshot.chargeKw,
+                ),
+            )
+        }
+        Log.i(
+            TAG,
+            "Charge seed: event=${event ?: "null"} charging=${lastSnapshot.charging} " +
+                "V=${lastSnapshot.chargeVolts} A=${lastSnapshot.chargeAmps} kW=${lastSnapshot.chargeKw}",
+        )
+    }
+
+    /**
+     * Map SENSOR_TYPE_EV_BATTERY_STATE event → charging bool.
+     * Source: zee_hud_2 docs/research/ENERGY_SIGNAL_ANALYSIS.md §2.
+     */
+    private fun isChargingBatteryState(event: Int): Boolean = when (event) {
+        2102529, // BATTERY_STATE_CHARGING_PREPARED
+        2102530, // BATTERY_STATE_CHARGING
+        2102545, // BATTERY_STATE_FAST_CHARGING
+        2102546, // BATTERY_STATE_SUPER_FAST_CHARGING
+        2102550, // BATTERY_STATE_CHARGE_PREHEATING
+        2102551, // BATTERY_STATE_CHARGE_BOOKING
+        2102552, // BATTERY_STATE_CHARGE_BOOSTING
+        2102553, // BATTERY_STATE_CHARGE_WIRELESS
+        -> true
+        else -> false
+    }
+
+    private fun publishChargeState(event: Int) {
+        // Belt: live chargeKw already proves charging even if enum surprises us.
+        val kw = lastSnapshot.chargeKw
+        val charging = isChargingBatteryState(event) || (kw != null && kw > 0.05)
+        if (lastSnapshot.charging == charging) return
+        lastSnapshot = lastSnapshot.copy(charging = charging)
+        Log.i(TAG, "Charge state: event=$event charging=$charging kW=$kw")
+        emitter?.invoke(
+            SignalEvent.Charge(
+                charging,
+                lastSnapshot.chargeVolts,
+                lastSnapshot.chargeAmps,
+                lastSnapshot.chargeKw,
+            ),
         )
     }
 
@@ -324,15 +416,35 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             override fun run() {
                 val soc = readSensorFloat(BATTERY_SOC) ?: readSensorFloat(BATTERY_LEVEL)
                 val temp = readSensorFloat(BATTERY_TEMP)
+                val chargeEvent = readSensorEvent(CHARGE_STATE)
+                val v = readCustomizeFloat(CHARGE_VOLTS)
+                val a = readCustomizeFloat(CHARGE_AMPS)
+                val kw = readCustomizeFloat(CHARGE_KW)
                 Handler(Looper.getMainLooper()).post {
                     if (soc != null) publishBatteryPct(soc.toInt().coerceIn(0, 100))
                     if (temp != null) publishBatteryTemp(temp.toDouble())
+                    if (chargeEvent != null) publishChargeState(chargeEvent)
+                    if (v != null || a != null || kw != null) {
+                        lastSnapshot = lastSnapshot.copy(
+                            chargeVolts = v?.toDouble() ?: lastSnapshot.chargeVolts,
+                            chargeAmps = a?.toDouble() ?: lastSnapshot.chargeAmps,
+                            chargeKw = kw?.toDouble() ?: lastSnapshot.chargeKw,
+                        )
+                        emitter?.invoke(
+                            SignalEvent.Charge(
+                                lastSnapshot.charging ?: false,
+                                lastSnapshot.chargeVolts,
+                                lastSnapshot.chargeAmps,
+                                lastSnapshot.chargeKw,
+                            ),
+                        )
+                    }
                 }
                 batteryPollHandler?.postDelayed(this, BATTERY_POLL_MS)
             }
         }
         handler.post(runnable)
-        Log.i(TAG, "Battery SoC poll started (${BATTERY_POLL_MS}ms)")
+        Log.i(TAG, "Battery SoC + CHARGE_STATE poll started (${BATTERY_POLL_MS}ms)")
     }
 
     private fun stopBatteryPoll() {

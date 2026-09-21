@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_pack_store.dart';
+import 'package:zee_power_toys/services/speedcam.dart';
 import 'package:zee_power_toys/services/speedcam_pack_store.dart';
 
 void main() {
@@ -23,6 +24,64 @@ void main() {
       expect(cams.first.id, 'osm-42');
       expect(cams.first.maxspeed, 60);
       expect(cams.first.direction, 'N');
+    });
+
+    test('includes enforcement=maxspeed device members; relation tags fallback',
+        () {
+      final cams = FileSpeedcamPackStore.parseOverpassElements([
+        {
+          'type': 'node',
+          'id': 100,
+          'lat': 53.9,
+          'lon': 27.5,
+          'tags': {'highway': 'speed_camera', 'maxspeed': '60'},
+        },
+        // Device node without highway=speed_camera — only via relation.
+        {
+          'type': 'node',
+          'id': 200,
+          'lat': 53.91,
+          'lon': 27.55,
+          'tags': {'direction': 'E'},
+        },
+        {
+          'type': 'relation',
+          'id': 9,
+          'tags': {'enforcement': 'maxspeed', 'maxspeed': '90'},
+          'members': [
+            {'type': 'node', 'ref': 200, 'role': 'device'},
+            {'type': 'way', 'ref': 1, 'role': 'from'},
+          ],
+        },
+      ]);
+      final byId = {for (final c in cams) c.id: c};
+      expect(byId.keys, containsAll(['osm-100', 'osm-200']));
+      expect(byId['osm-200']!.maxspeed, 90); // from relation
+      expect(byId['osm-200']!.direction, 'E'); // from device
+    });
+
+    test('dedupes highway node that is also an enforcement device', () {
+      final cams = FileSpeedcamPackStore.parseOverpassElements([
+        {
+          'type': 'node',
+          'id': 50,
+          'lat': 53.9,
+          'lon': 27.5,
+          'tags': {'highway': 'speed_camera'},
+        },
+        {
+          'type': 'relation',
+          'id': 8,
+          'tags': {'enforcement': 'maxspeed', 'maxspeed': '70', 'direction': 'S'},
+          'members': [
+            {'type': 'node', 'ref': 50, 'role': 'device'},
+          ],
+        },
+      ]);
+      expect(cams, hasLength(1));
+      expect(cams.first.id, 'osm-50');
+      expect(cams.first.maxspeed, 70); // enriched from relation
+      expect(cams.first.direction, 'S');
     });
   });
 
@@ -51,7 +110,7 @@ void main() {
 
     test('updatePack downloads, caches, loadCams round-trip', () async {
       expect(await store.current(SpeedcamPackIds.by), isNull);
-      final meta = await store.updatePack(SpeedcamPackIds.by);
+      final meta = await store.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(meta.camCount, 3);
       expect(meta.id, SpeedcamPackIds.by);
       expect(await store.current(SpeedcamPackIds.by), isNotNull);
@@ -88,10 +147,14 @@ void main() {
           return http.Response(fixture, 200);
         }),
       );
-      await store.updatePack(SpeedcamPackIds.by);
+      await store.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(seen, isNotNull);
       expect(seen!.headers['user-agent'], contains('zee-power-toys'));
       expect(seen!.headers['accept'], 'application/json');
+      final body = seen is http.Request ? (seen as http.Request).body : '';
+      // Body is form-urlencoded: around: → around%3A
+      expect(body, contains('around%3A'));
+      expect(body.toLowerCase(), isNot(contains('belarus')));
       store.dispose();
       await root.delete(recursive: true);
     });
@@ -101,12 +164,137 @@ void main() {
     test('updatePack then loadCams; offline fails', () async {
       final fake = FakeSpeedcamPackStore();
       expect(await fake.current(SpeedcamPackIds.by), isNull);
-      final meta = await fake.updatePack(SpeedcamPackIds.by);
+      final meta = await fake.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       expect(meta.camCount, greaterThan(0));
       expect(await fake.loadCams(SpeedcamPackIds.by), isNotEmpty);
       fake.offline = true;
-      expect(() => fake.updatePack(SpeedcamPackIds.by), throwsStateError);
+      expect(() => fake.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon), throwsStateError);
       fake.dispose();
+    });
+  });
+
+
+  group('SpeedcamHarvestArea', () {
+    test('overpassQl uses around radius not bbox', () {
+      final ql = SpeedcamHarvestArea.overpassQl(
+        lat: 53.9,
+        lon: 27.5,
+        radiusKm: 300,
+      );
+      expect(ql, contains('around:300000,53.9,27.5'));
+      expect(ql, isNot(contains('51.2')));
+      expect(ql, isNot(contains('highway"="speed_camera"](51')));
+    });
+
+    test('overpassQl keeps speed_camera nodes and enforcement device members',
+        () {
+      final ql = SpeedcamHarvestArea.overpassQl(
+        lat: 53.9,
+        lon: 27.5,
+        radiusKm: 300,
+      );
+      expect(ql, contains('node["highway"="speed_camera"](around:'));
+      expect(ql, contains('relation["enforcement"="maxspeed"](around:'));
+      expect(ql, contains('node(r.base:"device")'));
+      expect(ql, contains('out body;'));
+    });
+
+    test('mergeById retains outside-circle cams (no purge)', () {
+      const existing = [
+        SpeedcamPoint(id: 'osm-old', lat: 52.0, lon: 23.7),
+        SpeedcamPoint(id: 'osm-1', lat: 53.9, lon: 27.5),
+      ];
+      const incoming = [
+        SpeedcamPoint(id: 'osm-1', lat: 53.91, lon: 27.56), // upsert
+        SpeedcamPoint(id: 'osm-2', lat: 53.92, lon: 27.57),
+      ];
+      final merged = SpeedcamHarvestArea.mergeById(existing, incoming);
+      final ids = merged.map((c) => c.id).toSet();
+      expect(ids, containsAll(['osm-old', 'osm-1', 'osm-2']));
+      expect(merged.firstWhere((c) => c.id == 'osm-1').lat, 53.91);
+      expect(merged, hasLength(3));
+    });
+  });
+
+  group('FileSpeedcamPackStore.merge harvest', () {
+    test('second updatePack keeps cams outside new harvest', () async {
+      final root = await Directory.systemTemp.createTemp('speedcam_merge_');
+      var call = 0;
+      final store = FileSpeedcamPackStore(
+        root: root,
+        client: MockClient((request) async {
+          call++;
+          if (call == 1) {
+            return http.Response(
+              '{"elements":['
+              '{"type":"node","id":10,"lat":53.9,"lon":27.5,"tags":{"highway":"speed_camera"}},'
+              '{"type":"node","id":11,"lat":52.1,"lon":23.7,"tags":{"highway":"speed_camera"}}'
+              ']}',
+              200,
+            );
+          }
+          // Second harvest returns only near-center cam (simulates different circle).
+          return http.Response(
+            '{"elements":['
+            '{"type":"node","id":10,"lat":53.905,"lon":27.51,"tags":{"highway":"speed_camera"}},'
+            '{"type":"node","id":12,"lat":53.92,"lon":27.55,"tags":{"highway":"speed_camera"}}'
+            ']}',
+            200,
+          );
+        }),
+        clock: () => DateTime.utc(2026, 9, 20, 12),
+      );
+      final first = await store.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: 53.9,
+        centerLon: 27.5,
+      );
+      expect(first.camCount, 2);
+      expect(first.coverageLabel, 'within 300 km');
+      expect(first.regionLabel.toLowerCase(), isNot(contains('by')));
+
+      final second = await store.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: 53.9,
+        centerLon: 27.5,
+      );
+      expect(second.lastHarvestCount, 2);
+      // osm-11 retained from first harvest even though absent in second response.
+      final cams = await store.loadCams(SpeedcamPackIds.by);
+      final ids = cams.map((c) => c.id).toSet();
+      expect(ids, containsAll(['osm-10', 'osm-11', 'osm-12']));
+      expect(second.camCount, 3);
+
+      // Request body used around=
+      store.dispose();
+      await root.delete(recursive: true);
+    });
+  });
+
+
+  group('0050 harvest center honesty', () {
+    test('updatePack without center or prior throws (no silent Minsk)', () async {
+      final fake = FakeSpeedcamPackStore();
+      expect(
+        () => fake.updatePack(SpeedcamPackIds.by),
+        throwsA(isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          contains('No harvest center'),
+        )),
+      );
+    });
+
+    test('updatePack uses prior center when pose absent', () async {
+      final fake = FakeSpeedcamPackStore();
+      await fake.updatePack(
+        SpeedcamPackIds.by,
+        centerLat: 53.9,
+        centerLon: 27.5,
+      );
+      final again = await fake.updatePack(SpeedcamPackIds.by);
+      expect(again.centerLat, 53.9);
+      expect(again.centerLon, 27.5);
     });
   });
 }

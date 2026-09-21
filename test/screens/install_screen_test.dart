@@ -30,17 +30,20 @@ Future<(SharedPrefsConfigStore, FakeInstaller)> _makeFixture() async {
 
 void main() {
   group('InstallScreen', () {
-    testWidgets('renders two install cards', (tester) async {
+    testWidgets('renders self-update + three companion cards', (tester) async {
       final (store, installer) = await _makeFixture();
 
       await tester.pumpWidget(_wrap(const InstallScreen(), store, installer));
       await tester.pump();
 
-      expect(find.text('Modded Launcher'), findsOneWidget);
-      expect(find.text('YNavi mod (HUD)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-self-update')), findsOneWidget);
+      expect(find.byKey(const ValueKey('update-check')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-launcher')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-ynavi')), findsOneWidget);
+      expect(find.byKey(const ValueKey('card-ynavi-os7')), findsOneWidget);
     });
 
-    testWidgets('both Install/Update buttons present', (tester) async {
+    testWidgets('Install buttons for launcher + both YNavi variants', (tester) async {
       final (store, installer) = await _makeFixture();
 
       await tester.pumpWidget(_wrap(const InstallScreen(), store, installer));
@@ -48,6 +51,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('install-launcher')), findsOneWidget);
       expect(find.byKey(const ValueKey('install-ynavi')), findsOneWidget);
+      expect(find.byKey(const ValueKey('install-ynavi-os7')), findsOneWidget);
     });
 
     testWidgets(

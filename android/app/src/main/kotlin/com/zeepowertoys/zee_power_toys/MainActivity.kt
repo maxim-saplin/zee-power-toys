@@ -1,7 +1,9 @@
 package com.zeepowertoys.zee_power_toys
 
+import android.Manifest
 import android.app.Presentation
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.ColorMatrix
@@ -24,10 +26,14 @@ import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.boot.BootRemediation
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
+import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlaySettings
+import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlayView
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
+import com.zeepowertoys.zee_power_toys.location.AndroidGpsLocationSource
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
+import com.zeepowertoys.zee_power_toys.speedcam.SpeedcamSystemOverlayController
 import com.zeepowertoys.zee_power_toys.install.PackageStatusController
 import com.zeepowertoys.zee_power_toys.usb.UsbModeController
 import io.flutter.FlutterInjector
@@ -60,9 +66,11 @@ import io.flutter.plugin.common.MethodChannel
 //
 // Minimap under-layer (Block 0009, ADR 0001 exception):
 //   The HUD Presentation uses a FrameLayout with a native MinimapView (TextureView,
-//   parametric ColorMatrix filter) UNDER a transparent FlutterTextureView overlay.
-//   The zee/minimap MethodChannel is registered on the DHU engine (primary) so
-//   the DHU Dart isolate drives the native Minimap surface.
+//   parametric ColorMatrix filter) UNDER a transparent FlutterTextureView overlay,
+//   with GuidanceOverlayView (0055 / Zee HUD 2 parity) on top of Flutter inside the
+//   minimap viewport — TBT/ETA from updateTrip, not map-pixel street chrome and not
+//   a Flutter plate. The zee/minimap MethodChannel is registered on the DHU engine
+//   (primary) so the DHU Dart isolate drives the native Minimap surface.
 //
 //   MinimapView carries NO placeholder content of its own (the animated rainbow
 //   gradient render thread was removed — it violated the emissive-black-only
@@ -79,6 +87,9 @@ class MainActivity : FlutterActivity() {
         private const val HUB_CHANNEL = "zee/hub"
         private const val MINIMAP_CHANNEL = "zee/minimap"
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
+        private const val SPEEDCAM_LOCATION_CHANNEL = "zee/speedcam/location"
+        private const val SPEEDCAM_LOCATION_CTL_CHANNEL = "zee/speedcam/location_ctl"
+        private const val LOCATION_PERMISSION_REQ = 5050
         private const val BOOT_CHANNEL = "zee/boot"
         // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
         private const val HUD_LIFECYCLE_CHANNEL = "zee/hud_lifecycle"
@@ -107,6 +118,7 @@ class MainActivity : FlutterActivity() {
 
     // Installer native bridge — DHU engine only (Block 0014).
     private var installerController: InstallerController? = null
+    private var speedcamSystemOverlay: SpeedcamSystemOverlayController? = null
     private var packageStatusController: PackageStatusController? = null
 
     // SystemConfig native bridge — DHU engine only (Block 0015).
@@ -117,6 +129,14 @@ class MainActivity : FlutterActivity() {
 
     // Minimap native surface — created in setupHud; driven via zee/minimap channel.
     private var minimapView: MinimapView? = null
+
+    // 0055: Zee HUD 2 GuidanceOverlayView on the Presentation (updateTrip → Views).
+    // Sized to the minimap viewport; painted ABOVE the FlutterTextureView so the
+    // Maxim bar is never covered by Flutter chrome. Not the deleted Flutter plate.
+    private var guidanceOverlay: GuidanceOverlayView? = null
+    private var guidanceOverlaySettings = GuidanceOverlaySettings()
+    // Last minimap viewport — overlay layout tracks setMinimapBounds.
+    private var lastMinimapBounds: IntArray? = null // x,y,w,h
 
     // Mutable filter + zoom parameters — single source of truth for the HUD
     // ColorMatrix paint and the YNavi oversample/dpi levers. Rebuilt into a
@@ -132,6 +152,15 @@ class MainActivity : FlutterActivity() {
 
     // Guidance EventChannel sink — set when Dart subscribes to zee/minimap/guidance.
     @Volatile private var guidanceSink: EventChannel.EventSink? = null
+    // Speedcam location EventChannel sink — YNavi / Android GPS → Dart setHostPose.
+    @Volatile private var speedcamLocationSink: EventChannel.EventSink? = null
+    // Android LocationManager fallback when YNavi sendLocation is silent (0050 T3).
+    private var androidGpsLocationSource: AndroidGpsLocationSource? = null
+    // Last emitted location — re-pushed after clearPose / permission grant (0050 HARD).
+    @Volatile private var lastSpeedcamLocation: android.location.Location? = null
+    @Volatile private var lastSpeedcamSource: String? = null
+    // Pending Activity.requestPermissions result for zee/speedcam/location_ctl.
+    private var pendingLocationPermissionResult: MethodChannel.Result? = null
 
     // DHU minimap MethodChannel — stored so setupHud() can invoke native→Dart hudReady (QA1-2/QA1-4).
     private var dhuMinimapChannel: MethodChannel? = null
@@ -199,6 +228,56 @@ class MainActivity : FlutterActivity() {
                 }
             })
 
+        // Speedcam live pose (0050): YNavi sendLocation preferred; Android GPS
+        // fallback when YNavi is silent (no active nav route). Same EventChannel.
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_LOCATION_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    speedcamLocationSink = sink
+                    Log.i(TAG, "speedcam location EventChannel: Dart subscribed")
+                    // Start GPS only when already granted — otherwise Dart must
+                    // request via zee/speedcam/location_ctl (0050 HARD runtime prompt).
+                    val gps = ensureAndroidGpsLocationSource()
+                    if (gps.hasFineOrCoarseLocation()) {
+                        gps.start()
+                    } else {
+                        Log.w(TAG, "speedcam location: awaiting runtime ACCESS_FINE/COARSE grant")
+                    }
+                }
+                override fun onCancel(arguments: Any?) {
+                    speedcamLocationSink = null
+                    androidGpsLocationSource?.stop()
+                    Log.i(TAG, "speedcam location EventChannel: Dart unsubscribed")
+                }
+            })
+
+        // Speedcam location control (0050 HARD): runtime permission + reemit lastKnown.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_LOCATION_CTL_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasPermission" -> {
+                        result.success(ensureAndroidGpsLocationSource().hasFineOrCoarseLocation())
+                    }
+                    "requestPermission" -> {
+                        handleRequestLocationPermission(result)
+                    }
+                    "ensureGpsStarted" -> {
+                        val gps = ensureAndroidGpsLocationSource()
+                        if (!gps.hasFineOrCoarseLocation()) {
+                            result.success(mapOf("ok" to false, "reason" to "permission-denied"))
+                        } else {
+                            gps.start()
+                            result.success(mapOf("ok" to true))
+                        }
+                    }
+                    "reemitLastKnown" -> {
+                        reemitSpeedcamLastKnown()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
         // for ext.zee.bootState (Block 0010).
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BOOT_CHANNEL)
@@ -241,6 +320,8 @@ class MainActivity : FlutterActivity() {
         // Construct InstallerController on the DHU engine messenger (Block 0014).
         // Registers zee/installer MethodChannel and zee/installer/events EventChannel.
         installerController = InstallerController(this, flutterEngine.dartExecutor.binaryMessenger)
+        speedcamSystemOverlay = SpeedcamSystemOverlayController(
+            this, flutterEngine.dartExecutor.binaryMessenger)
         packageStatusController = PackageStatusController(this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Construct SystemConfigController on the DHU engine messenger (Block 0015).
@@ -341,21 +422,32 @@ class MainActivity : FlutterActivity() {
             // It is started (bound) when the Dart side calls setMinimap(enabled=true)
             // and YNavi is available; the MinimapView's SurfaceTexture is the surface.
             yNaviCarAppHost = YNaviCarAppHost(this).also { host ->
-                // Trip updates → guidance EventChannel → Dart GuidanceEvent.
+                // Trip updates → (1) native GuidanceOverlayView (0055 / Zee HUD 2)
+                // and (2) guidance EventChannel → Dart GuidanceEvent (FL / 0057).
                 host.onTrip = { trip ->
+                    guidanceOverlay?.updateFromTrip(trip)
+                    // Street = step.cue (then step.road / currentRoad); ETA from
+                    // destination remainingTimeSeconds — same mapping as overlay.
                     val step = trip.steps.firstOrNull()
                     val stepEst = trip.stepTravelEstimates.firstOrNull()
                     val destEst = trip.destinationTravelEstimates.firstOrNull()
+                    val cue = step?.cue?.toString()?.takeIf { it.isNotBlank() }
+                    val stepRoad = step?.road?.toString()?.takeIf { it.isNotBlank() }
+                    val currentRoad = trip.currentRoad?.toString()?.takeIf { it.isNotBlank() }
+                    val remainSec = destEst?.remainingTimeSeconds
                     val event = mapOf(
                         "turnIcon" to (step?.maneuver?.type?.toString()),
                         "distanceM" to (stepEst?.remainingDistance?.displayDistance?.toInt()),
-                        "roadName" to (step?.cue?.toString() ?: trip.currentRoad?.toString()),
-                        "etaMin" to (destEst?.remainingTimeSeconds?.let { (it / 60).toInt() }),
+                        "roadName" to (cue ?: stepRoad ?: currentRoad),
+                        "etaMin" to (remainSec?.takeIf { it >= 0 }?.let { (it / 60).toInt() }),
                     )
                     guidanceSink?.success(event)
                 }
                 host.onNavState = { active ->
                     Log.i(TAG, "YNavi navigation active=$active")
+                    if (!active) guidanceOverlay?.clearGuidance()
+                    // 0057: real guidance-session truth for onlyWhileGuidance.
+                    guidanceSink?.success(mapOf("navActive" to active))
                 }
                 // Native gate (Task 1), async half: if the bind itself fails despite
                 // isYnaviAvailable() passing its static check, force the surface back
@@ -364,9 +456,13 @@ class MainActivity : FlutterActivity() {
                     minimapView?.visibility = View.INVISIBLE
                     Log.w(TAG, "YNavi bind failed — MinimapView forced INVISIBLE")
                 }
+                host.onLocation = { loc ->
+                    androidGpsLocationSource?.noteYNaviFix()
+                    emitSpeedcamLocation(loc, source = "ynavi")
+                }
             }
 
-            // Layer 2 (top): transparent Flutter overlay.
+            // Layer 2: transparent Flutter overlay (blinker / battery / speedcam).
             // isOpaque=false is what enables compositing over the MinimapView;
             // without this the SurfaceTexture renders opaque black.
             val ftv = FlutterTextureView(pres.context)
@@ -376,6 +472,17 @@ class MainActivity : FlutterActivity() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ))
+
+            // Layer 3 (top, viewport-sized): GuidanceOverlayView — Zee HUD 2 path.
+            // Above Flutter so Maxim street+ETA bar is never covered. Sized later
+            // by setMinimapBounds to the same rect as filterWrapper.
+            val gov = GuidanceOverlayView(pres.context)
+            gov.applySettings(guidanceOverlaySettings)
+            gov.visibility = View.GONE // shown once bounds + trip data arrive
+            guidanceOverlay = gov
+            root.addView(gov, FrameLayout.LayoutParams(0, 0).apply {
+                gravity = Gravity.TOP or Gravity.START
+            })
 
             pres.setContentView(root)
             pres.show()
@@ -407,6 +514,100 @@ class MainActivity : FlutterActivity() {
     }
 
     // -------------------------------------------------------------------------
+    // Speedcam location emit (0050) — YNavi preferred, Android GPS fallback.
+    // -------------------------------------------------------------------------
+
+    private fun ensureAndroidGpsLocationSource(): AndroidGpsLocationSource {
+        val existing = androidGpsLocationSource
+        if (existing != null) return existing
+        val created = AndroidGpsLocationSource(applicationContext, handler) { loc ->
+            emitSpeedcamLocation(loc, source = AndroidGpsLocationSource.SOURCE)
+        }
+        androidGpsLocationSource = created
+        return created
+    }
+
+    /** Push a location map to Dart; Log.i so `adb logcat -s ZEE` shows the path. */
+    private fun emitSpeedcamLocation(loc: android.location.Location, source: String) {
+        lastSpeedcamLocation = loc
+        lastSpeedcamSource = source
+        val speedKmh = if (loc.hasSpeed()) loc.speed * 3.6 else null
+        val heading = if (loc.hasBearing()) loc.bearing.toDouble() else null
+        val event = hashMapOf<String, Any?>(
+            "lat" to loc.latitude,
+            "lon" to loc.longitude,
+            "source" to source,
+        )
+        if (speedKmh != null) event["speedKmh"] = speedKmh
+        if (heading != null) event["headingDeg"] = heading
+        val sink = speedcamLocationSink
+        Log.i(
+            TAG,
+            "speedcam/location source=$source lat=${loc.latitude} lon=${loc.longitude} " +
+                "speedKmh=$speedKmh headingDeg=$heading sink=${sink != null}",
+        )
+        sink?.success(event)
+    }
+
+    /** Runtime ACCESS_FINE/COARSE via system dialog (0050 HARD — no ADB grant). */
+    private fun handleRequestLocationPermission(result: MethodChannel.Result) {
+        val gps = ensureAndroidGpsLocationSource()
+        if (gps.hasFineOrCoarseLocation()) {
+            result.success(mapOf("granted" to true, "already" to true))
+            return
+        }
+        if (pendingLocationPermissionResult != null) {
+            result.success(mapOf("granted" to false, "reason" to "already-requesting"))
+            return
+        }
+        pendingLocationPermissionResult = result
+        Log.i(TAG, "requesting ACCESS_FINE/COARSE_LOCATION (req=$LOCATION_PERMISSION_REQ)")
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ),
+            LOCATION_PERMISSION_REQ,
+        )
+    }
+
+    /** Re-push last YNavi/GPS fix after clearPose / permission grant. */
+    private fun reemitSpeedcamLastKnown() {
+        val cached = lastSpeedcamLocation
+        val source = lastSpeedcamSource
+        if (cached != null && source != null) {
+            Log.i(TAG, "reemitSpeedcamLastKnown: cached source=$source")
+            emitSpeedcamLocation(cached, source)
+            return
+        }
+        Log.i(TAG, "reemitSpeedcamLastKnown: no Activity cache — asking GPS lastKnown")
+        ensureAndroidGpsLocationSource().reemitLastKnown()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (requestCode != LOCATION_PERMISSION_REQ) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            return
+        }
+        val granted = grantResults.isNotEmpty() &&
+            grantResults.any { it == PackageManager.PERMISSION_GRANTED }
+        Log.i(TAG, "location permission result granted=$granted")
+        val pending = pendingLocationPermissionResult
+        pendingLocationPermissionResult = null
+        if (granted) {
+            val gps = ensureAndroidGpsLocationSource()
+            gps.start()
+            gps.reemitLastKnown()
+            reemitSpeedcamLastKnown()
+        }
+        pending?.success(mapOf("granted" to granted))
+    }
+
+    // -------------------------------------------------------------------------
     // HUD engine teardown — invoked from zee/hud_lifecycle hide() (QA4-1).
     // Idempotent: safe to call when the engine is already gone.
     // -------------------------------------------------------------------------
@@ -421,6 +622,8 @@ class MainActivity : FlutterActivity() {
             minimapView = null
         }
         yNaviCarAppHost = null
+        guidanceOverlay = null
+        lastMinimapBounds = null
         guidanceSink = null
         hudDisplay = null
         hudHub = null
@@ -564,6 +767,40 @@ class MainActivity : FlutterActivity() {
         return Paint().apply { colorFilter = ColorMatrixColorFilter(cm) }
     }
 
+
+    /**
+     * Size/position [guidanceOverlay] to the minimap viewport (Zee HUD 2
+     * updateSurfaceLayout overlayScale parity). Layout is viewport/overlayScale
+     * then scaleX/Y compresses back so bars stay edge-anchored while text
+     * shrinks to fit the square.
+     */
+    private fun layoutGuidanceOverlay(x: Int, y: Int, w: Int, h: Int) {
+        val gov = guidanceOverlay ?: return
+        if (w <= 0 || h <= 0) {
+            gov.visibility = View.GONE
+            return
+        }
+        val oScale = guidanceOverlaySettings.overlayScale.coerceIn(0.25f, 1.0f)
+        val layoutW = (w / oScale).toInt().coerceAtLeast(1)
+        val layoutH = (h / oScale).toInt().coerceAtLeast(1)
+        gov.layoutParams = FrameLayout.LayoutParams(layoutW, layoutH).apply {
+            leftMargin = x
+            topMargin = y
+            gravity = Gravity.TOP or Gravity.START
+        }
+        gov.pivotX = 0f
+        gov.pivotY = 0f
+        gov.scaleX = oScale
+        gov.scaleY = oScale
+        // Keep GONE only when surface gate hid us; otherwise VISIBLE (bars
+        // themselves GONE until trip data via updateFromTrip).
+        if (minimapView?.visibility == View.VISIBLE) {
+            gov.visibility = View.VISIBLE
+        }
+        gov.requestLayout()
+        Log.i(TAG, "layoutGuidanceOverlay($x,$y,$w,$h) oScale=$oScale layout=${layoutW}x${layoutH}")
+    }
+
     /**
      * Rebuild the ColorMatrix Paint from the current [minimapParams] and re-apply
      * it to filterWrapper's hardware layer. This is the entire "retune without a
@@ -673,6 +910,8 @@ class MainActivity : FlutterActivity() {
                         val available = host != null && isYnaviAvailable()
                         if (!available) {
                             if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                            guidanceOverlay?.visibility = View.GONE
+                            guidanceOverlay?.clearGuidance()
                             Log.i(TAG, "setMinimap(true): YNavi unavailable — native gate APPLIED, view INVISIBLE")
                             result.success("unavailable")
                             return@post
@@ -695,6 +934,8 @@ class MainActivity : FlutterActivity() {
                         result.success("applied:true")
                     } else {
                         if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        guidanceOverlay?.visibility = View.GONE
+                        guidanceOverlay?.clearGuidance()
                         val host = yNaviCarAppHost
                         if (host != null && host.isActive) {
                             host.stop()
@@ -704,6 +945,23 @@ class MainActivity : FlutterActivity() {
                         Log.i(TAG, "setMinimap(false): APPLIED")
                         result.success("applied:false")
                     }
+                }
+                "setMinimapSurfaceVisible" -> {
+                    // 0057: hide/show TextureView without host.stop() so
+                    // navigationStarted can still arrive while gated off.
+                    val visible = call.argument<Boolean>("visible") ?: true
+                    if (visible) {
+                        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+                        // Overlay follows surface gate; trip data re-shows bars.
+                        guidanceOverlay?.visibility = View.VISIBLE
+                        lastMinimapBounds?.let { layoutGuidanceOverlay(it[0], it[1], it[2], it[3]) }
+                    } else {
+                        if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        guidanceOverlay?.visibility = View.GONE
+                        guidanceOverlay?.clearGuidance()
+                    }
+                    Log.i(TAG, "setMinimapSurfaceVisible($visible): APPLIED")
+                    result.success("applied:$visible")
                 }
                 "setMinimapBounds" -> {
                     val x = call.argument<Int>("x") ?: 0
@@ -741,6 +999,10 @@ class MainActivity : FlutterActivity() {
                     // the YNavi surface too, or YNavi keeps rendering into a stale buffer
                     // sized for the OLD viewport (updateSurface previously had zero callers).
                     resizeYNaviSurface(w, h, bufW, bufH, dpiArg)
+                    // 0055: GuidanceOverlayView tracks the same viewport as filterWrapper
+                    // (Zee HUD 2 updateSurfaceLayout parity).
+                    lastMinimapBounds = intArrayOf(x, y, w, h)
+                    layoutGuidanceOverlay(x, y, w, h)
                     result.success("bounds:$x,$y,$w,$h")
                 }
                 "setMinimapParam" -> {
@@ -793,11 +1055,37 @@ class MainActivity : FlutterActivity() {
                             minimapParams.bufScale = 1f / minimapParams.minimapScale
                         }
                         "dpiScale"   -> asFloat()?.let { minimapParams.dpiScale = it }
+                        // 0055 / Zee HUD 2 toggles — live, no rebind.
+                        "guidance_overlay", "guidanceOverlay" -> asBool()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(guidanceOverlay = it)
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                        }
+                        "eta_bar", "etaBar" -> asBool()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(etaBar = it)
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                        }
+                        "overlay_scale", "overlayScale" -> asFloat()?.let {
+                            guidanceOverlaySettings = guidanceOverlaySettings.copy(
+                                overlayScale = it.coerceIn(0.25f, 1.0f),
+                            )
+                            guidanceOverlay?.applySettings(guidanceOverlaySettings)
+                            lastMinimapBounds?.let { b -> layoutGuidanceOverlay(b[0], b[1], b[2], b[3]) }
+                        }
                         else -> recognized = false
                     }
                     if (!recognized) {
                         Log.i(TAG, "setMinimapParam($key): ignored")
                         result.success("ignored:$key")
+                        return@post
+                    }
+                    if (key in listOf(
+                            "guidance_overlay", "guidanceOverlay",
+                            "eta_bar", "etaBar",
+                            "overlay_scale", "overlayScale",
+                        )
+                    ) {
+                        Log.i(TAG, "setMinimapParam($key=$raw): APPLIED guidance overlay settings")
+                        result.success("applied:$key")
                         return@post
                     }
                     when (key) {
@@ -941,6 +1229,8 @@ class MainActivity : FlutterActivity() {
     // -------------------------------------------------------------------------
 
     override fun onDestroy() {
+        speedcamSystemOverlay?.dispose()
+        speedcamSystemOverlay = null
         SimulateReceiver.controllerRef = null
         carSignalsController?.tearDown()
         carSignalsController = null
@@ -951,6 +1241,9 @@ class MainActivity : FlutterActivity() {
         usbModeController?.tearDown()
         usbModeController = null
         dhuMinimapChannel = null
+        androidGpsLocationSource?.stop()
+        androidGpsLocationSource = null
+        speedcamLocationSink = null
         tearDownHud()
         super.onDestroy()
     }

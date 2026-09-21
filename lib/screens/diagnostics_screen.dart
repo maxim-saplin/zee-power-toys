@@ -141,9 +141,10 @@ class DiagnosticsScreen extends ConsumerWidget {
               ),
               _SignalRow(
                 label: l10n.diagChargePower,
-                // Show kW only while charging; "—" otherwise so the row stays
-                // visible but clearly empty when the car is not plugged in.
-                value: (charging == true && chargeKw != null)
+                // Show signed kW whenever snapshot has it (charge or discharge).
+                // Do not gate on charging==true — that raced the stream and
+                // showed "—" while raw still had ±kW (0068).
+                value: chargeKw != null
                     ? chargeKw.toStringAsFixed(1)
                     : '—',
                 unit: 'kW',

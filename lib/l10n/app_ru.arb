@@ -1,543 +1,929 @@
 {
   "@@locale": "ru",
-
   "appTitle": "Zee Power Toys",
-  "@appTitle": { "description": "Application title" },
-
+  "@appTitle": {
+    "description": "Application title"
+  },
   "settingsTitle": "Настройки",
-  "@settingsTitle": { "description": "Settings hub screen title" },
-
+  "@settingsTitle": {
+    "description": "Settings hub screen title"
+  },
   "sectionHud": "HUD",
-  "@sectionHud": { "description": "HUD settings section label" },
-
+  "@sectionHud": {
+    "description": "HUD settings section label"
+  },
   "sectionHudSubtitle": "Поворотники, аккумулятор, компоновка",
-  "@sectionHudSubtitle": { "description": "HUD settings section subtitle" },
-
+  "@sectionHudSubtitle": {
+    "description": "HUD settings section subtitle"
+  },
   "sectionDiagnostics": "Диагностика",
-  "@sectionDiagnostics": { "description": "Diagnostics section label" },
-
+  "@sectionDiagnostics": {
+    "description": "Diagnostics section label"
+  },
   "sectionDiagnosticsSubtitle": "Текущие показатели автомобиля",
-  "@sectionDiagnosticsSubtitle": { "description": "Diagnostics section subtitle" },
-
+  "@sectionDiagnosticsSubtitle": {
+    "description": "Diagnostics section subtitle"
+  },
   "diagnosticsTitle": "Диагностика",
-  "@diagnosticsTitle": { "description": "Diagnostics screen app-bar title" },
-
+  "@diagnosticsTitle": {
+    "description": "Diagnostics screen app-bar title"
+  },
   "diagSectionSource": "Источник сигнала",
-  "@diagSectionSource": { "description": "Diagnostics: Signal source section heading" },
-
+  "@diagSectionSource": {
+    "description": "Diagnostics: Signal source section heading"
+  },
   "diagSignalSource": "Источник",
-  "@diagSignalSource": { "description": "Diagnostics: signal source row label" },
-
+  "@diagSignalSource": {
+    "description": "Diagnostics: signal source row label"
+  },
   "diagSignalSourceAdaptApi": "AdaptAPI (автомобиль)",
-  "@diagSignalSourceAdaptApi": { "description": "Signal source: native AdaptAPI (real car signals)" },
-
+  "@diagSignalSourceAdaptApi": {
+    "description": "Signal source: native AdaptAPI (real car signals)"
+  },
   "diagSignalSourceSimulated": "Симуляция (эмулятор)",
-  "@diagSignalSourceSimulated": { "description": "Signal source: native simulator fallback, no AdaptAPI" },
-
+  "@diagSignalSourceSimulated": {
+    "description": "Signal source: native simulator fallback, no AdaptAPI"
+  },
   "diagSignalSourceFake": "Заглушка (десктоп)",
-  "@diagSignalSourceFake": { "description": "Signal source: T1 pure-Dart fake" },
-
+  "@diagSignalSourceFake": {
+    "description": "Signal source: T1 pure-Dart fake"
+  },
   "diagSignalSourceUnknown": "Неизвестно",
-  "@diagSignalSourceUnknown": { "description": "Signal source: not yet resolved or a decode error" },
-
+  "@diagSignalSourceUnknown": {
+    "description": "Signal source: not yet resolved or a decode error"
+  },
   "diagHudDisplay": "Дисплей HUD",
-  "@diagHudDisplay": { "description": "Diagnostics: HUD backing-display geometry row label" },
-
+  "@diagHudDisplay": {
+    "description": "Diagnostics: HUD backing-display geometry row label"
+  },
   "diagSectionMotion": "Движение",
-  "@diagSectionMotion": { "description": "Diagnostics: Motion section heading" },
-
+  "@diagSectionMotion": {
+    "description": "Diagnostics: Motion section heading"
+  },
   "diagSectionLighting": "Освещение",
-  "@diagSectionLighting": { "description": "Diagnostics: Lighting section heading" },
-
+  "@diagSectionLighting": {
+    "description": "Diagnostics: Lighting section heading"
+  },
   "diagSectionEnergy": "Энергия",
-  "@diagSectionEnergy": { "description": "Diagnostics: Energy section heading" },
-
+  "@diagSectionEnergy": {
+    "description": "Diagnostics: Energy section heading"
+  },
   "diagSectionBattery": "Аккумулятор",
-  "@diagSectionBattery": { "description": "Diagnostics: Battery section heading" },
-
+  "@diagSectionBattery": {
+    "description": "Diagnostics: Battery section heading"
+  },
   "diagSpeed": "Скорость",
-  "@diagSpeed": { "description": "Diagnostics: speed row label" },
-
+  "@diagSpeed": {
+    "description": "Diagnostics: speed row label"
+  },
   "diagPowerFlow": "Поток мощности",
-  "@diagPowerFlow": { "description": "Diagnostics: power-flow row label" },
-
+  "@diagPowerFlow": {
+    "description": "Diagnostics: power-flow row label"
+  },
   "diagPowerFlowUnknown": "неизвестно",
-  "@diagPowerFlowUnknown": { "description": "Power-flow state: unknown" },
-
+  "@diagPowerFlowUnknown": {
+    "description": "Power-flow state: unknown"
+  },
   "diagPowerFlowDrive": "тяга",
-  "@diagPowerFlowDrive": { "description": "Power-flow state: drive" },
-
+  "@diagPowerFlowDrive": {
+    "description": "Power-flow state: drive"
+  },
   "diagPowerFlowRegen": "рекуперация",
-  "@diagPowerFlowRegen": { "description": "Power-flow state: regen" },
-
+  "@diagPowerFlowRegen": {
+    "description": "Power-flow state: regen"
+  },
   "diagPowerFlowStandstill": "стоянка",
-  "@diagPowerFlowStandstill": { "description": "Power-flow state: standstill" },
-
+  "@diagPowerFlowStandstill": {
+    "description": "Power-flow state: standstill"
+  },
   "diagBlinker": "Поворотник",
-  "@diagBlinker": { "description": "Diagnostics: blinker row label" },
-
+  "@diagBlinker": {
+    "description": "Diagnostics: blinker row label"
+  },
   "diagBlinkerOff": "выкл",
-  "@diagBlinkerOff": { "description": "Blinker state: off" },
-
+  "@diagBlinkerOff": {
+    "description": "Blinker state: off"
+  },
   "diagBlinkerLeft": "левый",
-  "@diagBlinkerLeft": { "description": "Blinker state: left" },
-
+  "@diagBlinkerLeft": {
+    "description": "Blinker state: left"
+  },
   "diagBlinkerRight": "правый",
-  "@diagBlinkerRight": { "description": "Blinker state: right" },
-
+  "@diagBlinkerRight": {
+    "description": "Blinker state: right"
+  },
   "diagBlinkerHazard": "аварийная",
-  "@diagBlinkerHazard": { "description": "Blinker state: hazard" },
-
+  "@diagBlinkerHazard": {
+    "description": "Blinker state: hazard"
+  },
   "diagCharging": "Зарядка",
-  "@diagCharging": { "description": "Diagnostics: charging state row label" },
-
+  "@diagCharging": {
+    "description": "Diagnostics: charging state row label"
+  },
   "diagChargePower": "Мощность зарядки",
-  "@diagChargePower": { "description": "Diagnostics: charging power (kW) row label" },
-
+  "@diagChargePower": {
+    "description": "Diagnostics: charging power (kW) row label"
+  },
   "diagYes": "да",
-  "@diagYes": { "description": "Generic yes value" },
-
+  "@diagYes": {
+    "description": "Generic yes value"
+  },
   "diagNo": "нет",
-  "@diagNo": { "description": "Generic no value" },
-
+  "@diagNo": {
+    "description": "Generic no value"
+  },
   "diagBatteryLevel": "Уровень заряда",
-  "@diagBatteryLevel": { "description": "Diagnostics: battery level row label" },
-
+  "@diagBatteryLevel": {
+    "description": "Diagnostics: battery level row label"
+  },
   "diagBatteryTemp": "Температура батареи",
-  "@diagBatteryTemp": { "description": "Diagnostics: battery temperature row label" },
-
+  "@diagBatteryTemp": {
+    "description": "Diagnostics: battery temperature row label"
+  },
   "diagRawSnapshot": "Сырые данные",
-  "@diagRawSnapshot": { "description": "Diagnostics: raw snapshot expansion tile title" },
-
+  "@diagRawSnapshot": {
+    "description": "Diagnostics: raw snapshot expansion tile title"
+  },
   "sectionLanguage": "Язык",
-  "@sectionLanguage": { "description": "Language settings section label" },
-
+  "@sectionLanguage": {
+    "description": "Language settings section label"
+  },
   "sectionLanguageSubtitle": "Язык отображения приложения",
-  "@sectionLanguageSubtitle": { "description": "Language section subtitle" },
-
+  "@sectionLanguageSubtitle": {
+    "description": "Language section subtitle"
+  },
   "sectionInstall": "Установка",
-  "@sectionInstall": { "description": "Install section label" },
-
+  "@sectionInstall": {
+    "description": "Install section label"
+  },
   "sectionInstallSubtitle": "Модифицированный лаунчер и мод YNavi",
-  "@sectionInstallSubtitle": { "description": "Install section subtitle" },
-
+  "@sectionInstallSubtitle": {
+    "description": "Install section subtitle"
+  },
   "installTitle": "Установка",
-  "@installTitle": { "description": "Install screen app-bar title" },
-
+  "@installTitle": {
+    "description": "Install screen app-bar title"
+  },
   "installLauncherName": "Модифицированный лаунчер",
-  "@installLauncherName": { "description": "Install target: modded launcher name" },
-
+  "@installLauncherName": {
+    "description": "Install target: modded launcher name"
+  },
   "installLauncherDesc": "Лаунчер с YNavi в качестве навигации по умолчанию",
-  "@installLauncherDesc": { "description": "Install target: modded launcher description" },
-
-  "installYnaviName": "Мод YNavi (HUD)",
-  "@installYnaviName": { "description": "Install target: YNavi mod name" },
-
-  "installYnaviDesc": "Мод Яндекс.Навигатора с поддержкой HUD и трансляцией миникарты",
-  "@installYnaviDesc": { "description": "Install target: YNavi mod description" },
-
+  "@installLauncherDesc": {
+    "description": "Install target: modded launcher description"
+  },
+  "installYnaviName": "YNavi мод (с полями / по умолчанию)",
+  "@installYnaviName": {
+    "description": "Install target: YNavi mod name"
+  },
+  "installYnaviDesc": "YNavi с HUD и левым letterbox под боковую панель Zeekr. Для OS7+ — другая карточка.",
+  "@installYnaviDesc": {
+    "description": "Install target: YNavi mod description"
+  },
   "installButtonLabel": "Установить / Обновить",
-  "@installButtonLabel": { "description": "Install button label (used for first install and updates)" },
-
+  "@installButtonLabel": {
+    "description": "Install button label (used for first install and updates)"
+  },
   "installPhaseDownloading": "Загрузка…",
-  "@installPhaseDownloading": { "description": "Install progress phase: downloading" },
-
+  "@installPhaseDownloading": {
+    "description": "Install progress phase: downloading"
+  },
   "installPhaseInstalling": "Установка…",
-  "@installPhaseInstalling": { "description": "Install progress phase: installing" },
-
+  "@installPhaseInstalling": {
+    "description": "Install progress phase: installing"
+  },
   "installPhaseDone": "Готово",
-  "@installPhaseDone": { "description": "Install progress phase: done" },
-
+  "@installPhaseDone": {
+    "description": "Install progress phase: done"
+  },
   "installPhaseFailed": "Ошибка",
-  "@installPhaseFailed": { "description": "Install progress phase: failed" },
-
+  "@installPhaseFailed": {
+    "description": "Install progress phase: failed"
+  },
   "languageTitle": "Язык",
-  "@languageTitle": { "description": "Language picker screen title" },
-
+  "@languageTitle": {
+    "description": "Language picker screen title"
+  },
   "languageSystem": "По умолчанию (системное)",
-  "@languageSystem": { "description": "Option: follow the system locale" },
-
+  "@languageSystem": {
+    "description": "Option: follow the system locale"
+  },
   "languageEnglish": "English",
-  "@languageEnglish": { "description": "Option: English language" },
-
+  "@languageEnglish": {
+    "description": "Option: English language"
+  },
   "languageRussian": "Русский",
-  "@languageRussian": { "description": "Option: Russian language" },
-
+  "@languageRussian": {
+    "description": "Option: Russian language"
+  },
   "langSectionApp": "Язык приложения",
-  "@langSectionApp": { "description": "Language screen: App language section heading" },
-
+  "@langSectionApp": {
+    "description": "Language screen: App language section heading"
+  },
   "langSectionSystem": "Язык системы",
-  "@langSectionSystem": { "description": "Language screen: System language section heading" },
-
+  "@langSectionSystem": {
+    "description": "Language screen: System language section heading"
+  },
   "langSectionCluster": "Язык приборной панели",
-  "@langSectionCluster": { "description": "Language screen: Instrument-cluster language section heading" },
-
+  "@langSectionCluster": {
+    "description": "Language screen: Instrument-cluster language section heading"
+  },
   "langCarOnly": "Доступно только в автомобиле",
-  "@langCarOnly": { "description": "Hint shown when system/cluster write is T3-only (unsupported on emulator)" },
-
+  "@langCarOnly": {
+    "description": "Hint shown when system/cluster write is T3-only (unsupported on emulator)"
+  },
   "langCurrentValue": "Текущий",
-  "@langCurrentValue": { "description": "Prefix label for the current system locale readout" },
-
+  "@langCurrentValue": {
+    "description": "Prefix label for the current system locale readout"
+  },
   "comingSoon": "Скоро будет доступно",
-  "@comingSoon": { "description": "Placeholder text for unimplemented sections" },
-
+  "@comingSoon": {
+    "description": "Placeholder text for unimplemented sections"
+  },
   "hudSettingsTitle": "Настройки HUD",
-  "@hudSettingsTitle": { "description": "HUD settings screen app-bar title" },
-
+  "@hudSettingsTitle": {
+    "description": "HUD settings screen app-bar title"
+  },
   "blinkerSection": "Поворотники",
-  "@blinkerSection": { "description": "Blinker section heading" },
-
+  "@blinkerSection": {
+    "description": "Blinker section heading"
+  },
   "blinkerShape": "Форма",
-  "@blinkerShape": { "description": "Blinker shape label" },
-
+  "@blinkerShape": {
+    "description": "Blinker shape label"
+  },
   "blinkerShapeDots": "Точки",
-  "@blinkerShapeDots": { "description": "Blinker shape: dots" },
-
+  "@blinkerShapeDots": {
+    "description": "Blinker shape: dots"
+  },
   "blinkerShapeArrows": "Стрелки",
-  "@blinkerShapeArrows": { "description": "Blinker shape: arrows" },
-
+  "@blinkerShapeArrows": {
+    "description": "Blinker shape: arrows"
+  },
   "blinkerShapeSmiley": "Смайлик",
-  "@blinkerShapeSmiley": { "description": "Blinker shape: smiley" },
-
+  "@blinkerShapeSmiley": {
+    "description": "Blinker shape: smiley"
+  },
   "blinkerSize": "Размер",
-  "@blinkerSize": { "description": "Blinker size slider label" },
-
+  "@blinkerSize": {
+    "description": "Blinker size slider label"
+  },
   "blinkerVerticalPosition": "Вертикальное положение",
-  "@blinkerVerticalPosition": { "description": "Blinker vertical position slider label" },
-
+  "@blinkerVerticalPosition": {
+    "description": "Blinker vertical position slider label"
+  },
   "blinkerSidePadding": "Боковой отступ (от края)",
-  "@blinkerSidePadding": { "description": "Blinker side-padding slider label" },
-
+  "@blinkerSidePadding": {
+    "description": "Blinker side-padding slider label"
+  },
   "batterySection": "Аккумулятор",
-  "@batterySection": { "description": "Battery section heading" },
-
+  "@batterySection": {
+    "description": "Battery section heading"
+  },
   "showBattery": "Показывать индикатор заряда",
-  "@showBattery": { "description": "Toggle: show battery indicator" },
-
+  "@showBattery": {
+    "description": "Toggle: show battery indicator"
+  },
   "showTemp": "Показывать температуру",
-  "@showTemp": { "description": "Toggle: show battery temperature" },
-
+  "@showTemp": {
+    "description": "Toggle: show battery temperature"
+  },
   "showChargingStats": "Показывать данные зарядки (при зарядке)",
-  "@showChargingStats": { "description": "Toggle: show charging stats panel" },
-
-
+  "@showChargingStats": {
+    "description": "Toggle: show charging stats panel"
+  },
   "batteryContentMode": "Содержимое",
-  "@batteryContentMode": { "description": "Battery content mode label" },
-
+  "@batteryContentMode": {
+    "description": "Battery content mode label"
+  },
   "batteryContentBoth": "Оба",
-  "@batteryContentBoth": { "description": "Battery content: icon + percentage" },
-
+  "@batteryContentBoth": {
+    "description": "Battery content: icon + percentage"
+  },
   "batteryContentIconOnly": "Значок",
-  "@batteryContentIconOnly": { "description": "Battery content: icon only" },
-
+  "@batteryContentIconOnly": {
+    "description": "Battery content: icon only"
+  },
   "batteryContentTextOnly": "Текст",
-  "@batteryContentTextOnly": { "description": "Battery content: percentage text only" },
-
+  "@batteryContentTextOnly": {
+    "description": "Battery content: percentage text only"
+  },
   "batteryStyle": "Вид",
-  "@batteryStyle": { "description": "Battery pack style label" },
-
+  "@batteryStyle": {
+    "description": "Battery pack style label"
+  },
   "batteryStyleOutline": "Контур",
-  "@batteryStyleOutline": { "description": "Battery style: Steam Deck outline" },
-
+  "@batteryStyleOutline": {
+    "description": "Battery style: Steam Deck outline"
+  },
   "batteryStyleFilled": "Блоки",
-  "@batteryStyleFilled": { "description": "Battery style: segmented blocks" },
-
+  "@batteryStyleFilled": {
+    "description": "Battery style: segmented blocks"
+  },
   "batteryStylePctInside": "% внутри",
-  "@batteryStylePctInside": { "description": "Battery style: percentage inside pack" },
-
+  "@batteryStylePctInside": {
+    "description": "Battery style: percentage inside pack"
+  },
+  "batteryLook": "Вид",
+  "@batteryLook": {
+    "description": "Battery look picker label (0056 PDM)"
+  },
+  "batteryLookBattery": "Аккумулятор",
+  "@batteryLookBattery": {
+    "description": "PDM: Battery — filled pack"
+  },
+  "batteryLookBatteryText": "Аккумулятор + текст",
+  "@batteryLookBatteryText": {
+    "description": "PDM: Battery + text — pack with %"
+  },
+  "batteryLookBatteryBars": "Аккумулятор с полосками",
+  "@batteryLookBatteryBars": {
+    "description": "PDM: Battery with bars — segmented"
+  },
+  "batteryLookJustText": "Только текст",
+  "@batteryLookJustText": {
+    "description": "PDM: Just text — % only"
+  },
+  "batteryPlacement": "Положение",
+  "@batteryPlacement": {
+    "description": "Battery placement preset selector label"
+  },
+  "batteryPlacementLeft": "Слева",
+  "@batteryPlacementLeft": {
+    "description": "Battery placement preset: left"
+  },
+  "batteryPlacementRight": "Справа",
+  "@batteryPlacementRight": {
+    "description": "Battery placement preset: right mid"
+  },
+  "batteryPlacementRightTop": "Справа сверху",
+  "@batteryPlacementRightTop": {
+    "description": "Battery placement preset: right top (default)"
+  },
+  "batteryVerticalPosition": "Вертикальное положение",
+  "@batteryVerticalPosition": {
+    "description": "Battery vertical position slider label"
+  },
+  "batterySidePadding": "Боковой отступ (от края)",
+  "@batterySidePadding": {
+    "description": "Battery side-padding slider label"
+  },
+  "batteryHorizBias": "Горизонтальный сдвиг",
+  "@batteryHorizBias": {
+    "description": "Battery horizontal bias slider label"
+  },
   "batterySize": "Размер",
-  "@batterySize": { "description": "Battery size slider label" },
-
+  "@batterySize": {
+    "description": "Battery size slider label"
+  },
   "safeAreaSection": "Безопасная область (доли)",
-  "@safeAreaSection": { "description": "Safe Area readout heading" },
-
+  "@safeAreaSection": {
+    "description": "Safe Area readout heading"
+  },
   "safeAreaInset": "Отступ безопасной области",
-  "@safeAreaInset": { "description": "Safe Area inset slider label" },
-
+  "@safeAreaInset": {
+    "description": "Safe Area inset slider label"
+  },
   "positionTop": "Сверху",
-  "@positionTop": { "description": "Slider start label: top" },
-
+  "@positionTop": {
+    "description": "Slider start label: top"
+  },
   "positionBottom": "Снизу",
-  "@positionBottom": { "description": "Slider end label: bottom" },
-
+  "@positionBottom": {
+    "description": "Slider end label: bottom"
+  },
   "positionEdge": "Край",
-  "@positionEdge": { "description": "Slider start label: edge" },
-
+  "@positionEdge": {
+    "description": "Slider start label: edge"
+  },
   "sectionMinimap": "Миникарта",
-  "@sectionMinimap": { "description": "Minimap settings section label" },
-
+  "@sectionMinimap": {
+    "description": "Minimap settings section label"
+  },
   "sectionMinimapSubtitle": "Миникарта YNavi, размер, цвет",
-  "@sectionMinimapSubtitle": { "description": "Minimap settings section subtitle" },
-
+  "@sectionMinimapSubtitle": {
+    "description": "Minimap settings section subtitle"
+  },
   "minimapTitle": "Миникарта",
-  "@minimapTitle": { "description": "Minimap settings screen app-bar title" },
-
+  "@minimapTitle": {
+    "description": "Minimap settings screen app-bar title"
+  },
   "minimapSection": "Миникарта",
-  "@minimapSection": { "description": "Minimap section heading" },
-
+  "@minimapSection": {
+    "description": "Minimap section heading"
+  },
   "minimapEnable": "Включить миникарту",
-  "@minimapEnable": { "description": "Toggle: enable the YNavi minimap" },
-
+  "@minimapEnable": {
+    "description": "Toggle: enable the YNavi minimap"
+  },
   "minimapYnaviUnavailableHint": "Установите совместимый мод YNavi, чтобы включить миникарту",
-  "@minimapYnaviUnavailableHint": { "description": "Hint shown when YNavi mod is absent" },
-
+  "@minimapYnaviUnavailableHint": {
+    "description": "Hint shown when YNavi mod is absent"
+  },
+  "minimapOnlyWhileGuidance": "Только во время ведения",
+  "@minimapOnlyWhileGuidance": {
+    "description": "0057: show minimap only while YNavi guidance active"
+  },
+  "minimapOnlyWhileGuidanceHint": "Если включено, миникарта видна только при активной навигации YNavi",
+  "@minimapOnlyWhileGuidanceHint": {
+    "description": "Hint for only-while-guidance toggle"
+  },
+  "minimapGuidanceOverlay": "Подсказки манёвров",
+  "@minimapGuidanceOverlay": {
+    "description": "0055: Zee HUD 2 guidance_overlay toggle (native Views)"
+  },
+  "minimapGuidanceOverlayHint": "Стрелка, дистанция и улица на миникарте (из данных маршрута YNavi)",
+  "@minimapGuidanceOverlayHint": {
+    "description": "Hint for guidance overlay toggle"
+  },
+  "minimapEtaBar": "Полоса ETA",
+  "@minimapEtaBar": {
+    "description": "0055: Zee HUD 2 eta_bar toggle (native Views)"
+  },
+  "minimapEtaBarHint": "Оставшиеся дистанция, время и прибытие на миникарте",
+  "@minimapEtaBarHint": {
+    "description": "Hint for ETA bar toggle"
+  },
+  "minimapOverlayScale": "Масштаб оверлея",
+  "@minimapOverlayScale": {
+    "description": "0055: Zee HUD 2 overlayScale slider (guidance/ETA bars)"
+  },
+  "minimapOverlayScaleHint": "Уменьшает полосы манёвров и ETA, чтобы влезли в миникарту (независимо от плотности карты)",
+  "@minimapOverlayScaleHint": {
+    "description": "Hint for overlay scale slider"
+  },
   "minimapPreset": "Пресет",
-  "@minimapPreset": { "description": "Minimap preset selector label" },
-
+  "@minimapPreset": {
+    "description": "Minimap preset selector label"
+  },
   "minimapPresetCompact": "Компактный",
-  "@minimapPresetCompact": { "description": "Minimap preset: compact" },
-
+  "@minimapPresetCompact": {
+    "description": "Minimap preset: compact"
+  },
   "minimapPresetBalanced": "Стандартный",
-  "@minimapPresetBalanced": { "description": "Minimap preset: balanced" },
-
+  "@minimapPresetBalanced": {
+    "description": "Minimap preset: balanced"
+  },
   "minimapPresetLarge": "Большой",
-  "@minimapPresetLarge": { "description": "Minimap preset: large" },
-
+  "@minimapPresetLarge": {
+    "description": "Minimap preset: large"
+  },
   "minimapAdvanced": "Расширенно",
-  "@minimapAdvanced": { "description": "Minimap advanced expansion tile title" },
-
+  "@minimapAdvanced": {
+    "description": "Minimap advanced expansion tile title"
+  },
   "minimapSize": "Размер (доля безопасной области)",
-  "@minimapSize": { "description": "Minimap manual size slider label" },
-
+  "@minimapSize": {
+    "description": "Minimap manual size slider label"
+  },
   "minimapLookSection": "Вид",
-  "@minimapLookSection": { "description": "Minimap Look section heading (colour preset, brightness, contrast)" },
-
+  "@minimapLookSection": {
+    "description": "Minimap Look section heading (colour preset, brightness, contrast)"
+  },
   "minimapLookPreset": "Цветовой пресет",
-  "@minimapLookPreset": { "description": "Minimap colour preset selector label" },
-
+  "@minimapLookPreset": {
+    "description": "Minimap colour preset selector label"
+  },
   "minimapLookPresetDefault": "По умолчанию",
-  "@minimapLookPresetDefault": { "description": "Phase0 White look bundle (hue pass keeps yellow cursor)" },
-
+  "@minimapLookPresetDefault": {
+    "description": "Phase0 White look bundle (hue pass keeps yellow cursor)"
+  },
   "minimapLookPresetGreenYellow": "Зелёно-жёлтый",
-  "@minimapLookPresetGreenYellow": { "description": "Minimap colour preset: green-yellow" },
-
+  "@minimapLookPresetGreenYellow": {
+    "description": "Minimap colour preset: green-yellow"
+  },
   "minimapLookPresetWhite": "Белый",
-  "@minimapLookPresetWhite": { "description": "Minimap colour preset: white" },
-
+  "@minimapLookPresetWhite": {
+    "description": "Minimap colour preset: white"
+  },
   "minimapLookPresetAmber": "Янтарный",
-  "@minimapLookPresetAmber": { "description": "Minimap colour preset: amber" },
-
+  "@minimapLookPresetAmber": {
+    "description": "Minimap colour preset: amber"
+  },
   "minimapLookPresetCyan": "Голубой",
-  "@minimapLookPresetCyan": { "description": "Minimap colour preset: cyan" },
-
+  "@minimapLookPresetCyan": {
+    "description": "Minimap colour preset: cyan"
+  },
   "minimapLookBrightness": "Яркость",
-  "@minimapLookBrightness": { "description": "Minimap brightness slider label (backed by the native threshold param)" },
-
+  "@minimapLookBrightness": {
+    "description": "Minimap brightness slider label (backed by the native threshold param)"
+  },
   "minimapLookContrast": "Контраст",
-  "@minimapLookContrast": { "description": "Minimap contrast slider label" },
-
+  "@minimapLookContrast": {
+    "description": "Minimap contrast slider label"
+  },
   "sectionUsbAdb": "USB / ADB",
-  "@sectionUsbAdb": { "description": "USB/ADB settings section label" },
-
+  "@sectionUsbAdb": {
+    "description": "USB/ADB settings section label"
+  },
   "sectionUsbAdbSubtitle": "Режим USB: хост/устройство",
-  "@sectionUsbAdbSubtitle": { "description": "USB/ADB section subtitle" },
-
+  "@sectionUsbAdbSubtitle": {
+    "description": "USB/ADB section subtitle"
+  },
   "usbAdbTitle": "USB / ADB",
-  "@usbAdbTitle": { "description": "USB/ADB screen app-bar title" },
-
+  "@usbAdbTitle": {
+    "description": "USB/ADB screen app-bar title"
+  },
   "usbModePeripheral": "Периферийное устройство",
-  "@usbModePeripheral": { "description": "USB mode: peripheral" },
-
+  "@usbModePeripheral": {
+    "description": "USB mode: peripheral"
+  },
   "usbModeHost": "Хост",
-  "@usbModeHost": { "description": "USB mode: host" },
-
+  "@usbModeHost": {
+    "description": "USB mode: host"
+  },
   "usbModeAuto": "Авто",
-  "@usbModeAuto": { "description": "USB mode: auto" },
-
+  "@usbModeAuto": {
+    "description": "USB mode: auto"
+  },
   "usbCurrentMode": "Текущий",
-  "@usbCurrentMode": { "description": "Prefix label for current USB mode readout" },
-
+  "@usbCurrentMode": {
+    "description": "Prefix label for current USB mode readout"
+  },
   "usbPlatformSigningRequired": "Для фактического переключения режима USB нужна системная подпись, которой у этой сборки нет — ни на эмуляторе, ни в автомобиле. Выбор сохраняется, но сам режим USB не изменится, пока приложение не будет подписано системным ключом.",
-  "@usbPlatformSigningRequired": { "description": "Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved" },
-
+  "@usbPlatformSigningRequired": {
+    "description": "Honest hint: this build lacks platform signing on any tier, so USB mode writes never take effect even though the selection is saved"
+  },
   "hudSlotMinimap": "МИНИКАРТА",
-  "@hudSlotMinimap": { "description": "Accessibility label for the HUD minimap slot's schematic glyph (a11y only)" },
-
+  "@hudSlotMinimap": {
+    "description": "Accessibility label for the HUD minimap slot's schematic glyph (a11y only)"
+  },
   "hudFullDisplayToggle": "Полный экран",
-  "@hudFullDisplayToggle": { "description": "HUD settings: toggle full backing-display debug view" },
-
+  "@hudFullDisplayToggle": {
+    "description": "HUD settings: toggle full backing-display debug view"
+  },
   "hudFullDisplayToggleSubtitle": "Показать весь дисплей HUD целиком, с обводкой Safe Area (отладка)",
-  "@hudFullDisplayToggleSubtitle": { "description": "Subtitle for the full-display debug toggle" },
-
+  "@hudFullDisplayToggleSubtitle": {
+    "description": "Subtitle for the full-display debug toggle"
+  },
   "hudPreviewBadgeDemo": "ПРЕДПРОСМОТР · ДЕМО",
-  "@hudPreviewBadgeDemo": { "description": "HudPreview badge: forced demo CarSignal state" },
-
+  "@hudPreviewBadgeDemo": {
+    "description": "HudPreview badge: forced demo CarSignal state"
+  },
   "hudPreviewBadgeLive": "ЖИВОЙ · СИМУЛЯЦИЯ",
-  "@hudPreviewBadgeLive": { "description": "HudPreview badge: Simulate screen's live unforced CarSignal preview" },
-
+  "@hudPreviewBadgeLive": {
+    "description": "HudPreview badge: Simulate screen's live unforced CarSignal preview"
+  },
   "minimapPresetDisabledHint": "Активны пользовательские размеры",
-  "@minimapPresetDisabledHint": { "description": "Caption shown below the preset row when advanced mode overrides it" },
-
+  "@minimapPresetDisabledHint": {
+    "description": "Caption shown below the preset row when advanced mode overrides it"
+  },
   "sectionSimulate": "Симуляция",
-  "@sectionSimulate": { "description": "Simulate nav tile title (debug-only screen)" },
-
+  "@sectionSimulate": {
+    "description": "Simulate nav tile title (debug-only screen)"
+  },
   "sectionSimulateSubtitle": "Отправка живых сигналов для проверки HUD",
-  "@sectionSimulateSubtitle": { "description": "Simulate nav tile subtitle" },
-
+  "@sectionSimulateSubtitle": {
+    "description": "Simulate nav tile subtitle"
+  },
   "simulateTitle": "Симуляция",
-  "@simulateTitle": { "description": "Simulate screen app-bar title" },
-
+  "@simulateTitle": {
+    "description": "Simulate screen app-bar title"
+  },
   "simulateDescription": "Только для отладки — отправляет живые сигналы CarSignals, чтобы вы могли увидеть реакцию HUD в реальном времени.",
-  "@simulateDescription": { "description": "Explanatory caption at the top of the Simulate screen" },
-
+  "@simulateDescription": {
+    "description": "Explanatory caption at the top of the Simulate screen"
+  },
   "simulateBlinkerLabel": "Поворотник",
-  "@simulateBlinkerLabel": { "description": "Blinker control group label on the Simulate screen" },
-
+  "@simulateBlinkerLabel": {
+    "description": "Blinker control group label on the Simulate screen"
+  },
   "simulateOff": "Выкл",
-  "@simulateOff": { "description": "Simulate blinker: off" },
-
+  "@simulateOff": {
+    "description": "Simulate blinker: off"
+  },
   "simulateLeft": "Налево",
-  "@simulateLeft": { "description": "Simulate blinker: left" },
-
+  "@simulateLeft": {
+    "description": "Simulate blinker: left"
+  },
   "simulateRight": "Направо",
-  "@simulateRight": { "description": "Simulate blinker: right" },
-
+  "@simulateRight": {
+    "description": "Simulate blinker: right"
+  },
   "simulateHazard": "Аварийка",
-  "@simulateHazard": { "description": "Simulate blinker: hazard (both sides)" },
-
+  "@simulateHazard": {
+    "description": "Simulate blinker: hazard (both sides)"
+  },
   "simulateChargingLabel": "Зарядка",
-  "@simulateChargingLabel": { "description": "Charging toggle label on the Simulate screen" },
-
+  "@simulateChargingLabel": {
+    "description": "Charging toggle label on the Simulate screen"
+  },
   "simulateChargeKwLabel": "Мощность зарядки",
-  "@simulateChargeKwLabel": { "description": "Charging kW slider label on the Simulate screen" },
-
+  "@simulateChargeKwLabel": {
+    "description": "Charging kW slider label on the Simulate screen"
+  },
   "simulateBatteryLabel": "Уровень заряда",
-  "@simulateBatteryLabel": { "description": "Battery percent slider label on the Simulate screen" },
-
+  "@simulateBatteryLabel": {
+    "description": "Battery percent slider label on the Simulate screen"
+  },
   "simulateBatteryTempLabel": "Температура батареи",
-  "@simulateBatteryTempLabel": { "description": "Battery temperature slider label on the Simulate screen" },
-
+  "@simulateBatteryTempLabel": {
+    "description": "Battery temperature slider label on the Simulate screen"
+  },
   "simulateSpeedLabel": "Скорость",
-  "@simulateSpeedLabel": { "description": "Speed slider label on the Simulate screen" },
-
+  "@simulateSpeedLabel": {
+    "description": "Speed slider label on the Simulate screen"
+  },
   "homeTitle": "Zee Power Toys",
-  "@homeTitle": { "description": "DHU home app-bar title" },
-
+  "@homeTitle": {
+    "description": "DHU home app-bar title"
+  },
   "homeWelcomeTitle": "Добро пожаловать",
-  "@homeWelcomeTitle": { "description": "Welcome column heading" },
-
-  "homeWelcomeBody": "HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.",
-  "@homeWelcomeBody": { "description": "Short product intro on the home welcome column" },
-
+  "@homeWelcomeTitle": {
+    "description": "Welcome column heading"
+  },
+  "homeWelcomeBody": "Оверлеи HUD и миникарта для Zeekr. Проверьте приложения ниже, затем выберите раздел справа.",
+  "@homeWelcomeBody": {
+    "description": "Short product intro on the home welcome column"
+  },
   "homeCompanionsTitle": "Сопутствующие приложения",
-  "@homeCompanionsTitle": { "description": "Companion APK status section heading" },
-
+  "@homeCompanionsTitle": {
+    "description": "Companion APK status section heading"
+  },
   "homeSectionsTitle": "Разделы",
-  "@homeSectionsTitle": { "description": "Sections column heading" },
-
+  "@homeSectionsTitle": {
+    "description": "Sections column heading"
+  },
   "homeStatusInstalled": "Установлено",
-  "@homeStatusInstalled": { "description": "Companion APK status: installed" },
-
+  "@homeStatusInstalled": {
+    "description": "Companion APK status: installed"
+  },
   "homeStatusMissing": "Нет",
-  "@homeStatusMissing": { "description": "Companion APK status: missing" },
-
+  "@homeStatusMissing": {
+    "description": "Companion APK status: missing"
+  },
   "homeStatusUnknown": "Неизвестно",
-  "@homeStatusUnknown": { "description": "Companion APK status: unknown (desktop / probe failed)" },
-
+  "@homeStatusUnknown": {
+    "description": "Companion APK status: unknown (desktop / probe failed)"
+  },
   "homeInstallAction": "Установить",
-  "@homeInstallAction": { "description": "Install companion APK button on home" },
-
+  "@homeInstallAction": {
+    "description": "Install companion APK button on home"
+  },
   "minimapContentScale": "Плотность карты",
-  "@minimapContentScale": { "description": "Phase0 minimapScale — lower shows more map in the square" },
-
+  "@minimapContentScale": {
+    "description": "Phase0 minimapScale — lower shows more map in the square"
+  },
   "minimapContentScaleHint": "Меньше = больше области карты (по умолчанию 0.5)",
-  "@minimapContentScaleHint": { "description": "Hint under map density slider" },
-"sectionSpeedcam": "Камеры",
-  "@sectionSpeedcam": { "description": "Speedcam settings section label" },
-
+  "@minimapContentScaleHint": {
+    "description": "Hint under map density slider"
+  },
+  "sectionSpeedcam": "Камеры",
+  "@sectionSpeedcam": {
+    "description": "Speedcam settings section label"
+  },
   "sectionSpeedcamSubtitle": "OSM-пакеты, приближение",
-  "@sectionSpeedcamSubtitle": { "description": "Speedcam settings section subtitle" },
-
+  "@sectionSpeedcamSubtitle": {
+    "description": "Speedcam settings section subtitle"
+  },
   "speedcamTitle": "Камеры",
-  "@speedcamTitle": { "description": "Speedcam settings screen app-bar title" },
-
-  "speedcamPackSection": "Региональный пакет",
-  "@speedcamPackSection": { "description": "Speedcam pack section heading" },
-
+  "@speedcamTitle": {
+    "description": "Speedcam settings screen app-bar title"
+  },
+  "speedcamPackSection": "Кэш камер",
+  "@speedcamPackSection": {
+    "description": "Speedcam pack section heading"
+  },
   "speedcamPackBy": "Беларусь (BY)",
-  "@speedcamPackBy": { "description": "BY OSM pack label" },
-
-  "speedcamPackMissing": "Пакета нет — нажмите Обновить",
-  "@speedcamPackMissing": { "description": "Shown when no BY pack on disk" },
-
+  "@speedcamPackBy": {
+    "description": "BY OSM pack label"
+  },
+  "speedcamPackMissing": "Камер нет — нажмите Обновить",
+  "@speedcamPackMissing": {
+    "description": "Shown when no BY pack on disk"
+  },
   "speedcamPackStatus": "{count} кам. · {when}",
   "@speedcamPackStatus": {
     "description": "Cached pack status line",
     "placeholders": {
-      "count": { "type": "int" },
-      "when": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "when": {
+        "type": "String"
+      }
     }
   },
-
-  "speedcamPackUpdate": "Обновить пакет",
-  "@speedcamPackUpdate": { "description": "Manual Overpass download button" },
-
+  "speedcamPackUpdate": "Собрать (300 км)",
+  "@speedcamPackUpdate": {
+    "description": "Manual Overpass download button"
+  },
   "speedcamPackUpdating": "Обновление…",
-  "@speedcamPackUpdating": { "description": "Busy label while pack downloads" },
-"speedcamRadarSection": "Радар",
-  "@speedcamRadarSection": { "description": "DHU speedcam radar section" },
-
+  "@speedcamPackUpdating": {
+    "description": "Busy label while pack downloads"
+  },
+  "speedcamRadarSection": "Радар",
+  "@speedcamRadarSection": {
+    "description": "DHU speedcam radar section"
+  },
   "speedcamHudRadarEnable": "Радар на HUD",
-  "@speedcamHudRadarEnable": { "description": "Toggle CRT on windshield HUD" },
-
-  "speedcamDhuRange": "Дальность радара DHU",
-  "@speedcamDhuRange": { "description": "Zoom-out display radius metres" },
-"speedcamSoundEnable": "Звук приближения",
-  "@speedcamSoundEnable": { "description": "Toggle sting on insideApproach enter" },
-
-"speedcamRadarLook": "Вид радара",
-  "@speedcamRadarLook": { "description": "Speedcam radar visual look picker" },
-"speedcamRadarLookDefault": "Обычный",
-  "@speedcamRadarLookDefault": { "description": "Default HUD-clean radar look" },
-"speedcamRadarLookAlien": "Alien",
-  "@speedcamRadarLookAlien": { "description": "Alien motion-tracker radar look" },
-
-"speedcamHudDemo": "Демо на HUD",
-  "@speedcamHudDemo": { "description": "Force approach demo onto live HUD" },
-"speedcamHudDemoStop": "Стоп демо",
-  "@speedcamHudDemoStop": { "description": "Clear HUD speedcam demo approach" },
-"speedcamDbSection": "Локальный пакет / БД",
-  "@speedcamDbSection": { "description": "DHU local speedcam pack state" },
+  "@speedcamHudRadarEnable": {
+    "description": "Toggle CRT on windshield HUD (legacy; prefer presence mode)"
+  },
+  "speedcamHudMode": "Радар на HUD",
+  "@speedcamHudMode": {
+    "description": "0060: HUD presence mode Any/Dangerous/Off"
+  },
+  "speedcamSoundMode": "Звук оповещения",
+  "@speedcamSoundMode": {
+    "description": "0060: sound presence mode Any/Dangerous/Off"
+  },
+  "speedcamPresenceAny": "Любые",
+  "@speedcamPresenceAny": {
+    "description": "0060 presence mode: any ahead cam"
+  },
+  "speedcamPresenceDangerous": "Опасные",
+  "@speedcamPresenceDangerous": {
+    "description": "0060 presence mode: facing-relevant ahead"
+  },
+  "speedcamPresenceOff": "Выкл",
+  "@speedcamPresenceOff": {
+    "description": "0060 presence mode: channel off"
+  },
+  "speedcamDhuRange": "Дальность оповещения / радара",
+  "@speedcamDhuRange": {
+    "description": "Presence and alert radius metres (DHU + approach)"
+  },
+  "speedcamSoundEnable": "Звук приближения",
+  "@speedcamSoundEnable": {
+    "description": "Toggle sting on insideApproach enter"
+  },
+  "speedcamSoundVolume": "Громкость оповещения",
+  "@speedcamSoundVolume": {
+    "description": "Speedcam sting/ping volume 0-100%"
+  },
+  "speedcamRadarLook": "Вид радара",
+  "@speedcamRadarLook": {
+    "description": "Speedcam radar visual look picker"
+  },
+  "speedcamRadarLookDefault": "Обычный",
+  "@speedcamRadarLookDefault": {
+    "description": "Default HUD-clean radar look"
+  },
+  "speedcamRadarLookAlien": "Alien",
+  "@speedcamRadarLookAlien": {
+    "description": "Alien motion-tracker radar look"
+  },
+  "speedcamHudDemo": "Демо на HUD",
+  "@speedcamHudDemo": {
+    "description": "Force approach demo onto live HUD"
+  },
+  "speedcamHudDemoStop": "Стоп демо",
+  "@speedcamHudDemoStop": {
+    "description": "Clear HUD speedcam demo approach"
+  },
+  "speedcamDbSection": "Локальная БД / карта",
+  "@speedcamDbSection": {
+    "description": "DHU local speedcam pack state"
+  },
   "speedcamDbRegion": "Регион",
-  "@speedcamDbRegion": { "description": "Pack region label" },
+  "@speedcamDbRegion": {
+    "description": "Pack region label"
+  },
+  "speedcamDbCoverage": "Охват",
+  "@speedcamDbCoverage": {
+    "description": "Честный радиус последнего сбора (напр. в пределах 300 км)"
+  },
   "speedcamDbSource": "Источник",
-  "@speedcamDbSource": { "description": "Pack source overpass/fixture/fake" },
+  "@speedcamDbSource": {
+    "description": "Pack source overpass/fixture/fake"
+  },
   "speedcamDbFetched": "Последнее обновление",
-  "@speedcamDbFetched": { "description": "Pack fetch timestamp" },
+  "@speedcamDbFetched": {
+    "description": "Pack fetch timestamp"
+  },
   "speedcamDbAge": "Возраст",
-  "@speedcamDbAge": { "description": "Pack age vs now" },
-  "speedcamDbCount": "Камер в пакете",
-  "@speedcamDbCount": { "description": "Cached cam count" },
+  "@speedcamDbAge": {
+    "description": "Pack age vs now"
+  },
+  "speedcamDbCount": "Камер в кэше",
+  "@speedcamDbCount": {
+    "description": "Cached cam count"
+  },
   "speedcamDbSample": "Примеры камер",
-  "@speedcamDbSample": { "description": "First N cams from local DB" },
+  "@speedcamDbSample": {
+    "description": "First N cams from local DB"
+  },
   "speedcamHarvestSection": "Сбор / обновление",
-  "@speedcamHarvestSection": { "description": "Pack refresh policy section" },
+  "@speedcamHarvestSection": {
+    "description": "Pack refresh policy section"
+  },
   "speedcamRefreshPolicy": "Политика обновления",
-  "@speedcamRefreshPolicy": { "description": "Manual vs if-stale" },
+  "@speedcamRefreshPolicy": {
+    "description": "Manual vs if-stale"
+  },
   "speedcamRefreshManual": "Только вручную",
-  "@speedcamRefreshManual": { "description": "Only Update button refreshes" },
+  "@speedcamRefreshManual": {
+    "description": "Only Update button refreshes"
+  },
   "speedcamRefreshIfStale": "Если устарел",
-  "@speedcamRefreshIfStale": { "description": "Auto refresh when older than N days" },
+  "@speedcamRefreshIfStale": {
+    "description": "Auto refresh when older than N days"
+  },
   "speedcamStaleDays": "Устарел через (дней)",
-  "@speedcamStaleDays": { "description": "Days before if-stale refreshes" },
-
+  "@speedcamStaleDays": {
+    "description": "Days before if-stale refreshes"
+  },
+  "speedcamLocationDenied": "Нет доступа к геолокации — разрешите в настройках или в диалоге приложения. Сбор не будет использовать старый центр Demo/Минск.",
+  "@speedcamLocationDenied": {
+    "description": "Honest error when runtime location permission is denied (0050 HARD)"
+  },
+  "speedcamLocationNeeded": "Разрешите геолокацию, чтобы Speedcam следил за авто и центрировал сбор.",
+  "@speedcamLocationNeeded": {
+    "description": "Hint before/with location permission prompt"
+  },
   "sectionAbout": "О приложении",
-  "@sectionAbout": { "description": "Home tile — About" },
+  "@sectionAbout": {
+    "description": "Home tile — About"
+  },
   "sectionAboutSubtitle": "Версия и источники данных",
-  "@sectionAboutSubtitle": { "description": "About tile subtitle" },
+  "@sectionAboutSubtitle": {
+    "description": "About tile subtitle"
+  },
   "aboutTitle": "О приложении",
-  "@aboutTitle": { "description": "About screen title" },
+  "@aboutTitle": {
+    "description": "About screen title"
+  },
   "aboutAppSection": "Приложение",
-  "@aboutAppSection": { "description": "About app section" },
+  "@aboutAppSection": {
+    "description": "About app section"
+  },
   "aboutAppName": "Zee Power Toys",
-  "@aboutAppName": { "description": "Product name on About" },
+  "@aboutAppName": {
+    "description": "Product name on About"
+  },
   "aboutVersion": "Версия",
-  "@aboutVersion": { "description": "Version label" },
+  "@aboutVersion": {
+    "description": "Version label"
+  },
   "aboutCreditsSection": "Благодарности",
-  "@aboutCreditsSection": { "description": "Credits section" },
+  "@aboutCreditsSection": {
+    "description": "Credits section"
+  },
   "aboutSpeedcamCreditTitle": "Камеры / картоданные",
-  "@aboutSpeedcamCreditTitle": { "description": "Speedcam credit title" },
+  "@aboutSpeedcamCreditTitle": {
+    "description": "Speedcam credit title"
+  },
   "aboutSpeedcamCreditBody": "Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).",
-  "@aboutSpeedcamCreditBody": { "description": "OSM ODbL credit for Speedcam" }
-
+  "@aboutSpeedcamCreditBody": {
+    "description": "OSM ODbL credit for Speedcam"
+  },
+  "installYnaviOs7Name": "YNavi мод (OS7+, без левого поля)",
+  "@installYnaviOs7Name": {
+    "description": "Install card — OS7 YNavi variant"
+  },
+  "installYnaviOs7Desc": "Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.",
+  "@installYnaviOs7Desc": {
+    "description": "Install card desc OS7 YNavi"
+  },
+  "updateCardName": "Zee Power Toys",
+  "@updateCardName": {
+    "description": "Self-update card title"
+  },
+  "updateCardDesc": "Проверить GitHub Releases на новую сборку этого приложения и установить.",
+  "@updateCardDesc": {
+    "description": "Self-update card description"
+  },
+  "updateCheckButton": "Проверить обновления",
+  "@updateCheckButton": {
+    "description": "Probe GitHub for newer release"
+  },
+  "updateInstallButton": "Обновить",
+  "@updateInstallButton": {
+    "description": "Download and install newer APK"
+  },
+  "updateStatusChecking": "Проверка…",
+  "@updateStatusChecking": {
+    "description": "Self-update checking status"
+  },
+  "updateStatusUpToDate": "У вас актуальная сборка.",
+  "@updateStatusUpToDate": {
+    "description": "No newer release"
+  },
+  "updateStatusAvailable": "Доступно обновление: {label}",
+  "@updateStatusAvailable": {
+    "description": "Newer release found",
+    "placeholders": {"label": {"type": "String"}}
+  },
+  "updateStatusNone": "Публичных релизов пока нет.",
+  "@updateStatusNone": {
+    "description": "Empty releases list"
+  },
+  "updateStatusFailed": "Ошибка проверки: {message}",
+  "@updateStatusFailed": {
+    "description": "Check error",
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "speedcamDhuSystemOverlay": "Системный оверлей DHU",
+  "@speedcamDhuSystemOverlay": {
+    "description": "0065 toggle title"
+  },
+  "speedcamDhuSystemOverlayHint": "Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).",
+  "@speedcamDhuSystemOverlayHint": {
+    "description": "0065 toggle hint"
+  },
+  "speedcamOverlayPermissionDenied": "Нужно разрешение показа поверх других окон.",
+  "@speedcamOverlayPermissionDenied": {
+    "description": "0065 permission denied"
+  }
 }

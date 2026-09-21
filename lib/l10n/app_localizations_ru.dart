@@ -139,11 +139,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Лаунчер с YNavi в качестве навигации по умолчанию';
 
   @override
-  String get installYnaviName => 'Мод YNavi (HUD)';
+  String get installYnaviName => 'YNavi мод (с полями / по умолчанию)';
 
   @override
   String get installYnaviDesc =>
-      'Мод Яндекс.Навигатора с поддержкой HUD и трансляцией миникарты';
+      'YNavi с HUD и левым letterbox под боковую панель Zeekr. Для OS7+ — другая карточка.';
 
   @override
   String get installButtonLabel => 'Установить / Обновить';
@@ -254,6 +254,42 @@ class AppLocalizationsRu extends AppLocalizations {
   String get batteryStylePctInside => '% внутри';
 
   @override
+  String get batteryLook => 'Вид';
+
+  @override
+  String get batteryLookBattery => 'Аккумулятор';
+
+  @override
+  String get batteryLookBatteryText => 'Аккумулятор + текст';
+
+  @override
+  String get batteryLookBatteryBars => 'Аккумулятор с полосками';
+
+  @override
+  String get batteryLookJustText => 'Только текст';
+
+  @override
+  String get batteryPlacement => 'Положение';
+
+  @override
+  String get batteryPlacementLeft => 'Слева';
+
+  @override
+  String get batteryPlacementRight => 'Справа';
+
+  @override
+  String get batteryPlacementRightTop => 'Справа сверху';
+
+  @override
+  String get batteryVerticalPosition => 'Вертикальное положение';
+
+  @override
+  String get batterySidePadding => 'Боковой отступ (от края)';
+
+  @override
+  String get batteryHorizBias => 'Горизонтальный сдвиг';
+
+  @override
   String get batterySize => 'Размер';
 
   @override
@@ -289,6 +325,34 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get minimapYnaviUnavailableHint =>
       'Установите совместимый мод YNavi, чтобы включить миникарту';
+
+  @override
+  String get minimapOnlyWhileGuidance => 'Только во время ведения';
+
+  @override
+  String get minimapOnlyWhileGuidanceHint =>
+      'Если включено, миникарта видна только при активной навигации YNavi';
+
+  @override
+  String get minimapGuidanceOverlay => 'Подсказки манёвров';
+
+  @override
+  String get minimapGuidanceOverlayHint =>
+      'Стрелка, дистанция и улица на миникарте (из данных маршрута YNavi)';
+
+  @override
+  String get minimapEtaBar => 'Полоса ETA';
+
+  @override
+  String get minimapEtaBarHint =>
+      'Оставшиеся дистанция, время и прибытие на миникарте';
+
+  @override
+  String get minimapOverlayScale => 'Масштаб оверлея';
+
+  @override
+  String get minimapOverlayScaleHint =>
+      'Уменьшает полосы манёвров и ETA, чтобы влезли в миникарту (независимо от плотности карты)';
 
   @override
   String get minimapPreset => 'Пресет';
@@ -431,7 +495,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeWelcomeBody =>
-      'HUD-оверлеи и миникарта для Zeekr. Проверьте приложения ниже и откройте раздел.';
+      'Оверлеи HUD и миникарта для Zeekr. Проверьте приложения ниже, затем выберите раздел справа.';
 
   @override
   String get homeCompanionsTitle => 'Сопутствующие приложения';
@@ -468,13 +532,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamTitle => 'Камеры';
 
   @override
-  String get speedcamPackSection => 'Региональный пакет';
+  String get speedcamPackSection => 'Кэш камер';
 
   @override
   String get speedcamPackBy => 'Беларусь (BY)';
 
   @override
-  String get speedcamPackMissing => 'Пакета нет — нажмите Обновить';
+  String get speedcamPackMissing => 'Камер нет — нажмите Обновить';
 
   @override
   String speedcamPackStatus(int count, String when) {
@@ -482,7 +546,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get speedcamPackUpdate => 'Обновить пакет';
+  String get speedcamPackUpdate => 'Собрать (300 км)';
 
   @override
   String get speedcamPackUpdating => 'Обновление…';
@@ -494,10 +558,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamHudRadarEnable => 'Радар на HUD';
 
   @override
-  String get speedcamDhuRange => 'Дальность радара DHU';
+  String get speedcamHudMode => 'Радар на HUD';
+
+  @override
+  String get speedcamSoundMode => 'Звук оповещения';
+
+  @override
+  String get speedcamPresenceAny => 'Любые';
+
+  @override
+  String get speedcamPresenceDangerous => 'Опасные';
+
+  @override
+  String get speedcamPresenceOff => 'Выкл';
+
+  @override
+  String get speedcamDhuRange => 'Дальность оповещения / радара';
 
   @override
   String get speedcamSoundEnable => 'Звук приближения';
+
+  @override
+  String get speedcamSoundVolume => 'Громкость оповещения';
 
   @override
   String get speedcamRadarLook => 'Вид радара';
@@ -515,10 +597,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamHudDemoStop => 'Стоп демо';
 
   @override
-  String get speedcamDbSection => 'Локальный пакет / БД';
+  String get speedcamDbSection => 'Локальная БД / карта';
 
   @override
   String get speedcamDbRegion => 'Регион';
+
+  @override
+  String get speedcamDbCoverage => 'Охват';
 
   @override
   String get speedcamDbSource => 'Источник';
@@ -530,7 +615,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get speedcamDbAge => 'Возраст';
 
   @override
-  String get speedcamDbCount => 'Камер в пакете';
+  String get speedcamDbCount => 'Камер в кэше';
 
   @override
   String get speedcamDbSample => 'Примеры камер';
@@ -549,6 +634,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamStaleDays => 'Устарел через (дней)';
+
+  @override
+  String get speedcamLocationDenied =>
+      'Нет доступа к геолокации — разрешите в настройках или в диалоге приложения. Сбор не будет использовать старый центр Demo/Минск.';
+
+  @override
+  String get speedcamLocationNeeded =>
+      'Разрешите геолокацию, чтобы Speedcam следил за авто и центрировал сбор.';
 
   @override
   String get sectionAbout => 'О приложении';
@@ -577,4 +670,54 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get aboutSpeedcamCreditBody =>
       'Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).';
+
+  @override
+  String get installYnaviOs7Name => 'YNavi мод (OS7+, без левого поля)';
+
+  @override
+  String get installYnaviOs7Desc =>
+      'Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.';
+
+  @override
+  String get updateCardName => 'Zee Power Toys';
+
+  @override
+  String get updateCardDesc =>
+      'Проверить GitHub Releases на новую сборку этого приложения и установить.';
+
+  @override
+  String get updateCheckButton => 'Проверить обновления';
+
+  @override
+  String get updateInstallButton => 'Обновить';
+
+  @override
+  String get updateStatusChecking => 'Проверка…';
+
+  @override
+  String get updateStatusUpToDate => 'У вас актуальная сборка.';
+
+  @override
+  String updateStatusAvailable(String label) {
+    return 'Доступно обновление: $label';
+  }
+
+  @override
+  String get updateStatusNone => 'Публичных релизов пока нет.';
+
+  @override
+  String updateStatusFailed(String message) {
+    return 'Ошибка проверки: $message';
+  }
+
+  @override
+  String get speedcamDhuSystemOverlay => 'Системный оверлей DHU';
+
+  @override
+  String get speedcamDhuSystemOverlayHint =>
+      'Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).';
+
+  @override
+  String get speedcamOverlayPermissionDenied =>
+      'Нужно разрешение показа поверх других окон.';
 }

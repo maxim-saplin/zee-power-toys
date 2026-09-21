@@ -29,6 +29,8 @@ android/local.properties
 android/key.properties
 *.keystore
 *.jks
+!android/tools/zeekr/androiddebugkey.jks
+!tools/zeekr/androiddebugkey.jks
 .cxx/
 
 # Dartdoc
@@ -51,3 +53,4 @@ doc/api/
 # Flutter run logs & research APK artifacts — never tracked
 flutter_*.log
 *.apk
+artifacts/

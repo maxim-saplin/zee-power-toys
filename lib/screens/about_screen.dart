@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../app_version.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/settings_layout.dart';
 
 /// App about + data credits (0043-A).
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
-
-  static const appVersion = '0.1.0';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +24,7 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.aboutAppName),
-                subtitle: Text('${l10n.aboutVersion} $appVersion'),
+                subtitle: Text('${l10n.aboutVersion} $appVersionFull'),
               ),
             ],
           ),

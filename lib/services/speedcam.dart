@@ -222,6 +222,20 @@ double initialBearingDegrees(
 }
 
 
+
+/// Signed relative bearing: absolute cam bearing minus host heading, degrees
+/// in (-180, 180]. Unknown heading → treat absolute as already relative
+/// (north-up / demo).
+double relativeBearingDegrees(double absoluteBearingDeg, double? headingDeg) {
+  final raw = headingDeg == null
+      ? absoluteBearingDeg
+      : absoluteBearingDeg - headingDeg;
+  var b = raw % 360;
+  if (b > 180) b -= 360;
+  if (b < -180) b += 360;
+  return b;
+}
+
 /// Smallest absolute angle between two bearings [0, 180].
 double smallestAngleDeg(double a, double b) {
   var d = (a - b).abs() % 360;
@@ -267,6 +281,18 @@ double? parseCamFacingDegrees(String? raw) {
   return null;
 }
 
+/// Independent HUD paint / alert-sound presence gate (0060).
+///
+/// **Scan set** = front hemisphere ([isCamAheadOfTravel]) ∩ approach radius.
+/// - [any]: all scan candidates (no facing mute)
+/// - [dangerous]: scan ∩ facing our traffic ([isCamRelevantForHost])
+/// - [off]: channel silent / hidden
+enum SpeedcamPresenceMode {
+  any,
+  dangerous,
+  off,
+}
+
 /// Whether [cam] should alert for [host] travel direction.
 ///
 /// Camera facing into our traffic (≈ opposite our heading) → relevant.
@@ -281,20 +307,111 @@ bool isCamRelevantForHost(SpeedcamHostPose host, SpeedcamPoint cam) {
   return smallestAngleDeg(facing, intoOurTraffic) <= 90;
 }
 
+/// Whether the cam lies ahead of host travel (relative bearing ≤ 90°).
+/// Unknown heading → fail-open (treat as ahead).
+bool isCamAheadOfTravel(SpeedcamHostPose host, double bearingToCamDeg) {
+  final heading = host.headingDeg;
+  if (heading == null) return true;
+  return smallestAngleDeg(bearingToCamDeg, heading) <= 90;
+}
+
+/// Whether [cam] is in the 0060 scan set: ahead of travel and within [radiusM].
+bool isCamInScanSet({
+  required SpeedcamHostPose host,
+  required SpeedcamPoint cam,
+  required double radiusM,
+  double? distanceM,
+  double? bearingDeg,
+}) {
+  final d = distanceM ??
+      haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+  if (d > radiusM) return false;
+  final bearing = bearingDeg ??
+      initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+  return isCamAheadOfTravel(host, bearing);
+}
+
+/// True when [mode] should treat [cam] as an active presence contact.
+bool camPassesPresenceMode({
+  required SpeedcamPresenceMode mode,
+  required SpeedcamHostPose host,
+  required SpeedcamPoint cam,
+  required double approachRadiusM,
+  double? distanceM,
+  double? bearingDeg,
+}) {
+  if (mode == SpeedcamPresenceMode.off) return false;
+  final d = distanceM ??
+      haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+  final bearing = bearingDeg ??
+      initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+  if (!isCamInScanSet(
+    host: host,
+    cam: cam,
+    radiusM: approachRadiusM,
+    distanceM: d,
+    bearingDeg: bearing,
+  )) {
+    return false;
+  }
+  if (mode == SpeedcamPresenceMode.dangerous) {
+    return isCamRelevantForHost(host, cam);
+  }
+  // any
+  return true;
+}
+
+/// Nearest cam for [mode] within the front-hemisphere scan set.
+///
+/// Returns null when [mode] is [SpeedcamPresenceMode.off] or no candidate
+/// matches. [insideApproach] is always true for returned hits (scan ∩ radius).
+SpeedcamDanger? nearestForPresenceMode({
+  required SpeedcamPresenceMode mode,
+  required SpeedcamHostPose host,
+  required List<SpeedcamPoint> cams,
+  double approachRadiusM = 500,
+  Set<String> skipIds = const <String>{},
+}) {
+  if (mode == SpeedcamPresenceMode.off) return null;
+  final requireFacing = mode == SpeedcamPresenceMode.dangerous;
+  return nearestDanger(
+    host: host,
+    cams: cams,
+    approachRadiusM: approachRadiusM,
+    skipIds: skipIds,
+    requireFacing: requireFacing,
+    requireAhead: true,
+    onlyInsideApproach: true,
+  );
+}
+
+/// Nearest relevant cam (0060: front hemisphere by default).
+///
+/// When [requireFacing] is true (default), applies [isCamRelevantForHost].
+/// When [requireAhead] is true (default), applies [isCamAheadOfTravel].
+/// When [onlyInsideApproach] is true, skips cams outside [approachRadiusM].
 SpeedcamDanger? nearestDanger({
   required SpeedcamHostPose host,
   required List<SpeedcamPoint> cams,
   double approachRadiusM = 500,
+  Set<String> skipIds = const <String>{},
+  bool requireFacing = true,
+  bool requireAhead = true,
+  bool onlyInsideApproach = false,
 }) {
   SpeedcamDanger? best;
   for (final cam in cams) {
-    if (!isCamRelevantForHost(host, cam)) continue;
+    if (skipIds.contains(cam.id)) continue;
+    if (requireFacing && !isCamRelevantForHost(host, cam)) continue;
     final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+    if (onlyInsideApproach && d > approachRadiusM) continue;
+    final bearing = initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+    if (requireAhead && !isCamAheadOfTravel(host, bearing)) continue;
     if (best == null || d < best.distanceM) {
       best = SpeedcamDanger(
         cam: cam,
         distanceM: d,
-        bearingDeg: initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon),
+        bearingDeg: bearing,
         insideApproach: d <= approachRadiusM,
       );
     }
@@ -302,12 +419,177 @@ SpeedcamDanger? nearestDanger({
   return best;
 }
 
+/// Resolve which danger drives sound/HUD for [mode].
+///
+/// Prefer [serviceDanger] for [SpeedcamPresenceMode.dangerous] so pass-clear
+/// grace from the service remains intact. [any] recomputes without facing mute.
+SpeedcamDanger? resolvePresenceDanger({
+  required SpeedcamPresenceMode mode,
+  required SpeedcamHostPose? host,
+  required List<SpeedcamPoint> cams,
+  required double approachRadiusM,
+  SpeedcamDanger? serviceDanger,
+}) {
+  switch (mode) {
+    case SpeedcamPresenceMode.off:
+      return null;
+    case SpeedcamPresenceMode.dangerous:
+      if (serviceDanger == null || !serviceDanger.insideApproach) return null;
+      return serviceDanger;
+    case SpeedcamPresenceMode.any:
+      if (host == null) {
+        return (serviceDanger != null && serviceDanger.insideApproach)
+            ? serviceDanger
+            : null;
+      }
+      return nearestForPresenceMode(
+        mode: SpeedcamPresenceMode.any,
+        host: host,
+        cams: cams,
+        approachRadiusM: approachRadiusM,
+      );
+  }
+}
+
+/// Default grace after host passes a cam (behind / leaving) before clearing alert.
+const Duration kSpeedcamPassClearGrace = Duration(seconds: 4);
+
+/// Keeps a passed-by cam alerted briefly, then suppresses it until re-approach.
+///
+/// Prefer heading+bearing (behind = relative bearing > 90°). When heading is
+/// unknown, fall back to distance trend (was closing, now opening).
+class SpeedcamPassClearGate {
+  SpeedcamPassClearGate({
+    this.grace = kSpeedcamPassClearGrace,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  final Duration grace;
+  final DateTime Function() _clock;
+
+  String? _graceCamId;
+  DateTime? _graceUntil;
+  final Set<String> _expired = <String>{};
+
+  String? _trendCamId;
+  double? _prevDistanceM;
+  bool _wasClosing = false;
+
+  void reset() {
+    _graceCamId = null;
+    _graceUntil = null;
+    _expired.clear();
+    _trendCamId = null;
+    _prevDistanceM = null;
+    _wasClosing = false;
+  }
+
+  bool _isLeaving(SpeedcamHostPose host, SpeedcamDanger danger) {
+    final heading = host.headingDeg;
+    if (heading != null) {
+      return !isCamAheadOfTravel(host, danger.bearingDeg);
+    }
+    // Distance-trend fallback when heading unknown.
+    if (_trendCamId != danger.cam.id) {
+      _trendCamId = danger.cam.id;
+      _prevDistanceM = danger.distanceM;
+      _wasClosing = false;
+      return false;
+    }
+    final prev = _prevDistanceM ?? danger.distanceM;
+    if (danger.distanceM < prev - 5) _wasClosing = true;
+    final leaving = _wasClosing && danger.distanceM > prev + 5;
+    _prevDistanceM = danger.distanceM;
+    return leaving;
+  }
+
+  /// Resolve danger with pass-clear grace. May return null after grace expires.
+  SpeedcamDanger? resolve({
+    required SpeedcamHostPose host,
+    required List<SpeedcamPoint> cams,
+    required double approachRadiusM,
+  }) {
+    // Drop expired suppressions once host is ahead again or far outside range.
+    final camById = {for (final c in cams) c.id: c};
+    _expired.removeWhere((id) {
+      final cam = camById[id];
+      if (cam == null) return true;
+      final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+      if (d > approachRadiusM * 1.25) return true;
+      final bearing = initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+      return isCamAheadOfTravel(host, bearing);
+    });
+
+    final skip = Set<String>.from(_expired);
+    while (true) {
+      // Prefer front-hemisphere scan (0060). If nothing ahead, still consider a
+      // behind/leaving facing-relevant cam so pass-clear grace can start/hold.
+      var danger = nearestDanger(
+        host: host,
+        cams: cams,
+        approachRadiusM: approachRadiusM,
+        skipIds: skip,
+        requireAhead: true,
+      );
+      if (danger == null) {
+        final behind = nearestDanger(
+          host: host,
+          cams: cams,
+          approachRadiusM: approachRadiusM,
+          skipIds: skip,
+          requireAhead: false,
+        );
+        if (behind != null &&
+            behind.insideApproach &&
+            _isLeaving(host, behind)) {
+          danger = behind;
+        }
+      }
+      if (danger == null) return null;
+
+      final leaving = _isLeaving(host, danger);
+      if (!leaving) {
+        if (_graceCamId == danger.cam.id) {
+          _graceCamId = null;
+          _graceUntil = null;
+        }
+        _expired.remove(danger.cam.id);
+        return danger;
+      }
+
+      // Behind / leaving but outside approach — report without grace hang.
+      if (!danger.insideApproach) {
+        _graceCamId = null;
+        _graceUntil = null;
+        return danger;
+      }
+
+      final now = _clock();
+      if (_graceCamId == danger.cam.id && _graceUntil != null) {
+        if (now.isBefore(_graceUntil!)) return danger;
+        _expired.add(danger.cam.id);
+        skip.add(danger.cam.id);
+        _graceCamId = null;
+        _graceUntil = null;
+        continue;
+      }
+
+      // Start grace — keep alerting 3–5s after pass.
+      _graceCamId = danger.cam.id;
+      _graceUntil = now.add(grace);
+      return danger;
+    }
+  }
+}
+
 /// Speedcam port — nearby cams + danger; enable + host pose + reload pack.
 abstract class SpeedcamService {
   Stream<SpeedcamSnapshot> get snapshots;
   SpeedcamSnapshot get snapshot;
   Future<void> setEnabled(bool on);
-  Future<void> setHostPose(SpeedcamHostPose pose);
+  /// [fromLive] marks GPS/YNavi updates. Manual inject/demo/drive omit it and
+  /// hold off live until [clearHostPose] (T1 tools must keep working on-car).
+  Future<void> setHostPose(SpeedcamHostPose pose, {bool fromLive = false});
   Future<void> clearHostPose();
 
   /// Reload cams from the wired pack store (no-op if none).

@@ -6,10 +6,14 @@ import '../providers/config.dart';
 import '../providers/services.dart';
 import '../providers/speedcam.dart';
 import '../services/config_store.dart';
+import '../services/speedcam.dart';
 import '../services/speedcam_alert.dart';
 import '../services/speedcam_alien_ping.dart';
 
 /// Approach sting (0035) + Alien range ping loop (0040).
+///
+/// Sound channel respects [SpeedcamConfig.soundMode] (0060). Alien ping and
+/// Default sting share the same danger selection for sound.
 class SpeedcamAlertBinder extends HookConsumerWidget {
   const SpeedcamAlertBinder({super.key, required this.child});
 
@@ -20,31 +24,48 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
     final alert = ref.watch(speedcamAlertProvider);
     final cfg = ref.watch(speedcamConfigProvider);
     final danger = ref.watch(speedcamDangerProvider);
+    final snap = ref.watch(speedcamSnapshotProvider);
 
     final arm = useMemoized(() => SpeedcamApproachArm(alert: alert), [alert]);
     final ping = useMemoized(() => SpeedcamAlienPingLoop(alert: alert), [alert]);
-    arm.enabled = cfg.soundEnabled;
+    final soundOn = cfg.soundMode != SpeedcamPresenceMode.off;
+    arm.enabled = soundOn;
+
+    final alertDanger = resolvePresenceDanger(
+      mode: cfg.soundMode,
+      host: snap.host,
+      cams: snap.cams,
+      approachRadiusM: snap.approachRadiusM > 0
+          ? snap.approachRadiusM
+          : cfg.dhuRangeM,
+      serviceDanger: danger,
+    );
 
     useEffect(() {
-      final inside = danger?.insideApproach ?? false;
+      alert.setVolume(cfg.soundVolume);
+      return null;
+    }, [alert, cfg.soundVolume]);
+
+    useEffect(() {
+      final inside = alertDanger?.insideApproach ?? false;
       arm.onInsideApproach(inside);
       return null;
-    }, [danger?.insideApproach, danger?.cam.id, cfg.soundEnabled]);
+    }, [alertDanger?.insideApproach, alertDanger?.cam.id, cfg.soundMode]);
 
     useEffect(() {
       ping.update(
-        enabled: cfg.soundEnabled,
+        enabled: soundOn,
         alienLook: cfg.radarLook == SpeedcamRadarLook.alien,
-        insideApproach: danger?.insideApproach ?? false,
-        distanceM: danger?.distanceM,
+        insideApproach: alertDanger?.insideApproach ?? false,
+        distanceM: alertDanger?.distanceM,
       );
       return null;
     }, [
-      cfg.soundEnabled,
+      cfg.soundMode,
       cfg.radarLook,
-      danger?.insideApproach,
-      danger?.distanceM,
-      danger?.cam.id,
+      alertDanger?.insideApproach,
+      alertDanger?.distanceM,
+      alertDanger?.cam.id,
     ]);
 
     useEffect(() {

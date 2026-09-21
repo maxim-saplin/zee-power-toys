@@ -48,6 +48,12 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
   static const Color phosphorDim = Color(0xFF1A7A0A);
   static const Color phosphorGlow = Color(0xFF00FF66);
 
+  /// Dangerous / current target blip (0064).
+  static const Color blipDanger = Color(0xFFFFFFFF);
+
+  /// Other in-range scan blips — greenish phosphor (0064).
+  static const Color blipOther = phosphor;
+
   static final demoDanger = SpeedcamDanger(
     cam: const SpeedcamPoint(
       id: 'demo-cam',
@@ -63,17 +69,31 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cfg = ref.watch(speedcamConfigProvider);
-    if (variant == SpeedcamRadarVariant.hudCompact && !cfg.hudRadarEnabled) {
+    // 0060: HUD Off → no paint on windshield (DHU preview still shows via alwaysShow).
+    if (variant == SpeedcamRadarVariant.hudCompact &&
+        cfg.hudMode == SpeedcamPresenceMode.off) {
       return const SizedBox.shrink();
     }
 
     final snap = ref.watch(speedcamSnapshotProvider);
     final liveDanger = ref.watch(speedcamDangerProvider);
-    final danger = forceDemoDanger ?? liveDanger;
+    final approachM = snap.approachRadiusM > 0
+        ? snap.approachRadiusM
+        : cfg.dhuRangeM;
+    // Presence selection for HUD channel (independent of sound mode).
+    final modeDanger = forceDemoDanger ??
+        resolvePresenceDanger(
+          mode: cfg.hudMode,
+          host: snap.host,
+          cams: snap.cams,
+          approachRadiusM: approachM,
+          serviceDanger: liveDanger,
+        );
+    final danger = forceDemoDanger ?? modeDanger;
     final look = cfg.radarLook;
 
     final range = displayRadiusM ??
-        (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : 500.0);
+        (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : approachM);
 
     final blips = <SpeedcamRadarBlip>[];
     if (forceDemoDanger != null) {
@@ -96,23 +116,25 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
         highlight: false,
         maxspeed: 50,
       ));
-    } else if (snap.host != null) {
+    } else if (snap.host != null && cfg.hudMode != SpeedcamPresenceMode.off) {
+      final host = snap.host!;
+      final heading = host.headingDeg;
       for (final cam in snap.cams) {
-        final d = haversineMetres(
-          snap.host!.lat,
-          snap.host!.lon,
-          cam.lat,
-          cam.lon,
-        );
+        final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
         if (d > range) continue;
+        final absBearing =
+            initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+        // Front-hemisphere scan for candidates (0060).
+        if (!isCamAheadOfTravel(host, absBearing)) continue;
+        // Dangerous HUD: facing mute; Any: show all ahead blips.
+        if (cfg.hudMode == SpeedcamPresenceMode.dangerous &&
+            !isCamRelevantForHost(host, cam)) {
+          continue;
+        }
         final isDanger = danger != null && danger.cam.id == cam.id;
         blips.add(SpeedcamRadarBlip(
-          bearingDeg: initialBearingDegrees(
-            snap.host!.lat,
-            snap.host!.lon,
-            cam.lat,
-            cam.lon,
-          ),
+          // Alien fan + Default arrow expect forward-relative degrees.
+          bearingDeg: relativeBearingDegrees(absBearing, heading),
           distanceM: d,
           highlight: isDanger,
           maxspeed: cam.maxspeed,
@@ -122,15 +144,17 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
           danger.insideApproach &&
           !blips.any((b) => b.highlight)) {
         blips.add(SpeedcamRadarBlip(
-          bearingDeg: danger.bearingDeg,
+          bearingDeg: relativeBearingDegrees(danger.bearingDeg, heading),
           distanceM: danger.distanceM,
           highlight: true,
           maxspeed: danger.cam.maxspeed,
         ));
       }
     } else if (danger != null && danger.insideApproach) {
+      // No host pose — danger.bearingDeg may be absolute; treat as relative
+      // (fail-open) so the approach blip still paints near center.
       blips.add(SpeedcamRadarBlip(
-        bearingDeg: danger.bearingDeg,
+        bearingDeg: relativeBearingDegrees(danger.bearingDeg, null),
         distanceM: danger.distanceM,
         highlight: true,
         maxspeed: danger.cam.maxspeed,
@@ -215,7 +239,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
               blinkT: controller.value,
               blips: blips,
               displayRadiusM: range,
-              approachRadiusM: 500,
+              approachRadiusM: approachM,
               readoutM: labelDist,
               maxspeed: labelMax,
             ),
@@ -248,6 +272,7 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     final bearing = bearingDeg;
     final arrow = _bearingArrow(bearing);
     final distLabel = dist == null ? '—' : '${dist.round()} m';
+    // Dangerous / approach target readout is white (0064; Default has no multi-blip).
     final style = TextStyle(
       color: Colors.white.withValues(alpha: 0.92),
       fontSize: compact ? 18 : 28,
@@ -295,8 +320,7 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     // Map bearing relative to host forward (0 = ahead) into 8-way arrow.
     var b = bearingDeg % 360;
     if (b < 0) b += 360;
-    // Relative: assume host heading folded into bearing already for danger.
-    // Use absolute pie slices for demo.
+    // Bearing is forward-relative (0058); 0 = ahead on screen.
     if (b >= 337.5 || b < 22.5) return '↑';
     if (b < 67.5) return '↗';
     if (b < 112.5) return '→';
@@ -327,6 +351,11 @@ double alienBlipAlphaForDistanceM(
   final frac = (distanceM / displayRadiusM).clamp(0.0, 1.0);
   return (0.95 - frac * 0.55).clamp(0.35, 0.95);
 }
+
+/// 0064: dangerous highlight → white; other scan-set cams → greenish.
+Color alienBlipFillColor({required bool highlight}) => highlight
+    ? SpeedcamRadarWidget.blipDanger
+    : SpeedcamRadarWidget.blipOther;
 
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 class _AlienWedgePainter extends CustomPainter {
@@ -517,11 +546,15 @@ class _AlienWedgePainter extends CustomPainter {
       Paint()..color = const Color(0xFFE8FFE8),
     );
 
-    // Blips — round dots (Maxim: not squares)
+    // Blips — round dots (Maxim: not squares). Bearings are forward-relative
+    // (0058). On-route highlight clamps to fan edge so it never vanishes.
     for (final b in blips) {
-      final rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
+      var rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
+      if (rel.abs() > wedgeHalf) {
+        if (!b.highlight) continue;
+        rel = rel.isNegative ? -wedgeHalf : wedgeHalf;
+      }
       final a = baseAngle + rel;
-      if (rel.abs() > wedgeHalf) continue;
       final frac = (b.distanceM / displayRadiusM).clamp(0.0, 1.0);
       final p = Offset(
         c.dx + r * frac * math.cos(a),
@@ -548,21 +581,22 @@ class _AlienWedgePainter extends CustomPainter {
       final blink = 0.72 + 0.28 * (0.5 + 0.5 * math.sin(blinkT * math.pi * 2 * 2));
       final alpha = (baseA * blink).clamp(0.12, 1.0);
       final glowA = b.highlight ? alpha * 0.4 : alpha * 0.2;
+      final fill = alienBlipFillColor(highlight: b.highlight);
+      // Soft halo: white for danger, phosphor glow for other cams (0064).
+      final glowColor = b.highlight
+          ? SpeedcamRadarWidget.blipDanger
+          : SpeedcamRadarWidget.phosphorGlow;
       canvas.drawCircle(
         p,
         rad + (b.highlight ? 2.4 : 1.4),
         Paint()
-          ..color = SpeedcamRadarWidget.phosphorGlow.withValues(alpha: glowA)
+          ..color = glowColor.withValues(alpha: glowA)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
       canvas.drawCircle(
         p,
         b.highlight ? rad : rad * 0.85,
-        Paint()
-          ..color = (b.highlight
-                  ? SpeedcamRadarWidget.phosphorGlow
-                  : SpeedcamRadarWidget.phosphor)
-              .withValues(alpha: alpha),
+        Paint()..color = fill.withValues(alpha: alpha),
       );
     }
 

@@ -6,11 +6,14 @@ import '../speedcam.dart';
 class FakeSpeedcamService implements SpeedcamService {
   FakeSpeedcamService({
     List<SpeedcamPoint>? sampleCams,
-    this.approachRadiusM = 500,
+    double approachRadiusM = 500,
+    DateTime Function()? clock,
   })  : _cams = List<SpeedcamPoint>.unmodifiable(
           sampleCams ?? kFakeBySampleCams,
         ),
+        _passGate = SpeedcamPassClearGate(clock: clock),
         _ctrl = StreamController<SpeedcamSnapshot>.broadcast() {
+    _approachRadiusM = approachRadiusM;
     _emit();
   }
 
@@ -53,11 +56,23 @@ class FakeSpeedcamService implements SpeedcamService {
   ];
 
   List<SpeedcamPoint> _cams;
-  final double approachRadiusM;
+  late double _approachRadiusM;
+  final SpeedcamPassClearGate _passGate;
   final StreamController<SpeedcamSnapshot> _ctrl;
+
+  double get approachRadiusM => _approachRadiusM;
+
+  void setApproachRadiusM(double metres) {
+    final next = metres.clamp(100.0, 5000.0);
+    if (next == _approachRadiusM) return;
+    _approachRadiusM = next;
+    _emit();
+  }
 
   bool _enabled = true;
   SpeedcamHostPose? _host;
+  bool _holdManualPose = false;
+  void Function()? onHostPoseCleared;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
 
   @override
@@ -73,7 +88,9 @@ class FakeSpeedcamService implements SpeedcamService {
   }
 
   @override
-  Future<void> setHostPose(SpeedcamHostPose pose) async {
+  Future<void> setHostPose(SpeedcamHostPose pose, {bool fromLive = false}) async {
+    if (fromLive && _holdManualPose) return;
+    if (!fromLive) _holdManualPose = true;
     _host = pose;
     _emit();
   }
@@ -81,7 +98,9 @@ class FakeSpeedcamService implements SpeedcamService {
   @override
   Future<void> clearHostPose() async {
     _host = null;
+    _holdManualPose = false;
     _emit();
+    onHostPoseCleared?.call();
   }
 
   @override
@@ -132,18 +151,19 @@ class FakeSpeedcamService implements SpeedcamService {
   void _emit() {
     final host = _host;
     final danger = (_enabled && host != null)
-        ? nearestDanger(
+        ? _passGate.resolve(
             host: host,
             cams: _cams,
-            approachRadiusM: approachRadiusM,
+            approachRadiusM: _approachRadiusM,
           )
         : null;
+    if (host == null) _passGate.reset();
     _snapshot = SpeedcamSnapshot(
       enabled: _enabled,
       cams: _enabled ? _cams : const <SpeedcamPoint>[],
       host: host,
       danger: danger,
-      approachRadiusM: approachRadiusM,
+      approachRadiusM: _approachRadiusM,
       camSource: _enabled ? 'fallback' : 'none',
     );
     _ctrl.add(_snapshot);

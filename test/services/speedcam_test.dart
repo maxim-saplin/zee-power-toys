@@ -79,7 +79,7 @@ void main() {
           SpeedcamPoint(id: 'osm-pack-2', lat: 53.92, lon: 27.58),
         ],
       );
-      await pack.updatePack(SpeedcamPackIds.by);
+      await pack.updatePack(SpeedcamPackIds.by, centerLat: kSpeedcamDefaultCenterLat, centerLon: kSpeedcamDefaultCenterLon);
       final svc = DefaultSpeedcamService(packStore: pack);
       await svc.reloadFromPack();
       expect(svc.snapshot.camSource, 'pack');

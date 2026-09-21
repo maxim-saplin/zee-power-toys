@@ -89,6 +89,94 @@ class MinimapSettingsScreen extends ConsumerWidget {
                     : null,
               ),
             ),
+            SettingsToggleRow(
+              label: l10n.minimapOnlyWhileGuidance,
+              subtitle: Text(
+                l10n.minimapOnlyWhileGuidanceHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-only-while-guidance-toggle'),
+                value: cfg.onlyWhileGuidance,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(onlyWhileGuidance: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
+            SettingsToggleRow(
+              label: l10n.minimapGuidanceOverlay,
+              subtitle: Text(
+                l10n.minimapGuidanceOverlayHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-guidance-overlay-toggle'),
+                value: cfg.guidanceOverlay,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(guidanceOverlay: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
+            SettingsToggleRow(
+              label: l10n.minimapEtaBar,
+              subtitle: Text(
+                l10n.minimapEtaBarHint,
+                style: theme.textTheme.bodySmall,
+              ),
+              control: Switch(
+                key: const ValueKey('minimap-eta-bar-toggle'),
+                value: cfg.etaBar,
+                onChanged: ynaviAvailable && cfg.enabled
+                    ? (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            minimap: cfg.copyWith(etaBar: v),
+                          ),
+                        );
+                      }
+                    : null,
+              ),
+            ),
+            const SizedBox(height: Insets.md),
+            SettingsSlider(
+              label: l10n.minimapOverlayScale,
+              valueLabel: '${cfg.overlayScale.toStringAsFixed(1)}x',
+              minLabel: '0.25x',
+              maxLabel: '1.0x',
+              sliderKey: const ValueKey('minimap-overlay-scale-slider'),
+              min: 0.25,
+              max: 1.0,
+              divisions: 15,
+              value: cfg.overlayScale.clamp(0.25, 1.0),
+              onChanged: (v) {
+                store.setConfig(
+                  store.value.copyWith(
+                    minimap: cfg.copyWith(overlayScale: v),
+                  ),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: Insets.xs),
+              child: Text(
+                l10n.minimapOverlayScaleHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ),
           ],
         ),
 

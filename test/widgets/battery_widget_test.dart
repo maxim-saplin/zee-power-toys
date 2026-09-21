@@ -16,14 +16,19 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0, outline+both', () {
+    test('defaults are all-on, sizeScale 1.0, batteryText look, rightTop', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
       expect(cfg.showChargingStats, isTrue);
       expect(cfg.sizeScale, 1.0);
+      expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);
-      expect(cfg.style, BatteryStyle.outline);
+      expect(cfg.style, BatteryStyle.pctInside);
+      expect(cfg.placement, BatteryPlacement.rightTop);
+      expect(cfg.vertFrac, 0.010);
+      expect(cfg.sidePadFrac, 0.04);
+      expect(cfg.horizBiasFrac, 0.0);
     });
 
     test('round-trips through JSON', () {
@@ -32,12 +37,34 @@ void main() {
         showTemp: true,
         showChargingStats: false,
         sizeScale: 1.5,
+        look: BatteryLook.batteryBars,
         contentMode: BatteryContentMode.iconOnly,
-        style: BatteryStyle.pctInside,
+        style: BatteryStyle.filled,
       );
       final json = cfg.toJson();
       final cfg2 = BatteryConfig.fromJson(json);
       expect(cfg2, equals(cfg));
+    });
+
+    test('withLook syncs contentMode + style to PDM parts', () {
+      const base = BatteryConfig();
+      expect(base.withLook(BatteryLook.battery).contentMode,
+          BatteryContentMode.iconOnly);
+      expect(base.withLook(BatteryLook.battery).style, BatteryStyle.outline);
+      expect(base.withLook(BatteryLook.batteryText).style, BatteryStyle.pctInside);
+      expect(base.withLook(BatteryLook.batteryBars).style, BatteryStyle.filled);
+      expect(base.withLook(BatteryLook.justText).contentMode,
+          BatteryContentMode.textOnly);
+    });
+
+    test('legacy contentMode+style without look migrates to BatteryLook', () {
+      final cfg = BatteryConfig.fromJson(<String, Object?>{
+        'contentMode': 'iconOnly',
+        'style': 'filled',
+      });
+      expect(cfg.look, BatteryLook.batteryBars);
+      expect(cfg.contentMode, BatteryContentMode.iconOnly);
+      expect(cfg.style, BatteryStyle.filled);
     });
 
     test('fromJson falls back to defaults for missing keys', () {
@@ -179,8 +206,11 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
-      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
-      expect(find.text('50%'), findsOneWidget);
+      // 0062: Battery + text puts % inside the pack (dual-color), not below.
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      // Two Text nodes (white + black layers) share the same label.
+      expect(find.text('50%'), findsNWidgets(2));
     });
 
     // battery fill ∝ pct: test 0%, 50%, 100% all render the icon without crash.
@@ -198,7 +228,7 @@ void main() {
       signals.emitBattery(levelPct: 0, tempC: 20.0);
       await tester.pump();
 
-      expect(find.text('0%'), findsOneWidget);
+      expect(find.text('0%'), findsWidgets);
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
     });
 
@@ -216,7 +246,7 @@ void main() {
       signals.emitBattery(levelPct: 50, tempC: 22.0);
       await tester.pump();
 
-      expect(find.text('50%'), findsOneWidget);
+      expect(find.text('50%'), findsWidgets);
     });
 
     testWidgets('battery renders at pct=100', (tester) async {
@@ -233,7 +263,7 @@ void main() {
       signals.emitBattery(levelPct: 100, tempC: 25.0);
       await tester.pump();
 
-      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('100%'), findsWidgets);
     });
 
     // Temperature tests.
@@ -453,7 +483,42 @@ void main() {
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
-      expect(find.text('88%'), findsOneWidget);
+      // Dual-color layers: white (empty) + black (filled) share the label.
+      expect(find.text('88%'), findsNWidgets(2));
+    });
+
+    testWidgets('0062 batteryText look: dual-color inline %, ClipRect at fill',
+        (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final config = AppConfig(
+        battery: const BatteryConfig().withLook(BatteryLook.batteryText),
+      );
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        config: config,
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+      ));
+      signals.emitBattery(levelPct: 42, tempC: 21.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
+      // Empty (white) + filled (black) each get a ClipRect in pack coords.
+      final inline = find.byKey(const ValueKey('battery-inline-pct'));
+      expect(find.descendant(of: inline, matching: find.byType(ClipRect)),
+          findsNWidgets(2));
+      expect(find.text('42%'), findsNWidgets(2));
+
+      // Colors must stay black-on-fill / white-on-empty (not inverted).
+      final texts = tester.widgetList<Text>(find.text('42%')).toList();
+      final colors = texts.map((t) => t.style?.color).toSet();
+      expect(colors, contains(const Color(0xFF000000)));
+      expect(colors, contains(const Color(0xFFEEEEEE)));
     });
 
     testWidgets('filled style still paints icon', (tester) async {
@@ -499,120 +564,41 @@ void main() {
   // full transform chain (including FittedBox's scale), so they reflect what
   // actually reaches the screen, not the unscaled layout size.
   group('BatteryWidget — size slider honesty', () {
-    // The real BATTERY slot at the reference Safe Area geometry (1024×576 @
-    // 213dpi, T2/T3 — CONTEXT.md's 616×175dp Safe Area converted to logical
-    // px at that density): saWidth*0.12 × saHeight*0.6 (hud_root.dart:131,
-    // 128). This is the actual physical constraint the slider's range is
-    // honest (or not) against.
-    const slotSize = Size(98.4, 139.8);
+    // 0067b removed FittedBox; monotonic growth is asserted in
+    // test/hud/battery_geometry_test.dart (slot fracs × sizeScale).
 
-    Size renderedIconSize(WidgetTester tester) {
-      final finder = find.byKey(const ValueKey('battery-icon'));
-      final topLeft = tester.getTopLeft(finder);
-      final bottomRight = tester.getBottomRight(finder);
-      return Size(bottomRight.dx - topLeft.dx, bottomRight.dy - topLeft.dy);
-    }
+    testWidgets(
+        'no layout overflow error at slider max (2.5x) with all rows — '
+        '0067b: ClipRect; slot grows with sizeScale in HudRoot',
+        (tester) async {
+      const grown = Size(200, 280);
+      await tester.binding.setSurfaceSize(grown);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    Future<void> pumpAt(
-      WidgetTester tester, {
-      required double sizeScale,
-      bool showTemp = true,
-      bool showChargingStats = true,
-      bool charging = false,
-    }) async {
       final signals = FakeCarSignals();
       final config = AppConfig(
-        battery: BatteryConfig(
-          sizeScale: sizeScale,
-          showTemp: showTemp,
-          showChargingStats: showChargingStats,
+        battery: const BatteryConfig(
+          sizeScale: 2.5,
+          showTemp: true,
+          showChargingStats: true,
         ),
       );
       await tester.pumpWidget(wrapWithProviders(
-        SizedBox.fromSize(size: slotSize, child: const BatteryWidget()),
+        SizedBox.fromSize(size: grown, child: const BatteryWidget()),
         config: config,
         signals: signals,
         scaffold: true,
         localizations: false,
       ));
       signals.emitBattery(levelPct: 72, tempC: 24.0);
-      if (charging) signals.emitCharge(charging: true, kw: 42.0);
+      signals.emitCharge(charging: true, kw: 42.0);
       await tester.pump();
-    }
 
-    testWidgets(
-        'no charging stats: icon keeps growing with sizeScale across '
-        'almost the entire 0.5-2.5 range (single "NN%" line is the only '
-        'competing width, so it stays under the slot for far longer than '
-        'the old icon+pct row did)', (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpAt(tester, sizeScale: 0.5, showTemp: false, showChargingStats: false);
-      final at05 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.5, showTemp: false, showChargingStats: false);
-      final at15 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 2.0, showTemp: false, showChargingStats: false);
-      final at20 = renderedIconSize(tester).width;
-
-      // Real, substantial growth at every step — not the near-flat line the
-      // old row layout produced once past sizeScale≈1.07.
-      expect(at15, greaterThan(at05 * 1.5),
-          reason: 'growth from 0.5x to 1.5x must be substantial, not '
-              'absorbed by FittedBox scaleDown');
-      expect(at20, greaterThan(at15 * 1.05),
-          reason: 'growth must still be visible out at 2.0x when charging '
-              'stats are not competing for width');
-    });
-
-    testWidgets(
-        'temp + charging stats shown (worst case): growth is still real up '
-        'through the middle of the range, even though the widest line (the '
-        '"NN kW" charging stat) caps it earlier than the no-stats case',
-        (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpAt(tester, sizeScale: 0.5, charging: true);
-      final at05 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.0, charging: true);
-      final at10 = renderedIconSize(tester).width;
-
-      await pumpAt(tester, sizeScale: 1.25, charging: true);
-      final at125 = renderedIconSize(tester).width;
-
-      // Strictly increasing across this stretch — this is exactly the span
-      // that used to be flat (or nearly so) before the vertical-stack
-      // layout change.
-      expect(at10, greaterThan(at05));
-      expect(at125, greaterThan(at10));
-    });
-
-    testWidgets(
-        'no overflow at the slider maximum (2.5x) with battery + temp + '
-        'charging stats all rendering at once — pins the Block 0026 fix '
-        '(FittedBox around the whole panel, not just the icon row)',
-        (tester) async {
-      await tester.binding.setSurfaceSize(slotSize);
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await pumpAt(tester, sizeScale: 2.5, charging: true);
-
-      // A RenderFlex/layout overflow surfaces as a FlutterError captured by
-      // the test binding, not a thrown Dart exception during pump() — so it
-      // must be checked via takeException(), not a try/catch around pumpAt.
       expect(tester.takeException(), isNull,
-          reason: 'the whole panel must still fit (via FittedBox scaleDown), '
-              'never overflow the fixed BATTERY slot, at the maximum '
-              'sizeScale with every optional row showing at once');
-
-      // The widget must still actually render something (not blank) —
-      // scaling down to fit is correct; disappearing is not.
+          reason: 'no RenderFlex overflow with ClipRect + adequate slot');
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
     });
   });
+
 }

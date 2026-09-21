@@ -56,6 +56,8 @@ void main() {
         packId: SpeedcamPackIds.by,
         ifStale: true,
         staleAfterDays: 7,
+        centerLat: 53.9,
+        centerLon: 27.5,
       );
       expect(meta, isNotNull);
       expect(meta!.camCount, greaterThan(0));
@@ -88,6 +90,8 @@ void main() {
             'camCount': 1,
             'source': 'fixture',
             'regionLabel': 'Belarus (BY)',
+            'centerLat': 53.9,
+            'centerLon': 27.5,
           },
           'cams': [
             {'id': 'old', 'lat': 53.9, 'lon': 27.5},
@@ -103,10 +107,14 @@ void main() {
         ifStale: true,
         staleAfterDays: 7,
         now: DateTime.utc(2026, 9, 19),
+        centerLat: 53.9,
+        centerLon: 27.5,
       );
       expect(after, isNotNull);
       expect(after!.version, isNot(equals('aged-for-autorfresh')));
-      expect(after.camCount, 3);
+      // Merge retains aged 'old' + 3 from Overpass fixture.
+      expect(after.camCount, 4);
+      expect(after.coverageLabel, contains('300'));
       store.dispose();
       await root.delete(recursive: true);
     });

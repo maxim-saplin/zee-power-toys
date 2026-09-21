@@ -6,6 +6,9 @@ abstract class SpeedcamAlert {
   /// that only care about the enter sting.
   Future<void> playAlienPing({double? distanceM}) async {}
 
+  /// 0.0 = silent, 1.0 = full. Default no-op for fakes.
+  Future<void> setVolume(double volume) async {}
+
   Future<void> dispose();
 }
 
