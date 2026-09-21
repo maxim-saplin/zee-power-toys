@@ -1,13 +1,39 @@
-# 0044 / 0069 — draft GitHub Release (DISABLED until Maxim go).
-# When enabled: tag MUST be `1.0.0+N` (or `v1.0.0+N`) and upload the
-# platform-signed APK as `zee-power-toys.apk` (fallback name `app-release.apk`)
-# so in-app self-update can find it anonymously.
+# Publish platform-signed APK as zee-power-toys.apk on tag 1.0.0+N (or v1.0.0+N).
 name: release
 on:
+  push:
+    tags:
+      - '1.0.0+*'
+      - 'v1.0.0+*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create/attach (e.g. 1.0.0+6) — optional for dispatch'
+        required: false
+
 jobs:
   release:
-    if: false
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - run: echo "Enable after Maxim go — publish zee-power-toys.apk on tag 1.0.0+N"
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+      - name: Rename APK for self-update contract
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/zee-power-toys.apk
+      - name: Upload Release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: dist/zee-power-toys.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
