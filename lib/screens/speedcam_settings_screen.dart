@@ -266,8 +266,8 @@ class _SpeedcamSettingsScreenState
                   final maxDisk = (h - 280).clamp(140.0, 280.0);
                   final side = math.min(constraints.maxWidth, maxDisk);
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
-                  // Alien preview = HUD Alien paint path (hudCompact). Default stays
-                  // dhuLarge for readable text. Black plate only for Default.
+                  // Alien CRT paint is variant-agnostic; keep dhuLarge so settings
+                  // Semantics key stays `dhu-speedcam-radar` (radar_fit / 0039).
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
@@ -276,13 +276,11 @@ class _SpeedcamSettingsScreenState
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(side * 0.12),
                         child: ColoredBox(
-                          color: isAlien ? const Color(0xFF000000) : Colors.black,
+                          color: Colors.black,
                           child: SpeedcamRadarWidget(
-                            variant: isAlien
-                                ? SpeedcamRadarVariant.hudCompact
-                                : SpeedcamRadarVariant.dhuLarge,
+                            variant: SpeedcamRadarVariant.dhuLarge,
+                            // Alien: demo contact only (no idle alwaysShow theater).
                             alwaysShow: !isAlien,
-                            // Same demo contact as HUD Demo — preview must match windshield look.
                             forceDemoDanger: SpeedcamRadarWidget.demoDanger,
                             displayRadiusM: sc.dhuRangeM,
                           ),
