@@ -239,6 +239,9 @@ Future<void> dhuMain(List<String> args) async {
     }
     _applyMinimapConfig(minimapHostRaw, cfg);
     _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg, speedcamOverlayRaw);
+    // Re-seed charge/battery after settings toggles — HUD may have missed
+    // EventChannel ticks while Presentation was recreating.
+    seedHudFromCarSignals(carSignalsRaw);
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
@@ -283,8 +286,11 @@ Future<void> dhuMain(List<String> args) async {
         h: _hudH.toInt(),
         dpi: _hudDpi,
       );
+      // Re-seed car signals — HUD engine just came up; prior Charge ticks dropped.
+      seedHudFromCarSignals(carSignalsRaw);
     });
   }
+
 
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
@@ -393,6 +399,28 @@ void speedcamOverlayMain() {
   );
 }
 
+/// Push latest DHU [CarSignals.snapshot] to HUD (Charge+Battery+Speed+…).
+/// Call on hudReady / after HUD recreate — live ticks otherwise drop while the
+/// HUD isolate is still arming [listenForRelay].
+Future<void> seedHudFromCarSignals(CarSignals cs) async {
+  final s = cs.snapshot;
+  await pushCarSignalToHud(
+    ChargeEvent(charging: s.charging, kw: s.chargeKw),
+  );
+  final pct = s.batteryPct;
+  if (pct != null) {
+    await pushCarSignalToHud(
+      BatteryEvent(levelPct: pct, tempC: s.batteryTempC ?? 25.0),
+    );
+  }
+  final speed = s.speedKmh;
+  if (speed != null) {
+    await pushCarSignalToHud(SpeedEvent(speed));
+  }
+  await pushCarSignalToHud(BlinkerEvent(s.blinker));
+  await pushCarSignalToHud(PowerFlowEvent(s.powerFlow));
+}
+
 // ---------------------------------------------------------------------------
 // HUD — secondary surface; spawned by desktop_multi_window (T1) or by the
 // native FlutterEngineGroup host (T2 Android).
@@ -420,21 +448,21 @@ void hudMain(List<String> args) {
     speedcamPack: speedcamPack,
   );
 
-  // Seed from persisted prefs, then arm the relay listener.
+  // Arm relay FIRST — otherwise DHU Charge ticks during load() are dropped and
+  // HUD chargingProvider stays false until a later seed.
+  listenForRelay(
+    onConfig: (cfg) {
+      store.setConfig(cfg);
+      speedcamAlert.setVolume(cfg.speedcam.soundVolume);
+      speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
+    },
+    onCarSignal: carSignals.relay,
+    onSpeedcam: speedcam.applyRelaySnapshot,
+    onGuidance: minimapHost.emitGuidance,
+    onNavActive: minimapHost.emitNavigationActive,
+  );
   store.load().then((_) {
-    // Apply persisted alert volume before any approach (0059 slider).
     speedcamAlert.setVolume(store.value.speedcam.soundVolume);
-    listenForRelay(
-      onConfig: (cfg) {
-        store.setConfig(cfg);
-        speedcamAlert.setVolume(cfg.speedcam.soundVolume);
-        speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
-      },
-      onCarSignal: carSignals.relay, // re-emit on the HUD-side fake
-      onSpeedcam: speedcam.applyRelaySnapshot,
-      onGuidance: minimapHost.emitGuidance,
-      onNavActive: minimapHost.emitNavigationActive,
-    );
   });
 
   runApp(
