@@ -46,6 +46,7 @@ void main() {
           'feed': feed,
           't_ms': 1,
         };
+    svc.setYnaviEnrichEnabled(true); // 0071 gate
     svc.ingestYnaviEvent(cam(feed: 'freeDriveRoute'));
     expect(svc.ynaviSessionEvents, 1);
     svc.ingestYnaviEvent(cam(feed: 'getEvents')); // same eventId — skip
