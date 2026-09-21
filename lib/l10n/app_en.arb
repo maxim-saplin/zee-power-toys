@@ -930,6 +930,22 @@
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
   },
+  "speedcamMapExpand": "Expand map",
+  "@speedcamMapExpand": { "description": "0075 expand Speedcam pack map" },
+  "speedcamMapCollapse": "Collapse map",
+  "@speedcamMapCollapse": { "description": "0075 collapse Speedcam pack map" },
+  "speedcamMapMyLocation": "Go to my location",
+  "@speedcamMapMyLocation": { "description": "0075 recenter Speedcam map on host pose" },
+  "speedcamMapNoLocation": "No location fix yet",
+  "@speedcamMapNoLocation": { "description": "0075 empty state when my-loc tapped without pose" },
+  "speedcamYnaviEnrich": "YNavi enrich",
+  "@speedcamYnaviEnrich": {
+    "description": "0071 master toggle: ingest YNavi speedcams (default off)"
+  },
+  "speedcamYnaviEnrichHint": "Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.",
+  "@speedcamYnaviEnrichHint": {
+    "description": "Subtitle for YNavi enrich toggle"
+  },
   "speedcamDhuSystemOverlay": "DHU system overlay",
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"
@@ -941,5 +957,38 @@
   "speedcamOverlayPermissionDenied": "Display-over permission required for the system overlay.",
   "@speedcamOverlayPermissionDenied": {
     "description": "0065 permission denied"
+  },
+
+  "speedcamOsmYnaviCounts": "OSM {osm} · YNavi {ynavi}",
+  "@speedcamOsmYnaviCounts": {
+    "description": "0072 side-by-side cam source counts",
+    "placeholders": {
+      "osm": {"type": "int"},
+      "ynavi": {"type": "int"}
+    }
+  },
+  "speedcamYnaviCollect": "Collect YNavi",
+  "@speedcamYnaviCollect": {
+    "description": "0074 collect toggle"
+  },
+  "speedcamYnaviCollectHint": "Ingest YNavi cams into the store when enrich is on.",
+  "@speedcamYnaviCollectHint": {
+    "description": "0074 collect hint"
+  },
+  "speedcamYnaviAlert": "Alert YNavi",
+  "@speedcamYnaviAlert": {
+    "description": "0074 alert toggle"
+  },
+  "speedcamYnaviAlertHint": "HUD/sound/DHU treat YNavi-sourced cams. Collect can stay on while alerts are off.",
+  "@speedcamYnaviAlertHint": {
+    "description": "0074 alert hint"
+  },
+  "speedcamYnaviAging": "YNavi point aging",
+  "@speedcamYnaviAging": {
+    "description": "0073 aging slider label"
+  },
+  "speedcamYnaviAgingHint": "Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).",
+  "@speedcamYnaviAgingHint": {
+    "description": "0073 aging hint"
   }
 }

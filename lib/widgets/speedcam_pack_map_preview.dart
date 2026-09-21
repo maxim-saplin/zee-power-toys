@@ -13,18 +13,35 @@ import '../services/speedcam_pack_store.dart';
 /// (~2000) are downsampled so the DHU stays smooth; typical ≤2000 packs
 /// paint all markers. ODbL credit lives in Speedcam settings; the map shows
 /// the standard OSM tile attribution chip.
-class SpeedcamPackMapPreview extends StatelessWidget {
+///
+/// 0075: expand/collapse + go-to-my-location (host pose; fail loud if none).
+class SpeedcamPackMapPreview extends StatefulWidget {
   const SpeedcamPackMapPreview({
     super.key,
     required this.cams,
     this.meta,
     this.height = 240,
+    this.expandedHeight = 480,
+    this.hostPose,
+    this.expandTooltip = 'Expand map',
+    this.collapseTooltip = 'Collapse map',
+    this.myLocationTooltip = 'Go to my location',
+    this.noLocationMessage = 'No location fix yet',
     @visibleForTesting this.tileProvider,
   });
 
   final List<SpeedcamPoint> cams;
   final SpeedcamPackMeta? meta;
   final double height;
+  final double expandedHeight;
+
+  /// Live host pose for recenter + optional blue pin. Null → my-loc fails loud.
+  final SpeedcamHostPose? hostPose;
+
+  final String expandTooltip;
+  final String collapseTooltip;
+  final String myLocationTooltip;
+  final String noLocationMessage;
 
   /// Optional override so widget tests skip network tile fetches.
   @visibleForTesting
@@ -39,15 +56,49 @@ class SpeedcamPackMapPreview extends StatelessWidget {
   static const String _userAgentPackage = 'com.zeepowertoys.zee_power_toys';
 
   @override
+  State<SpeedcamPackMapPreview> createState() => _SpeedcamPackMapPreviewState();
+}
+
+class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
+  MapController _mapController = MapController();
+  bool _expanded = false;
+
+  double get _mapHeight =>
+      _expanded ? widget.expandedHeight : widget.height;
+
+  void _toggleExpand() {
+    setState(() {
+      _expanded = !_expanded;
+      // Fresh controller — reuse across size remounts trips flutter_map assert.
+      _mapController = MapController();
+    });
+  }
+
+  void _goMyLocation() {
+    final pose = widget.hostPose;
+    if (pose == null) {
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.showSnackBar(
+        SnackBar(
+          key: const ValueKey('speedcam-pack-map-no-location'),
+          content: Text(widget.noLocationMessage),
+        ),
+      );
+      return;
+    }
+    _mapController.move(LatLng(pose.lat, pose.lon), 13);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final empty = cams.isEmpty;
+    final empty = widget.cams.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          key: const ValueKey('speedcam-pack-map'),
-          height: height,
+          key: ValueKey('speedcam-pack-map-${_expanded ? 'expanded' : 'collapsed'}'),
+          height: _mapHeight,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: Colors.black,
@@ -56,21 +107,66 @@ class SpeedcamPackMapPreview extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: empty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'No cameras cached — harvest to preview',
-                          key: const ValueKey('speedcam-pack-map-empty'),
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: scheme.onSurface.withValues(alpha: 0.7),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: empty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                'No cameras cached — harvest to preview',
+                                key: const ValueKey('speedcam-pack-map-empty'),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: scheme.onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
                               ),
+                            ),
+                          )
+                        : _buildMap(context, scheme),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Column(
+                      children: [
+                        Material(
+                          color: scheme.surface.withValues(alpha: 0.92),
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            key: const ValueKey('speedcam-pack-map-expand'),
+                            tooltip: _expanded
+                                ? widget.collapseTooltip
+                                : widget.expandTooltip,
+                            icon: Icon(
+                              _expanded
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
+                            ),
+                            onPressed: _toggleExpand,
+                          ),
                         ),
-                      ),
-                    )
-                  : _buildMap(context, scheme),
+                        const SizedBox(height: 6),
+                        Material(
+                          color: scheme.surface.withValues(alpha: 0.92),
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            key: const ValueKey('speedcam-pack-map-myloc'),
+                            tooltip: widget.myLocationTooltip,
+                            icon: const Icon(Icons.my_location),
+                            onPressed: _goMyLocation,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -78,7 +174,7 @@ class SpeedcamPackMapPreview extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              _caption(cams.length, meta),
+              _caption(widget.cams.length, widget.meta),
               key: const ValueKey('speedcam-pack-map-caption'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -88,13 +184,14 @@ class SpeedcamPackMapPreview extends StatelessWidget {
   }
 
   Widget _buildMap(BuildContext context, ColorScheme scheme) {
-    final shown = _downsample(cams, kMaxMarkers);
-    final bounds = _fitBounds(shown, meta);
+    final shown = _downsample(widget.cams, SpeedcamPackMapPreview.kMaxMarkers);
+    final bounds = _fitBounds(shown, widget.meta);
     final accent = scheme.primary;
-    final centerLat = meta?.centerLat;
-    final centerLon = meta?.centerLon;
-    final radiusKm = meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
+    final centerLat = widget.meta?.centerLat;
+    final centerLon = widget.meta?.centerLon;
+    final radiusKm = widget.meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
     final dotR = shown.length > 200 ? 2.0 : (shown.length > 80 ? 2.5 : 3.5);
+    final pose = widget.hostPose;
 
     final circles = <CircleMarker>[
       if (centerLat != null && centerLon != null) ...[
@@ -118,13 +215,22 @@ class SpeedcamPackMapPreview extends StatelessWidget {
           radius: dotR,
           color: const Color(0xFFFF6B4A),
         ),
+      if (pose != null)
+        CircleMarker(
+          point: LatLng(pose.lat, pose.lon),
+          radius: 6,
+          color: const Color(0xFF4FC3F7),
+          borderStrokeWidth: 2,
+          borderColor: Colors.white,
+        ),
     ];
 
     return FlutterMap(
+      mapController: _mapController,
       // Remount when pack data changes so [initialCameraFit] re-applies.
       key: ValueKey(
-        'pack-map-${cams.length}-'
-        '${meta?.centerLat}-${meta?.centerLon}-${meta?.radiusKm}',
+        'pack-map-${_expanded ? 'x' : 'c'}-${widget.cams.length}-'
+        '${widget.meta?.centerLat}-${widget.meta?.centerLon}-${widget.meta?.radiusKm}',
       ),
       options: MapOptions(
         initialCameraFit: CameraFit.bounds(
@@ -134,16 +240,16 @@ class SpeedcamPackMapPreview extends StatelessWidget {
         ),
         backgroundColor: Colors.black,
         interactionOptions: const InteractionOptions(
-          // Pan / pinch-zoom OK on DHU; rotation is awkward at 240px height.
+          // Pan / pinch-zoom OK on DHU; rotation is awkward at compact height.
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
       ),
       children: [
         TileLayer(
-          urlTemplate: _osmTileUrl,
-          userAgentPackageName: _userAgentPackage,
+          urlTemplate: SpeedcamPackMapPreview._osmTileUrl,
+          userAgentPackageName: SpeedcamPackMapPreview._userAgentPackage,
           maxNativeZoom: 19,
-          tileProvider: tileProvider,
+          tileProvider: widget.tileProvider,
         ),
         CircleLayer(circles: circles),
         const SimpleAttributionWidget(
@@ -157,7 +263,9 @@ class SpeedcamPackMapPreview extends StatelessWidget {
     final coverage = meta?.coverageLabel ?? 'within 300 km';
     // Only mention a cap when we actually downsample — never "showing 400"
     // for a ~574 pack (0052).
-    final shown = n > kMaxMarkers ? ' · showing $kMaxMarkers' : '';
+    final shown = n > SpeedcamPackMapPreview.kMaxMarkers
+        ? ' · showing ${SpeedcamPackMapPreview.kMaxMarkers}'
+        : '';
     return '$n cameras · $coverage$shown';
   }
 

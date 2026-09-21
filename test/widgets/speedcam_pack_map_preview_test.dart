@@ -34,6 +34,55 @@ void main() {
     expect(find.byKey(const ValueKey('speedcam-pack-map-empty')), findsOneWidget);
     expect(find.byKey(const ValueKey('speedcam-pack-map-caption')), findsNothing);
     expect(find.byType(FlutterMap), findsNothing);
+    expect(find.byKey(const ValueKey('speedcam-pack-map-expand')), findsOneWidget);
+    expect(find.byKey(const ValueKey('speedcam-pack-map-myloc')), findsOneWidget);
+  });
+
+  testWidgets('expand toggles map height key', (tester) async {
+    final cams = [
+      for (var i = 0; i < 3; i++)
+        SpeedcamPoint(id: 'c$i', lat: 53.9 + i * 0.01, lon: 27.5 + i * 0.01),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeedcamPackMapPreview(
+            cams: cams,
+            tileProvider: fakeTiles,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('speedcam-pack-map-collapsed')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('speedcam-pack-map-expand')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('speedcam-pack-map-expanded')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('speedcam-pack-map-expand')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('speedcam-pack-map-collapsed')), findsOneWidget);
+  });
+
+  testWidgets('my location without pose shows snackbar', (tester) async {
+    final cams = [
+      const SpeedcamPoint(id: 'c0', lat: 53.9, lon: 27.5),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeedcamPackMapPreview(
+            cams: cams,
+            tileProvider: fakeTiles,
+            noLocationMessage: 'No location fix yet',
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('speedcam-pack-map-myloc')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('speedcam-pack-map-no-location')), findsOneWidget);
+    expect(find.text('No location fix yet'), findsOneWidget);
   });
 
   testWidgets('renders OSM map + caption for cams', (tester) async {
@@ -60,9 +109,7 @@ void main() {
     expect(find.byType(CircleLayer), findsOneWidget);
   });
 
-
   testWidgets('caption omits showing-cap for packs under kMaxMarkers', (tester) async {
-    // ~574-style pack must not say "showing 400" (0052).
     final cams = [
       for (var i = 0; i < 574; i++)
         SpeedcamPoint(
@@ -89,5 +136,4 @@ void main() {
       greaterThanOrEqualTo(2000),
     );
   });
-
 }

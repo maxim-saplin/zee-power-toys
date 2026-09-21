@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'fakes/fake_speedcam_service.dart';
 import 'speedcam.dart';
@@ -52,6 +53,73 @@ class DefaultSpeedcamService implements SpeedcamService {
   /// Fired after [clearHostPose] so live GPS can re-seed (0050 HARD).
   void Function()? onHostPoseCleared;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
+  final List<SpeedcamPoint> _ynaviOverlay = <SpeedcamPoint>[];
+  DateTime? lastYnaviBridgeFire;
+  int ynaviSessionEvents = 0;
+  bool _ynaviEnrichEnabled = false;
+  bool _ynaviCollectEnabled = true;
+  bool _ynaviAlertEnabled = true;
+  int _ynaviPointTtlDays = 7;
+
+  /// 0071: master gate for YNavi ingest (default OFF via config).
+  bool get ynaviEnrichEnabled => _ynaviEnrichEnabled;
+  bool get ynaviCollectEnabled => _ynaviCollectEnabled;
+  bool get ynaviAlertEnabled => _ynaviAlertEnabled;
+  int get ynaviPointTtlDays => _ynaviPointTtlDays;
+
+  /// 0072: OSM/pack points (not pure ynavi: ids).
+  int get osmCamCount =>
+      _cams.where((c) => !c.id.startsWith('ynavi:') && c.source != 'ynavi').length;
+
+  /// 0072: YNavi-influenced points (source ynavi / osm+ynavi / ynavi: id).
+  int get ynaviCamCount => _cams.where((c) => c.isYnaviSourced).length;
+
+  void setYnaviEnrichEnabled(bool enabled) {
+    if (_ynaviEnrichEnabled == enabled) return;
+    _ynaviEnrichEnabled = enabled;
+    if (!enabled) {
+      clearYnaviOverlay();
+    }
+  }
+
+  void setYnaviCollectEnabled(bool enabled) {
+    if (_ynaviCollectEnabled == enabled) return;
+    _ynaviCollectEnabled = enabled;
+  }
+
+  void setYnaviAlertEnabled(bool enabled) {
+    if (_ynaviAlertEnabled == enabled) return;
+    _ynaviAlertEnabled = enabled;
+    _emit();
+  }
+
+  void setYnaviPointTtlDays(int days) {
+    final next = days.clamp(1, 30);
+    final changed = _ynaviPointTtlDays != next;
+    _ynaviPointTtlDays = next;
+    _pruneAgedYnavi();
+    if (changed || _ynaviOverlay.isNotEmpty) {
+      _rebuildMerged();
+    }
+    _emit();
+  }
+
+  void clearYnaviOverlay() {
+    if (_ynaviOverlay.isEmpty) return;
+    _ynaviOverlay.clear();
+    // Rebuild cams without ynavi points.
+    final base = _cams
+        .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
+        .toList();
+    if (base.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(base);
+      _camSource = 'pack';
+    } else if (_camSource.contains('ynavi')) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+      _camSource = 'fallback';
+    }
+    _emit();
+  }
 
   @override
   Stream<SpeedcamSnapshot> get snapshots => _ctrl.stream;
@@ -110,13 +178,183 @@ class DefaultSpeedcamService implements SpeedcamService {
   Future<void> reloadFromPack() async {
     final cams = await _pack.loadCams(packId);
     if (cams.isNotEmpty) {
-      _cams = List<SpeedcamPoint>.unmodifiable(cams);
-      _camSource = 'pack';
+      _cams = List<SpeedcamPoint>.unmodifiable(
+        mergeOsmWithYnavi(cams, _ynaviOverlay),
+      );
+      _camSource = _ynaviOverlay.isEmpty ? 'pack' : 'pack+ynavi';
+    } else if (_ynaviOverlay.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_ynaviOverlay);
+      _camSource = 'ynavi';
     } else {
       _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
       _camSource = 'fallback';
     }
     _emit();
+  }
+
+  /// YNavi SPEEDCAM_DATA beside OSM (0071/72/73/74).
+  void ingestYnaviEvent(Map<Object?, Object?> raw) {
+    if (!_ynaviEnrichEnabled) return;
+    final kind = raw['kind'] as String? ?? '';
+    final tMs = (raw['t_ms'] as num?)?.toInt();
+    final wallNowMs = DateTime.now().millisecondsSinceEpoch;
+    final seenMs = tMs ?? wallNowMs;
+    if (tMs != null) {
+      lastYnaviBridgeFire =
+          DateTime.fromMillisecondsSinceEpoch(tMs, isUtc: false);
+    }
+    if (kind == 'heartbeat' || kind == 'status') {
+      _pruneAgedYnavi(nowMs: wallNowMs);
+      _rebuildMerged();
+      _emit();
+      return;
+    }
+    if (kind != 'cam') return;
+    if (!_ynaviCollectEnabled) return;
+    final lat = (raw['lat'] as num?)?.toDouble();
+    final lon = (raw['lon'] as num?)?.toDouble();
+    if (lat == null || lon == null) return;
+    final eventId = (raw['eventId'] as String?)?.trim();
+    final id = (eventId != null && eventId.isNotEmpty)
+        ? 'ynavi:$eventId'
+        : 'ynavi:${lat.toStringAsFixed(5)}_${lon.toStringAsFixed(5)}';
+    final limit = (raw['speedLimit'] as num?)?.toInt();
+    final point = SpeedcamPoint(
+      id: id,
+      lat: lat,
+      lon: lon,
+      maxspeed: (limit != null && limit > 0) ? limit : null,
+      source: (raw['source'] as String?) ?? 'ynavi',
+      lastSeenEpochMs: seenMs,
+    );
+    final existingIdx = _ynaviOverlay.indexWhere((c) => c.id == id);
+    if (existingIdx >= 0) {
+      final prev = _ynaviOverlay[existingIdx];
+      if (prev.lat == point.lat &&
+          prev.lon == point.lon &&
+          prev.maxspeed == point.maxspeed) {
+        _ynaviOverlay[existingIdx] = SpeedcamPoint(
+          id: prev.id,
+          lat: prev.lat,
+          lon: prev.lon,
+          maxspeed: prev.maxspeed,
+          direction: prev.direction,
+          source: prev.source ?? 'ynavi',
+          lastSeenEpochMs: seenMs,
+        );
+        _pruneAgedYnavi(nowMs: wallNowMs);
+        _rebuildMerged();
+        _emit();
+        return;
+      }
+    }
+    ynaviSessionEvents += 1;
+    _upsertYnavi(point);
+    _pruneAgedYnavi(nowMs: wallNowMs);
+    _rebuildMerged();
+    _emit();
+  }
+
+  void _upsertYnavi(SpeedcamPoint point) {
+    final i = _ynaviOverlay.indexWhere((c) => c.id == point.id);
+    if (i >= 0) {
+      _ynaviOverlay[i] = point;
+    } else {
+      _ynaviOverlay.add(point);
+    }
+  }
+
+  void _pruneAgedYnavi({int? nowMs}) {
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final ttlMs = _ynaviPointTtlDays * 24 * 60 * 60 * 1000;
+    _ynaviOverlay.removeWhere((c) {
+      final seen = c.lastSeenEpochMs;
+      if (seen == null) return false;
+      return now - seen > ttlMs;
+    });
+  }
+
+  void _rebuildMerged() {
+    final osmBase = _cams
+        .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
+        .toList();
+    if (osmBase.isEmpty && _ynaviOverlay.isEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+      _camSource = 'fallback';
+      return;
+    }
+    if (osmBase.isEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_ynaviOverlay);
+      _camSource = 'ynavi';
+      return;
+    }
+    _cams = List<SpeedcamPoint>.unmodifiable(
+      mergeOsmWithYnavi(osmBase, _ynaviOverlay),
+    );
+    _camSource = _ynaviOverlay.isEmpty ? 'pack' : 'pack+ynavi';
+  }
+
+  /// Cams used for alert/HUD danger when YNavi alert is gated (0074).
+  List<SpeedcamPoint> get camsForAlert {
+    if (_ynaviEnrichEnabled && _ynaviAlertEnabled) return _cams;
+    return _cams.where((c) => !c.isYnaviSourced).toList();
+  }
+
+  /// Prefer OSM id when geo-close (~20 m); else keep both under distinct ids.
+  static List<SpeedcamPoint> mergeOsmWithYnavi(
+    List<SpeedcamPoint> osm,
+    List<SpeedcamPoint> ynavi,
+  ) {
+    if (ynavi.isEmpty) return List<SpeedcamPoint>.from(osm);
+    final out = <SpeedcamPoint>[];
+    final claimedYnavi = <String>{};
+    for (final o in osm) {
+      SpeedcamPoint? match;
+      for (final y in ynavi) {
+        if (claimedYnavi.contains(y.id)) continue;
+        if (_approxMeters(o.lat, o.lon, y.lat, y.lon) <= 20) {
+          match = y;
+          break;
+        }
+      }
+      if (match != null) {
+        claimedYnavi.add(match.id);
+        out.add(SpeedcamPoint(
+          id: o.id,
+          lat: o.lat,
+          lon: o.lon,
+          maxspeed: o.maxspeed ?? match.maxspeed,
+          direction: o.direction,
+          source: 'osm+ynavi',
+          lastSeenEpochMs: match.lastSeenEpochMs,
+        ));
+      } else {
+        out.add(o.source == null ? SpeedcamPoint(
+          id: o.id,
+          lat: o.lat,
+          lon: o.lon,
+          maxspeed: o.maxspeed,
+          direction: o.direction,
+          source: 'overpass',
+        ) : o);
+      }
+    }
+    for (final y in ynavi) {
+      if (!claimedYnavi.contains(y.id)) out.add(y);
+    }
+    return out;
+  }
+
+  static double _approxMeters(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    final dLat = (lat1 - lat2) * 111320.0;
+    final midLat = (lat1 + lat2) * 0.5 * math.pi / 180.0;
+    final dLon = (lon1 - lon2) * 111320.0 * math.cos(midLat);
+    return math.sqrt(dLat * dLat + dLon * dLon);
   }
 
   /// Place host [distanceM] due south of [cam] (approach from south → bearing ~0).
@@ -139,7 +377,7 @@ class DefaultSpeedcamService implements SpeedcamService {
     final danger = (_enabled && host != null)
         ? _passGate.resolve(
             host: host,
-            cams: _cams,
+            cams: camsForAlert,
             approachRadiusM: _approachRadiusM,
           )
         : null;

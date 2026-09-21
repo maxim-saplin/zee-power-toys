@@ -1478,6 +1478,42 @@ abstract class AppLocalizations {
   /// **'Update check failed: {message}'**
   String updateStatusFailed(String message);
 
+  /// 0075 expand Speedcam pack map
+  ///
+  /// In en, this message translates to:
+  /// **'Expand map'**
+  String get speedcamMapExpand;
+
+  /// 0075 collapse Speedcam pack map
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse map'**
+  String get speedcamMapCollapse;
+
+  /// 0075 recenter Speedcam map on host pose
+  ///
+  /// In en, this message translates to:
+  /// **'Go to my location'**
+  String get speedcamMapMyLocation;
+
+  /// 0075 empty state when my-loc tapped without pose
+  ///
+  /// In en, this message translates to:
+  /// **'No location fix yet'**
+  String get speedcamMapNoLocation;
+
+  /// 0071 master toggle: ingest YNavi speedcams (default off)
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi enrich'**
+  String get speedcamYnaviEnrich;
+
+  /// Subtitle for YNavi enrich toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.'**
+  String get speedcamYnaviEnrichHint;
+
   /// 0065 toggle title
   ///
   /// In en, this message translates to:
@@ -1495,6 +1531,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Display-over permission required for the system overlay.'**
   String get speedcamOverlayPermissionDenied;
+
+  /// 0072 side-by-side cam source counts
+  ///
+  /// In en, this message translates to:
+  /// **'OSM {osm} · YNavi {ynavi}'**
+  String speedcamOsmYnaviCounts(int osm, int ynavi);
+
+  /// 0074 collect toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Collect YNavi'**
+  String get speedcamYnaviCollect;
+
+  /// 0074 collect hint
+  ///
+  /// In en, this message translates to:
+  /// **'Ingest YNavi cams into the store when enrich is on.'**
+  String get speedcamYnaviCollectHint;
+
+  /// 0074 alert toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Alert YNavi'**
+  String get speedcamYnaviAlert;
+
+  /// 0074 alert hint
+  ///
+  /// In en, this message translates to:
+  /// **'HUD/sound/DHU treat YNavi-sourced cams. Collect can stay on while alerts are off.'**
+  String get speedcamYnaviAlertHint;
+
+  /// 0073 aging slider label
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi point aging'**
+  String get speedcamYnaviAging;
+
+  /// 0073 aging hint
+  ///
+  /// In en, this message translates to:
+  /// **'Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).'**
+  String get speedcamYnaviAgingHint;
 }
 
 class _AppLocalizationsDelegate

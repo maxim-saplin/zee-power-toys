@@ -5,9 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../hud/speedcam_radar_widget.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
+import '../providers/speedcam.dart';
 import '../providers/services.dart';
 import '../services/config_store.dart';
 import '../services/speedcam.dart';
+import '../services/default_speedcam_service.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
 import '../widgets/speedcam_pack_map_preview.dart';
@@ -315,6 +317,55 @@ class _SpeedcamSettingsScreenState
               ),
               const SizedBox(height: 12),
               SwitchListTile(
+                key: const ValueKey('speedcam-ynavi-enrich'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.speedcamYnaviEnrich),
+                subtitle: Text(l10n.speedcamYnaviEnrichHint),
+                value: sc.ynaviEnrichEnabled,
+                onChanged: (v) => _patchSpeedcam((c) => c.copyWith(ynaviEnrichEnabled: v)),
+              ),
+              if (sc.ynaviEnrichEnabled) ...[
+                SwitchListTile(
+                  key: const ValueKey('speedcam-ynavi-collect'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.speedcamYnaviCollect),
+                  subtitle: Text(l10n.speedcamYnaviCollectHint),
+                  value: sc.ynaviCollectEnabled,
+                  onChanged: (v) =>
+                      _patchSpeedcam((c) => c.copyWith(ynaviCollectEnabled: v)),
+                ),
+                SwitchListTile(
+                  key: const ValueKey('speedcam-ynavi-alert'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.speedcamYnaviAlert),
+                  subtitle: Text(l10n.speedcamYnaviAlertHint),
+                  value: sc.ynaviAlertEnabled,
+                  onChanged: (v) =>
+                      _patchSpeedcam((c) => c.copyWith(ynaviAlertEnabled: v)),
+                ),
+                SettingsSlider(
+                  label: l10n.speedcamYnaviAging,
+                  valueLabel: '${sc.ynaviPointTtlDays}d',
+                  minLabel: '1',
+                  maxLabel: '30',
+                  sliderKey: const ValueKey('speedcam-ynavi-ttl-days'),
+                  min: 1,
+                  max: 30,
+                  divisions: 29,
+                  value: sc.ynaviPointTtlDays.toDouble().clamp(1, 30),
+                  onChanged: (v) => _patchSpeedcam(
+                    (c) => c.copyWith(ynaviPointTtlDays: v.round()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    l10n.speedcamYnaviAgingHint,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+              SwitchListTile(
                 key: const ValueKey('speedcam-dhu-system-overlay'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.speedcamDhuSystemOverlay),
@@ -444,6 +495,11 @@ class _SpeedcamSettingsScreenState
               SpeedcamPackMapPreview(
                 cams: _allCams,
                 meta: meta,
+                hostPose: ref.watch(speedcamSnapshotProvider).host,
+                expandTooltip: l10n.speedcamMapExpand,
+                collapseTooltip: l10n.speedcamMapCollapse,
+                myLocationTooltip: l10n.speedcamMapMyLocation,
+                noLocationMessage: l10n.speedcamMapNoLocation,
               ),
               const SizedBox(height: 8),
               ListTile(
@@ -487,6 +543,25 @@ class _SpeedcamSettingsScreenState
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.speedcamDbCount),
                 subtitle: Text('${meta?.camCount ?? 0}'),
+              ),
+              Builder(
+                builder: (context) {
+                  final svc = ref.watch(speedcamServiceProvider);
+                  final osm = svc is DefaultSpeedcamService
+                      ? svc.osmCamCount
+                      : _allCams
+                          .where((c) =>
+                              !c.id.startsWith('ynavi:') && c.source != 'ynavi')
+                          .length;
+                  final ynavi = svc is DefaultSpeedcamService
+                      ? svc.ynaviCamCount
+                      : _allCams.where((c) => c.isYnaviSourced).length;
+                  return ListTile(
+                    key: const ValueKey('speedcam-osm-ynavi-counts'),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.speedcamOsmYnaviCounts(osm, ynavi)),
+                  );
+                },
               ),
             ],
           ),

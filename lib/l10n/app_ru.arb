@@ -930,6 +930,22 @@
     "description": "Check error",
     "placeholders": {"message": {"type": "String"}}
   },
+  "speedcamMapExpand": "Развернуть карту",
+  "@speedcamMapExpand": { "description": "0075 expand Speedcam pack map" },
+  "speedcamMapCollapse": "Свернуть карту",
+  "@speedcamMapCollapse": { "description": "0075 collapse Speedcam pack map" },
+  "speedcamMapMyLocation": "Моё местоположение",
+  "@speedcamMapMyLocation": { "description": "0075 recenter Speedcam map on host pose" },
+  "speedcamMapNoLocation": "Нет фиксации местоположения",
+  "@speedcamMapNoLocation": { "description": "0075 empty state when my-loc tapped without pose" },
+  "speedcamYnaviEnrich": "Обогащение YNavi",
+  "@speedcamYnaviEnrich": {
+    "description": "0071 master toggle: ingest YNavi speedcams (default off)"
+  },
+  "speedcamYnaviEnrichHint": "Камеры из мода YNavi при движении (ghost без маршрута + маршрут). Не свободный роуминг. По умолчанию выкл.",
+  "@speedcamYnaviEnrichHint": {
+    "description": "Subtitle for YNavi enrich toggle"
+  },
   "speedcamDhuSystemOverlay": "Системный оверлей DHU",
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"
@@ -941,5 +957,38 @@
   "speedcamOverlayPermissionDenied": "Нужно разрешение показа поверх других окон.",
   "@speedcamOverlayPermissionDenied": {
     "description": "0065 permission denied"
+  },
+
+  "speedcamOsmYnaviCounts": "OSM {osm} · YNavi {ynavi}",
+  "@speedcamOsmYnaviCounts": {
+    "description": "0072 side-by-side cam source counts",
+    "placeholders": {
+      "osm": {"type": "int"},
+      "ynavi": {"type": "int"}
+    }
+  },
+  "speedcamYnaviCollect": "Сбор YNavi",
+  "@speedcamYnaviCollect": {
+    "description": "0074 collect toggle"
+  },
+  "speedcamYnaviCollectHint": "Писать камеры YNavi в хранилище, когда обогащение включено.",
+  "@speedcamYnaviCollectHint": {
+    "description": "0074 collect hint"
+  },
+  "speedcamYnaviAlert": "Оповещения YNavi",
+  "@speedcamYnaviAlert": {
+    "description": "0074 alert toggle"
+  },
+  "speedcamYnaviAlertHint": "HUD/звук/DHU для камер YNavi. Сбор можно оставить включённым без оповещений.",
+  "@speedcamYnaviAlertHint": {
+    "description": "0074 alert hint"
+  },
+  "speedcamYnaviAging": "Старение точек YNavi",
+  "@speedcamYnaviAging": {
+    "description": "0073 aging slider label"
+  },
+  "speedcamYnaviAgingHint": "Удалять камеры YNavi, не виденные столько дней (пакет OSM стареет отдельно в Harvest).",
+  "@speedcamYnaviAgingHint": {
+    "description": "0073 aging hint"
   }
 }

@@ -31,14 +31,21 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
     final soundOn = cfg.soundMode != SpeedcamPresenceMode.off;
     arm.enabled = soundOn;
 
+    // 0074: when YNavi alert off (or enrich off), ignore ynavi-sourced cams for sound.
+    final alertCams = (!cfg.ynaviEnrichEnabled || !cfg.ynaviAlertEnabled)
+        ? snap.cams.where((c) => !c.isYnaviSourced).toList()
+        : snap.cams;
     final alertDanger = resolvePresenceDanger(
       mode: cfg.soundMode,
       host: snap.host,
-      cams: snap.cams,
+      cams: alertCams,
       approachRadiusM: snap.approachRadiusM > 0
           ? snap.approachRadiusM
           : cfg.dhuRangeM,
-      serviceDanger: danger,
+      serviceDanger: (!cfg.ynaviEnrichEnabled || !cfg.ynaviAlertEnabled) &&
+              (danger?.cam.isYnaviSourced ?? false)
+          ? null
+          : danger,
     );
 
     useEffect(() {
@@ -50,7 +57,7 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
       final inside = alertDanger?.insideApproach ?? false;
       arm.onInsideApproach(inside);
       return null;
-    }, [alertDanger?.insideApproach, alertDanger?.cam.id, cfg.soundMode]);
+    }, [alertDanger?.insideApproach, alertDanger?.cam.id, cfg.soundMode, cfg.ynaviAlertEnabled, cfg.ynaviEnrichEnabled]);
 
     useEffect(() {
       ping.update(

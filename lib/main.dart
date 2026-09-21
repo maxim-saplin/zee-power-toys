@@ -21,6 +21,7 @@ import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_package_status.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/adapters/native_speedcam_location.dart';
+import 'services/adapters/native_speedcam_ynavi.dart';
 import 'services/adapters/native_speedcam_system_overlay.dart';
 import 'services/fakes/fake_speedcam_system_overlay.dart';
 import 'services/speedcam_system_overlay.dart';
@@ -148,8 +149,12 @@ Future<void> dhuMain(List<String> args) async {
   // 0050: YNavi sendLocation + Android GPS fallback → Speedcam host pose.
   // Runtime permission via zee/speedcam/location_ctl (0050 HARD) — not ADB.
   NativeSpeedcamLocation? speedcamLocationRaw;
+  NativeSpeedcamYnavi? speedcamYnaviRaw;
   if (!kIsWeb && Platform.isAndroid) {
     speedcamLocationRaw = NativeSpeedcamLocation(speedcamRaw)..start();
+    speedcamYnaviRaw = NativeSpeedcamYnavi(speedcamRaw);
+    // 0071: start EventChannel listen immediately; enrich gated default OFF.
+    speedcamYnaviRaw!.start();
   }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
   final SpeedcamSystemOverlay speedcamOverlayRaw =
@@ -221,7 +226,7 @@ Future<void> dhuMain(List<String> args) async {
   // Idempotent on the native side (setMinimap is a NOOP when already in state).
   // Fires once on startup (persisted config) and on every subsequent change.
   _applyMinimapConfig(minimapHostRaw, store.value);
-  _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, store.value, speedcamOverlayRaw);
+  _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, store.value, speedcamOverlayRaw, speedcamYnaviRaw);
 
   // Listen for dynamic hudEnabled toggles: show()/hide() the HUD engine.
   // store.changes only fires on explicit setConfig; the initial state at boot
@@ -238,7 +243,7 @@ Future<void> dhuMain(List<String> args) async {
       }
     }
     _applyMinimapConfig(minimapHostRaw, cfg);
-    _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg, speedcamOverlayRaw);
+    _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg, speedcamOverlayRaw, speedcamYnaviRaw);
     // Re-seed charge/battery after settings toggles — HUD may have missed
     // EventChannel ticks while Presentation was recreating.
     seedHudFromCarSignals(carSignalsRaw);
@@ -649,10 +654,15 @@ void _applySpeedcamConfig(
   SpeedcamAlert alert,
   AppConfig cfg, [
   SpeedcamSystemOverlay? overlay,
+  NativeSpeedcamYnavi? ynavi,
 ]) {
   final sc = cfg.speedcam;
   if (speedcam is DefaultSpeedcamService) {
     speedcam.setApproachRadiusM(sc.dhuRangeM);
+    speedcam.setYnaviEnrichEnabled(sc.ynaviEnrichEnabled);
+    speedcam.setYnaviCollectEnabled(sc.ynaviCollectEnabled);
+    speedcam.setYnaviAlertEnabled(sc.ynaviAlertEnabled);
+    speedcam.setYnaviPointTtlDays(sc.ynaviPointTtlDays);
   } else if (speedcam is FakeSpeedcamService) {
     speedcam.setApproachRadiusM(sc.dhuRangeM);
   }
@@ -661,6 +671,7 @@ void _applySpeedcamConfig(
   if (!sc.dhuSystemOverlay) {
     overlay?.hide().catchError((_) {});
   }
+  ynavi?.setEnrichEnabled(sc.ynaviEnrichEnabled).catchError((_) {});
 }
 
 void _applyMinimapConfig(MinimapHost host, AppConfig cfg) {

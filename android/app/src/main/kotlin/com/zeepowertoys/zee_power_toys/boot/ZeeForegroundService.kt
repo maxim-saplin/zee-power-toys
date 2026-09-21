@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import com.zeepowertoys.zee_power_toys.MainActivity
+import com.zeepowertoys.zee_power_toys.speedcam.SpeedcamYnaviReceiver
 
 /**
  * Lean foreground service — background keepalive for Zee Power Toys.
@@ -37,6 +38,8 @@ import com.zeepowertoys.zee_power_toys.MainActivity
  */
 class ZeeForegroundService : Service() {
 
+    private var ynaviReceiver: SpeedcamYnaviReceiver? = null
+
     companion object {
         private const val TAG = "ZEE"
 
@@ -61,6 +64,7 @@ class ZeeForegroundService : Service() {
         startForeground(NOTIF_ID, buildNotification())
         isRunning = true
         Log.i(TAG, "ZeeForegroundService: onCreate — FGS started, notification posted")
+        ynaviReceiver = SpeedcamYnaviReceiver.register(applicationContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -99,6 +103,8 @@ class ZeeForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        SpeedcamYnaviReceiver.unregister(applicationContext, ynaviReceiver)
+        ynaviReceiver = null
         isRunning = false
         Log.i(TAG, "ZeeForegroundService: onDestroy")
         super.onDestroy()

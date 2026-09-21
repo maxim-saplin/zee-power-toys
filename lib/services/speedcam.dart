@@ -8,6 +8,8 @@ class SpeedcamPoint {
     required this.lon,
     this.maxspeed,
     this.direction,
+    this.source,
+    this.lastSeenEpochMs,
   });
 
   final String id;
@@ -16,12 +18,25 @@ class SpeedcamPoint {
   final int? maxspeed;
   final String? direction;
 
+  /// Pack origin: `overpass` / `ynavi` / `osm+ynavi` / null (legacy OSM).
+  final String? source;
+
+  /// 0073: last ingest/renewal epoch ms (YNavi overlay aging). OSM pack cams omit this.
+  final int? lastSeenEpochMs;
+
+  bool get isYnaviSourced =>
+      source == 'ynavi' ||
+      source == 'osm+ynavi' ||
+      id.startsWith('ynavi:');
+
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
         'lat': lat,
         'lon': lon,
         if (maxspeed != null) 'maxspeed': maxspeed,
         if (direction != null) 'direction': direction,
+        if (source != null) 'source': source,
+        if (lastSeenEpochMs != null) 'lastSeenEpochMs': lastSeenEpochMs,
       };
 
   factory SpeedcamPoint.fromJson(Map<String, Object?> json) => SpeedcamPoint(
@@ -30,6 +45,8 @@ class SpeedcamPoint {
         lon: (json['lon'] as num).toDouble(),
         maxspeed: (json['maxspeed'] as num?)?.toInt(),
         direction: json['direction'] as String?,
+        source: json['source'] as String?,
+        lastSeenEpochMs: (json['lastSeenEpochMs'] as num?)?.toInt(),
       );
 
   @override
@@ -39,10 +56,13 @@ class SpeedcamPoint {
       other.lat == lat &&
       other.lon == lon &&
       other.maxspeed == maxspeed &&
-      other.direction == direction;
+      other.direction == direction &&
+      other.source == source &&
+      other.lastSeenEpochMs == lastSeenEpochMs;
 
   @override
-  int get hashCode => Object.hash(id, lat, lon, maxspeed, direction);
+  int get hashCode =>
+      Object.hash(id, lat, lon, maxspeed, direction, source, lastSeenEpochMs);
 }
 
 /// Host vehicle position for proximity (T1 inject / later GPS).

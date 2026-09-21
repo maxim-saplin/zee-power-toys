@@ -723,6 +723,25 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get speedcamMapExpand => 'Развернуть карту';
+
+  @override
+  String get speedcamMapCollapse => 'Свернуть карту';
+
+  @override
+  String get speedcamMapMyLocation => 'Моё местоположение';
+
+  @override
+  String get speedcamMapNoLocation => 'Нет фиксации местоположения';
+
+  @override
+  String get speedcamYnaviEnrich => 'Обогащение YNavi';
+
+  @override
+  String get speedcamYnaviEnrichHint =>
+      'Камеры из мода YNavi при движении (ghost без маршрута + маршрут). Не свободный роуминг. По умолчанию выкл.';
+
+  @override
   String get speedcamDhuSystemOverlay => 'Системный оверлей DHU';
 
   @override
@@ -732,4 +751,30 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get speedcamOverlayPermissionDenied =>
       'Нужно разрешение показа поверх других окон.';
+
+  @override
+  String speedcamOsmYnaviCounts(int osm, int ynavi) {
+    return 'OSM $osm · YNavi $ynavi';
+  }
+
+  @override
+  String get speedcamYnaviCollect => 'Сбор YNavi';
+
+  @override
+  String get speedcamYnaviCollectHint =>
+      'Писать камеры YNavi в хранилище, когда обогащение включено.';
+
+  @override
+  String get speedcamYnaviAlert => 'Оповещения YNavi';
+
+  @override
+  String get speedcamYnaviAlertHint =>
+      'HUD/звук/DHU для камер YNavi. Сбор можно оставить включённым без оповещений.';
+
+  @override
+  String get speedcamYnaviAging => 'Старение точек YNavi';
+
+  @override
+  String get speedcamYnaviAgingHint =>
+      'Удалять камеры YNavi, не виденные столько дней (пакет OSM стареет отдельно в Harvest).';
 }

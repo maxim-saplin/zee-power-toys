@@ -722,6 +722,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get speedcamMapExpand => 'Expand map';
+
+  @override
+  String get speedcamMapCollapse => 'Collapse map';
+
+  @override
+  String get speedcamMapMyLocation => 'Go to my location';
+
+  @override
+  String get speedcamMapNoLocation => 'No location fix yet';
+
+  @override
+  String get speedcamYnaviEnrich => 'YNavi enrich';
+
+  @override
+  String get speedcamYnaviEnrichHint =>
+      'Collect cams from modded YNavi while moving (ghost idle-drive + route). Not free-roam. Default off.';
+
+  @override
   String get speedcamDhuSystemOverlay => 'DHU system overlay';
 
   @override
@@ -731,4 +750,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get speedcamOverlayPermissionDenied =>
       'Display-over permission required for the system overlay.';
+
+  @override
+  String speedcamOsmYnaviCounts(int osm, int ynavi) {
+    return 'OSM $osm · YNavi $ynavi';
+  }
+
+  @override
+  String get speedcamYnaviCollect => 'Collect YNavi';
+
+  @override
+  String get speedcamYnaviCollectHint =>
+      'Ingest YNavi cams into the store when enrich is on.';
+
+  @override
+  String get speedcamYnaviAlert => 'Alert YNavi';
+
+  @override
+  String get speedcamYnaviAlertHint =>
+      'HUD/sound/DHU treat YNavi-sourced cams. Collect can stay on while alerts are off.';
+
+  @override
+  String get speedcamYnaviAging => 'YNavi point aging';
+
+  @override
+  String get speedcamYnaviAgingHint =>
+      'Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).';
 }
