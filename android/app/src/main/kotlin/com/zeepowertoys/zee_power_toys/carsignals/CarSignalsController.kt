@@ -125,10 +125,11 @@ class CarSignalsController(
                 if (!started) {
                     started = true
                     source?.start { event -> emitEvent(event) }
+                    // AdaptAPI seed runs inside start(); push again so Dart
+                    // does not keep the empty onListen seed forever if the
+                    // first Charge ticks are missed.
+                    seedSinkFromSnapshot()
                 }
-                // Return the (source-annotated) snapshot so Dart learns the
-                // live signal source from the very first round-trip — no
-                // separate "snapshot" call needed just to answer "which source?".
                 result.success(snapshotWithSource()?.toMap())
             }
             "snapshot" -> result.success(snapshotWithSource()?.toMap())
@@ -182,26 +183,32 @@ class CarSignalsController(
             return
         }
         // Encode as a discriminated map — matches NativeCarSignals.dart decoder.
-        val map: Map<String, Any?> = when (event) {
-            is SignalEvent.Speed -> mapOf("type" to "speed", "kmh" to event.kmh)
-            is SignalEvent.Blinker -> mapOf("type" to "blinker", "state" to event.state)
-            is SignalEvent.Charge -> mapOf(
+        val map: MutableMap<String, Any?> = when (event) {
+            is SignalEvent.Speed -> mutableMapOf("type" to "speed", "kmh" to event.kmh)
+            is SignalEvent.Blinker -> mutableMapOf("type" to "blinker", "state" to event.state)
+            is SignalEvent.Charge -> mutableMapOf<String, Any?>(
                 "type" to "charge",
                 "charging" to event.charging,
                 "volts" to event.volts,
                 "amps" to event.amps,
                 "kw" to event.kw,
             )
-            is SignalEvent.Battery -> mapOf(
+            is SignalEvent.Battery -> mutableMapOf(
                 "type" to "battery",
                 "levelPct" to event.levelPct,
                 "tempC" to event.tempC,
             )
-            is SignalEvent.PowerFlow -> mapOf("type" to "powerFlow", "flow" to event.flow)
+            is SignalEvent.PowerFlow -> mutableMapOf("type" to "powerFlow", "flow" to event.flow)
         }
-        // EventSink.success must be called on the main thread.
         mainHandler.post {
-            sink.success(map)
+            try {
+                sink.success(map)
+                if (event is SignalEvent.Charge) {
+                    Log.i(TAG, "CarSignals →Dart charge charging=${event.charging} kW=${event.kw}")
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "CarSignals sink.success failed", t)
+            }
         }
     }
 
