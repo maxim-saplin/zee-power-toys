@@ -147,17 +147,11 @@ T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
 
 ### T2 emulator (DHU-matched)
 
-Use **only** AVD `Tablet_Android_12L` (API 32 / Android 12L, `medium_tablet`, **2560×1600** @ 320dpi) — same generation + res as the DHU. Do **not** use `Medium_Phone` or `ROOTED_Android_12L` for DHU UI smoke.
+T2 needs a **tablet** AVD on **Android 12L (API 32)** at roughly **DHU resolution** (landscape ~2560×1600), not a phone skin. Prefer `-gpu host` and a cold boot (`-no-snapshot-load`) if the guest flakes.
 
-```bash
-$ANDROID_HOME/emulator/emulator -avd Tablet_Android_12L -gpu host -no-snapshot-load
-adb shell wm size   # expect Physical size: 2560x1600
-```
-
-`adb` may still report `sdk_gphone64_arm64` — that is the Play-system-image product string, not the form factor. Trust `wm size` / the window aspect.
+Station-specific AVD name, SDK path, and exact start line live in a local **`ENV.md`** (gitignored — may exist on a workstation; not in the repo). Verify with `adb shell wm size` (expect ~2560×1600). Play system images still report `sdk_gphone64_*` in `adb` — ignore that string; trust size / window aspect.
 
 google_apis AVDs expect a **debug** (or Google-keyed) APK; the AOSP-platform-signed **release** APK used on the car will fail to install here.
-
 
 ### Build from source
 

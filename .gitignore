@@ -57,3 +57,6 @@ artifacts/
 
 # Local QA evidence / scratch (never commit)
 tmp/
+
+# Workstation-specific paths / AVD names (see README pointer)
+ENV.md

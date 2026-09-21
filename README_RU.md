@@ -147,17 +147,11 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 
 ### T2 эмулятор (как DHU)
 
-Только AVD **`Tablet_Android_12L`** (API 32 / Android 12L, `medium_tablet`, **2560×1600** @ 320dpi) — то же поколение и разрешение, что у DHU. Не `Medium_Phone` и не `ROOTED_Android_12L` для смоука DHU UI.
+Для T2 нужен **планшетный** AVD на **Android 12L (API 32)** примерно в **разрешении DHU** (ландшафт ~2560×1600), не phone-скин. При глюках гостя — `-gpu host` и cold boot (`-no-snapshot-load`).
 
-```bash
-$ANDROID_HOME/emulator/emulator -avd Tablet_Android_12L -gpu host -no-snapshot-load
-adb shell wm size   # ожидай Physical size: 2560x1600
-```
-
-`adb` может писать `sdk_gphone64_arm64` — это строка Play-образа, не форм-фактор. Смотри `wm size` / пропорции окна.
+Имя AVD, путь к SDK и точная команда запуска — в локальном **`ENV.md`** (в `.gitignore`, может быть на рабочей станции; в репо его нет). Проверка: `adb shell wm size` (ожидай ~2560×1600). Play-образы в `adb` всё равно пишут `sdk_gphone64_*` — это не форм-фактор.
 
 На google_apis AVD ставь **debug** (или Google-keyed) APK; AOSP-platform **release** с машины сюда не встанет.
-
 
 ### Сборка из исходников
 
