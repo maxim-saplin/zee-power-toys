@@ -144,7 +144,8 @@ class SpeedcamYnaviReceiver : BroadcastReceiver() {
             return receiver
         }
 
-        fun setEnrichEnabled(enabled: Boolean) {
+        /** Prefer this over property assign so we can clear session ids on OFF. */
+        fun configureEnrich(enabled: Boolean) {
             enrichEnabled = enabled
             if (!enabled) {
                 seenEventIds.clear()

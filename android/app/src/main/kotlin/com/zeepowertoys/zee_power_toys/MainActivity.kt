@@ -345,7 +345,7 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "setEnrichEnabled" -> {
                         val enabled = call.argument<Boolean>("enabled") ?: false
-                        SpeedcamYnaviReceiver.setEnrichEnabled(enabled)
+                        SpeedcamYnaviReceiver.configureEnrich(enabled)
                         result.success(null)
                     }
                     "isEnrichEnabled" -> result.success(SpeedcamYnaviReceiver.enrichEnabled)
