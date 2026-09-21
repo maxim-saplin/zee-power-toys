@@ -83,6 +83,8 @@ class CarSnapshot {
     this.speedKmh,
     this.blinker = BlinkerState.off,
     this.charging = false,
+    this.chargeVolts,
+    this.chargeAmps,
     this.chargeKw,
     this.batteryPct,
     this.batteryTempC,
@@ -93,6 +95,8 @@ class CarSnapshot {
   final BlinkerState blinker;
   /// Always true/false — unknown/absent AdaptAPI state coalesces to false.
   final bool charging;
+  final double? chargeVolts;
+  final double? chargeAmps;
   final double? chargeKw;
   final int? batteryPct;
   final double? batteryTempC;
@@ -102,6 +106,8 @@ class CarSnapshot {
     int? speedKmh,
     BlinkerState? blinker,
     bool? charging,
+    double? chargeVolts,
+    double? chargeAmps,
     double? chargeKw,
     int? batteryPct,
     double? batteryTempC,
@@ -110,6 +116,8 @@ class CarSnapshot {
     speedKmh: speedKmh ?? this.speedKmh,
     blinker: blinker ?? this.blinker,
     charging: charging ?? this.charging,
+    chargeVolts: chargeVolts ?? this.chargeVolts,
+    chargeAmps: chargeAmps ?? this.chargeAmps,
     chargeKw: chargeKw ?? this.chargeKw,
     batteryPct: batteryPct ?? this.batteryPct,
     batteryTempC: batteryTempC ?? this.batteryTempC,
@@ -121,6 +129,8 @@ class CarSnapshot {
     'speedKmh': speedKmh,
     'blinker': blinker.name,
     'charging': charging,
+    'chargeVolts': chargeVolts,
+    'chargeAmps': chargeAmps,
     'chargeKw': chargeKw,
     'batteryPct': batteryPct,
     'batteryTempC': batteryTempC,
