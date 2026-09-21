@@ -1,4 +1,4 @@
-/// 0065 — DHU Speedcam system overlay (draw-over-apps).
+/// 0065/0070 — DHU Speedcam system overlay (draw-over-apps; full radar UI).
 abstract class SpeedcamSystemOverlay {
   Future<bool> canDrawOverlays();
   Future<void> openPermissionSettings();

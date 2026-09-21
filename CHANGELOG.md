@@ -8,7 +8,13 @@ Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing
 ## [Unreleased]
 
 ### Added
+- 0070 DHU system overlay shows full Speedcam UI (Alien|Default radar) via Flutter surface in TYPE_APPLICATION_OVERLAY
 - `README_RU.md` — Russian product landing; EN/RU switch at top of both READMEs
+
+## [1.0.0+6] — 2026-09-21
+
+### Added
+- 0070 DHU system overlay shows full Speedcam UI (Alien|Default radar) via Flutter surface in TYPE_APPLICATION_OVERLAY
 
 ## [1.0.0+5] — 2026-09-20
 

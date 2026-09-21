@@ -9,6 +9,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'app/dhu_app.dart';
 import 'app/hud_app.dart';
+import 'app/speedcam_overlay_app.dart';
 import 'debug/agent_extensions.dart';
 import 'providers/hud_geometry.dart';
 import 'providers/services.dart';
@@ -34,6 +35,7 @@ import 'services/default_speedcam_service.dart';
 import 'services/audio_speedcam_alert.dart';
 import 'services/speedcam_alert.dart';
 import 'services/fakes/fake_speedcam_service.dart';
+import 'services/fakes/fake_speedcam_alert.dart';
 import 'services/fakes/fake_speedcam_pack_store.dart';
 import 'services/speedcam_pack_store.dart';
 import 'services/fakes/fake_minimap_host.dart';
@@ -77,6 +79,15 @@ void main(List<String> args) {
 /// differs (desktop_multi_window on T1, native FlutterEngineGroup on T2).
 /// WidgetsFlutterBinding must be initialised here before hudMain accesses
 /// platform channels (SharedPrefs does so via its BinaryMessenger on load).
+
+/// Android Speedcam system-overlay entrypoint (0070) — FlutterEngineGroup window
+/// with the same [SpeedcamRadarWidget] as HUD / DHU preview (Alien|Default).
+@pragma('vm:entry-point')
+void speedcamOverlayEntry() {
+  WidgetsFlutterBinding.ensureInitialized();
+  speedcamOverlayMain();
+}
+
 @pragma('vm:entry-point')
 void hudEntry() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -279,9 +290,10 @@ Future<void> dhuMain(List<String> args) async {
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
   carSignalsRaw.events.listen(pushCarSignalToHud);
   // Speedcam (0033): DHU owns pack+pose; HUD paints CRT from relay.
-  speedcamRaw.snapshots.listen((snap) {
+  speedcamRaw.snapshots.listen((snap) async {
+    // 0070: await overlay update so FlutterEngine exists before hub fan-out.
+    await _pushSpeedcamSystemOverlay(snap, store.value.speedcam);
     pushSpeedcamToHud(snap);
-    _pushSpeedcamSystemOverlay(snap, store.value.speedcam);
   });
   // Guidance (0055 FAIL): NativeMinimapHost EventChannel lives on DHU only;
   // hudMain overrides minimapHost with FakeMinimapHost — relay trip events so
@@ -326,6 +338,58 @@ Future<void> dhuMain(List<String> args) async {
 
   runApp(
     UncontrolledProviderScope(container: container, child: const _DhuRoot()),
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Speedcam system overlay — third FlutterEngine (0070), TYPE_APPLICATION_OVERLAY.
+// Relay sink only (ADR 0003); pack+pose live on DHU.
+// ---------------------------------------------------------------------------
+void speedcamOverlayMain() {
+  final store = SharedPrefsConfigStore();
+  final speedcam = FakeSpeedcamService();
+  final speedcamPack = FakeSpeedcamPackStore();
+  final speedcamAlert = FakeSpeedcamAlert();
+
+  registerZeeExtensions(
+    surface: 'speedcamOverlay',
+    store: store,
+    shotKey: GlobalKey(),
+    carSignals: FakeCarSignals(),
+    speedcam: speedcam,
+    speedcamPack: speedcamPack,
+  );
+
+  store.load().then((_) {
+    speedcam.setApproachRadiusM(store.value.speedcam.dhuRangeM);
+    listenForRelay(
+      onConfig: (cfg) {
+        store.setConfig(cfg);
+        speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
+      },
+      onSpeedcam: speedcam.applyRelaySnapshot,
+    );
+  });
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        configStoreProvider.overrideWithValue(store),
+        carSignalsProvider.overrideWithValue(FakeCarSignals()),
+        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
+        hudHostProvider.overrideWithValue(FakeHudHost()),
+        installerProvider.overrideWithValue(FakeInstaller()),
+        packageStatusProvider.overrideWithValue(FakePackageStatus()),
+        speedcamServiceProvider.overrideWithValue(speedcam),
+        speedcamPackStoreProvider.overrideWithValue(speedcamPack),
+        speedcamAlertProvider.overrideWithValue(speedcamAlert),
+        speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
+        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
+        usbModeProvider.overrideWithValue(FakeUsbMode()),
+      ],
+      child: const SpeedcamOverlayApp(),
+    ),
   );
 }
 
@@ -507,7 +571,10 @@ String? _lastMinimapNative;
 /// Called once on startup and on every config change (both paths are idempotent).
 SpeedcamSystemOverlay? _speedcamOverlay;
 
-void _pushSpeedcamSystemOverlay(SpeedcamSnapshot snap, SpeedcamConfig sc) {
+Future<void> _pushSpeedcamSystemOverlay(
+  SpeedcamSnapshot snap,
+  SpeedcamConfig sc,
+) async {
   final overlay = _speedcamOverlay;
   if (overlay == null || !sc.dhuSystemOverlay) return;
   final danger = snap.danger;
@@ -538,15 +605,15 @@ void _pushSpeedcamSystemOverlay(SpeedcamSnapshot snap, SpeedcamConfig sc) {
         approachRadiusM: snap.approachRadiusM,
         distanceM: danger.distanceM,
       );
-  overlay
-      .update(
-        visible: visible,
-        title: title,
-        subtitle: subtitle,
-        distanceM: danger?.distanceM,
-        dangerous: dangerous,
-      )
-      .catchError((_) {});
+  try {
+    await overlay.update(
+      visible: visible,
+      title: title,
+      subtitle: subtitle,
+      distanceM: danger?.distanceM,
+      dangerous: dangerous,
+    );
+  } catch (_) {}
 }
 
 void _applySpeedcamConfig(

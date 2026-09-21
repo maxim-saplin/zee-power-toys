@@ -918,7 +918,7 @@
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"
   },
-  "speedcamDhuSystemOverlayHint": "Show a floating Speedcam alert over other apps (needs display-over permission).",
+  "speedcamDhuSystemOverlayHint": "Full Speedcam radar over other apps when approaching (needs display-over permission).",
   "@speedcamDhuSystemOverlayHint": {
     "description": "0065 toggle hint"
   },

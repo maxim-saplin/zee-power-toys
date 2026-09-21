@@ -4,29 +4,35 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.FrameLayout
+import io.flutter.FlutterInjector
+import io.flutter.embedding.android.FlutterTextureView
+import io.flutter.embedding.android.FlutterView
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineGroup
+import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * 0065 — DHU always-on-top Speedcam system overlay (TYPE_APPLICATION_OVERLAY).
+ * 0070 — DHU Speedcam system overlay hosts the same Flutter Speedcam radar
+ * (Alien|Default) in a TYPE_APPLICATION_OVERLAY window.
  *
  * Channel [CHANNEL]: canDrawOverlays / openPermissionSettings / setEnabled /
- * update({distanceM, title, subtitle, dangerous}) / hide.
+ * update({visible, …}) / hide.
  *
- * T2: floating plate over other apps when permission granted; no-op on deny.
+ * Visibility (approach/demo) is still gated by Dart via [update]; the Flutter
+ * surface reuses [SpeedcamRadarWidget] via entrypoint `speedcamOverlayEntry`
+ * and receives config/snapshot over zee/hub (fan-out from MainActivity).
  */
 class SpeedcamSystemOverlayController(
     private val context: Context,
@@ -35,14 +41,23 @@ class SpeedcamSystemOverlayController(
     companion object {
         private const val TAG = "ZEE/SpeedcamOverlay"
         const val CHANNEL = "zee/speedcam/system_overlay"
+        private const val HUB_CHANNEL = "zee/hub"
+        /** Overlay disk size (dp) — matches DHU settings preview ballpark. */
+        private const val OVERLAY_SIDE_DP = 280
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val wm = context.applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private var root: LinearLayout? = null
-    private var titleView: TextView? = null
-    private var subtitleView: TextView? = null
+    private val appContext = context.applicationContext
+    private val wm = appContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
     private var enabled = false
+    private var contentVisible = false
+
+    private var engineGroup: FlutterEngineGroup? = null
+    private var engine: FlutterEngine? = null
+    private var flutterView: FlutterView? = null
+    private var root: FrameLayout? = null
+    private var overlayHub: MethodChannel? = null
 
     init {
         MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -56,48 +71,61 @@ class SpeedcamSystemOverlayController(
                     val on = call.argument<Boolean>("enabled") ?: false
                     mainHandler.post {
                         enabled = on
-                        if (!on) hideInternal()
-                        else if (canDrawOverlays()) ensureShown()
+                        if (!on) {
+                            contentVisible = false
+                            tearDownEngineAndWindow()
+                        } else if (canDrawOverlays()) {
+                            ensureEngine()
+                            // Window stays GONE until update(visible=true).
+                            ensureWindow(shown = false)
+                        }
+                        result.success(null)
                     }
-                    result.success(null)
                 }
                 "update" -> {
-                    val distanceM = (call.argument<Number>("distanceM"))?.toDouble()
-                    val title = call.argument<String>("title") ?: ""
-                    val subtitle = call.argument<String>("subtitle") ?: ""
-                    val dangerous = call.argument<Boolean>("dangerous") ?: false
                     val visible = call.argument<Boolean>("visible") ?: true
                     mainHandler.post {
                         if (!enabled || !canDrawOverlays()) {
-                            hideInternal()
+                            hideWindowOnly()
+                            result.success(null)
                             return@post
                         }
+                        contentVisible = visible
                         if (!visible) {
-                            hideInternal()
+                            hideWindowOnly()
+                            result.success(null)
                             return@post
                         }
-                        ensureShown()
-                        applyContent(title, subtitle, distanceM, dangerous)
+                        ensureEngine()
+                        ensureWindow(shown = true)
+                        result.success(null)
                     }
-                    result.success(null)
                 }
                 "hide" -> {
-                    mainHandler.post { hideInternal() }
-                    result.success(null)
+                    mainHandler.post {
+                        contentVisible = false
+                        hideWindowOnly()
+                        result.success(null)
+                    }
                 }
                 else -> result.notImplemented()
             }
         }
-        Log.i(TAG, "SpeedcamSystemOverlayController registered")
+        Log.i(TAG, "SpeedcamSystemOverlayController registered (0070 Flutter surface)")
+    }
+
+    /** Fan-out from MainActivity DHU hub → overlay isolate (same envelopes as HUD). */
+    fun onRelayFromDhu(arguments: Any?) {
+        overlayHub?.invokeMethod("relay", arguments)
     }
 
     fun dispose() {
-        mainHandler.post { hideInternal() }
+        mainHandler.post { tearDownEngineAndWindow() }
     }
 
     private fun canDrawOverlays(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(context.applicationContext)
+            Settings.canDrawOverlays(appContext)
         } else {
             true
         }
@@ -107,96 +135,128 @@ class SpeedcamSystemOverlayController(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
         val intent = Intent(
             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:${context.packageName}"),
+            Uri.parse("package:${appContext.packageName}"),
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
     }
 
-    private fun ensureShown() {
-        if (root != null) return
-        if (!canDrawOverlays()) {
-            Log.w(TAG, "ensureShown: SYSTEM_ALERT_WINDOW not granted")
-            return
-        }
-        val density = context.resources.displayMetrics.density
-        val pad = (12 * density).toInt()
-        val plate = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, pad)
-            setBackgroundColor(Color.argb(0xE6, 0x10, 0x10, 0x14))
-            elevation = 8 * density
-        }
-        val title = TextView(context).apply {
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-            typeface = Typeface.DEFAULT_BOLD
-            text = "—"
-        }
-        val subtitle = TextView(context).apply {
-            setTextColor(Color.argb(0xCC, 0xCC, 0xCC, 0xD0))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            text = ""
-        }
-        plate.addView(title)
-        plate.addView(subtitle)
-
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
-        val lp = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = (24 * density).toInt()
-        }
+    private fun ensureEngine() {
+        if (engine != null) return
         try {
-            wm.addView(plate, lp)
-            root = plate
-            titleView = title
-            subtitleView = subtitle
-            Log.i(TAG, "overlay window added")
-        } catch (e: Exception) {
-            Log.e(TAG, "addView failed", e)
-            root = null
+            val group = engineGroup ?: FlutterEngineGroup(appContext).also { engineGroup = it }
+            val entry = DartExecutor.DartEntrypoint(
+                FlutterInjector.instance().flutterLoader().findAppBundlePath(),
+                "speedcamOverlayEntry",
+            )
+            val eng = group.createAndRunEngine(appContext, entry)
+            eng.lifecycleChannel.appIsResumed()
+            engine = eng
+            overlayHub = MethodChannel(eng.dartExecutor.binaryMessenger, HUB_CHANNEL)
+            Log.i(TAG, "overlay FlutterEngine created = $eng")
+        } catch (t: Throwable) {
+            Log.e(TAG, "ensureEngine failed", t)
+            engine = null
+            overlayHub = null
         }
     }
 
-    private fun applyContent(
-        title: String,
-        subtitle: String,
-        distanceM: Double?,
-        dangerous: Boolean,
-    ) {
-        val t = titleView ?: return
-        val s = subtitleView ?: return
-        t.text = title.ifBlank {
-            if (distanceM != null) "${distanceM.toInt()} m" else "Speedcam"
+    private fun ensureWindow(shown: Boolean) {
+        val eng = engine ?: return
+        if (root == null) {
+            if (!canDrawOverlays()) {
+                Log.w(TAG, "ensureWindow: SYSTEM_ALERT_WINDOW not granted")
+                return
+            }
+            val density = appContext.resources.displayMetrics.density
+            val sidePx = (OVERLAY_SIDE_DP * density).toInt()
+
+            val container = FrameLayout(appContext).apply {
+                setBackgroundColor(Color.TRANSPARENT)
+            }
+
+            val ftv = FlutterTextureView(appContext)
+            ftv.isOpaque = false
+            val fv = FlutterView(appContext, ftv)
+            container.addView(
+                fv,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                ),
+            )
+
+            val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+            val lp = WindowManager.LayoutParams(
+                sidePx,
+                sidePx,
+                type,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                PixelFormat.TRANSLUCENT,
+            ).apply {
+                gravity = Gravity.TOP or Gravity.END
+                x = (16 * density).toInt()
+                y = (72 * density).toInt()
+            }
+            try {
+                wm.addView(container, lp)
+                fv.attachToFlutterEngine(eng)
+                root = container
+                flutterView = fv
+                Log.i(TAG, "overlay FlutterView window added (${sidePx}px)")
+            } catch (e: Exception) {
+                Log.e(TAG, "addView failed", e)
+                try {
+                    fv.detachFromFlutterEngine()
+                } catch (_: Exception) {
+                }
+                root = null
+                flutterView = null
+                return
+            }
         }
-        t.setTextColor(if (dangerous) Color.WHITE else Color.rgb(0x8F, 0xE0, 0xA0))
-        s.text = subtitle
-        s.visibility = if (subtitle.isBlank()) View.GONE else View.VISIBLE
-        root?.visibility = View.VISIBLE
+        root?.visibility = if (shown) View.VISIBLE else View.GONE
     }
 
-    private fun hideInternal() {
-        val v = root ?: return
-        try {
-            wm.removeView(v)
-            Log.i(TAG, "overlay window removed")
-        } catch (e: Exception) {
-            Log.w(TAG, "removeView: ${e.message}")
-        }
+    private fun hideWindowOnly() {
+        root?.visibility = View.GONE
+    }
+
+    private fun tearDownEngineAndWindow() {
+        val v = root
+        val fv = flutterView
         root = null
-        titleView = null
-        subtitleView = null
+        flutterView = null
+        if (v != null) {
+            try {
+                fv?.detachFromFlutterEngine()
+            } catch (e: Exception) {
+                Log.w(TAG, "detach: ${e.message}")
+            }
+            try {
+                wm.removeView(v)
+                Log.i(TAG, "overlay window removed")
+            } catch (e: Exception) {
+                Log.w(TAG, "removeView: ${e.message}")
+            }
+        }
+        overlayHub = null
+        val eng = engine
+        engine = null
+        if (eng != null) {
+            try {
+                eng.destroy()
+                Log.i(TAG, "overlay FlutterEngine destroyed")
+            } catch (e: Exception) {
+                Log.w(TAG, "engine.destroy: ${e.message}")
+            }
+        }
+        engineGroup = null
     }
 }

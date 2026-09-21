@@ -55,7 +55,7 @@ import io.flutter.plugin.common.MethodChannel
 //
 // Cross-engine relay bridge (ADR 0003):
 //   DHU-side "zee/hub" handler forwards every "relay" call to the HUD-side
-//   "zee/hub" channel.  Unidirectional DHU→HUD, mirroring the desktop hub.
+//   "zee/hub" channel.  Unidirectional DHU→HUD (+ Speedcam overlay isolate, 0070), mirroring the desktop hub.
 //
 // CarSignals bridge (ADR 0002/Block 0005):
 //   CarSignalsController registers on the DHU engine messenger only.
@@ -180,8 +180,10 @@ class MainActivity : FlutterActivity() {
                     // Forward the serialised envelope to the HUD isolate.
                     hud.invokeMethod("relay", call.arguments)
                 } else {
-                    Log.d(TAG, "relay: HUD engine not ready yet — dropping ${call.arguments}")
+                    Log.d(TAG, "relay: HUD engine not ready yet — drop for HUD")
                 }
+                // 0070: fan-out same envelopes to Speedcam system-overlay isolate.
+                speedcamSystemOverlay?.onRelayFromDhu(call.arguments)
                 result.success(null)
             } else {
                 result.notImplemented()

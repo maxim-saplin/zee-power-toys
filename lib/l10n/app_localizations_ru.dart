@@ -715,7 +715,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamDhuSystemOverlayHint =>
-      'Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).';
+      'Полный радар камер поверх других приложений при приближении (нужно разрешение «поверх окон»).';
 
   @override
   String get speedcamOverlayPermissionDenied =>

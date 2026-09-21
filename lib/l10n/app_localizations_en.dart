@@ -714,7 +714,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamDhuSystemOverlayHint =>
-      'Show a floating Speedcam alert over other apps (needs display-over permission).';
+      'Full Speedcam radar over other apps when approaching (needs display-over permission).';
 
   @override
   String get speedcamOverlayPermissionDenied =>

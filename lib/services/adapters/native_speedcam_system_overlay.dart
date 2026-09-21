@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../speedcam_system_overlay.dart';
 
-/// Android MethodChannel bridge for [SpeedcamSystemOverlayController].
+/// Android MethodChannel bridge for [SpeedcamSystemOverlayController] (0070 Flutter surface).
 class NativeSpeedcamSystemOverlay implements SpeedcamSystemOverlay {
   static const _ch = MethodChannel('zee/speedcam/system_overlay');
 

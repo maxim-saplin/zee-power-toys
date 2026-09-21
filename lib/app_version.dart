@@ -5,5 +5,5 @@
 library;
 
 const String appVersionName = '1.0.0';
-const int appVersionCode = 5;
-const String appVersionFull = '1.0.0+5';
+const int appVersionCode = 6;
+const String appVersionFull = '1.0.0+6';

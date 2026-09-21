@@ -1463,7 +1463,7 @@ abstract class AppLocalizations {
   /// 0065 toggle hint
   ///
   /// In en, this message translates to:
-  /// **'Show a floating Speedcam alert over other apps (needs display-over permission).'**
+  /// **'Full Speedcam radar over other apps when approaching (needs display-over permission).'**
   String get speedcamDhuSystemOverlayHint;
 
   /// 0065 permission denied

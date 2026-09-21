@@ -35,11 +35,18 @@ Maxim’s ask: **one toggle** → real Speedcam UI on top of everything on the D
 - Changing HUD Presentation / windshield path
 - Icon / publish grind
 
+## Implementation notes (2026-09-21 Minsk)
+
+- Replaced 0065 TextView plate with a FlutterEngineGroup surface
+  (`speedcamOverlayEntry` → [SpeedcamOverlayApp] → [SpeedcamRadarWidget]
+  `dhuLarge`, Alien|Default from config).
+- Same toggle `dhuSystemOverlay`; visibility still approach/demo via
+  `_pushSpeedcamSystemOverlay` → native `update(visible)`.
+- Hub fan-out: DHU `zee/hub` → HUD + overlay isolates.
+- Version `1.0.0+6`. Evidence under `tmp/qa/` only.
+
 ## DoD
 - [ ] Toggle ON → full Speedcam UI over launcher (T2) and over YNavi (T3)
 - [ ] Toggle OFF → no overlay chrome
 - [ ] Demo/approach drives the same overlay content
 - [ ] QA cut after tip (`tmp/qa/` only)
-
-## Notes
-- 0065 plate can stay as interim or be replaced — Dev/PDM call.

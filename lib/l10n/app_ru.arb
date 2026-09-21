@@ -918,7 +918,7 @@
   "@speedcamDhuSystemOverlay": {
     "description": "0065 toggle title"
   },
-  "speedcamDhuSystemOverlayHint": "Плавающее предупреждение о камере поверх других приложений (нужно разрешение «поверх окон»).",
+  "speedcamDhuSystemOverlayHint": "Полный радар камер поверх других приложений при приближении (нужно разрешение «поверх окон»).",
   "@speedcamDhuSystemOverlayHint": {
     "description": "0065 toggle hint"
   },
