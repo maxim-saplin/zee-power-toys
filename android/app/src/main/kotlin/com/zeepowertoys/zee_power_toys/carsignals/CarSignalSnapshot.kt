@@ -20,7 +20,7 @@ data class CarSignalSnapshot(
     val powerFlow: String = "unknown",
     val source: String = "unknown",   // adaptapi | simulated | unknown
 ) {
-    fun toMap(): Map<String, Any?> = mapOf(
+    fun toMap(): Map<String, Any?> = mutableMapOf(
         "speedKmh" to speedKmh,
         "blinker" to blinker,
         "charging" to charging,
