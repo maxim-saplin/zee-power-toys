@@ -14,10 +14,19 @@ and companion installs — without fighting the stock UI.
 | **YNavi mod (HUD map)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
 | **Launcher mod** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
-> Icons / store artwork: with Maxim (hand vectors). Screenshots below are
-> placeholders until those land — don’t block install or tips on artwork.
+> Screenshots below are TBD (store artwork still landing). Don’t block install or tips on artwork.
 
 ---
+
+
+## Support
+
+| | |
+|---|---|
+| **Tested** | **Zeekr 007**, Zeekr OS **6.7** |
+| **Expected** | **Zeekr 001**, software **6.3+** |
+
+Honest split: we dogfood on 007 / 6.7. 001 and 6.3+ should work the same DHU stack, but we have not signed those off as tested.
 
 ## Quick start
 
@@ -84,7 +93,7 @@ T1 uses fakes for minimap — use T2 emulator / T3 car for YNavi surface.
 
 | DHU home | Speedcam | HUD preview |
 |----------|----------|-------------|
-| _placeholder — Maxim icons_ | _placeholder_ | _placeholder_ |
+| _screenshot TBD_ | _placeholder_ | _placeholder_ |
 
 Drop PNGs under `docs/assets/` (e.g. `dhu-home.png`) and link them here when ready.
 
@@ -103,7 +112,6 @@ Optional for Speedcam; required for minimap / default-nav integration.
 **Install UI** downloads Release assets and runs `PackageInstaller`.  
 **Location** is runtime (in-app dialog) — not install-time. `adb pm grant` is lab-only.
 
-Prep notes: [docs/publish/0044-notes-for-maxim.md](docs/publish/0044-notes-for-maxim.md).
 
 ---
 
@@ -122,7 +130,7 @@ Keep `lib/app_version.dart` in sync. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-## For contributors / agents
+## For contributors
 
 Domain glossary: [`CONTEXT.md`](CONTEXT.md) · Requirements: [`REQUIREMENTS.md`](REQUIREMENTS.md) · ADRs: [`docs/adr/`](docs/adr/) · Blocks: [`docs/issues/`](docs/issues/).
 

@@ -14,10 +14,19 @@
 | **Мод YNavi (карта HUD)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
 | **Мод лаунчера** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
-> Иконки / арт для стора — у Maxim (ручные векторы). Скриншоты ниже — заглушки,
-> пока арты не готовы; на установку и tips это не влияет.
+> Скриншоты ниже — TBD (арт для стора ещё в работе). На установку и tips это не влияет.
 
 ---
+
+
+## Поддержка
+
+| | |
+|---|---|
+| **Проверено** | **Zeekr 007**, Zeekr OS **6.7** |
+| **Ожидается** | **Zeekr 001**, ПО **6.3+** |
+
+Честно: гоняем на 007 / 6.7. На 001 и 6.3+ тот же стек DHU должен подходить, но как tested мы их не закрывали.
 
 ## Быстрый старт
 
@@ -90,7 +99,6 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 **Install UI** качает ассеты Release и запускает `PackageInstaller`.  
 **Геолокация** — runtime (диалог в приложении), не на этапе установки. `adb pm grant` — только для лаборатории.
 
-Заметки prep: [docs/publish/0044-notes-for-maxim.md](docs/publish/0044-notes-for-maxim.md).
 
 ---
 
@@ -109,7 +117,7 @@ uv run dev/zee_run.py up    # Linux (или macOS с раннером macos/)
 
 ---
 
-## Для контрибьюторов / агентов
+## Для контрибьюторов
 
 Глоссарий: [`CONTEXT.md`](CONTEXT.md) · Требования: [`REQUIREMENTS.md`](REQUIREMENTS.md) · ADR: [`docs/adr/`](docs/adr/) · Блоки: [`docs/issues/`](docs/issues/).
 
