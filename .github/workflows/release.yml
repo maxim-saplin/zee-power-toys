@@ -1,4 +1,5 @@
 # Publish platform-signed APK as zee-power-toys.apk on tag 1.0.0+N (or v1.0.0+N).
+# Requires repo secret AOSP_DEBUG_KEYSTORE_BASE64 (base64 of androiddebugkey.jks).
 name: release
 on:
   push:
@@ -13,24 +14,42 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Install AOSP platform keystore
+        env:
+          AOSP_DEBUG_KEYSTORE_BASE64: ${{ secrets.AOSP_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          DEST="android/tools/zeekr/androiddebugkey.jks"
+          mkdir -p android/tools/zeekr
+          if [[ -z "${AOSP_DEBUG_KEYSTORE_BASE64:-}" ]]; then
+            echo "::error::Missing secret AOSP_DEBUG_KEYSTORE_BASE64 — base64-encode androiddebugkey.jks (alias platformkey, see android/tools/zeekr/README.md)"
+            exit 1
+          fi
+          echo "$AOSP_DEBUG_KEYSTORE_BASE64" | base64 -d > "$DEST"
+          if [[ ! -s "$DEST" ]]; then
+            echo "::error::Decoded keystore is empty at $DEST"
+            exit 1
+          fi
+          echo "Wrote $(wc -c < "$DEST") bytes to $DEST"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --release
+      - name: Build car-ready release APK (AOSP platform key)
+        run: flutter build apk --release -PuseAospDebugKey=true
       - name: Rename APK for self-update contract
         run: |
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk dist/zee-power-toys.apk
       - name: Upload Release asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: dist/zee-power-toys.apk
