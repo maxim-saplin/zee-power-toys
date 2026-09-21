@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../hud/speedcam_radar_widget.dart';
+import '../providers/config.dart';
+import '../services/config_store.dart';
 
-/// 0070 — Flutter surface hosted in [TYPE_APPLICATION_OVERLAY].
+/// 0070/0079 — Flutter surface hosted in [TYPE_APPLICATION_OVERLAY].
 ///
-/// Same [SpeedcamRadarWidget] (Alien|Default) as HUD / DHU settings preview.
-/// Snapshot + config arrive via zee/hub relay (same path as HUD).
+/// Alien uses the same [hudCompact] paint path as the windshield (no idle CRT,
+/// transparent plate). Default keeps dhuLarge for readable text on the plate.
 class SpeedcamOverlayApp extends StatelessWidget {
   const SpeedcamOverlayApp({super.key});
 
@@ -28,16 +30,20 @@ class _OverlayHome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
+    final look = ref.watch(speedcamConfigProvider).radarLook;
+    final isAlien = look == SpeedcamRadarLook.alien;
+    return Scaffold(
       backgroundColor: Colors.transparent,
       body: ColoredBox(
-        color: Color(0xE6101014),
+        color: isAlien ? Colors.transparent : const Color(0xE6101014),
         child: Padding(
-          padding: EdgeInsets.all(8),
+          padding: EdgeInsets.all(isAlien ? 0 : 8),
           child: SpeedcamRadarWidget(
-            key: ValueKey('speedcam-system-overlay-radar'),
-            variant: SpeedcamRadarVariant.dhuLarge,
-            alwaysShow: true,
+            key: const ValueKey('speedcam-system-overlay-radar'),
+            variant: isAlien
+                ? SpeedcamRadarVariant.hudCompact
+                : SpeedcamRadarVariant.dhuLarge,
+            alwaysShow: false,
           ),
         ),
       ),

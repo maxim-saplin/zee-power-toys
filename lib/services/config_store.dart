@@ -865,6 +865,14 @@ class HudSafeArea {
 
 /// Speedcam HUD/DHU radar appearance (0034).
 /// When to re-fetch the OSM pack from Overpass (0037).
+/// 0079 — named corner for the DHU system overlay window.
+enum SpeedcamOverlayPlacement {
+  topEnd,
+  topStart,
+  bottomEnd,
+  bottomStart,
+}
+
 enum SpeedcamRadarLook {
   /// Clean HUD-first: distance + bearing, no CRT cosplay.
   defaultLook,
@@ -894,6 +902,8 @@ class SpeedcamConfig {
     this.ynaviCollectEnabled = true,
     this.ynaviAlertEnabled = true,
     this.ynaviPointTtlDays = 7,
+    this.overlaySizeScale = 1.0,
+    this.overlayPlacement = SpeedcamOverlayPlacement.topEnd,
   });
 
   /// HUD radar/presence mode (default [SpeedcamPresenceMode.any]).
@@ -932,6 +942,12 @@ class SpeedcamConfig {
   /// 0073: TTL days for YNavi overlay points (not OSM pack). Default 7.
   final int ynaviPointTtlDays;
 
+  /// 0079: overlay window size multiplier (base ~280dp). Default 1.0.
+  final double overlaySizeScale;
+
+  /// 0079: overlay window corner. Default topEnd.
+  final SpeedcamOverlayPlacement overlayPlacement;
+
   /// Legacy: HUD paint not Off (0060 migration / dumpState).
   bool get hudRadarEnabled => hudMode != SpeedcamPresenceMode.off;
 
@@ -951,6 +967,8 @@ class SpeedcamConfig {
     bool? ynaviCollectEnabled,
     bool? ynaviAlertEnabled,
     int? ynaviPointTtlDays,
+    double? overlaySizeScale,
+    SpeedcamOverlayPlacement? overlayPlacement,
     // Legacy bool shims — prefer [hudMode] / [soundMode].
     bool? hudRadarEnabled,
     bool? soundEnabled,
@@ -980,6 +998,8 @@ class SpeedcamConfig {
       ynaviCollectEnabled: ynaviCollectEnabled ?? this.ynaviCollectEnabled,
       ynaviAlertEnabled: ynaviAlertEnabled ?? this.ynaviAlertEnabled,
       ynaviPointTtlDays: ynaviPointTtlDays ?? this.ynaviPointTtlDays,
+      overlaySizeScale: overlaySizeScale ?? this.overlaySizeScale,
+      overlayPlacement: overlayPlacement ?? this.overlayPlacement,
     );
   }
 
@@ -999,6 +1019,8 @@ class SpeedcamConfig {
         'ynaviCollectEnabled': ynaviCollectEnabled,
         'ynaviAlertEnabled': ynaviAlertEnabled,
         'ynaviPointTtlDays': ynaviPointTtlDays,
+        'overlaySizeScale': overlaySizeScale,
+        'overlayPlacement': overlayPlacement.name,
       };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
@@ -1036,6 +1058,11 @@ class SpeedcamConfig {
       ynaviCollectEnabled: json['ynaviCollectEnabled'] as bool? ?? true,
       ynaviAlertEnabled: json['ynaviAlertEnabled'] as bool? ?? true,
       ynaviPointTtlDays: (json['ynaviPointTtlDays'] as num?)?.toInt() ?? 7,
+      overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0).clamp(0.6, 1.6),
+      overlayPlacement: SpeedcamOverlayPlacement.values.firstWhere(
+        (e) => e.name == json['overlayPlacement'],
+        orElse: () => SpeedcamOverlayPlacement.topEnd,
+      ),
     );
   }
 
@@ -1053,7 +1080,9 @@ class SpeedcamConfig {
       other.ynaviEnrichEnabled == ynaviEnrichEnabled &&
       other.ynaviCollectEnabled == ynaviCollectEnabled &&
       other.ynaviAlertEnabled == ynaviAlertEnabled &&
-      other.ynaviPointTtlDays == ynaviPointTtlDays;
+      other.ynaviPointTtlDays == ynaviPointTtlDays &&
+      other.overlaySizeScale == overlaySizeScale &&
+      other.overlayPlacement == overlayPlacement;
 
   @override
   int get hashCode => Object.hash(
@@ -1069,6 +1098,8 @@ class SpeedcamConfig {
         ynaviCollectEnabled,
         ynaviAlertEnabled,
         ynaviPointTtlDays,
+        overlaySizeScale,
+        overlayPlacement,
       );
 }
 

@@ -990,5 +990,11 @@
   "speedcamYnaviAgingHint": "Удалять камеры YNavi, не виденные столько дней (пакет OSM стареет отдельно в Harvest).",
   "@speedcamYnaviAgingHint": {
     "description": "0073 aging hint"
-  }
+  },
+  "speedcamOverlaySize": "Размер оверлея",
+  "speedcamOverlayPlacement": "Положение оверлея",
+  "speedcamOverlayTopStart": "ВЛ",
+  "speedcamOverlayTopEnd": "ВП",
+  "speedcamOverlayBottomStart": "НЛ",
+  "speedcamOverlayBottomEnd": "НП"
 }

@@ -52,6 +52,8 @@ class SpeedcamSystemOverlayController(
 
     private var enabled = false
     private var contentVisible = false
+    private var sizeScale = 1.0
+    private var placement = "topEnd"
 
     private var engineGroup: FlutterEngineGroup? = null
     private var engine: FlutterEngine? = null
@@ -105,6 +107,17 @@ class SpeedcamSystemOverlayController(
                     mainHandler.post {
                         contentVisible = false
                         hideWindowOnly()
+                        result.success(null)
+                    }
+                }
+                "setLayout" -> {
+                    val scale = (call.argument<Number>("sizeScale") ?: 1.0).toDouble()
+                        .coerceIn(0.6, 1.6)
+                    val place = call.argument<String>("placement") ?: "topEnd"
+                    mainHandler.post {
+                        sizeScale = scale
+                        placement = place
+                        applyLayoutToWindow()
                         result.success(null)
                     }
                 }
@@ -168,7 +181,7 @@ class SpeedcamSystemOverlayController(
                 return
             }
             val density = appContext.resources.displayMetrics.density
-            val sidePx = (OVERLAY_SIDE_DP * density).toInt()
+            val sidePx = (OVERLAY_SIDE_DP * sizeScale * density).toInt()
 
             val container = FrameLayout(appContext).apply {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -200,9 +213,7 @@ class SpeedcamSystemOverlayController(
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT,
             ).apply {
-                gravity = Gravity.TOP or Gravity.END
-                x = (16 * density).toInt()
-                y = (72 * density).toInt()
+                applyPlacement(this, density)
             }
             try {
                 wm.addView(container, lp)

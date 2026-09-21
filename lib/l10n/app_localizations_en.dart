@@ -776,4 +776,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get speedcamYnaviAgingHint =>
       'Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).';
+  @override
+  String get speedcamOverlaySize => 'Overlay size';
+  @override
+  String get speedcamOverlayPlacement => 'Overlay location';
+  @override
+  String get speedcamOverlayTopStart => 'TL';
+  @override
+  String get speedcamOverlayTopEnd => 'TR';
+  @override
+  String get speedcamOverlayBottomStart => 'BL';
+  @override
+  String get speedcamOverlayBottomEnd => 'BR';
+
 }

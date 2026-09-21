@@ -38,4 +38,14 @@ class NativeSpeedcamSystemOverlay implements SpeedcamSystemOverlay {
 
   @override
   Future<void> hide() => _ch.invokeMethod<void>('hide');
+
+  @override
+  Future<void> setLayout({
+    required double sizeScale,
+    required String placement,
+  }) =>
+      _ch.invokeMethod<void>('setLayout', <String, Object?>{
+        'sizeScale': sizeScale,
+        'placement': placement,
+      });
 }

@@ -667,9 +667,22 @@ void _applySpeedcamConfig(
     speedcam.setApproachRadiusM(sc.dhuRangeM);
   }
   alert.setVolume(sc.soundVolume);
-  overlay?.setEnabled(sc.dhuSystemOverlay).catchError((_) {});
-  if (!sc.dhuSystemOverlay) {
-    overlay?.hide().catchError((_) {});
+  final ov = overlay;
+  if (ov != null) {
+    () async {
+      try {
+        await ov.setEnabled(sc.dhuSystemOverlay);
+        if (!sc.dhuSystemOverlay) {
+          await ov.hide();
+        } else {
+          // 0079: after enable so native window exists for updateViewLayout.
+          await ov.setLayout(
+            sizeScale: sc.overlaySizeScale,
+            placement: sc.overlayPlacement.name,
+          );
+        }
+      } catch (_) {}
+    }();
   }
   ynavi?.setEnrichEnabled(sc.ynaviEnrichEnabled).catchError((_) {});
 }

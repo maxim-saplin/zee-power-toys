@@ -11,4 +11,11 @@ abstract class SpeedcamSystemOverlay {
     bool dangerous = false,
   });
   Future<void> hide();
+
+  /// 0079 — resize / reposition the overlay window (dp side + named corner).
+  Future<void> setLayout({
+    required double sizeScale,
+    required String placement,
+  });
 }
+

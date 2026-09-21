@@ -265,6 +265,9 @@ class _SpeedcamSettingsScreenState
                   // App bar + toggles + range + section chrome ≈ 280; leave margin.
                   final maxDisk = (h - 280).clamp(140.0, 280.0);
                   final side = math.min(constraints.maxWidth, maxDisk);
+                  final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
+                  // Alien preview = HUD Alien paint path (hudCompact). Default stays
+                  // dhuLarge for readable text. Black plate only for Default.
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
@@ -273,10 +276,12 @@ class _SpeedcamSettingsScreenState
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(side * 0.12),
                         child: ColoredBox(
-                          color: Colors.black,
+                          color: isAlien ? const Color(0xFF000000) : Colors.black,
                           child: SpeedcamRadarWidget(
-                            variant: SpeedcamRadarVariant.dhuLarge,
-                            alwaysShow: true,
+                            variant: isAlien
+                                ? SpeedcamRadarVariant.hudCompact
+                                : SpeedcamRadarVariant.dhuLarge,
+                            alwaysShow: !isAlien,
                             // Same demo contact as HUD Demo — preview must match windshield look.
                             forceDemoDanger: SpeedcamRadarWidget.demoDanger,
                             displayRadiusM: sc.dhuRangeM,
@@ -388,6 +393,58 @@ class _SpeedcamSettingsScreenState
                   _patchSpeedcam((c) => c.copyWith(dhuSystemOverlay: v));
                 },
               ),
+              if (sc.dhuSystemOverlay) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.speedcamOverlaySize,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                Slider(
+                  key: const ValueKey('speedcam-overlay-size'),
+                  value: sc.overlaySizeScale.clamp(0.6, 1.6),
+                  min: 0.6,
+                  max: 1.6,
+                  divisions: 10,
+                  label: '${sc.overlaySizeScale.toStringAsFixed(2)}×',
+                  onChanged: (v) => _patchSpeedcam(
+                    (c) => c.copyWith(overlaySizeScale: v),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.speedcamOverlayPlacement,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<SpeedcamOverlayPlacement>(
+                  key: const ValueKey('speedcam-overlay-placement'),
+                  segments: [
+                    ButtonSegment(
+                      value: SpeedcamOverlayPlacement.topStart,
+                      label: Text(l10n.speedcamOverlayTopStart),
+                    ),
+                    ButtonSegment(
+                      value: SpeedcamOverlayPlacement.topEnd,
+                      label: Text(l10n.speedcamOverlayTopEnd),
+                    ),
+                    ButtonSegment(
+                      value: SpeedcamOverlayPlacement.bottomStart,
+                      label: Text(l10n.speedcamOverlayBottomStart),
+                    ),
+                    ButtonSegment(
+                      value: SpeedcamOverlayPlacement.bottomEnd,
+                      label: Text(l10n.speedcamOverlayBottomEnd),
+                    ),
+                  ],
+                  selected: {sc.overlayPlacement},
+                  onSelectionChanged: (sel) {
+                    if (sel.isEmpty) return;
+                    _patchSpeedcam(
+                      (c) => c.copyWith(overlayPlacement: sel.first),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 l10n.speedcamRadarLook,

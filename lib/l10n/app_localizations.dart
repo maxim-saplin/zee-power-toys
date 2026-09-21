@@ -1525,6 +1525,17 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full Speedcam radar over other apps when approaching (needs display-over permission).'**
   String get speedcamDhuSystemOverlayHint;
+  /// Overlay size slider label (0079).
+  String get speedcamOverlaySize;
+
+  /// Overlay placement section (0079).
+  String get speedcamOverlayPlacement;
+
+  String get speedcamOverlayTopStart;
+  String get speedcamOverlayTopEnd;
+  String get speedcamOverlayBottomStart;
+  String get speedcamOverlayBottomEnd;
+
 
   /// 0065 permission denied
   ///

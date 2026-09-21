@@ -990,5 +990,11 @@
   "speedcamYnaviAgingHint": "Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).",
   "@speedcamYnaviAgingHint": {
     "description": "0073 aging hint"
-  }
+  },
+  "speedcamOverlaySize": "Overlay size",
+  "speedcamOverlayPlacement": "Overlay location",
+  "speedcamOverlayTopStart": "TL",
+  "speedcamOverlayTopEnd": "TR",
+  "speedcamOverlayBottomStart": "BL",
+  "speedcamOverlayBottomEnd": "BR"
 }

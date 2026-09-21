@@ -6,6 +6,8 @@ class FakeSpeedcamSystemOverlay implements SpeedcamSystemOverlay {
   bool permissionGranted = true;
   int updateCount = 0;
   bool lastVisible = false;
+  double lastSizeScale = 1.0;
+  String lastPlacement = 'topEnd';
 
   @override
   Future<bool> canDrawOverlays() async => permissionGranted;
@@ -34,5 +36,14 @@ class FakeSpeedcamSystemOverlay implements SpeedcamSystemOverlay {
   @override
   Future<void> hide() async {
     lastVisible = false;
+  }
+
+  @override
+  Future<void> setLayout({
+    required double sizeScale,
+    required String placement,
+  }) async {
+    lastSizeScale = sizeScale;
+    lastPlacement = placement;
   }
 }

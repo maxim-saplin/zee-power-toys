@@ -777,4 +777,17 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get speedcamYnaviAgingHint =>
       'Удалять камеры YNavi, не виденные столько дней (пакет OSM стареет отдельно в Harvest).';
+  @override
+  String get speedcamOverlaySize => 'Размер оверлея';
+  @override
+  String get speedcamOverlayPlacement => 'Положение оверлея';
+  @override
+  String get speedcamOverlayTopStart => 'ВЛ';
+  @override
+  String get speedcamOverlayTopEnd => 'ВП';
+  @override
+  String get speedcamOverlayBottomStart => 'НЛ';
+  @override
+  String get speedcamOverlayBottomEnd => 'НП';
+
 }
