@@ -57,16 +57,12 @@ class NativeCarSignals implements CarSignals {
           // Seed Dart snapshot from native (incl. charging bool — never null).
           if (raw != null) {
             final charging = raw['charging'] as bool? ?? false;
-            final volts = _asDouble(raw['chargeVolts']);
-            final amps = _asDouble(raw['chargeAmps']);
             final kw = _asDouble(raw['chargeKw']);
             final pct = _asInt(raw['batteryPct']);
             final tempC = _asDouble(raw['batteryTempC']);
             final speed = _asInt(raw['speedKmh']);
             _snapshot = _snapshot.copyWith(
               charging: charging,
-              chargeVolts: volts,
-              chargeAmps: amps,
               chargeKw: kw,
               batteryPct: pct,
               batteryTempC: tempC,
