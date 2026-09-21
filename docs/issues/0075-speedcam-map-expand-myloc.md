@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: tipped
 labels: [speedcam, map, ui]
 created: 2026-09-21
 satisfies: Speedcam map — expand/collapse + go to my location
@@ -26,3 +26,6 @@ Map chrome needs quick full-size and recenter — Maxim ask.
 - [ ] Expand ↔ collapse pixels T2
 - [ ] My-location recenters when pose known; clear empty state when not
 - [ ] QA + PDM sign-off
+
+## Tip
+See room SHA — expand/collapse + my-loc on Speedcam pack map; no silent Minsk.
