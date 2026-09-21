@@ -26,6 +26,7 @@ import android.widget.FrameLayout
 import com.zeepowertoys.zee_power_toys.boot.BootRemediation
 import com.zeepowertoys.zee_power_toys.boot.ConfigShim
 import com.zeepowertoys.zee_power_toys.boot.ZeeForegroundService
+import com.zeepowertoys.zee_power_toys.speedcam.SpeedcamYnaviReceiver
 import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlaySettings
 import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlayView
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
@@ -89,6 +90,7 @@ class MainActivity : FlutterActivity() {
         private const val MINIMAP_GUIDANCE_CHANNEL = "zee/minimap/guidance"
         private const val SPEEDCAM_LOCATION_CHANNEL = "zee/speedcam/location"
         private const val SPEEDCAM_LOCATION_CTL_CHANNEL = "zee/speedcam/location_ctl"
+        private const val SPEEDCAM_YNAVI_CHANNEL = SpeedcamYnaviReceiver.EVENT_CHANNEL
         private const val LOCATION_PERMISSION_REQ = 5050
         private const val BOOT_CHANNEL = "zee/boot"
         // HUD lifecycle channel — Dart calls show()/hide() to spawn/destroy the HUD engine (QA4-1).
@@ -310,6 +312,33 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Spike: YNavi SPEEDCAM_DATA → Dart (route-enrich beside OSM).
+        SpeedcamYnaviReceiver.ensureRegistered(applicationContext)
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, SPEEDCAM_YNAVI_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                    SpeedcamYnaviReceiver.eventSink = sink
+                    Log.i(TAG, "speedcam ynavi EventChannel: Dart subscribed")
+                    // Seed bridge liveness if FGS already saw heartbeats.
+                    val last = SpeedcamYnaviReceiver.lastBridgeFireEpochMs
+                    if (last > 0L) {
+                        sink.success(
+                            mapOf(
+                                "kind" to "status",
+                                "t_ms" to last,
+                                "sessionEventCount" to SpeedcamYnaviReceiver.sessionEventCount,
+                                "lastError" to SpeedcamYnaviReceiver.lastError,
+                            ),
+                        )
+                    }
+                }
+                override fun onCancel(arguments: Any?) {
+                    SpeedcamYnaviReceiver.eventSink = null
+                    Log.i(TAG, "speedcam ynavi EventChannel: Dart unsubscribed")
+                }
+            })
+
 
         // Register the zee/boot MethodChannel — exposes FGS/boot state to Dart
         // for ext.zee.bootState (Block 0010).

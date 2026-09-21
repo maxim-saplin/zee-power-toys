@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'fakes/fake_speedcam_service.dart';
 import 'speedcam.dart';
@@ -52,6 +53,9 @@ class DefaultSpeedcamService implements SpeedcamService {
   /// Fired after [clearHostPose] so live GPS can re-seed (0050 HARD).
   void Function()? onHostPoseCleared;
   SpeedcamSnapshot _snapshot = const SpeedcamSnapshot();
+  final List<SpeedcamPoint> _ynaviOverlay = <SpeedcamPoint>[];
+  DateTime? lastYnaviBridgeFire;
+  int ynaviSessionEvents = 0;
 
   @override
   Stream<SpeedcamSnapshot> get snapshots => _ctrl.stream;
@@ -110,13 +114,131 @@ class DefaultSpeedcamService implements SpeedcamService {
   Future<void> reloadFromPack() async {
     final cams = await _pack.loadCams(packId);
     if (cams.isNotEmpty) {
-      _cams = List<SpeedcamPoint>.unmodifiable(cams);
-      _camSource = 'pack';
+      _cams = List<SpeedcamPoint>.unmodifiable(
+        mergeOsmWithYnavi(cams, _ynaviOverlay),
+      );
+      _camSource = _ynaviOverlay.isEmpty ? 'pack' : 'pack+ynavi';
+    } else if (_ynaviOverlay.isNotEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_ynaviOverlay);
+      _camSource = 'ynavi';
     } else {
       _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
       _camSource = 'fallback';
     }
     _emit();
+  }
+
+  /// Spike: route-only YNavi Windshield events beside OSM.
+  void ingestYnaviEvent(Map<Object?, Object?> raw) {
+    final kind = raw['kind'] as String? ?? '';
+    final tMs = (raw['t_ms'] as num?)?.toInt();
+    if (tMs != null) {
+      lastYnaviBridgeFire =
+          DateTime.fromMillisecondsSinceEpoch(tMs, isUtc: false);
+    }
+    if (kind == 'heartbeat' || kind == 'status') {
+      _emit();
+      return;
+    }
+    if (kind != 'cam') return;
+    final lat = (raw['lat'] as num?)?.toDouble();
+    final lon = (raw['lon'] as num?)?.toDouble();
+    if (lat == null || lon == null) return;
+    final eventId = (raw['eventId'] as String?)?.trim();
+    final id = (eventId != null && eventId.isNotEmpty)
+        ? 'ynavi:$eventId'
+        : 'ynavi:${lat.toStringAsFixed(5)}_${lon.toStringAsFixed(5)}';
+    final limit = (raw['speedLimit'] as num?)?.toInt();
+    final point = SpeedcamPoint(
+      id: id,
+      lat: lat,
+      lon: lon,
+      maxspeed: (limit != null && limit > 0) ? limit : null,
+      source: (raw['source'] as String?) ?? 'ynavi',
+    );
+    ynaviSessionEvents += 1;
+    _upsertYnavi(point);
+    // Rebuild from current pack base + overlay without async pack IO when possible.
+    final base = _camSource.startsWith('pack')
+        ? _cams.where((c) => c.source != 'ynavi' && !(c.id.startsWith('ynavi:'))).toList()
+        : <SpeedcamPoint>[];
+    if (base.isEmpty && _camSource == 'fallback') {
+      _cams = List<SpeedcamPoint>.unmodifiable(
+        mergeOsmWithYnavi(_fallback, _ynaviOverlay),
+      );
+      _camSource = 'fallback+ynavi';
+    } else {
+      _cams = List<SpeedcamPoint>.unmodifiable(
+        mergeOsmWithYnavi(base.isEmpty ? _cams.where((c) => !c.id.startsWith('ynavi:')).toList() : base, _ynaviOverlay),
+      );
+      _camSource = base.isEmpty && _ynaviOverlay.isNotEmpty ? 'ynavi' : 'pack+ynavi';
+    }
+    _emit();
+  }
+
+  void _upsertYnavi(SpeedcamPoint point) {
+    final i = _ynaviOverlay.indexWhere((c) => c.id == point.id);
+    if (i >= 0) {
+      _ynaviOverlay[i] = point;
+    } else {
+      _ynaviOverlay.add(point);
+    }
+  }
+
+  /// Prefer OSM id when geo-close (~20 m); else keep both under distinct ids.
+  static List<SpeedcamPoint> mergeOsmWithYnavi(
+    List<SpeedcamPoint> osm,
+    List<SpeedcamPoint> ynavi,
+  ) {
+    if (ynavi.isEmpty) return List<SpeedcamPoint>.from(osm);
+    final out = <SpeedcamPoint>[];
+    final claimedYnavi = <String>{};
+    for (final o in osm) {
+      SpeedcamPoint? match;
+      for (final y in ynavi) {
+        if (claimedYnavi.contains(y.id)) continue;
+        if (_approxMeters(o.lat, o.lon, y.lat, y.lon) <= 20) {
+          match = y;
+          break;
+        }
+      }
+      if (match != null) {
+        claimedYnavi.add(match.id);
+        out.add(SpeedcamPoint(
+          id: o.id,
+          lat: o.lat,
+          lon: o.lon,
+          maxspeed: o.maxspeed ?? match.maxspeed,
+          direction: o.direction,
+          source: 'osm+ynavi',
+        ));
+      } else {
+        out.add(o.source == null ? SpeedcamPoint(
+          id: o.id,
+          lat: o.lat,
+          lon: o.lon,
+          maxspeed: o.maxspeed,
+          direction: o.direction,
+          source: 'overpass',
+        ) : o);
+      }
+    }
+    for (final y in ynavi) {
+      if (!claimedYnavi.contains(y.id)) out.add(y);
+    }
+    return out;
+  }
+
+  static double _approxMeters(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    final dLat = (lat1 - lat2) * 111320.0;
+    final midLat = (lat1 + lat2) * 0.5 * math.pi / 180.0;
+    final dLon = (lon1 - lon2) * 111320.0 * math.cos(midLat);
+    return math.sqrt(dLat * dLat + dLon * dLon);
   }
 
   /// Place host [distanceM] due south of [cam] (approach from south → bearing ~0).

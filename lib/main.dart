@@ -21,6 +21,7 @@ import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_package_status.dart';
 import 'services/adapters/native_minimap_host.dart';
 import 'services/adapters/native_speedcam_location.dart';
+import 'services/adapters/native_speedcam_ynavi.dart';
 import 'services/adapters/native_speedcam_system_overlay.dart';
 import 'services/fakes/fake_speedcam_system_overlay.dart';
 import 'services/speedcam_system_overlay.dart';
@@ -148,8 +149,10 @@ Future<void> dhuMain(List<String> args) async {
   // 0050: YNavi sendLocation + Android GPS fallback → Speedcam host pose.
   // Runtime permission via zee/speedcam/location_ctl (0050 HARD) — not ADB.
   NativeSpeedcamLocation? speedcamLocationRaw;
+  NativeSpeedcamYnavi? speedcamYnaviRaw;
   if (!kIsWeb && Platform.isAndroid) {
     speedcamLocationRaw = NativeSpeedcamLocation(speedcamRaw)..start();
+    speedcamYnaviRaw = NativeSpeedcamYnavi(speedcamRaw)..start();
   }
   final SpeedcamAlert speedcamAlertRaw = AudioSpeedcamAlert();
   final SpeedcamSystemOverlay speedcamOverlayRaw =
