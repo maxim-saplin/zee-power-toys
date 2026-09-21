@@ -148,7 +148,7 @@
   "@sectionLanguage": {
     "description": "Language settings section label"
   },
-  "sectionLanguageSubtitle": "App display language",
+  "sectionLanguageSubtitle": "Language & appearance",
   "@sectionLanguageSubtitle": {
     "description": "Language section subtitle"
   },
@@ -200,9 +200,21 @@
   "@installPhaseFailed": {
     "description": "Install progress phase: failed"
   },
-  "languageTitle": "Language",
+  "languageTitle": "Language & appearance",
   "@languageTitle": {
-    "description": "Language picker screen title"
+    "description": "Language + appearance settings screen title"
+  },
+  "themeSectionTitle": "Appearance",
+  "@themeSectionTitle": {
+    "description": "DHU theme section title (Dark/Light)"
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Dark theme option label"
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Light theme option label"
   },
   "languageSystem": "System default",
   "@languageSystem": {

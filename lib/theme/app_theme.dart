@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Premium dark automotive theme + spacing/size tokens for the DHU.
+/// Premium automotive themes (dark + light) + spacing/size tokens for the DHU.
 ///
 /// The DHU is a *large, low-DPI* automotive touchscreen (~160dpi): one logical
 /// pixel ≈ one physical pixel, so sizes must NOT be inflated the way a small
@@ -9,17 +9,22 @@ import 'package:flutter/material.dart';
 /// must be excellent).
 ///
 /// Usage:
-/// - DHU app: `theme: AppTheme.dhu`.
+/// - DHU app: `theme` / `darkTheme` / `themeMode` from [AppTheme] + ConfigStore.
 /// - Shared spacing/size constants: [Insets], [Radii], [Sizes].
-/// - Brand colours other surfaces may reference: [AppColors].
+/// - Brand colours other surfaces may reference: [AppColors] / [AppColorsLight].
 ///
-/// The HUD is an emissive projector (black = transparent); it keeps a black
-/// scaffold and does not use this ThemeData beyond inherited defaults.
+/// The HUD is an emissive projector (black = transparent); [HudApp] stays on
+/// [dhu] + [ThemeMode.dark] forever — never apply [dhuLight] to the HUD isolate.
 abstract final class AppTheme {
-  /// The DHU's ThemeData — a refined dark Material 3 theme.
-  static final ThemeData dhu = _build();
+  /// DHU dark ThemeData — refined Material 3 (default / cold-boot).
+  static final ThemeData dhu = _buildDark();
 
-  static ThemeData _build() {
+  /// DHU light ThemeData — same accent + density, light surfaces.
+  ///
+  /// HUD / [HudApp] must never use this (emissive black rule in CONTEXT.md).
+  static final ThemeData dhuLight = _buildLight();
+
+  static ThemeData _buildDark() {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.accent,
       brightness: Brightness.dark,
@@ -266,6 +271,178 @@ abstract final class AppTheme {
       color: AppColors.onSurfaceVariant,
     ),
   );
+
+  static ThemeData _buildLight() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.accent,
+      brightness: Brightness.light,
+      surface: AppColorsLight.surface,
+      surfaceContainerLowest: AppColorsLight.bg,
+      surfaceContainerLow: AppColorsLight.surface,
+      surfaceContainer: AppColorsLight.surfaceContainer,
+      surfaceContainerHigh: AppColorsLight.surfaceContainerHigh,
+      surfaceContainerHighest: AppColorsLight.surfaceContainerHigh,
+      primary: AppColors.accent,
+      onPrimary: Colors.white,
+      onSurface: AppColorsLight.onSurface,
+      onSurfaceVariant: AppColorsLight.onSurfaceVariant,
+      outline: AppColorsLight.outline,
+      outlineVariant: AppColorsLight.outlineVariant,
+    );
+
+    final textTheme = _textTheme.apply(
+      bodyColor: AppColorsLight.onSurface,
+      displayColor: AppColorsLight.onSurface,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppColorsLight.bg,
+      visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+      textTheme: textTheme,
+      splashFactory: InkSparkle.splashFactory,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColorsLight.bg,
+        foregroundColor: AppColorsLight.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: textTheme.titleLarge,
+      ),
+      cardTheme: CardThemeData(
+        color: AppColorsLight.surfaceContainer,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.card),
+          side: const BorderSide(color: AppColorsLight.outlineVariant),
+        ),
+      ),
+      listTileTheme: const ListTileThemeData(
+        iconColor: AppColors.accent,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: Insets.lg,
+          vertical: Insets.xs,
+        ),
+        minVerticalPadding: Insets.sm,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColorsLight.outlineVariant,
+        thickness: 1,
+        space: 1,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? Colors.white
+              : AppColorsLight.onSurfaceVariant,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? AppColors.accent
+              : AppColorsLight.surfaceContainerHigh,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? Colors.transparent
+              : AppColorsLight.outline,
+        ),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accent,
+        inactiveTrackColor: AppColorsLight.surfaceContainerHigh,
+        thumbColor: AppColors.accent,
+        overlayColor: AppColors.accent.withValues(alpha: 0.12),
+        showValueIndicator: ShowValueIndicator.never,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          textStyle: textTheme.labelLarge,
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.lg,
+            vertical: Insets.sm,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.button),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          textStyle: textTheme.labelLarge,
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.lg,
+            vertical: Insets.sm,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.button),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          side: const BorderSide(color: AppColorsLight.outline),
+          textStyle: textTheme.labelLarge,
+          padding: const EdgeInsets.symmetric(
+            horizontal: Insets.lg,
+            vertical: Insets.sm,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.button),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          textStyle: textTheme.labelLarge,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected)
+                ? AppColors.accent
+                : Colors.transparent,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected)
+                ? Colors.white
+                : AppColorsLight.onSurface,
+          ),
+          side: const WidgetStatePropertyAll(
+            BorderSide(color: AppColorsLight.outline),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Radii.button),
+            ),
+          ),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.accent,
+        linearTrackColor: AppColorsLight.surfaceContainerHigh,
+        linearMinHeight: 4,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColorsLight.surfaceContainerHigh,
+        contentTextStyle: textTheme.bodyMedium,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.button),
+        ),
+      ),
+    );
+  }
 }
 
 /// Brand + surface palette.  A deep graphite near-black with a cool premium
@@ -297,6 +474,18 @@ abstract final class AppColors {
 
   /// Subtle separators / card edges.
   static const Color outlineVariant = Color(0xFF262C34);
+}
+
+/// Light-surface palette for [AppTheme.dhuLight] — same accent, paper/graphite.
+abstract final class AppColorsLight {
+  static const Color bg = Color(0xFFF4F6F8);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceContainer = Color(0xFFEEF1F4);
+  static const Color surfaceContainerHigh = Color(0xFFE2E6EB);
+  static const Color onSurface = Color(0xFF12151A);
+  static const Color onSurfaceVariant = Color(0xFF5C6570);
+  static const Color outline = Color(0xFFC5CCD4);
+  static const Color outlineVariant = Color(0xFFDDE2E8);
 }
 
 /// Spacing tokens (logical px ≈ physical px at 160dpi).  Use these instead of

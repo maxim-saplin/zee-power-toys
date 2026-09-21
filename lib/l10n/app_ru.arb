@@ -148,7 +148,7 @@
   "@sectionLanguage": {
     "description": "Language settings section label"
   },
-  "sectionLanguageSubtitle": "Язык отображения приложения",
+  "sectionLanguageSubtitle": "Язык и оформление",
   "@sectionLanguageSubtitle": {
     "description": "Language section subtitle"
   },
@@ -200,9 +200,21 @@
   "@installPhaseFailed": {
     "description": "Install progress phase: failed"
   },
-  "languageTitle": "Язык",
+  "languageTitle": "Язык и оформление",
   "@languageTitle": {
-    "description": "Language picker screen title"
+    "description": "Language + appearance settings screen title"
+  },
+  "themeSectionTitle": "Оформление",
+  "@themeSectionTitle": {
+    "description": "DHU theme section title (Dark/Light)"
+  },
+  "themeDark": "Тёмная",
+  "@themeDark": {
+    "description": "Dark theme option label"
+  },
+  "themeLight": "Светлая",
+  "@themeLight": {
+    "description": "Light theme option label"
   },
   "languageSystem": "По умолчанию (системное)",
   "@languageSystem": {

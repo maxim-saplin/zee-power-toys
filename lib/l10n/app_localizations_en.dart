@@ -120,7 +120,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionLanguage => 'Language';
 
   @override
-  String get sectionLanguageSubtitle => 'App display language';
+  String get sectionLanguageSubtitle => 'Language & appearance';
 
   @override
   String get sectionInstall => 'Install';
@@ -161,7 +161,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installPhaseFailed => 'Failed';
 
   @override
-  String get languageTitle => 'Language';
+  String get languageTitle => 'Language & appearance';
+
+  @override
+  String get themeSectionTitle => 'Appearance';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get themeLight => 'Light';
 
   @override
   String get languageSystem => 'System default';

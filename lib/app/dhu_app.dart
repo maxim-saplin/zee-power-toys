@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/locale.dart';
+import '../providers/theme_mode.dart';
 import '../screens/settings_home_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dhu_scaled_layout.dart';
@@ -12,20 +13,22 @@ import '../widgets/dhu_scaled_layout.dart';
 final GlobalKey dhuShotKey = GlobalKey();
 
 /// DHU surface app — localized (EN/RU), starts at the Settings hub.
+///
+/// Theme follows [appThemeModeProvider] (ConfigStore) without engine restart.
+/// HUD isolate is a separate [HudApp] and stays dark/emissive.
 class DhuApp extends ConsumerWidget {
   const DhuApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(appLocaleProvider);
+    final themeMode = ref.watch(appThemeModeProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dhu,
-      // The DHU runs a single tuned dark theme — pin it so the OS light/dark
-      // setting can't swap us to an unstyled light Material default.
-      themeMode: ThemeMode.dark,
+      theme: AppTheme.dhuLight,
       darkTheme: AppTheme.dhu,
+      themeMode: themeMode,
       // Scale-up + text-scale clamp applied together inside the MaterialApp
       // builder so descendants see the correct post-scale logical dimensions.
       //

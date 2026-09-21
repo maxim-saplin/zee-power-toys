@@ -323,7 +323,7 @@ abstract class AppLocalizations {
   /// Language section subtitle
   ///
   /// In en, this message translates to:
-  /// **'App display language'**
+  /// **'Language & appearance'**
   String get sectionLanguageSubtitle;
 
   /// Install section label
@@ -398,11 +398,29 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get installPhaseFailed;
 
-  /// Language picker screen title
+  /// Language + appearance settings screen title
   ///
   /// In en, this message translates to:
-  /// **'Language'**
+  /// **'Language & appearance'**
   String get languageTitle;
+
+  /// DHU theme section title (Dark/Light)
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get themeSectionTitle;
+
+  /// Dark theme option label
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// Light theme option label
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
 
   /// Option: follow the system locale
   ///

@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/config.dart';
 import '../providers/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_layout.dart';
 
-/// Combined Language Settings screen — three clearly separated sections:
+/// Language & appearance settings — clearly separated sections:
+///
+///   0. Appearance     — ConfigStore.themeMode ('dark' / 'light'); live-reloads
+///      DHU MaterialApp via appThemeModeProvider (HUD isolate unchanged).
 ///
 ///   1. App language   — sets ConfigStore.locale (null=system / 'en' / 'ru').
 ///      Reuses the existing Block 0011 behaviour (immediate live-reload of the
@@ -69,14 +73,14 @@ class _LanguageSettingsScreenState
 
   // ── App language helpers ──────────────────────────────────────────────────
 
-  String? _currentAppLocale() {
-    final store = ref.read(configStoreProvider);
-    return store.value.locale;
-  }
-
   void _setAppLocale(String? code) {
     final store = ref.read(configStoreProvider);
     store.setConfig(store.value.copyWith(locale: code));
+  }
+
+  void _setThemeMode(String mode) {
+    final store = ref.read(configStoreProvider);
+    store.setConfig(store.value.copyWith(themeMode: mode));
   }
 
   // ── System language helpers ──────────────────────────────────────────────
@@ -142,11 +146,14 @@ class _LanguageSettingsScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    // Watch the app-locale live so the radio reflects config changes from
-    // other screens (edge case: multiple settings screens open in tests).
-    final appLocale = ref.watch(
-      systemConfigProvider.select((_) => _currentAppLocale()),
+    // Watch config live so theme segment + locale radios reflect store.
+    final cfg = ref.watch(appConfigProvider).when(
+      data: (c) => c,
+      loading: () => ref.read(configStoreProvider).value,
+      error: (e, st) => ref.read(configStoreProvider).value,
     );
+    final appLocale = cfg.locale;
+    final themeMode = cfg.themeMode == 'light' ? 'light' : 'dark';
 
     // System locale — read directly from SystemConfig (not stored in ConfigStore).
     final systemLocale = ref.read(systemConfigProvider).systemLocale;
@@ -158,6 +165,46 @@ class _LanguageSettingsScreenState
       body: ListView(
         padding: const EdgeInsets.all(Insets.lg),
         children: <Widget>[
+          // ──────────────────────────────────────────────────────────────
+          // Section 0 — Appearance (DHU Dark / Light)
+          // ──────────────────────────────────────────────────────────────
+          SettingsSection(
+            title: l10n.themeSectionTitle,
+            padded: false,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.md,
+                  Insets.lg,
+                  Insets.md,
+                ),
+                child: SegmentedButton<String>(
+                  key: const ValueKey('theme-mode-segmented'),
+                  segments: <ButtonSegment<String>>[
+                    ButtonSegment<String>(
+                      value: 'dark',
+                      label: Text(l10n.themeDark),
+                      icon: const Icon(Icons.dark_mode_outlined),
+                    ),
+                    ButtonSegment<String>(
+                      value: 'light',
+                      label: Text(l10n.themeLight),
+                      icon: const Icon(Icons.light_mode_outlined),
+                    ),
+                  ],
+                  selected: <String>{themeMode},
+                  onSelectionChanged: (Set<String> next) {
+                    if (next.isEmpty) return;
+                    _setThemeMode(next.first);
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
           // ──────────────────────────────────────────────────────────────
           // Section 1 — App language
           // ──────────────────────────────────────────────────────────────

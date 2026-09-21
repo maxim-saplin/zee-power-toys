@@ -24,9 +24,9 @@ class HudApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // The HUD shares the DHU's dark theme so any Material defaults (text
-      // colour, etc.) stay dark — but the emissive rule still owns the
-      // backdrop: the scaffold below is black/transparent, never light.
+      // CONTEXT: HUD stays emissive black — never follow DHU light theme.
+      // Pin dark ThemeData + ThemeMode so Material defaults stay dark; the
+      // scaffold below is black/transparent, never light.
       theme: AppTheme.dhu,
       themeMode: ThemeMode.dark,
       darkTheme: AppTheme.dhu,

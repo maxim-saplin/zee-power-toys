@@ -120,7 +120,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sectionLanguage => 'Язык';
 
   @override
-  String get sectionLanguageSubtitle => 'Язык отображения приложения';
+  String get sectionLanguageSubtitle => 'Язык и оформление';
 
   @override
   String get sectionInstall => 'Установка';
@@ -161,7 +161,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get installPhaseFailed => 'Ошибка';
 
   @override
-  String get languageTitle => 'Язык';
+  String get languageTitle => 'Язык и оформление';
+
+  @override
+  String get themeSectionTitle => 'Оформление';
+
+  @override
+  String get themeDark => 'Тёмная';
+
+  @override
+  String get themeLight => 'Светлая';
 
   @override
   String get languageSystem => 'По умолчанию (системное)';

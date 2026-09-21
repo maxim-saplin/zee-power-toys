@@ -193,10 +193,9 @@ class MinimapLooks {
 /// deliberately pins that to night — a day map through an emissive projector
 /// is a bright wash on black glass, precisely the defect 0021 fixed (see
 /// CONTEXT.md's HUD glossary entry: "black pixels emit no light... never
-/// light-on-dark UI"). A "light" HUD theme contradicts that rule outright,
-/// and the DHU app itself is intentionally `ThemeMode.dark` — so 'light' had
-/// nowhere true to go, 'dark' was already the permanent reality, and 'auto'
-/// just meant "maybe silently give you the broken one". After the Look
+/// light-on-dark UI"). A "light" *HUD* theme contradicts that rule outright
+/// (DHU can be light via [AppConfig.themeMode]; HUD isolate stays dark).
+/// 'auto' just meant "maybe silently give you the broken one". After the Look
 /// section (colorPreset/contrast/threshold, see [MinimapLooks]) the honest
 /// colour control is the colour preset — so this control was removed rather
 /// than kept as another knob that lies.
@@ -1060,6 +1059,7 @@ class AppConfig {
     this.minimap = const MinimapConfig(),
     this.speedcam = const SpeedcamConfig(),
     this.locale,
+    this.themeMode = 'dark',
     this.autoUsbPeripheral = false,
   });
 
@@ -1090,6 +1090,12 @@ class AppConfig {
   /// future locale codes need no schema change.
   final String? locale;
 
+  /// DHU MaterialApp theme: `'dark'` (default) or `'light'`.
+  ///
+  /// Persisted for cold-boot restore. **HUD isolate ignores this** — [HudApp]
+  /// stays emissive-black / ThemeMode.dark (CONTEXT.md).
+  final String themeMode;
+
   /// Whether the DHU should re-apply USB peripheral mode on every boot
   /// (the "auto" USB mode — Block 0016 / UsbMode.auto).
   ///
@@ -1112,6 +1118,7 @@ class AppConfig {
     SpeedcamConfig? speedcam,
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
     Object? locale = _unset,
+    String? themeMode,
     bool? autoUsbPeripheral,
   }) => AppConfig(
     hudEnabled: hudEnabled ?? this.hudEnabled,
@@ -1121,6 +1128,7 @@ class AppConfig {
     minimap: minimap ?? this.minimap,
     speedcam: speedcam ?? this.speedcam,
     locale: identical(locale, _unset) ? this.locale : locale as String?,
+    themeMode: themeMode ?? this.themeMode,
     autoUsbPeripheral: autoUsbPeripheral ?? this.autoUsbPeripheral,
   );
 
@@ -1132,6 +1140,7 @@ class AppConfig {
     'minimap': minimap.toJson(),
     'speedcam': speedcam.toJson(),
     if (locale != null) 'locale': locale,
+    'themeMode': themeMode,
     'autoUsbPeripheral': autoUsbPeripheral,
   };
 
@@ -1159,6 +1168,7 @@ class AppConfig {
           ? SpeedcamConfig.fromJson(speedcam)
           : const SpeedcamConfig(),
       locale: json['locale'] as String?,
+      themeMode: _themeModeFromJson(json['themeMode']),
       autoUsbPeripheral: json['autoUsbPeripheral'] as bool? ?? false,
     );
   }
@@ -1177,6 +1187,7 @@ class AppConfig {
       other.minimap == minimap &&
       other.speedcam == speedcam &&
       other.locale == locale &&
+      other.themeMode == themeMode &&
       other.autoUsbPeripheral == autoUsbPeripheral;
 
   @override
@@ -1188,12 +1199,20 @@ class AppConfig {
     minimap,
     speedcam,
     locale,
+    themeMode,
     autoUsbPeripheral,
   );
 }
 
 // Sentinel used by copyWith to distinguish "pass null" from "omit".
 const Object _unset = Object();
+
+
+String _themeModeFromJson(Object? raw) {
+  if (raw == 'light' || raw == 'dark') return raw as String;
+  return 'dark';
+}
+
 
 /// Port for config persistence. Each isolate owns its own instance.
 abstract class ConfigStore {
