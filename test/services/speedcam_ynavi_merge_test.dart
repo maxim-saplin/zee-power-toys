@@ -44,7 +44,7 @@ void main() {
           'eventId': 'u211a9f37',
           'source': 'ynavi',
           'feed': feed,
-          't_ms': 1,
+          't_ms': DateTime.now().millisecondsSinceEpoch,
         };
     svc.setYnaviEnrichEnabled(true); // 0071 gate
     svc.ingestYnaviEvent(cam(feed: 'freeDriveRoute'));

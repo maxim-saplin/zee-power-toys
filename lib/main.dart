@@ -660,6 +660,9 @@ void _applySpeedcamConfig(
   if (speedcam is DefaultSpeedcamService) {
     speedcam.setApproachRadiusM(sc.dhuRangeM);
     speedcam.setYnaviEnrichEnabled(sc.ynaviEnrichEnabled);
+    speedcam.setYnaviCollectEnabled(sc.ynaviCollectEnabled);
+    speedcam.setYnaviAlertEnabled(sc.ynaviAlertEnabled);
+    speedcam.setYnaviPointTtlDays(sc.ynaviPointTtlDays);
   } else if (speedcam is FakeSpeedcamService) {
     speedcam.setApproachRadiusM(sc.dhuRangeM);
   }
