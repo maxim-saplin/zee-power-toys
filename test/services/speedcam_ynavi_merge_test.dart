@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/services/default_speedcam_service.dart';
+import 'package:zee_power_toys/services/fakes/fake_speedcam_pack_store.dart';
 import 'package:zee_power_toys/services/speedcam.dart';
 
 void main() {
@@ -28,5 +29,29 @@ void main() {
     final near = merged.firstWhere((c) => c.id == 'osm:1');
     expect(near.source, 'osm+ynavi');
     expect(merged.any((c) => c.id == 'ynavi:far'), isTrue);
+  });
+
+  test('ingestYnaviEvent dedupes same eventId across ghost+route feeds', () {
+    final svc = DefaultSpeedcamService(
+      packStore: FakeSpeedcamPackStore(cams: const []),
+      fallbackCams: const [],
+    );
+    Map<Object?, Object?> cam({required String feed}) => {
+          'kind': 'cam',
+          'lat': 59.840975781,
+          'lon': 30.376847172,
+          'speedLimit': 60,
+          'eventId': 'u211a9f37',
+          'source': 'ynavi',
+          'feed': feed,
+          't_ms': 1,
+        };
+    svc.ingestYnaviEvent(cam(feed: 'freeDriveRoute'));
+    expect(svc.ynaviSessionEvents, 1);
+    svc.ingestYnaviEvent(cam(feed: 'getEvents')); // same eventId — skip
+    expect(svc.ynaviSessionEvents, 1);
+    final ynaviCams =
+        svc.snapshot.cams.where((c) => c.id == 'ynavi:u211a9f37').toList();
+    expect(ynaviCams.length, 1);
   });
 }

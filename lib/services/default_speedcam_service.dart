@@ -156,6 +156,16 @@ class DefaultSpeedcamService implements SpeedcamService {
       maxspeed: (limit != null && limit > 0) ? limit : null,
       source: (raw['source'] as String?) ?? 'ynavi',
     );
+    // Cross-feed eventId dedupe: ghost + getCurrentRoute may deliver the same id.
+    final existingIdx = _ynaviOverlay.indexWhere((c) => c.id == id);
+    if (existingIdx >= 0) {
+      final prev = _ynaviOverlay[existingIdx];
+      if (prev.lat == point.lat &&
+          prev.lon == point.lon &&
+          prev.maxspeed == point.maxspeed) {
+        return; // already have this cam — no double blip / session bump
+      }
+    }
     ynaviSessionEvents += 1;
     _upsertYnavi(point);
     // Rebuild from current pack base + overlay without async pack IO when possible.
