@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+Status: ACCEPT (2026-09-23 tip 6788dc5)
 labels: [hud, speedcam, crt]
 created: 2026-09-22
 satisfies: foundation
@@ -29,3 +29,7 @@ Maxim (car, 2026-09-22): Speedcam DHU Radar preview is not the same as the winds
 
 ## Notes
 Also open from same car session (separate): PackageInfo-only version (UI +6 vs versionCode 9), dual Install race, USB Host/Peripheral lie, progress-bar backstep UX, YNavi label v12→upstream major.
+
+## ACCEPT (2026-09-23)
+PDM pixel check PASS on tip `6788dc5`: triad type-scale spread 0.0079, Demo 0.20+60 all three, Overlay HOME DoD PASS. Soft grit vs car secondary — no reopen.
+Evidence: `tmp/qa/0083-after/`.
