@@ -632,8 +632,9 @@ class _AlienWedgePainter extends CustomPainter {
       )..layout();
       final kmLeft = 8 * s;
       final stackH = km.height + (maxspeed != null ? limit.height + 2 * s : 0);
-      // Baseline of stack sits on fan apex (HUD: text at origin height).
-      final kmTop = (c.dy - stackH).clamp(0.0, size.height - stackH);
+      // Flush bottom-left of full composite (HudPreview packing — 0080).
+      // No scanline margin under 0.xx/limit; fan apex still overlaps the stack.
+      final kmTop = (size.height - 8 * s - stackH).clamp(0.0, size.height - stackH);
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
         limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 2 * s));

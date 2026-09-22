@@ -289,6 +289,7 @@ class _SpeedcamSettingsScreenState
                         child: isAlien
                             ? FittedBox(
                                 fit: BoxFit.contain,
+                                alignment: Alignment.bottomCenter,
                                 child: SizedBox(
                                   width: hudRadarW,
                                   height: hudRadarH,
