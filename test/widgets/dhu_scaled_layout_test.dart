@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/widgets/dhu_scaled_layout.dart';
@@ -89,28 +91,61 @@ void main() {
   group('DhuScaledLayout — T1 Retina desktop emulates DHU metrics', () {
     testWidgets('dpr≥2 landscape window publishes design 2560 @ dpr 1.0',
         (tester) async {
+      final prev = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
       tester.view.devicePixelRatio = 2.0;
       tester.view.physicalSize = const Size(2560, 1600); // logical 1280×800
       addTearDown(tester.view.reset);
-
-      DhuSurfaceMetrics? metrics;
-      double? childDpr;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: DhuScaledLayout(
-            child: Builder(builder: (context) {
-              metrics = DhuSurfaceMetrics.maybeOf(context);
-              childDpr = MediaQuery.devicePixelRatioOf(context);
-              return const SizedBox.shrink();
-            }),
+      try {
+        DhuSurfaceMetrics? metrics;
+        double? childDpr;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: DhuScaledLayout(
+              child: Builder(builder: (context) {
+                metrics = DhuSurfaceMetrics.maybeOf(context);
+                childDpr = MediaQuery.devicePixelRatioOf(context);
+                return const SizedBox.shrink();
+              }),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(metrics, isNotNull);
-      expect(metrics!.designLogicalWidth, kDhuDesignLogicalWidth);
-      expect(metrics!.reportedDevicePixelRatio, kDhuReportedDevicePixelRatio);
-      expect(childDpr, kDhuReportedDevicePixelRatio);
+        expect(metrics, isNotNull);
+        expect(metrics!.designLogicalWidth, kDhuDesignLogicalWidth);
+        expect(metrics!.reportedDevicePixelRatio, kDhuReportedDevicePixelRatio);
+        expect(childDpr, kDhuReportedDevicePixelRatio);
+      } finally {
+        debugDefaultTargetPlatformOverride = prev;
+      }
+    });
+
+    testWidgets('0082: Android Tablet dens320 must NOT Mac-letterbox',
+        (tester) async {
+      final prev = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      // Tablet_12L: 2560×1600 physical @ dens 320 → logical 1280×800 @ dpr 2.
+      tester.view.devicePixelRatio = 2.0;
+      tester.view.physicalSize = const Size(2560, 1600);
+      addTearDown(tester.view.reset);
+      try {
+        DhuSurfaceMetrics? metrics;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: DhuScaledLayout(
+              child: Builder(builder: (context) {
+                metrics = DhuSurfaceMetrics.maybeOf(context);
+                return const ColoredBox(color: Color(0xFFFFFFFF));
+              }),
+            ),
+          ),
+        );
+
+        // Pass-through (no automotive, no Mac emulate) → no design metrics.
+        expect(metrics, isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = prev;
+      }
     });
   });
 }

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 
 /// Zeekr DHU design framebuffer (reported metrics).
@@ -121,11 +123,17 @@ class DhuScaledLayout extends StatelessWidget {
           );
         }
 
-        // T1 Mac / Retina desktop: emulate DHU reported metrics in-window.
-        // Gate on wide-ish logical width so high-dpr phones (tests / handsets)
-        // still pass through unscaled — not a fake DHU letterbox.
+        // T1 Mac / Retina desktop ONLY: emulate DHU reported metrics in-window.
+        // Never on Android — Tablet_12L is dens 320 (dpr 2) × 2560×1600 physical
+        // → logical ~1280×800 landscape, which falsely matched this gate and
+        // letterboxed the DHU design (0082 black side bars + status chrome).
         final viewLogicalH = view.physicalSize.height / view.devicePixelRatio;
-        final bool retinaDesktopHost = hostDpr >= 2.0 &&
+        final bool isDesktopHost = !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.macOS ||
+                defaultTargetPlatform == TargetPlatform.linux ||
+                defaultTargetPlatform == TargetPlatform.windows);
+        final bool retinaDesktopHost = isDesktopHost &&
+            hostDpr >= 2.0 &&
             viewLogicalW.isFinite &&
             viewLogicalW >= 900 &&
             viewLogicalH.isFinite &&
