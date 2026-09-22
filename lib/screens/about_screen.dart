@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-import '../app_version.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/settings_layout.dart';
 
@@ -24,7 +24,16 @@ class AboutScreen extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.aboutAppName),
-                subtitle: Text('${l10n.aboutVersion} $appVersionFull'),
+                subtitle: FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snap) {
+                    final info = snap.data;
+                    final ver = info == null
+                        ? '…'
+                        : '${info.version}+${info.buildNumber}';
+                    return Text('${l10n.aboutVersion} $ver');
+                  },
+                ),
               ),
             ],
           ),

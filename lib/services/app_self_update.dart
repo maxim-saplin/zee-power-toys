@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../app_version.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'install_targets.dart';
 import 'installer.dart';
 
@@ -97,16 +97,25 @@ class AppSelfUpdate {
   AppSelfUpdate({
     http.Client? client,
     this.repo = kSelfUpdateRepo,
-    this.installedCode = appVersionCode,
+    int? installedCode,
     this.apiBase = 'https://api.github.com',
-  }) : _client = client ?? http.Client();
+  })  : _installedCodeOverride = installedCode,
+        _client = client ?? http.Client();
 
   final http.Client _client;
   final String repo;
-  final int installedCode;
+  final int? _installedCodeOverride;
   final String apiBase;
 
+  Future<int> _installedCode() async {
+    final override = _installedCodeOverride;
+    if (override != null) return override;
+    final info = await PackageInfo.fromPlatform();
+    return int.tryParse(info.buildNumber) ?? 0;
+  }
+
   Future<AppUpdateCheck> check() async {
+    final installedCode = await _installedCode();
     final uri = Uri.parse('$apiBase/repos/$repo/releases?per_page=10');
     try {
       final res = await _client.get(

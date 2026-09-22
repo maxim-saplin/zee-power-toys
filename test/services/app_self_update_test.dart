@@ -114,7 +114,7 @@ void main() {
       final client = MockClient((request) async {
         return http.Response('nope', 403);
       });
-      final check = await AppSelfUpdate(client: client).check();
+      final check = await AppSelfUpdate(client: client, installedCode: 1).check();
       expect(check, isA<AppUpdateCheckFailed>());
     });
   });
