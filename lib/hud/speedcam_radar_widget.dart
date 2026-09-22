@@ -358,6 +358,9 @@ Color alienBlipFillColor({required bool highlight}) => highlight
     : SpeedcamRadarWidget.blipOther;
 
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
+///
+/// 0080: strokes / grit / scan / readout scale with [Size] so a large sharp DHU
+/// disk keeps the same CRT density as the smaller HUD windshield paint.
 class _AlienWedgePainter extends CustomPainter {
   _AlienWedgePainter({
     required this.sweepT,
@@ -377,16 +380,23 @@ class _AlienWedgePainter extends CustomPainter {
   final double? readoutM;
   final int? maxspeed;
 
+  /// Design size where legacy fixed strokes (~1.1–3.2) looked right on HUD.
+  static const double _designSide = 160.0;
+
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = Offset.zero & size;
+    final minSide = math.min(size.width, size.height);
+    // Scale CRT density with paint size (0080). Slight boost so large DHU
+    // disks stay bold, not hairline vectors.
+    final s = (minSide / _designSide).clamp(0.85, 2.8) * 1.12;
     // Curved CRT face (older tube — rounded square, not sharp rect).
     final crtRRect = RRect.fromRectAndRadius(
-      bounds.deflate(1.5),
-      Radius.circular(math.min(size.width, size.height) * 0.12),
+      bounds.deflate(1.5 * s),
+      Radius.circular(minSide * 0.12),
     );
     final c = Offset(size.width / 2, size.height * 0.88);
-    final r = math.min(size.width, size.height) * 0.78;
+    final r = minSide * 0.78;
 
     // Bezel / outside CRT
     canvas.drawRect(bounds, Paint()..color = const Color(0xFF0A0A0A));
@@ -398,19 +408,29 @@ class _AlienWedgePainter extends CustomPainter {
     // Deep CRT black-green ground
     canvas.drawRRect(crtRRect, Paint()..color = const Color(0xFF010401));
 
-    // Heavy phosphor grain (inside glass only)
-    final grit = Paint()..color = const Color(0x2200FF44);
-    for (var i = 0; i < 140; i++) {
+    // Heavy phosphor grain (inside glass only) — count scales with area.
+    final grit = Paint()
+      ..color = const Color(0x2200FF44)
+      ..isAntiAlias = false;
+    final gritN = (140 * (minSide * minSide) / (_designSide * _designSide))
+        .round()
+        .clamp(140, 520);
+    final gritSide = 1.1 * s;
+    for (var i = 0; i < gritN; i++) {
       final x = ((i * 131) % 997) / 997.0 * size.width;
       final y = ((i * 89) % 991) / 991.0 * size.height;
-      canvas.drawRect(Rect.fromLTWH(x, y, 1.1, 1.1), grit);
+      canvas.drawRect(Rect.fromLTWH(x, y, gritSide, gritSide), grit);
     }
 
     // Dense horizontal scanlines with slight barrel bow near edges
-    final scan = Paint()..color = const Color(0x3300FF55);
-    for (var y = 0.0; y < size.height; y += 2.0) {
+    final scan = Paint()
+      ..color = const Color(0x3300FF55)
+      ..strokeWidth = math.max(1.0, 1.0 * s)
+      ..isAntiAlias = false;
+    final scanStep = math.max(1.5, 2.0 * s);
+    for (var y = 0.0; y < size.height; y += scanStep) {
       final ny = (y / size.height) * 2 - 1;
-      final bow = 3.5 * ny * ny; // edge distortion
+      final bow = 3.5 * s * ny * ny; // edge distortion
       canvas.drawLine(Offset(bow, y), Offset(size.width - bow, y), scan);
     }
 
@@ -442,7 +462,8 @@ class _AlienWedgePainter extends CustomPainter {
       Paint()
         ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.85)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
+        ..strokeWidth = 2.0 * s
+        ..isAntiAlias = false,
     );
 
     // Radial dividers
@@ -454,7 +475,8 @@ class _AlienWedgePainter extends CustomPainter {
         Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a)),
         Paint()
           ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.4)
-          ..strokeWidth = 1.1,
+          ..strokeWidth = 1.1 * s
+          ..isAntiAlias = false,
       );
     }
     canvas.drawLine(
@@ -462,7 +484,8 @@ class _AlienWedgePainter extends CustomPainter {
       Offset(c.dx + r * math.cos(baseAngle), c.dy + r * math.sin(baseAngle)),
       Paint()
         ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.55)
-        ..strokeWidth = 1.4,
+        ..strokeWidth = 1.4 * s
+        ..isAntiAlias = false,
     );
 
     // Static range arcs (dashed) — already angularly limited to fan
@@ -473,12 +496,13 @@ class _AlienWedgePainter extends CustomPainter {
           alpha: frac == 1.0 ? 0.8 : 0.42,
         )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = frac == 1.0 ? 2.0 : 1.15;
+        ..strokeWidth = (frac == 1.0 ? 2.0 : 1.15) * s
+        ..isAntiAlias = false;
       const steps = 32;
-      for (var s = 0; s < steps; s++) {
-        if (s.isOdd) continue;
-        final a0 = baseAngle - wedgeHalf + (2 * wedgeHalf) * (s / steps);
-        final a1 = baseAngle - wedgeHalf + (2 * wedgeHalf) * ((s + 1) / steps);
+      for (var sArc = 0; sArc < steps; sArc++) {
+        if (sArc.isOdd) continue;
+        final a0 = baseAngle - wedgeHalf + (2 * wedgeHalf) * (sArc / steps);
+        final a1 = baseAngle - wedgeHalf + (2 * wedgeHalf) * ((sArc + 1) / steps);
         canvas.drawArc(
           Rect.fromCircle(center: c, radius: rr),
           a0,
@@ -495,7 +519,7 @@ class _AlienWedgePainter extends CustomPainter {
     // Single expanding wave — slightly bolder (Maxim).
     final phase = sweepT % 1.0;
     final rr = r * phase;
-    if (rr >= 4 && rr <= r) {
+    if (rr >= 4 * s && rr <= r) {
       final fade = (1.0 - phase);
       canvas.drawArc(
         Rect.fromCircle(center: c, radius: rr),
@@ -507,7 +531,8 @@ class _AlienWedgePainter extends CustomPainter {
             alpha: 0.25 + 0.6 * fade,
           )
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.2 + 1.4 * fade,
+          ..strokeWidth = (3.2 + 1.4 * fade) * s
+          ..isAntiAlias = false,
       );
     }
     canvas.restore(); // end wedge clip layer
@@ -531,18 +556,19 @@ class _AlienWedgePainter extends CustomPainter {
       Paint()
         ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.2)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.5 * s
+        ..isAntiAlias = false,
     );
 
     // Origin pip (host)
     canvas.drawCircle(
       c,
-      4,
+      4 * s,
       Paint()..color = SpeedcamRadarWidget.phosphorGlow,
     );
     canvas.drawCircle(
       c,
-      2,
+      2 * s,
       Paint()..color = const Color(0xFFE8FFE8),
     );
 
@@ -561,10 +587,11 @@ class _AlienWedgePainter extends CustomPainter {
         c.dy + r * frac * math.sin(a),
       );
       final rad = alienBlipRadiusForDistanceM(
-        b.distanceM,
-        displayRadiusM: displayRadiusM,
-        highlight: b.highlight,
-      );
+            b.distanceM,
+            displayRadiusM: displayRadiusM,
+            highlight: b.highlight,
+          ) *
+          s;
       // Route / on-course = bright; other in-range cams = dim.
       final baseA = b.highlight
           ? alienBlipAlphaForDistanceM(
@@ -588,10 +615,10 @@ class _AlienWedgePainter extends CustomPainter {
           : SpeedcamRadarWidget.phosphorGlow;
       canvas.drawCircle(
         p,
-        rad + (b.highlight ? 2.4 : 1.4),
+        rad + (b.highlight ? 2.4 : 1.4) * s,
         Paint()
           ..color = glowColor.withValues(alpha: glowA)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 2.5 * s),
       );
       canvas.drawCircle(
         p,
@@ -601,13 +628,14 @@ class _AlienWedgePainter extends CustomPainter {
     }
 
     if (readoutM != null) {
-      // Large distance in km; smaller camera speed limit below (Maxim).
+      // Large distance in km overlapping the fan (HUD CRT vibe — 0080);
+      // smaller camera speed limit below.
       final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
-          style: const TextStyle(
+          style: TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 22,
+            fontSize: 22 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -620,17 +648,22 @@ class _AlienWedgePainter extends CustomPainter {
           text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
-            fontSize: 12,
+            fontSize: 12 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final bottom = size.height - 8;
-      km.paint(canvas, Offset(8, bottom - km.height - (limit.height > 0 ? limit.height + 2 : 0)));
+      // Sit mid-left into the wedge (HUD photo: distance overlaps fan).
+      final kmTop = size.height * 0.50;
+      final kmLeft = 8 * s;
+      km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
-        limit.paint(canvas, Offset(8, bottom - limit.height));
+        limit.paint(
+          canvas,
+          Offset(kmLeft, kmTop + km.height + 2 * s),
+        );
       }
     }
 
