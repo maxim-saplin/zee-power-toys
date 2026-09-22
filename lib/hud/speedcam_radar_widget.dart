@@ -34,6 +34,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     this.variant = SpeedcamRadarVariant.hudCompact,
     this.displayRadiusM,
     this.alwaysShow = false,
+    this.lookOverride,
   });
 
   final SpeedcamDanger? forceDemoDanger;
@@ -44,6 +45,9 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
 
   /// When true (DHU), paint even with no danger / no pose.
   final bool alwaysShow;
+
+  /// Optional look pin (T1 desktop HUD demo → Alien). Null = config look.
+  final SpeedcamRadarLook? lookOverride;
 
   static const Color phosphor = Color(0xFF39FF14);
   static const Color phosphorDim = Color(0xFF1A7A0A);
@@ -91,12 +95,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
           serviceDanger: liveDanger,
         );
     final danger = forceDemoDanger ?? modeDanger;
-    // T1 HUD demo: compact + forced danger → Alien CRT gold (windshield A/B).
-    // DHU settings keeps cfg.radarLook so Default look still previews Default.
-    final look = (forceDemoDanger != null &&
-            variant == SpeedcamRadarVariant.hudCompact)
-        ? SpeedcamRadarLook.alien
-        : cfg.radarLook;
+    final look = lookOverride ?? cfg.radarLook;
 
     final range = displayRadiusM ??
         (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : approachM);

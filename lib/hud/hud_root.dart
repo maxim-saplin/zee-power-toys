@@ -220,6 +220,10 @@ class _HudSlots extends ConsumerWidget {
             forceDemoDanger: forceDemoSpeedcam
                 ? SpeedcamRadarWidget.demoDanger
                 : null,
+            // Desktop T1 demo only — do not flip Default look in unit tests.
+            lookOverride: forceDemoSpeedcam
+                ? SpeedcamRadarLook.alien
+                : null,
           ),
         ),
 
