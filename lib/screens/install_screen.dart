@@ -61,6 +61,25 @@ class InstallScreen extends ConsumerWidget {
   }
 }
 
+
+/// Progress-bar value for [InstallProgress].
+///
+/// Download stays determinate. Install uses an indeterminate bar (0086): native
+/// used to emit `installing` at 0.8 after download hit ~1.0, which looked like
+/// the bar going backwards. PackageInstaller has no byte-level progress anyway.
+double? installProgressBarValue(InstallProgress progress) {
+  switch (progress.phase) {
+    case InstallPhase.downloading:
+      return progress.fraction;
+    case InstallPhase.installing:
+      return null;
+    case InstallPhase.done:
+      return progress.fraction;
+    case InstallPhase.failed:
+      return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Self-update (0069)
 // ---------------------------------------------------------------------------
@@ -216,9 +235,7 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(Radii.button),
                 child: LinearProgressIndicator(
-                  value: _busyInstall || _progress!.phase == InstallPhase.done
-                      ? _progress!.fraction
-                      : null,
+                  value: installProgressBarValue(_progress!),
                   backgroundColor: cs.surfaceContainerHighest,
                   color: _progress!.phase == InstallPhase.failed
                       ? cs.error
@@ -353,7 +370,6 @@ class _InstallCardState extends State<_InstallCard> {
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final phase = _progress?.phase;
-    final fraction = _progress?.fraction ?? 0.0;
 
     return Card(
       child: Padding(
@@ -406,7 +422,7 @@ class _InstallCardState extends State<_InstallCard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(Radii.button),
                 child: LinearProgressIndicator(
-                  value: _busy || phase == InstallPhase.done ? fraction : null,
+                  value: installProgressBarValue(_progress!),
                   backgroundColor: cs.surfaceContainerHighest,
                   color: phase == InstallPhase.failed ? cs.error : null,
                 ),

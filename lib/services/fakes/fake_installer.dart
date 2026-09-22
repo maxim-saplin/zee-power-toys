@@ -11,7 +11,7 @@ class FakeInstaller implements Installer {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     yield const InstallProgress(phase: InstallPhase.downloading, fraction: 0.5);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    yield const InstallProgress(phase: InstallPhase.installing, fraction: 0.8);
+    yield const InstallProgress(phase: InstallPhase.installing, fraction: 1.0);
     await Future<void>.delayed(const Duration(milliseconds: 50));
     yield const InstallProgress(phase: InstallPhase.done, fraction: 1.0);
   }

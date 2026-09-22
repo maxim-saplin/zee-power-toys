@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *   2. Downloader streams the APK to the app cache directory.
  *   3. Progress events are emitted on the EventChannel, each tagged with `url`:
  *        {url, phase: "downloading", fraction: 0.0..1.0}
- *        {url, phase: "installing",  fraction: 0.8}
+ *        {url, phase: "installing",  fraction: 1.0}  // after download; UI uses indeterminate
  *        {url, phase: "done",        fraction: 1.0}
  *        {url, phase: "failed",      fraction: 0.0, message: "<error>"}
  *   4. AppInstaller commits a PackageInstaller session (or falls back to
@@ -179,7 +179,7 @@ class InstallerController(
                         waitForCompanionsBeforeSelfUpdate(url)
                     }
 
-                    sendProgress(url, "installing", 0.8)
+                    sendProgress(url, "installing", 1.0) // 0086: stay at download-complete; no byte progress
                     try {
                         AppInstaller.installViaSession(context, apkFile)
                         Log.i(TAG, "PackageInstaller session committed for $url")

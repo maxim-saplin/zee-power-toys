@@ -13,7 +13,7 @@ import '../support/harness.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-Widget _wrap(Widget child, ConfigStore store, FakeInstaller installer) =>
+Widget _wrap(Widget child, ConfigStore store, Installer installer) =>
     wrapWithProviders(child, store: store, installer: installer);
 
 Future<(SharedPrefsConfigStore, FakeInstaller)> _makeFixture() async {
@@ -27,6 +27,24 @@ Future<(SharedPrefsConfigStore, FakeInstaller)> _makeFixture() async {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+
+/// Emits [events] with a short delay between each (after the first).
+class _ScriptedInstaller implements Installer {
+  _ScriptedInstaller(this.events);
+
+  final List<InstallProgress> events;
+
+  @override
+  Stream<InstallProgress> install(GithubAsset asset) async* {
+    for (var i = 0; i < events.length; i++) {
+      if (i > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      yield events[i];
+    }
+  }
+}
 
 void main() {
   group('InstallScreen', () {
@@ -91,7 +109,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 60));  // downloading 0.5
       expect(find.text('Downloading…'), findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 60));  // installing 0.8
+      await tester.pump(const Duration(milliseconds: 60));  // installing 1.0
       expect(find.text('Installing…'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 60));  // done 1.0
@@ -141,12 +159,108 @@ void main() {
       // FakeInstaller yields: downloading@0ms, downloading@50ms, installing@100ms, done@150ms.
       await tester.pump(const Duration(milliseconds: 10));   // downloading 0.0
       await tester.pump(const Duration(milliseconds: 60));   // downloading 0.5
-      await tester.pump(const Duration(milliseconds: 60));   // installing 0.8
+      await tester.pump(const Duration(milliseconds: 60));   // installing 1.0
       await tester.pump(const Duration(milliseconds: 60));   // done 1.0
 
       expect(phases, contains(InstallPhase.downloading));
       expect(phases, contains(InstallPhase.installing));
       expect(phases.last, equals(InstallPhase.done));
+    });
+
+    testWidgets('installProgressBarValue: download determinate, install spinner',
+        (tester) async {
+      // 0086: native historically emitted installing@0.8 after download@~1.0.
+      expect(
+        installProgressBarValue(const InstallProgress(
+          phase: InstallPhase.downloading,
+          fraction: 1.0,
+        )),
+        equals(1.0),
+      );
+      expect(
+        installProgressBarValue(const InstallProgress(
+          phase: InstallPhase.installing,
+          fraction: 0.8,
+        )),
+        isNull,
+      );
+      expect(
+        installProgressBarValue(const InstallProgress(
+          phase: InstallPhase.installing,
+          fraction: 1.0,
+        )),
+        isNull,
+      );
+      expect(
+        installProgressBarValue(const InstallProgress(
+          phase: InstallPhase.done,
+          fraction: 1.0,
+        )),
+        equals(1.0),
+      );
+      expect(
+        installProgressBarValue(const InstallProgress(
+          phase: InstallPhase.failed,
+          fraction: 0.0,
+        )),
+        isNull,
+      );
+    });
+
+    testWidgets(
+        '0086: launcher bar does not reverse when installing fraction < download',
+        (tester) async {
+      final (store, _) = await _makeFixture();
+      final scripted = _ScriptedInstaller([
+        const InstallProgress(phase: InstallPhase.downloading, fraction: 0.5),
+        const InstallProgress(phase: InstallPhase.downloading, fraction: 1.0),
+        // Legacy backstep fraction — bar must go indeterminate, not 0.8.
+        const InstallProgress(phase: InstallPhase.installing, fraction: 0.8),
+        const InstallProgress(phase: InstallPhase.done, fraction: 1.0),
+      ]);
+
+      await tester.pumpWidget(_wrap(const InstallScreen(), store, scripted));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('install-launcher')));
+      await tester.pump(); // first event: downloading 0.5
+      expect(find.text('Downloading…'), findsOneWidget);
+      var bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-launcher')),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, equals(0.5));
+
+      await tester.pump(const Duration(milliseconds: 60)); // downloading 1.0
+      bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-launcher')),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, equals(1.0));
+
+      await tester.pump(const Duration(milliseconds: 60)); // installing 0.8
+      expect(find.text('Installing…'), findsOneWidget);
+      bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-launcher')),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, isNull); // indeterminate — no visual backstep
+
+      await tester.pump(const Duration(milliseconds: 60)); // done
+      expect(find.text('Done'), findsOneWidget);
+      bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-launcher')),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, equals(1.0));
     });
   });
 }
