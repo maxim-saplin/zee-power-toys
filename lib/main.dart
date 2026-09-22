@@ -102,7 +102,6 @@ void hudEntry() {
 SharedPrefsConfigStore? _dhuConfigStore;
 
 Future<void> dhuMain(List<String> args) async {
-
   final store = SharedPrefsConfigStore();
   await store.load();
   _dhuConfigStore = store;
@@ -226,7 +225,13 @@ Future<void> dhuMain(List<String> args) async {
   // Idempotent on the native side (setMinimap is a NOOP when already in state).
   // Fires once on startup (persisted config) and on every subsequent change.
   _applyMinimapConfig(minimapHostRaw, store.value);
-  _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, store.value, speedcamOverlayRaw, speedcamYnaviRaw);
+  _applySpeedcamConfig(
+    speedcamRaw,
+    speedcamAlertRaw,
+    store.value,
+    speedcamOverlayRaw,
+    speedcamYnaviRaw,
+  );
 
   // Listen for dynamic hudEnabled toggles: show()/hide() the HUD engine.
   // store.changes only fires on explicit setConfig; the initial state at boot
@@ -243,7 +248,13 @@ Future<void> dhuMain(List<String> args) async {
       }
     }
     _applyMinimapConfig(minimapHostRaw, cfg);
-    _applySpeedcamConfig(speedcamRaw, speedcamAlertRaw, cfg, speedcamOverlayRaw, speedcamYnaviRaw);
+    _applySpeedcamConfig(
+      speedcamRaw,
+      speedcamAlertRaw,
+      cfg,
+      speedcamOverlayRaw,
+      speedcamYnaviRaw,
+    );
     // Re-seed charge/battery after settings toggles — HUD may have missed
     // EventChannel ticks while Presentation was recreating.
     seedHudFromCarSignals(carSignalsRaw);
@@ -295,7 +306,6 @@ Future<void> dhuMain(List<String> args) async {
       seedHudFromCarSignals(carSignalsRaw);
     });
   }
-
 
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
@@ -352,7 +362,6 @@ Future<void> dhuMain(List<String> args) async {
   );
 }
 
-
 // ---------------------------------------------------------------------------
 // Speedcam system overlay — third FlutterEngine (0070), TYPE_APPLICATION_OVERLAY.
 // Relay sink only (ADR 0003); pack+pose live on DHU.
@@ -397,7 +406,9 @@ void speedcamOverlayMain() {
         speedcamServiceProvider.overrideWithValue(speedcam),
         speedcamPackStoreProvider.overrideWithValue(speedcamPack),
         speedcamAlertProvider.overrideWithValue(speedcamAlert),
-        speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
+        speedcamSystemOverlayProvider.overrideWithValue(
+          FakeSpeedcamSystemOverlay(),
+        ),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],
@@ -411,9 +422,7 @@ void speedcamOverlayMain() {
 /// HUD isolate is still arming [listenForRelay].
 Future<void> seedHudFromCarSignals(CarSignals cs) async {
   final s = cs.snapshot;
-  await pushCarSignalToHud(
-    ChargeEvent(charging: s.charging, kw: s.chargeKw),
-  );
+  await pushCarSignalToHud(ChargeEvent(charging: s.charging, kw: s.chargeKw));
   final pct = s.batteryPct;
   if (pct != null) {
     await pushCarSignalToHud(
@@ -484,7 +493,9 @@ void hudMain(List<String> args) {
         speedcamServiceProvider.overrideWithValue(speedcam),
         speedcamPackStoreProvider.overrideWithValue(speedcamPack),
         speedcamAlertProvider.overrideWithValue(speedcamAlert),
-        speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
+        speedcamSystemOverlayProvider.overrideWithValue(
+          FakeSpeedcamSystemOverlay(),
+        ),
         systemConfigProvider.overrideWithValue(FakeSystemConfig()),
         usbModeProvider.overrideWithValue(FakeUsbMode()),
       ],
@@ -614,24 +625,20 @@ Future<void> _pushSpeedcamSystemOverlay(
   if (overlay == null || !sc.dhuSystemOverlay) return;
   final danger = snap.danger;
   final host = snap.host;
-  final visible = snap.enabled &&
-      danger != null &&
-      host != null &&
-      danger.insideApproach &&
-      camPassesPresenceMode(
-        mode: sc.hudMode,
-        cam: danger.cam,
-        host: host,
-        approachRadiusM: snap.approachRadiusM,
-        distanceM: danger.distanceM,
-      );
+  // Show float when service reports insideApproach. Do not also require
+  // camPassesPresenceMode(hudMode): pass-clear / behind contacts still have
+  // insideApproach=true but fail ahead/facing → update(visible:false) leaves
+  // native window View.GONE (Requested 0×0). Presence still drives [dangerous].
+  final visible =
+      snap.enabled && danger != null && host != null && danger.insideApproach;
   final title = danger == null
       ? ''
       : (danger.cam.maxspeed != null
-          ? '${danger.distanceM.round()} m · ${danger.cam.maxspeed} km/h'
-          : '${danger.distanceM.round()} m');
+            ? '${danger.distanceM.round()} m · ${danger.cam.maxspeed} km/h'
+            : '${danger.distanceM.round()} m');
   final subtitle = danger == null ? '' : 'Speedcam';
-  final dangerous = danger != null &&
+  final dangerous =
+      danger != null &&
       host != null &&
       camPassesPresenceMode(
         mode: SpeedcamPresenceMode.dangerous,

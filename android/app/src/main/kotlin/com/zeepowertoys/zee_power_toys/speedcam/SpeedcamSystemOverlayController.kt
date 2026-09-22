@@ -91,18 +91,25 @@ class SpeedcamSystemOverlayController(
                     val visible = call.argument<Boolean>("visible") ?: true
                     mainHandler.post {
                         if (!enabled || !canDrawOverlays()) {
+                            contentVisible = false
                             hideWindowOnly()
+                            Log.i(TAG, "update visible=$visible ignored (enabled=$enabled)")
                             result.success(null)
                             return@post
                         }
                         contentVisible = visible
                         if (!visible) {
                             hideWindowOnly()
+                            Log.i(TAG, "update visible=false → GONE")
                             result.success(null)
                             return@post
                         }
                         ensureEngine()
                         ensureWindow(shown = true)
+                        // GONE→VISIBLE on TYPE_APPLICATION_OVERLAY can leave
+                        // Requested 0×0 / no surface until an explicit relayout.
+                        forceOverlaySurface()
+                        Log.i(TAG, "update visible=true → VISIBLE")
                         result.success(null)
                     }
                 }
@@ -307,6 +314,24 @@ class SpeedcamSystemOverlayController(
 
     private fun overlayHeightPx(widthPx: Int): Int =
         (widthPx / OVERLAY_ASPECT).toInt().coerceAtLeast(1)
+
+
+    /** After GONE→VISIBLE, push lp so WM allocates a surface (non-zero Requested). */
+    private fun forceOverlaySurface() {
+        val container = root ?: return
+        val lp = container.layoutParams as? WindowManager.LayoutParams ?: return
+        val density = appContext.resources.displayMetrics.density
+        if (lp.width <= 0 || lp.height <= 0) {
+            lp.width = overlayWidthPx(density)
+            lp.height = overlayHeightPx(lp.width)
+            applyPlacement(lp, density)
+        }
+        try {
+            wm.updateViewLayout(container, lp)
+        } catch (e: Exception) {
+            Log.w(TAG, "forceOverlaySurface: ${e.message}")
+        }
+    }
 
     private fun applyLayoutToWindow() {
         val container = root ?: return
