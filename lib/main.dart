@@ -372,15 +372,17 @@ void speedcamOverlayMain() {
     speedcamPack: speedcamPack,
   );
 
+  // Arm relay FIRST — otherwise DHU Demo/pose re-seed during Overlay enable
+  // (0083) is dropped while store.load() is still in flight (HUD already does this).
+  listenForRelay(
+    onConfig: (cfg) {
+      store.setConfig(cfg);
+      speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
+    },
+    onSpeedcam: speedcam.applyRelaySnapshot,
+  );
   store.load().then((_) {
     speedcam.setApproachRadiusM(store.value.speedcam.dhuRangeM);
-    listenForRelay(
-      onConfig: (cfg) {
-        store.setConfig(cfg);
-        speedcam.setApproachRadiusM(cfg.speedcam.dhuRangeM);
-      },
-      onSpeedcam: speedcam.applyRelaySnapshot,
-    );
   });
 
   runApp(
@@ -684,6 +686,14 @@ void _applySpeedcamConfig(
           // re-push current snapshot so float gets visible+hub relay (not idle empty).
           await _pushSpeedcamSystemOverlay(speedcam.snapshot, sc);
           pushSpeedcamToHud(speedcam.snapshot);
+          // Belt: Overlay listen arms on a fresh isolate; one delayed re-seed
+          // covers the store.load race even if first hub invoke raced.
+          Future<void>.delayed(const Duration(milliseconds: 350), () async {
+            try {
+              await _pushSpeedcamSystemOverlay(speedcam.snapshot, sc);
+              pushSpeedcamToHud(speedcam.snapshot);
+            } catch (_) {}
+          });
         }
       } catch (_) {}
     }();
