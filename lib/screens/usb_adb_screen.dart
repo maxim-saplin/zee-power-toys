@@ -12,6 +12,9 @@ import '../theme/app_theme.dart';
 /// Provides a 3-state SegmentedButton (Peripheral / Host / Auto) for choosing
 /// the USB role.  When [UsbModePort.writable] is false (emulator / unsigned
 /// build) the controls are disabled and a localized hint is shown.
+///
+/// 0085: on open, [refresh]es from live `persist.usb.mode` before painting the
+/// selector so cold-open matches Host/Peripheral without launching zSupport.
 class UsbAdbScreen extends ConsumerStatefulWidget {
   const UsbAdbScreen({super.key});
 
@@ -21,6 +24,22 @@ class UsbAdbScreen extends ConsumerStatefulWidget {
 
 class _UsbAdbScreenState extends ConsumerState<UsbAdbScreen> {
   String? _errorText;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshFromDevice();
+  }
+
+  Future<void> _refreshFromDevice() async {
+    final store = ref.read(configStoreProvider);
+    final port = ref.read(usbModeProvider);
+    await port.refresh(autoPreferred: store.value.autoUsbPeripheral);
+    if (mounted) {
+      setState(() => _ready = true);
+    }
+  }
 
   Future<void> _setUsbMode(UsbMode mode) async {
     // Persist the "auto" preference to ConfigStore *first* and unconditionally
@@ -52,126 +71,128 @@ class _UsbAdbScreenState extends ConsumerState<UsbAdbScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.usbAdbTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(Insets.lg),
-        children: <Widget>[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Insets.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Insets.lg,
-                      Insets.sm,
-                      Insets.lg,
-                      Insets.sm,
-                    ),
-                    child: Text(
-                      l10n.usbAdbTitle,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Insets.lg,
-                      Insets.sm,
-                      Insets.lg,
-                      Insets.xs,
-                    ),
-                    child: Text(
-                      '${l10n.usbCurrentMode}: $currentLabel',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                  // Always shown (not gated on a failed write attempt first):
-                  // this build's lack of platform signing is a known, static
-                  // fact — no sharedUserId in the manifest, release signs with
-                  // the debug key — so the screen says so plainly up front
-                  // rather than only after the user discovers it the hard way
-                  // (Task 2 — "auto" honesty).
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Insets.lg,
-                      0,
-                      Insets.lg,
-                      Insets.sm,
-                    ),
-                    child: Text(
-                      l10n.usbPlatformSigningRequired,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Insets.lg,
-                      Insets.xs,
-                      Insets.lg,
-                      Insets.sm,
-                    ),
-                    child: SegmentedButton<UsbMode>(
-                      key: const ValueKey('usb-mode-selector'),
-                      segments: <ButtonSegment<UsbMode>>[
-                        ButtonSegment<UsbMode>(
-                          value: UsbMode.peripheral,
-                          label: Text(
-                            l10n.usbModePeripheral,
-                            key: const ValueKey('usb-peripheral'),
+      body: !_ready
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(Insets.lg),
+              children: <Widget>[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: Insets.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Insets.lg,
+                            Insets.sm,
+                            Insets.lg,
+                            Insets.sm,
+                          ),
+                          child: Text(
+                            l10n.usbAdbTitle,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              letterSpacing: 0.6,
+                            ),
                           ),
                         ),
-                        ButtonSegment<UsbMode>(
-                          value: UsbMode.host,
-                          label: Text(
-                            l10n.usbModeHost,
-                            key: const ValueKey('usb-host'),
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Insets.lg,
+                            Insets.sm,
+                            Insets.lg,
+                            Insets.xs,
+                          ),
+                          child: Text(
+                            '${l10n.usbCurrentMode}: $currentLabel',
+                            style: theme.textTheme.bodySmall,
                           ),
                         ),
-                        ButtonSegment<UsbMode>(
-                          value: UsbMode.auto,
-                          label: Text(
-                            l10n.usbModeAuto,
-                            key: const ValueKey('usb-auto'),
+                        // Always shown (not gated on a failed write attempt first):
+                        // this build's lack of platform signing is a known, static
+                        // fact — no sharedUserId in the manifest, release signs with
+                        // the debug key — so the screen says so plainly up front
+                        // rather than only after the user discovers it the hard way
+                        // (Task 2 — "auto" honesty).
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Insets.lg,
+                            0,
+                            Insets.lg,
+                            Insets.sm,
+                          ),
+                          child: Text(
+                            l10n.usbPlatformSigningRequired,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Insets.lg,
+                            Insets.xs,
+                            Insets.lg,
+                            Insets.sm,
+                          ),
+                          child: SegmentedButton<UsbMode>(
+                            key: const ValueKey('usb-mode-selector'),
+                            segments: <ButtonSegment<UsbMode>>[
+                              ButtonSegment<UsbMode>(
+                                value: UsbMode.peripheral,
+                                label: Text(
+                                  l10n.usbModePeripheral,
+                                  key: const ValueKey('usb-peripheral'),
+                                ),
+                              ),
+                              ButtonSegment<UsbMode>(
+                                value: UsbMode.host,
+                                label: Text(
+                                  l10n.usbModeHost,
+                                  key: const ValueKey('usb-host'),
+                                ),
+                              ),
+                              ButtonSegment<UsbMode>(
+                                value: UsbMode.auto,
+                                label: Text(
+                                  l10n.usbModeAuto,
+                                  key: const ValueKey('usb-auto'),
+                                ),
+                              ),
+                            ],
+                            selected: {usbPort.currentMode},
+                            onSelectionChanged: usbPort.writable
+                                ? (Set<UsbMode> selection) {
+                                    if (selection.isNotEmpty) {
+                                      _setUsbMode(selection.first);
+                                    }
+                                  }
+                                : null,
+                          ),
+                        ),
+                        if (_errorText != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              Insets.lg,
+                              0,
+                              Insets.lg,
+                              Insets.sm,
+                            ),
+                            child: Text(
+                              _errorText!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
                       ],
-                      selected: {usbPort.currentMode},
-                      onSelectionChanged: usbPort.writable
-                          ? (Set<UsbMode> selection) {
-                              if (selection.isNotEmpty) {
-                                _setUsbMode(selection.first);
-                              }
-                            }
-                          : null,
                     ),
                   ),
-                  if (_errorText != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        Insets.lg,
-                        0,
-                        Insets.lg,
-                        Insets.sm,
-                      ),
-                      child: Text(
-                        _errorText!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -20,6 +20,7 @@ import '../usb_mode.dart';
 class NativeUsbMode implements UsbModePort {
   static const _channel = MethodChannel('zee/usb_mode');
 
+  // Default until [refresh] / successful [setUsbMode] — never trust as truth.
   UsbMode _currentMode = UsbMode.peripheral;
   bool _writable = true; // optimistic until first write attempt
 
@@ -37,6 +38,13 @@ class NativeUsbMode implements UsbModePort {
     } catch (_) {
       return '';
     }
+  }
+
+  @override
+  Future<UsbMode> refresh({bool autoPreferred = false}) async {
+    final raw = await getRawUsbMode();
+    _currentMode = usbModeFromRaw(raw, autoPreferred: autoPreferred);
+    return _currentMode;
   }
 
   @override
@@ -68,7 +76,8 @@ class NativeUsbMode implements UsbModePort {
   }
 
   static UsbModeResult _parseResult(Map<String, Object?>? raw) {
-    if (raw == null) return const UsbModeResult(ok: false, reason: 'null-response');
+    if (raw == null)
+      return const UsbModeResult(ok: false, reason: 'null-response');
     final ok = raw['ok'] as bool? ?? false;
     final reason = raw['reason'] as String?;
     return UsbModeResult(ok: ok, reason: reason);

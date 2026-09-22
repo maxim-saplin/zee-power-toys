@@ -105,6 +105,46 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // 1b. 0085 cold-open: refresh from live raw (not stale default)
+  // -------------------------------------------------------------------------
+
+  group('usbModeFromRaw + FakeUsbMode.refresh (0085)', () {
+    test('raw "1" → host', () {
+      expect(usbModeFromRaw('1'), UsbMode.host);
+    });
+
+    test('raw "0" → peripheral', () {
+      expect(usbModeFromRaw('0'), UsbMode.peripheral);
+    });
+
+    test('raw "0" + autoPreferred → auto', () {
+      expect(usbModeFromRaw('0', autoPreferred: true), UsbMode.auto);
+    });
+
+    test('raw "1" ignores autoPreferred', () {
+      expect(usbModeFromRaw('1', autoPreferred: true), UsbMode.host);
+    });
+
+    test('empty/unknown → peripheral', () {
+      expect(usbModeFromRaw(''), UsbMode.peripheral);
+      expect(usbModeFromRaw('x'), UsbMode.peripheral);
+    });
+
+    test('refresh syncs stale peripheral default to live host', () async {
+      final fake = FakeUsbMode(initialMode: UsbMode.peripheral, liveRaw: '1');
+      expect(fake.currentMode, UsbMode.peripheral); // stale until refresh
+      await fake.refresh();
+      expect(fake.currentMode, UsbMode.host);
+    });
+
+    test('refresh with autoPreferred maps live "0" to auto', () async {
+      final fake = FakeUsbMode(initialMode: UsbMode.host, liveRaw: '0');
+      await fake.refresh(autoPreferred: true);
+      expect(fake.currentMode, UsbMode.auto);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // 2. UsbAdbScreen shows USB/ADB section; SegmentedButton works on T1
   // -------------------------------------------------------------------------
 
@@ -118,6 +158,25 @@ void main() {
       // Peripheral button should be immediately visible (no scroll needed on this
       // dedicated screen). Verify USB / ADB heading and the segment labels.
       expect(find.text('USB / ADB'), findsWidgets);
+    });
+
+    testWidgets('0085 cold-open paints Host when live raw is 1', (
+      tester,
+    ) async {
+      final store = await _makeStore();
+      // Stale in-memory default peripheral; live prop says host (zSupport flip).
+      final usbMode = FakeUsbMode(
+        initialMode: UsbMode.peripheral,
+        liveRaw: '1',
+      );
+      await tester.pumpWidget(_wrap(const UsbAdbScreen(), store, usbMode));
+      await tester.pumpAndSettle();
+
+      expect(usbMode.currentMode, UsbMode.host);
+      expect(find.textContaining('Host'), findsWidgets);
+      // SegmentedButton selects Host — Current label includes Host.
+      expect(find.textContaining('Current:'), findsWidgets);
+      expect(find.text('Current: Host'), findsOneWidget);
     });
 
     testWidgets('SegmentedButton with Peripheral, Host, Auto is visible', (

@@ -28,6 +28,16 @@ enum UsbMode {
   auto,
 }
 
+/// Map raw `persist.usb.mode` ("0"|"1"|"") to [UsbMode].
+///
+/// `"1"` → host. `"0"` → auto when [autoPreferred], else peripheral.
+/// Empty/unknown → peripheral (safe default for ADB target).
+UsbMode usbModeFromRaw(String raw, {bool autoPreferred = false}) {
+  if (raw == '1') return UsbMode.host;
+  if (raw == '0' && autoPreferred) return UsbMode.auto;
+  return UsbMode.peripheral;
+}
+
 /// Structured result from a [UsbModePort.setUsbMode] call.
 class UsbModeResult {
   const UsbModeResult({required this.ok, this.reason});
@@ -57,6 +67,15 @@ abstract class UsbModePort {
   /// Read the raw persist.usb.mode value from the platform.
   /// Returns "0", "1", or "" (not set).  Available on all tiers.
   Future<String> getRawUsbMode();
+
+  /// Sync [currentMode] from the live platform property (0085 cold-open).
+  ///
+  /// Call before first paint of USB UI so Host/Peripheral matches
+  /// `persist.usb.mode` even when zSupport (or another app) flipped the role
+  /// while this process was dead. [autoPreferred] is the ConfigStore
+  /// `autoUsbPeripheral` flag — when raw is `"0"` and auto is on, reports
+  /// [UsbMode.auto].
+  Future<UsbMode> refresh({bool autoPreferred = false});
 
   /// Attempt to set the USB mode.
   ///

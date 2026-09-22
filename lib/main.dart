@@ -180,9 +180,12 @@ Future<void> dhuMain(List<String> args) async {
 
   // On Android, NativeUsbMode talks to UsbModeController via zee/usb_mode.
   // On T1 desktop, FakeUsbMode provides writable in-memory state.
+  // 0085: refresh from live persist.usb.mode before first frame so USB UI /
+  // Diagnostics never paint the hardcoded peripheral default after a cold open.
   final UsbModePort usbModeRaw = (!kIsWeb && Platform.isAndroid)
       ? NativeUsbMode()
       : FakeUsbMode();
+  await usbModeRaw.refresh(autoPreferred: store.value.autoUsbPeripheral);
 
   // On Android, NativeHudHost wraps the zee/hud_lifecycle channel so toggling
   // hudEnabled tears down / re-spawns the HUD FlutterEngine (QA4-1, ADR 0001).
