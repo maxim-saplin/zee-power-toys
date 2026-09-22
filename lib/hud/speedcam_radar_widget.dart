@@ -451,21 +451,30 @@ class _AlienWedgePainter extends CustomPainter {
       Radius.circular(minSide * 0.10),
     );
 
-    // Fan apex + radius: fit ±50° wedge + outer stroke inside CRT (0080 FAIL:
-    // r=0.72*minSide spilled past left/right on DHU). No tall-frame clip hack.
+    // Fan on 1:1 CRT: even plate padding — outer arc + tips share the same
+    // inset (Maxim 0080: no huge empty top; square plate stays square).
     const wedgeHalf = 50 * math.pi / 180;
-    final c = Offset(size.width / 2, size.height * 0.90);
-    // Extra pad so outer stroke + glow never kiss the black plate edge.
-    final strokePad = 4.0 * s;
-    final inner = bounds.deflate(1.5 * s + strokePad);
     final tipLeft = -math.pi / 2 - wedgeHalf;
     final tipRight = -math.pi / 2 + wedgeHalf;
-    final maxRLeft = (c.dx - inner.left) / -math.cos(tipLeft);
-    final maxRRight = (inner.right - c.dx) / math.cos(tipRight);
-    final maxRTop = c.dy - inner.top; // up arc at -π/2
-    final rFit = math.min(maxRLeft, math.min(maxRRight, maxRTop));
-    final r = (math.min(minSide * 0.62, rFit) * 0.96)
-        .clamp(minSide * 0.38, minSide * 0.62);
+    final strokePad = 3.0 * s;
+    final pad = math.max(minSide * 0.07, 1.5 * s + strokePad);
+    final inner = Rect.fromLTWH(
+      pad,
+      pad,
+      size.width - 2 * pad,
+      size.height - 2 * pad,
+    );
+    final cx = size.width / 2;
+    // r from side tips at left/right pad; apex so up-arc sits on top pad.
+    final rFromSides = (cx - inner.left) / -math.cos(tipLeft);
+    final cy = (inner.top + rFromSides).clamp(
+      inner.top + minSide * 0.35,
+      inner.bottom - 2 * s,
+    );
+    final r = (cy - inner.top).clamp(minSide * 0.38, minSide * 0.68);
+    final c = Offset(cx, cy);
+    // tipRight kept for symmetry with tipLeft (side fit uses |cos|).
+    assert((tipRight + tipLeft + math.pi).abs() < 1e-9);
 
     // Ground + grit + scan ONLY — rounded clip must not touch fan strokes.
     canvas.saveLayer(bounds, Paint());
@@ -660,14 +669,15 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Km + limit: baseline at fan apex (c.dy), left of composite — HUD geometry.
+    // Km + limit: smaller, in left wedge lobe (≈45–90° from forward) —
+    // must not cross the center radial (Maxim 0080).
     if (readoutM != null) {
       final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 22 * s,
+            fontSize: 13 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -680,21 +690,33 @@ class _AlienWedgePainter extends CustomPainter {
           text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
-            fontSize: 12 * s,
+            fontSize: 9 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
+            height: 1.0,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final kmLeft = 8 * s;
-      final stackH = km.height + (maxspeed != null ? limit.height + 2 * s : 0);
-      // Flush bottom-left of full composite (HudPreview packing — 0080).
-      // No scanline margin under 0.xx/limit; fan apex still overlaps the stack.
-      final kmTop = (size.height - 8 * s - stackH).clamp(0.0, size.height - stackH);
+      final textAngle = baseAngle - wedgeHalf * 0.55; // left lobe mid
+      final textR = r * 0.40;
+      final anchor = Offset(
+        c.dx + textR * math.cos(textAngle),
+        c.dy + textR * math.sin(textAngle),
+      );
+      final stackH = km.height + (maxspeed != null ? limit.height + 1.5 * s : 0);
+      // Keep entire stack left of the middle radial.
+      final maxRight = c.dx - 2.5 * s;
+      var kmLeft = anchor.dx - km.width * 0.35;
+      if (kmLeft + km.width > maxRight) {
+        kmLeft = maxRight - km.width;
+      }
+      kmLeft = kmLeft.clamp(pad + 2 * s, maxRight - km.width);
+      final kmTop = (anchor.dy - stackH * 0.45)
+          .clamp(pad + 2 * s, size.height - pad - stackH);
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
-        limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 2 * s));
+        limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 1.5 * s));
       }
     }
   }
