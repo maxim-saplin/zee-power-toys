@@ -6,7 +6,7 @@ satisfies: foundation
 blocked-by: []
 modules: [InstallScreen, AppSelfUpdate, InstallerController]
 tier: T2
-tip: PENDING
+tip: 88c6aa6
 ---
 
 # 0086 — Install progress bar goes backwards after download
@@ -23,7 +23,7 @@ Download progress is `downloaded/total` and reaches **~1.0**. Immediately after,
 
 Both `_SelfUpdateCard` and `_InstallCard` bound `LinearProgressIndicator.value` to `fraction` whenever the job was busy, so the bar jumped from ~100% → 80% at the phase change. Not a multiplex/0084 cross-talk bug — a phase-mapped fraction that is smaller than end-of-download. PackageInstaller has no byte-level progress, so 0.8 was a placeholder, not real install %.
 
-## Tip (`PENDING`)
+## Tip (`88c6aa6`)
 - Dart: `installProgressBarValue` — determinate for downloading/done; **indeterminate (`null`) for installing** (and failed).
 - Kotlin: emit `installing` at **1.0** (download-complete) instead of 0.8 so any determinate consumer stays monotonic.
 - FakeInstaller installing fraction → 1.0; widget + unit tests cover legacy installing@0.8 does not reverse the bar.
