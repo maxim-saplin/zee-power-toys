@@ -43,7 +43,10 @@ class SpeedcamSystemOverlayController(
         const val CHANNEL = "zee/speedcam/system_overlay"
         private const val HUB_CHANNEL = "zee/hub"
         /** Overlay disk size (dp) — matches DHU settings preview ballpark. */
-        private const val OVERLAY_SIDE_DP = 280
+        /** Longer side (width) of landscape CRT plate; height = width / ASPECT. */
+        private const val OVERLAY_WIDTH_DP = 280
+        /** 300∶220 landscape — must match Dart [kSpeedcamCrtPlateAspect]. */
+        private const val OVERLAY_ASPECT = 300.0 / 220.0
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -181,7 +184,8 @@ class SpeedcamSystemOverlayController(
                 return
             }
             val density = appContext.resources.displayMetrics.density
-            val sidePx = (OVERLAY_SIDE_DP * sizeScale * density).toInt()
+            val widthPx = overlayWidthPx(density)
+            val heightPx = overlayHeightPx(widthPx)
 
             val container = FrameLayout(appContext).apply {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -205,8 +209,8 @@ class SpeedcamSystemOverlayController(
                 WindowManager.LayoutParams.TYPE_PHONE
             }
             val lp = WindowManager.LayoutParams(
-                sidePx,
-                sidePx,
+                widthPx,
+                heightPx,
                 type,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
@@ -220,7 +224,7 @@ class SpeedcamSystemOverlayController(
                 fv.attachToFlutterEngine(eng)
                 root = container
                 flutterView = fv
-                Log.i(TAG, "overlay FlutterView window added (${sidePx}px)")
+                Log.i(TAG, "overlay FlutterView window added ${widthPx}x${heightPx}px (landscape CRT)")
             } catch (e: Exception) {
                 Log.e(TAG, "addView failed", e)
                 try {
@@ -297,17 +301,25 @@ class SpeedcamSystemOverlayController(
         }
     }
 
+
+    private fun overlayWidthPx(density: Float): Int =
+        (OVERLAY_WIDTH_DP * sizeScale * density).toInt().coerceAtLeast(1)
+
+    private fun overlayHeightPx(widthPx: Int): Int =
+        (widthPx / OVERLAY_ASPECT).toInt().coerceAtLeast(1)
+
     private fun applyLayoutToWindow() {
         val container = root ?: return
         val density = appContext.resources.displayMetrics.density
-        val sidePx = (OVERLAY_SIDE_DP * sizeScale * density).toInt()
+        val widthPx = overlayWidthPx(density)
+        val heightPx = overlayHeightPx(widthPx)
         val lp = container.layoutParams as? WindowManager.LayoutParams ?: return
-        lp.width = sidePx
-        lp.height = sidePx
+        lp.width = widthPx
+        lp.height = heightPx
         applyPlacement(lp, density)
         try {
             wm.updateViewLayout(container, lp)
-            Log.i(TAG, "setLayout scale=$sizeScale place=$placement side=${sidePx}px")
+            Log.i(TAG, "setLayout scale=$sizeScale place=$placement ${widthPx}x${heightPx}px")
         } catch (e: Exception) {
             Log.e(TAG, "updateViewLayout failed", e)
         }

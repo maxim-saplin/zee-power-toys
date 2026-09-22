@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -11,6 +10,7 @@ import 'battery_geometry.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
+import 'speedcam_crt_geometry.dart';
 import '../providers/guidance.dart';
 
 /// The root of the HUD widget subtree.
@@ -185,10 +185,10 @@ class _HudSlots extends ConsumerWidget {
       heightFrac: slotFracs.heightFrac,
     );
 
-    // 0080: landscape CRT plate 300×220 (Maxim — wide rect, NOT portrait/square).
-    const radarAspect = 300.0 / 220.0; // width / height > 1
-    final radarW = math.min(saWidth * 0.28, saHeight * 0.42 * radarAspect);
-    final radarH = radarW / radarAspect;
+    // 0083/0080: shared landscape CRT plate (HUD / preview / Overlay).
+    final radarSlot = speedcamCrtHudSlotSize(safeWidth: saWidth, safeHeight: saHeight);
+    final radarW = radarSlot.width;
+    final radarH = radarSlot.height;
 
     return Stack(
       children: <Widget>[

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../hud/speedcam_radar_widget.dart';
+import '../hud/speedcam_crt_geometry.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
 import '../providers/speedcam.dart';
@@ -264,13 +265,11 @@ class _SpeedcamSettingsScreenState
                   final h = MediaQuery.sizeOf(context).height;
                   // App bar + toggles + range + section chrome ≈ 280; leave margin.
                   final maxW = math.min(constraints.maxWidth, 360.0);
-                  // 300×220 landscape plate (Maxim: wide rect, not portrait/square).
-                  const plateAspect = 300.0 / 220.0;
-                  final plateW = maxW;
-                  final plateH = plateW / plateAspect;
+                  // 0083: shared landscape plate helper (never square).
                   final maxH = (h - 280).clamp(120.0, 280.0);
-                  final useH = math.min(plateH, maxH);
-                  final useW = useH * plateAspect;
+                  final plate = speedcamCrtPlateSize(maxW: maxW, maxH: maxH);
+                  final useW = plate.width;
+                  final useH = plate.height;
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
                   // Rectangular CRT composite — painter fills bounds (0080).
                   // Real MediaQuery dpr + surface width drive alienDhuDpiBridge.

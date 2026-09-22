@@ -434,12 +434,13 @@ class _AlienWedgePainter extends CustomPainter {
     final dpr = devicePixelRatio.clamp(0.75, 4.0);
     // Size-relative CRT density (shared). DPI bridge only on real DHU geometry.
     final sizeS = (minSide / _designSide).clamp(0.85, 2.8);
+    // 0083: bridge off CRT plate width, not full DHU surface — preview under
+    // DhuSurfaceMetrics was falsely getting automotive ×1.25 while HUD/Overlay
+    // stayed identity → divergent km/limit typography.
     final dpiBridge = alienDhuDpiBridge(
       devicePixelRatio: dpr,
-      surfaceLogicalWidth: surfaceLogicalWidth,
+      surfaceLogicalWidth: minSide,
     );
-    // Note: settings preview is a small disk — identity bridge (won't fake DHU).
-    // Full DHU surface (DhuScaledLayout / wide low-dpr) gets the 1.254 bridge.
     final s = sizeS * dpiBridge;
 
     // Bezel / outside CRT
