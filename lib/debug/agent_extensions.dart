@@ -637,8 +637,11 @@ void registerZeeExtensions({
         case 'clearPose':
           await svc.clearHostPose();
         case 'approach':
-          // Place host distanceM from first cam (or cam id=).
-          final dist = double.parse(params['distanceM'] ?? '200');
+          // Place host distanceM from demo-limit cam (or cam id=).
+          // Default distance matches kSpeedcamDemoDistanceM (preview forceDemo).
+          final dist = double.parse(
+            params['distanceM'] ?? '$kSpeedcamDemoDistanceM',
+          );
           final cams = svc.snapshot.cams;
           if (cams.isEmpty) {
             return developer.ServiceExtensionResponse.result(
@@ -650,7 +653,7 @@ void registerZeeExtensions({
           }
           final id = params['camId'];
           final cam = id == null
-              ? cams.first
+              ? pickSpeedcamDemoCam(cams)
               : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
           // 1 deg lat ≈ 111320 m — approach from south.
           // Default heading null (like HUD Demo) so facing/ahead fail-open;

@@ -8,6 +8,7 @@ import '../providers/config.dart';
 import '../providers/speedcam.dart';
 import '../services/config_store.dart';
 import '../services/speedcam.dart';
+import 'speedcam_crt_geometry.dart';
 
 enum SpeedcamRadarVariant { hudCompact, dhuLarge }
 
@@ -58,15 +59,16 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
   /// Other in-range scan blips — greenish phosphor (0064).
   static const Color blipOther = phosphor;
 
+  /// Same pose/limit as HUD Demo + agent approach ([kSpeedcamDemoMaxspeed]).
   static final demoDanger = SpeedcamDanger(
     cam: const SpeedcamPoint(
       id: 'demo-cam',
       lat: 53.9,
       lon: 27.56,
-      maxspeed: 60,
+      maxspeed: kSpeedcamDemoMaxspeed,
     ),
-    distanceM: 200,
-    bearingDeg: 45,
+    distanceM: kSpeedcamDemoDistanceM,
+    bearingDeg: kSpeedcamDemoBearingDeg,
     insideApproach: true,
   );
 
@@ -236,20 +238,29 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
-          // 0083 Maxim: Alien CRT is DPI-agnostic — painter scales from plate
-          // size only (no DhuSurfaceMetrics / dpr bridge).
-          return CustomPaint(
-            key: ValueKey(lookKey),
-            painter: _AlienWedgePainter(
-              sweepT: controller.value,
-              blinkT: controller.value,
-              blips: blips,
-              displayRadiusM: range,
-              approachRadiusM: approachM,
-              readoutM: labelDist,
-              maxspeed: labelMax,
+          // 0083 Maxim: one canonical CRT paint (300×220), then uniform
+          // FittedBox into the HUD / preview / Overlay slot. TextPainter +
+          // strokes always see the same Size → glyph/min matches across
+          // surfaces (no small-slot TextPainter metric drift).
+          return FittedBox(
+            fit: BoxFit.fill,
+            child: SizedBox(
+              width: kSpeedcamCrtPlateW,
+              height: kSpeedcamCrtPlateH,
+              child: CustomPaint(
+                key: ValueKey(lookKey),
+                painter: _AlienWedgePainter(
+                  sweepT: controller.value,
+                  blinkT: controller.value,
+                  blips: blips,
+                  displayRadiusM: range,
+                  approachRadiusM: approachM,
+                  readoutM: labelDist,
+                  maxspeed: labelMax,
+                ),
+                child: const SizedBox.expand(),
+              ),
             ),
-            child: const SizedBox.expand(),
           );
         },
       ),
@@ -379,7 +390,8 @@ double alienDhuDpiBridge({
   return 1.0;
 }
 
-/// Plate-relative CRT scale (HUD / DHU preview / Overlay share this).
+/// Plate-relative CRT scale. Alien paint always receives the canonical
+/// [kSpeedcamCrtPlateW]×[kSpeedcamCrtPlateH] Size (then FittedBox scales).
 /// Design side matches the windshield gold tune (~160 logical).
 double alienCrtPlateScale(Size size) {
   final minSide = size.shortestSide;

@@ -130,6 +130,26 @@ class SpeedcamDanger {
       );
 }
 
+/// Canonical Demo readout shared by Radar preview [forceDemoDanger], HUD Demo
+/// button, and agent `approach` (0083 type-scale triad).
+const int kSpeedcamDemoMaxspeed = 60;
+const double kSpeedcamDemoDistanceM = 200.0;
+const double kSpeedcamDemoBearingDeg = 45.0;
+
+/// Prefer a cam whose [SpeedcamPoint.maxspeed] matches [kSpeedcamDemoMaxspeed]
+/// so live HUD/Overlay limit matches preview forceDemo (not e.g. 70).
+/// Among matches, prefer unknown facing so Dangerous-mode mute cannot hide Demo.
+SpeedcamPoint pickSpeedcamDemoCam(List<SpeedcamPoint> cams) {
+  assert(cams.isNotEmpty);
+  final matching =
+      cams.where((c) => c.maxspeed == kSpeedcamDemoMaxspeed).toList();
+  final pool = matching.isNotEmpty ? matching : cams;
+  return pool.firstWhere(
+    (c) => c.direction == null || c.direction!.trim().isEmpty,
+    orElse: () => pool.first,
+  );
+}
+
 /// Snapshot for dumpState / readViewModel.
 class SpeedcamSnapshot {
   const SpeedcamSnapshot({

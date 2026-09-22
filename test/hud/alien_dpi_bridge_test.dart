@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/hud/speedcam_crt_geometry.dart';
 import 'package:zee_power_toys/hud/speedcam_radar_widget.dart';
+import 'package:zee_power_toys/services/fakes/fake_speedcam_service.dart';
+import 'package:zee_power_toys/services/speedcam.dart';
 
 void main() {
   test('alienDhuDpiBridge is always identity (DPI-agnostic CRT)', () {
@@ -19,24 +21,22 @@ void main() {
     );
   });
 
-  test('alienCrtPlateScale keeps km type fraction equal across plate sizes', () {
+  test('alienCrtPlateScale on canonical plate is design fraction 22/160', () {
     const design = 160.0;
     const kmDesign = 22.0;
-    final hud = const Size(146, 106);
-    final plate = speedcamCrtPlateSize(maxW: 280, maxH: 280);
-    final overlay = Size(plate.width, plate.height);
-    final preview = Size(plate.width, plate.height);
+    final plate = const Size(kSpeedcamCrtPlateW, kSpeedcamCrtPlateH);
+    final s = alienCrtPlateScale(plate);
+    expect(s, closeTo(plate.shortestSide / design, 1e-9));
+    expect((kmDesign * s) / plate.shortestSide, closeTo(kmDesign / design, 1e-9));
+    expect(kmDesign / design, closeTo(0.1375, 1e-9));
+  });
 
-    final sHud = alienCrtPlateScale(hud);
-    final sOv = alienCrtPlateScale(overlay);
-    final sPrev = alienCrtPlateScale(preview);
-
-    expect(sHud, closeTo(hud.shortestSide / design, 1e-9));
-    expect(sPrev, closeTo(sOv, 1e-9));
-
-    final fracHud = (kmDesign * sHud) / hud.shortestSide;
-    final fracOv = (kmDesign * sOv) / overlay.shortestSide;
-    expect(fracHud, closeTo(kmDesign / design, 1e-9));
-    expect(fracOv, closeTo(fracHud, 1e-9));
+  test('pickSpeedcamDemoCam prefers maxspeed 60 over unknown-facing 70', () {
+    final cam = pickSpeedcamDemoCam(FakeSpeedcamService.kFakeBySampleCams);
+    expect(cam.maxspeed, kSpeedcamDemoMaxspeed);
+    expect(cam.maxspeed, 60);
+    // Must not be by-sample-2 (70, null direction) which HUD Demo used to pick.
+    expect(cam.id, isNot('by-sample-2'));
+    expect(SpeedcamRadarWidget.demoDanger.cam.maxspeed, cam.maxspeed);
   });
 }

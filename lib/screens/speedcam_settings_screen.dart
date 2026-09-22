@@ -200,13 +200,10 @@ class _SpeedcamSettingsScreenState
     final cams = svc.snapshot.cams.isNotEmpty
         ? svc.snapshot.cams
         : FakeSpeedcamService.kFakeBySampleCams;
-    // Prefer a cam with unknown facing so 0038 mute cannot hide the demo.
-    final cam = cams.firstWhere(
-      (c) => c.direction == null || c.direction!.trim().isEmpty,
-      orElse: () => cams.first,
-    );
-    // 200 m south; heading null → facing filter fail-open (demo must show).
-    final dLat = 200 / 111320.0;
+    // 0083: same cam/limit as Radar preview forceDemoDanger (60), not the
+    // first unknown-facing cam (that was by-sample-2 → 70).
+    final cam = pickSpeedcamDemoCam(cams);
+    final dLat = kSpeedcamDemoDistanceM / 111320.0;
     await svc.setHostPose(SpeedcamHostPose(
       lat: cam.lat - dLat,
       lon: cam.lon,
