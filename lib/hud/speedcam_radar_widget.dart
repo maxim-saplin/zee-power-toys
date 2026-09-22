@@ -8,6 +8,7 @@ import '../providers/config.dart';
 import '../providers/speedcam.dart';
 import '../services/config_store.dart';
 import '../services/speedcam.dart';
+import '../widgets/dhu_scaled_layout.dart';
 
 enum SpeedcamRadarVariant { hudCompact, dhuLarge }
 
@@ -232,9 +233,15 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
-          // Prefer view dpr (not a MediaQuery override) for reported-vs-actual bridge.
-          final dpr = View.of(context).devicePixelRatio;
-          final surfaceW = MediaQuery.sizeOf(context).width;
+          // Prefer DhuSurfaceMetrics (pre-smart-scale design width + reported
+          // dpr) so Alien bridge stays live under DhuScaledLayout / T1 Mac
+          // emulate. HUD isolate has no metrics → View/MQ → identity.
+          final metrics = DhuSurfaceMetrics.maybeOf(context);
+          final view = View.of(context);
+          final dpr = metrics?.reportedDevicePixelRatio ??
+              MediaQuery.devicePixelRatioOf(context);
+          final surfaceW = metrics?.designLogicalWidth ??
+              (view.physicalSize.width / view.devicePixelRatio);
           return CustomPaint(
             key: ValueKey(lookKey),
             painter: _AlienWedgePainter(

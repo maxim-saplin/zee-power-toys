@@ -85,4 +85,32 @@ void main() {
       expect(childLogicalWidth!, closeTo(390, 1.0));
     });
   });
+
+  group('DhuScaledLayout — T1 Retina desktop emulates DHU metrics', () {
+    testWidgets('dpr≥2 landscape window publishes design 2560 @ dpr 1.0',
+        (tester) async {
+      tester.view.devicePixelRatio = 2.0;
+      tester.view.physicalSize = const Size(2560, 1600); // logical 1280×800
+      addTearDown(tester.view.reset);
+
+      DhuSurfaceMetrics? metrics;
+      double? childDpr;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DhuScaledLayout(
+            child: Builder(builder: (context) {
+              metrics = DhuSurfaceMetrics.maybeOf(context);
+              childDpr = MediaQuery.devicePixelRatioOf(context);
+              return const SizedBox.shrink();
+            }),
+          ),
+        ),
+      );
+
+      expect(metrics, isNotNull);
+      expect(metrics!.designLogicalWidth, kDhuDesignLogicalWidth);
+      expect(metrics!.reportedDevicePixelRatio, kDhuReportedDevicePixelRatio);
+      expect(childDpr, kDhuReportedDevicePixelRatio);
+    });
+  });
 }

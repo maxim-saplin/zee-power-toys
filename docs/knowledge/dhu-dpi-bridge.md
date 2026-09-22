@@ -19,3 +19,12 @@ phosphor strokes by `dhuDpiBridge` so physical weight tracks HUD gold.
 
 On HUD Presentation (`~1024×576`, dpr≈1, not automotive-wide): bridge = **1.0**
 (identity) — gold path unchanged.
+
+## T1 Mac honesty
+Mac Retina host dpr is ≥ 2, so the automotive gate never fires on raw
+`View` metrics. `DhuScaledLayout` letterboxes the design framebuffer
+(2560×1600 @ reported dpr 1.0) into the DHU window and publishes
+`DhuSurfaceMetrics` so Alien CRT uses bridge ≈ 1.254. The HUD isolate
+has no metrics → identity (gold). Side-by-side Mac windows are then a
+real DPI A/B that predicts car.
+
