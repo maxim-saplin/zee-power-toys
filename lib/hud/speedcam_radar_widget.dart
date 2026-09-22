@@ -451,29 +451,31 @@ class _AlienWedgePainter extends CustomPainter {
       Radius.circular(minSide * 0.10),
     );
 
-    // Fan on landscape CRT (300:220 plate): even pad — outer arc + tips
-    // share the same inset (Maxim 0080: rectangle, not square).
+    // Landscape CRT (300×220): fit ±50° wedge AABB with EVEN pad on all
+    // four sides of the plate (Maxim 0080 — not portrait, not square).
+    // Apex-local: top (0,-r); tips (±r·sin50°, -r·cos50°); apex (0,0).
+    // bbox W = 2·r·sin(50°), H = r.
     const wedgeHalf = 50 * math.pi / 180;
     final tipLeft = -math.pi / 2 - wedgeHalf;
     final tipRight = -math.pi / 2 + wedgeHalf;
     final strokePad = 3.0 * s;
-    final pad = math.max(minSide * 0.07, 1.5 * s + strokePad);
+    final pad = math.max(math.min(size.width, size.height) * 0.06, 1.5 * s + strokePad);
     final inner = Rect.fromLTWH(
       pad,
       pad,
       size.width - 2 * pad,
       size.height - 2 * pad,
     );
-    final cx = size.width / 2;
-    // r from side tips at left/right pad; apex so up-arc sits on top pad.
-    final rFromSides = (cx - inner.left) / -math.cos(tipLeft);
-    final cy = (inner.top + rFromSides).clamp(
-      inner.top + minSide * 0.35,
-      inner.bottom - 2 * s,
-    );
-    final r = (cy - inner.top).clamp(minSide * 0.38, minSide * 0.68);
-    final c = Offset(cx, cy);
-    // tipRight kept for symmetry with tipLeft (side fit uses |cos|).
+    final sinHalf = math.sin(wedgeHalf);
+    final rFromW = inner.width / (2 * sinHalf);
+    final rFromH = inner.height; // bbox height == r
+    final r = math.min(rFromW, rFromH);
+    final fanW = 2 * r * sinHalf;
+    final fanH = r;
+    // Center fan bbox inside inner → even leftover pad L/R/T/B.
+    final fanLeft = inner.left + (inner.width - fanW) / 2;
+    final fanTop = inner.top + (inner.height - fanH) / 2;
+    final c = Offset(fanLeft + fanW / 2, fanTop + fanH);
     assert((tipRight + tipLeft + math.pi).abs() < 1e-9);
 
     // Ground + grit + scan ONLY — rounded clip must not touch fan strokes.
