@@ -287,34 +287,40 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
         Shadow(blurRadius: 4, color: Colors.black87),
       ],
     );
+    // 0080: square HUD radar slot can be shorter than Default text stack
+    // under HudPreview letterbox — scaleDown instead of RenderFlex overflow.
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
         padding: EdgeInsets.only(right: compact ? 8 : 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              arrow,
-              key: const ValueKey('speedcam-default-bearing'),
-              style: style.copyWith(fontSize: compact ? 22 : 36),
-            ),
-            Text(
-              distLabel,
-              key: const ValueKey('speedcam-default-distance'),
-              style: style,
-            ),
-            if (maxspeed != null)
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
               Text(
-                '$maxspeed',
-                key: const ValueKey('speedcam-default-maxspeed'),
-                style: style.copyWith(
-                  fontSize: compact ? 14 : 20,
-                  color: Colors.white70,
-                ),
+                arrow,
+                key: const ValueKey('speedcam-default-bearing'),
+                style: style.copyWith(fontSize: compact ? 22 : 36),
               ),
-          ],
+              Text(
+                distLabel,
+                key: const ValueKey('speedcam-default-distance'),
+                style: style,
+              ),
+              if (maxspeed != null)
+                Text(
+                  '$maxspeed',
+                  key: const ValueKey('speedcam-default-maxspeed'),
+                  style: style.copyWith(
+                    fontSize: compact ? 14 : 20,
+                    color: Colors.white70,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
