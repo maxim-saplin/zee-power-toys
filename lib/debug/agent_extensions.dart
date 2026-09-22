@@ -653,8 +653,12 @@ void registerZeeExtensions({
               ? cams.first
               : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
           // 1 deg lat ≈ 111320 m — approach from south.
+          // Default heading null (like HUD Demo) so facing/ahead fail-open;
+          // heading=0 made Overlay hide behind cams before visible-gate fix.
           final dLat = dist / 111320.0;
-          final heading = double.tryParse(params['headingDeg'] ?? '') ?? 0;
+          final heading = params['headingDeg'] != null
+              ? double.tryParse(params['headingDeg']!)
+              : null;
           await svc.setHostPose(SpeedcamHostPose(
             lat: cam.lat - dLat,
             lon: cam.lon,

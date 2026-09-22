@@ -18,3 +18,11 @@ OCR and guessed taps; uiautomator idle dumps also flaked. → Prefer
 `.agents/skills/drive-zee-app/SKILL.md`. Tracked as product/process issue
 `docs/issues/0089-agent-app-drive-harness.md`. Until that lands, do not spend
 a multi-turn loop on blind UI guessing for a one-button action.
+
+## 2026-09-22 23:55 — Overlay SYSTEM_ALERT_WINDOW GONE (Requested 0×0) -
+QA: Overlay ON + danger.insideApproach=true but window stayed View.GONE
+(collapsed 0×0). Root: `_pushSpeedcamSystemOverlay` re-ran `camPassesPresenceMode`
+after danger was already resolved — behind/pass-clear danger hid the float.
+Also `ext.zee.speedcam approach` defaulted `headingDeg=0` (Demo uses null).
+→ Show Overlay from enabled+danger+insideApproach (tip e6ec100); default
+approach heading null. Acted same session.
