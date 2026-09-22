@@ -983,6 +983,14 @@
   "@speedcamYnaviAlertHint": {
     "description": "0074 alert hint"
   },
+  "speedcamAlertLaneCams": "Alert lane cams",
+  "@speedcamAlertLaneCams": {
+    "description": "0088 lane cam alert toggle (default off)"
+  },
+  "speedcamAlertLaneCamsHint": "When on, YNavi lane-control cameras also trigger alerts. Default off (speedcams only).",
+  "@speedcamAlertLaneCamsHint": {
+    "description": "0088 lane cam alert hint"
+  },
   "speedcamYnaviAging": "YNavi point aging",
   "@speedcamYnaviAging": {
     "description": "0073 aging slider label"

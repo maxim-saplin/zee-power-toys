@@ -1,5 +1,5 @@
 ---
-status: cooking
+status: tipped
 labels: [speedcam, osm, ynavi, false-alarm]
 created: 2026-09-22
 satisfies: foundation
@@ -24,7 +24,24 @@ Car (Maxim 2026-09-22): cam at **53.907996, 27.424118** alerted as speedcam at 6
 When YNavi feed is enabled, add an optional **alert on lane cams** toggle — **default OFF** (filter lane cams out of alerts by default).
 
 ## Definition of Done
-- [ ] Root cause documented (OSM tag / YNavi type / both)
-- [ ] Optional filter in settings (default OFF) when YNavi enrich is on; OSM-only path clarified
+- [x] Root cause documented (OSM tag / YNavi type / both)
+- [x] Optional filter in settings (default OFF) when YNavi enrich is on; OSM-only path clarified
 - [ ] T2 evidence: known lane-cam coords do not alert with filter default; alert when toggle ON
 - [ ] PDM ACCEPT after double-check
+
+## FINDINGS (2026-09-23)
+
+### Root cause (verified)
+- YNavi `SpeedCamBroadcaster` puts cam tags into intent extra `type` (often contains `LANE`).
+- Kotlin `SpeedcamYnaviReceiver` forwards `type`/`tags` into the Dart bridge map.
+- Dart `ingestYnaviEvent` previously **dropped** `type` — `SpeedcamPoint` had no `camType` — so lane cams alerted as speedcams.
+- OSM pack queries only `highway=speed_camera` / `enforcement=maxspeed` (no lane query). Primary false alarms are **YNavi-typed LANE**, not OSM.
+
+### Fix
+- `SpeedcamPoint.camType` preserved from `raw['type'] ?? raw['tags']`.
+- `isLaneCam` = camType uppercased contains `LANE`.
+- `SpeedcamConfig.alertLaneCams` default **false**; settings toggle under YNavi (enrich on only).
+- `camsForAlert` excludes `isLaneCam` when YNavi alert path active and `!alertLaneCams` (map/enrich snapshot still keeps them). Danger binder already uses `camsForAlert`.
+
+### Tip
+`TIP_SHA_PENDING` — unit tests: `test/services/speedcam_0088_lane_cam_test.dart`.

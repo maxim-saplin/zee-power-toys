@@ -10,6 +10,7 @@ class SpeedcamPoint {
     this.direction,
     this.source,
     this.lastSeenEpochMs,
+    this.camType,
   });
 
   final String id;
@@ -24,10 +25,34 @@ class SpeedcamPoint {
   /// 0073: last ingest/renewal epoch ms (YNavi overlay aging). OSM pack cams omit this.
   final int? lastSeenEpochMs;
 
+  /// 0088: YNavi `type`/`tags` (e.g. contains `LANE` for lane cams). OSM omit.
+  final String? camType;
+
   bool get isYnaviSourced =>
       source == 'ynavi' ||
       source == 'osm+ynavi' ||
       id.startsWith('ynavi:');
+
+  SpeedcamPoint copyWith({
+    String? id,
+    double? lat,
+    double? lon,
+    int? maxspeed,
+    String? direction,
+    String? source,
+    int? lastSeenEpochMs,
+    String? camType,
+  }) =>
+      SpeedcamPoint(
+        id: id ?? this.id,
+        lat: lat ?? this.lat,
+        lon: lon ?? this.lon,
+        maxspeed: maxspeed ?? this.maxspeed,
+        direction: direction ?? this.direction,
+        source: source ?? this.source,
+        lastSeenEpochMs: lastSeenEpochMs ?? this.lastSeenEpochMs,
+        camType: camType ?? this.camType,
+      );
 
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
@@ -37,6 +62,7 @@ class SpeedcamPoint {
         if (direction != null) 'direction': direction,
         if (source != null) 'source': source,
         if (lastSeenEpochMs != null) 'lastSeenEpochMs': lastSeenEpochMs,
+        if (camType != null) 'camType': camType,
       };
 
   factory SpeedcamPoint.fromJson(Map<String, Object?> json) => SpeedcamPoint(
@@ -47,6 +73,7 @@ class SpeedcamPoint {
         direction: json['direction'] as String?,
         source: json['source'] as String?,
         lastSeenEpochMs: (json['lastSeenEpochMs'] as num?)?.toInt(),
+        camType: json['camType'] as String?,
       );
 
   @override
@@ -58,11 +85,28 @@ class SpeedcamPoint {
       other.maxspeed == maxspeed &&
       other.direction == direction &&
       other.source == source &&
-      other.lastSeenEpochMs == lastSeenEpochMs;
+      other.lastSeenEpochMs == lastSeenEpochMs &&
+      other.camType == camType;
 
   @override
-  int get hashCode =>
-      Object.hash(id, lat, lon, maxspeed, direction, source, lastSeenEpochMs);
+  int get hashCode => Object.hash(
+        id,
+        lat,
+        lon,
+        maxspeed,
+        direction,
+        source,
+        lastSeenEpochMs,
+        camType,
+      );
+}
+
+/// 0088: YNavi lane-control cam (type/tags contain `LANE`).
+bool isLaneCam(SpeedcamPoint cam) {
+  final raw = (cam.camType ?? '').toUpperCase();
+  if (!raw.contains('LANE')) return false;
+  // Speed-only labels without LANE already fail the check above.
+  return true;
 }
 
 /// Host vehicle position for proximity (T1 inject / later GPS).

@@ -901,6 +901,7 @@ class SpeedcamConfig {
     this.ynaviEnrichEnabled = false,
     this.ynaviCollectEnabled = true,
     this.ynaviAlertEnabled = true,
+    this.alertLaneCams = false,
     this.ynaviPointTtlDays = 7,
     this.overlaySizeScale = 1.0,
     this.overlayPlacement = SpeedcamOverlayPlacement.topEnd,
@@ -939,6 +940,9 @@ class SpeedcamConfig {
   /// 0074: when enrich ON, alert/HUD treat YNavi-sourced cams. Default ON.
   final bool ynaviAlertEnabled;
 
+  /// 0088: when enrich ON, also alert on YNavi lane cams. Default OFF.
+  final bool alertLaneCams;
+
   /// 0073: TTL days for YNavi overlay points (not OSM pack). Default 7.
   final int ynaviPointTtlDays;
 
@@ -966,6 +970,7 @@ class SpeedcamConfig {
     bool? ynaviEnrichEnabled,
     bool? ynaviCollectEnabled,
     bool? ynaviAlertEnabled,
+    bool? alertLaneCams,
     int? ynaviPointTtlDays,
     double? overlaySizeScale,
     SpeedcamOverlayPlacement? overlayPlacement,
@@ -997,6 +1002,7 @@ class SpeedcamConfig {
       ynaviEnrichEnabled: ynaviEnrichEnabled ?? this.ynaviEnrichEnabled,
       ynaviCollectEnabled: ynaviCollectEnabled ?? this.ynaviCollectEnabled,
       ynaviAlertEnabled: ynaviAlertEnabled ?? this.ynaviAlertEnabled,
+      alertLaneCams: alertLaneCams ?? this.alertLaneCams,
       ynaviPointTtlDays: ynaviPointTtlDays ?? this.ynaviPointTtlDays,
       overlaySizeScale: overlaySizeScale ?? this.overlaySizeScale,
       overlayPlacement: overlayPlacement ?? this.overlayPlacement,
@@ -1018,6 +1024,7 @@ class SpeedcamConfig {
         'ynaviEnrichEnabled': ynaviEnrichEnabled,
         'ynaviCollectEnabled': ynaviCollectEnabled,
         'ynaviAlertEnabled': ynaviAlertEnabled,
+        'alertLaneCams': alertLaneCams,
         'ynaviPointTtlDays': ynaviPointTtlDays,
         'overlaySizeScale': overlaySizeScale,
         'overlayPlacement': overlayPlacement.name,
@@ -1057,6 +1064,7 @@ class SpeedcamConfig {
       ynaviEnrichEnabled: json['ynaviEnrichEnabled'] as bool? ?? false,
       ynaviCollectEnabled: json['ynaviCollectEnabled'] as bool? ?? true,
       ynaviAlertEnabled: json['ynaviAlertEnabled'] as bool? ?? true,
+      alertLaneCams: json['alertLaneCams'] as bool? ?? false,
       ynaviPointTtlDays: (json['ynaviPointTtlDays'] as num?)?.toInt() ?? 7,
       overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0).clamp(0.6, 1.6),
       overlayPlacement: SpeedcamOverlayPlacement.values.firstWhere(
@@ -1080,6 +1088,7 @@ class SpeedcamConfig {
       other.ynaviEnrichEnabled == ynaviEnrichEnabled &&
       other.ynaviCollectEnabled == ynaviCollectEnabled &&
       other.ynaviAlertEnabled == ynaviAlertEnabled &&
+      other.alertLaneCams == alertLaneCams &&
       other.ynaviPointTtlDays == ynaviPointTtlDays &&
       other.overlaySizeScale == overlaySizeScale &&
       other.overlayPlacement == overlayPlacement;
@@ -1097,6 +1106,7 @@ class SpeedcamConfig {
         ynaviEnrichEnabled,
         ynaviCollectEnabled,
         ynaviAlertEnabled,
+        alertLaneCams,
         ynaviPointTtlDays,
         overlaySizeScale,
         overlayPlacement,

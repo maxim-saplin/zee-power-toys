@@ -671,6 +671,7 @@ void _applySpeedcamConfig(
     speedcam.setYnaviEnrichEnabled(sc.ynaviEnrichEnabled);
     speedcam.setYnaviCollectEnabled(sc.ynaviCollectEnabled);
     speedcam.setYnaviAlertEnabled(sc.ynaviAlertEnabled);
+    speedcam.setAlertLaneCams(sc.alertLaneCams);
     speedcam.setYnaviPointTtlDays(sc.ynaviPointTtlDays);
   } else if (speedcam is FakeSpeedcamService) {
     speedcam.setApproachRadiusM(sc.dhuRangeM);

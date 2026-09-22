@@ -1573,6 +1573,18 @@ abstract class AppLocalizations {
   /// **'HUD/sound/DHU treat YNavi-sourced cams. Collect can stay on while alerts are off.'**
   String get speedcamYnaviAlertHint;
 
+  /// 0088 lane cam alert toggle (default off)
+  ///
+  /// In en, this message translates to:
+  /// **'Alert lane cams'**
+  String get speedcamAlertLaneCams;
+
+  /// 0088 lane cam alert hint
+  ///
+  /// In en, this message translates to:
+  /// **'When on, YNavi lane-control cameras also trigger alerts. Default off (speedcams only).'**
+  String get speedcamAlertLaneCamsHint;
+
   /// 0073 aging slider label
   ///
   /// In en, this message translates to:

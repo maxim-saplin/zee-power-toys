@@ -772,6 +772,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'HUD/звук/DHU для камер YNavi. Сбор можно оставить включённым без оповещений.';
 
   @override
+  String get speedcamAlertLaneCams => 'Оповещения о полосных';
+
+  @override
+  String get speedcamAlertLaneCamsHint =>
+      'Вкл. — оповещения и для камер контроля полос из YNavi. По умолчанию выкл. (только скоростные).';
+
+  @override
   String get speedcamYnaviAging => 'Старение точек YNavi';
 
   @override

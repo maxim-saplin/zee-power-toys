@@ -771,6 +771,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'HUD/sound/DHU treat YNavi-sourced cams. Collect can stay on while alerts are off.';
 
   @override
+  String get speedcamAlertLaneCams => 'Alert lane cams';
+
+  @override
+  String get speedcamAlertLaneCamsHint =>
+      'When on, YNavi lane-control cameras also trigger alerts. Default off (speedcams only).';
+
+  @override
   String get speedcamYnaviAging => 'YNavi point aging';
 
   @override

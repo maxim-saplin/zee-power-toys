@@ -59,12 +59,15 @@ class DefaultSpeedcamService implements SpeedcamService {
   bool _ynaviEnrichEnabled = false;
   bool _ynaviCollectEnabled = true;
   bool _ynaviAlertEnabled = true;
+  bool _alertLaneCams = false;
   int _ynaviPointTtlDays = 7;
 
   /// 0071: master gate for YNavi ingest (default OFF via config).
   bool get ynaviEnrichEnabled => _ynaviEnrichEnabled;
   bool get ynaviCollectEnabled => _ynaviCollectEnabled;
   bool get ynaviAlertEnabled => _ynaviAlertEnabled;
+  /// 0088: alert on YNavi lane cams (default OFF).
+  bool get alertLaneCams => _alertLaneCams;
   int get ynaviPointTtlDays => _ynaviPointTtlDays;
 
   /// 0072: OSM/pack points (not pure ynavi: ids).
@@ -90,6 +93,12 @@ class DefaultSpeedcamService implements SpeedcamService {
   void setYnaviAlertEnabled(bool enabled) {
     if (_ynaviAlertEnabled == enabled) return;
     _ynaviAlertEnabled = enabled;
+    _emit();
+  }
+
+  void setAlertLaneCams(bool enabled) {
+    if (_alertLaneCams == enabled) return;
+    _alertLaneCams = enabled;
     _emit();
   }
 
@@ -219,6 +228,9 @@ class DefaultSpeedcamService implements SpeedcamService {
         ? 'ynavi:$eventId'
         : 'ynavi:${lat.toStringAsFixed(5)}_${lon.toStringAsFixed(5)}';
     final limit = (raw['speedLimit'] as num?)?.toInt();
+    final camTypeRaw = (raw['type'] as String?) ?? (raw['tags'] as String?);
+    final camType =
+        (camTypeRaw != null && camTypeRaw.trim().isNotEmpty) ? camTypeRaw : null;
     final point = SpeedcamPoint(
       id: id,
       lat: lat,
@@ -226,6 +238,7 @@ class DefaultSpeedcamService implements SpeedcamService {
       maxspeed: (limit != null && limit > 0) ? limit : null,
       source: (raw['source'] as String?) ?? 'ynavi',
       lastSeenEpochMs: seenMs,
+      camType: camType,
     );
     final existingIdx = _ynaviOverlay.indexWhere((c) => c.id == id);
     if (existingIdx >= 0) {
@@ -241,6 +254,7 @@ class DefaultSpeedcamService implements SpeedcamService {
           direction: prev.direction,
           source: prev.source ?? 'ynavi',
           lastSeenEpochMs: seenMs,
+          camType: point.camType ?? prev.camType,
         );
         _pruneAgedYnavi(nowMs: wallNowMs);
         _rebuildMerged();
@@ -294,10 +308,19 @@ class DefaultSpeedcamService implements SpeedcamService {
     _camSource = _ynaviOverlay.isEmpty ? 'pack' : 'pack+ynavi';
   }
 
-  /// Cams used for alert/HUD danger when YNavi alert is gated (0074).
+  /// Cams used for alert/HUD danger when YNavi alert is gated (0074/0088).
   List<SpeedcamPoint> get camsForAlert {
-    if (_ynaviEnrichEnabled && _ynaviAlertEnabled) return _cams;
-    return _cams.where((c) => !c.isYnaviSourced).toList();
+    List<SpeedcamPoint> list;
+    if (_ynaviEnrichEnabled && _ynaviAlertEnabled) {
+      list = _cams;
+    } else {
+      list = _cams.where((c) => !c.isYnaviSourced).toList();
+    }
+    // 0088: YNavi alert path active + lane alerts off → drop lane cams.
+    if (_ynaviEnrichEnabled && _ynaviAlertEnabled && !_alertLaneCams) {
+      list = list.where((c) => !isLaneCam(c)).toList();
+    }
+    return list;
   }
 
   /// Prefer OSM id when geo-close (~20 m); else keep both under distinct ids.
@@ -327,6 +350,7 @@ class DefaultSpeedcamService implements SpeedcamService {
           direction: o.direction,
           source: 'osm+ynavi',
           lastSeenEpochMs: match.lastSeenEpochMs,
+          camType: match.camType ?? o.camType,
         ));
       } else {
         out.add(o.source == null ? SpeedcamPoint(
@@ -336,6 +360,7 @@ class DefaultSpeedcamService implements SpeedcamService {
           maxspeed: o.maxspeed,
           direction: o.direction,
           source: 'overpass',
+          camType: o.camType,
         ) : o);
       }
     }

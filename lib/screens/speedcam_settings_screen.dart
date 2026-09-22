@@ -344,6 +344,15 @@ class _SpeedcamSettingsScreenState
                   onChanged: (v) =>
                       _patchSpeedcam((c) => c.copyWith(ynaviAlertEnabled: v)),
                 ),
+                SwitchListTile(
+                  key: const ValueKey('speedcam-alert-lane-cams'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.speedcamAlertLaneCams),
+                  subtitle: Text(l10n.speedcamAlertLaneCamsHint),
+                  value: sc.alertLaneCams,
+                  onChanged: (v) =>
+                      _patchSpeedcam((c) => c.copyWith(alertLaneCams: v)),
+                ),
                 SettingsSlider(
                   label: l10n.speedcamYnaviAging,
                   valueLabel: '${sc.ynaviPointTtlDays}d',
