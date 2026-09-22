@@ -399,6 +399,11 @@ double alienCrtPlateScale(Size size) {
   return minSide / 160.0;
 }
 
+/// Design km font at [alienCrtPlateScale] = 1. Fraction of design side ≈ 0.21
+/// (classic pre-6788dc5 HUD glyph/min). Limit keeps ~18/34 of km.
+const double kAlienCrtKmDesignFont = 34.0;
+const double kAlienCrtLimitDesignFont = 18.0;
+
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 ///
 /// 0083 Maxim: **DPI-agnostic** vector + text. All strokes and km/limit scale
@@ -660,9 +665,9 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Km + limit: LARGE bottom-left, somewhat overlaps fan apex / left lobe
-    // (Maxim original) — not tiny text in an empty strip under a shrunk fan.
-    // Stay left of center radial; modest pad from plate L/B edges.
+    // Km + limit: LARGE bottom-left (~0.21 of min-side), overlaps fan apex /
+    // left lobe (Maxim 0083 bar — enlarge Overlay/preview to classic HUD, do
+    // NOT shrink HUD to Overlay-small). Stay left of center; modest L/B pad.
     if (readoutM != null) {
       final cornerPad = math.max(pad, 8.0 * s);
       final km = TextPainter(
@@ -670,7 +675,7 @@ class _AlienWedgePainter extends CustomPainter {
           text: (readoutM! / 1000).toStringAsFixed(2),
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 22 * s,
+            fontSize: kAlienCrtKmDesignFont * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -684,7 +689,7 @@ class _AlienWedgePainter extends CustomPainter {
           text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
-            fontSize: 12 * s,
+            fontSize: kAlienCrtLimitDesignFont * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
             height: 1.0,

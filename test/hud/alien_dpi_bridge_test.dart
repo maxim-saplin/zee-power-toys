@@ -21,14 +21,20 @@ void main() {
     );
   });
 
-  test('alienCrtPlateScale on canonical plate is design fraction 22/160', () {
+  test('alien CRT km design font is classic HUD glyph fraction ~0.21', () {
     const design = 160.0;
-    const kmDesign = 22.0;
     final plate = const Size(kSpeedcamCrtPlateW, kSpeedcamCrtPlateH);
     final s = alienCrtPlateScale(plate);
     expect(s, closeTo(plate.shortestSide / design, 1e-9));
-    expect((kmDesign * s) / plate.shortestSide, closeTo(kmDesign / design, 1e-9));
-    expect(kmDesign / design, closeTo(0.1375, 1e-9));
+    expect(kAlienCrtKmDesignFont, 34.0);
+    expect(kAlienCrtLimitDesignFont, 18.0);
+    // FittedBox keeps glyph/min = designFont/160 on every slot size.
+    expect(
+      (kAlienCrtKmDesignFont * s) / plate.shortestSide,
+      closeTo(kAlienCrtKmDesignFont / design, 1e-9),
+    );
+    expect(kAlienCrtKmDesignFont / design, closeTo(0.2125, 1e-9));
+    expect(kAlienCrtLimitDesignFont / design, closeTo(0.1125, 1e-9));
   });
 
   test('pickSpeedcamDemoCam prefers maxspeed 60 over unknown-facing 70', () {
