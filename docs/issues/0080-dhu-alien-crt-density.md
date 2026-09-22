@@ -1,5 +1,5 @@
 ---
-status: cooking
+status: cooking-fix
 labels: [speedcam, hud, dhu, alien, visual, hard]
 created: 2026-09-22
 satisfies: Alien CRT on DHU preview/overlay reads like HUD windshield — bold lines, grit, distance overlapping radar
@@ -47,3 +47,7 @@ Make Alien paint **scale with paint size** (or otherwise density-match) so DHU s
 ## Notes
 
 PDM owned the miss: 0079 ACCEPT covered layout/wiring, not this visual bar. Treat as product HARD until pixels match.
+
+## Fix pass (Maxim FAIL — clip + km)
+- Dropped outer settings `ClipRRect` (shaved CRT/fan)
+- Km + limit bottom-left of full composite after CRT restore (HUD geometry; not mid-left)

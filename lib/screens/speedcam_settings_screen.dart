@@ -268,22 +268,21 @@ class _SpeedcamSettingsScreenState
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
                   // Alien CRT paint is variant-agnostic; keep dhuLarge so settings
                   // Semantics key stays `dhu-speedcam-radar` (radar_fit / 0039).
+                  // No outer ClipRRect — it shaved the CRT/fan (0080 Maxim).
+                  // Painter draws its own curved CRT face.
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
                       width: side,
                       height: side,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(side * 0.12),
-                        child: ColoredBox(
-                          color: Colors.black,
-                          child: SpeedcamRadarWidget(
-                            variant: SpeedcamRadarVariant.dhuLarge,
-                            // Alien: demo contact only (no idle alwaysShow theater).
-                            alwaysShow: !isAlien,
-                            forceDemoDanger: SpeedcamRadarWidget.demoDanger,
-                            displayRadiusM: sc.dhuRangeM,
-                          ),
+                      child: ColoredBox(
+                        color: Colors.black,
+                        child: SpeedcamRadarWidget(
+                          variant: SpeedcamRadarVariant.dhuLarge,
+                          // Alien: demo contact only (no idle alwaysShow theater).
+                          alwaysShow: !isAlien,
+                          forceDemoDanger: SpeedcamRadarWidget.demoDanger,
+                          displayRadiusM: sc.dhuRangeM,
                         ),
                       ),
                     ),

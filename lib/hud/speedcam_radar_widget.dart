@@ -627,9 +627,12 @@ class _AlienWedgePainter extends CustomPainter {
       );
     }
 
+    canvas.restore(); // end CRT glass
+
+    // Km + limit on the FULL composite bottom-left (HUD geometry — 0080).
+    // Painted after CRT restore so rounded glass clip cannot shave glyphs;
+    // fan origin at 0.88H still makes the numbers overlap the lower wedge.
     if (readoutM != null) {
-      // Large distance in km overlapping the fan (HUD CRT vibe — 0080);
-      // smaller camera speed limit below.
       final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
@@ -655,19 +658,15 @@ class _AlienWedgePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      // Sit mid-left into the wedge (HUD photo: distance overlaps fan).
-      final kmTop = size.height * 0.50;
       final kmLeft = 8 * s;
+      final bottom = size.height - 8 * s;
+      final stackH = km.height + (maxspeed != null ? limit.height + 2 * s : 0);
+      final kmTop = bottom - stackH;
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
-        limit.paint(
-          canvas,
-          Offset(kmLeft, kmTop + km.height + 2 * s),
-        );
+        limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 2 * s));
       }
     }
-
-    canvas.restore(); // end CRT glass
 
   }
 
