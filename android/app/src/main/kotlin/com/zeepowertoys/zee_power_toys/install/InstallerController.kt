@@ -3,35 +3,46 @@ package com.zeepowertoys.zee_power_toys.install
 import android.content.Context
 import android.util.Log
 import io.flutter.plugin.common.EventChannel
-import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.Collections
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * InstallerController — wires Dart ↔ Kotlin for the installer feature (Block 0014).
  *
  * Channels registered on the DHU (primary) engine messenger:
  *   MethodChannel  "zee/installer"         — start(url)
- *   EventChannel   "zee/installer/events"  — install progress stream
+ *   EventChannel   "zee/installer/events"  — install progress stream (multiplexed)
  *
  * Flow:
- *   1. Dart calls start() with {url} — a pre-resolved LFS raw-content URL:
- *        https://media.githubusercontent.com/media/<repo>/<branch>/<path>
+ *   1. Dart calls start() with {url} — a pre-resolved download URL.
  *   2. Downloader streams the APK to the app cache directory.
- *   3. Progress events are emitted on the EventChannel:
- *        {phase: "downloading", fraction: 0.0..1.0}
- *        {phase: "installing",  fraction: 0.8}
- *        {phase: "done",        fraction: 1.0}
- *        {phase: "failed",      fraction: 0.0, message: "<error>"}
+ *   3. Progress events are emitted on the EventChannel, each tagged with `url`:
+ *        {url, phase: "downloading", fraction: 0.0..1.0}
+ *        {url, phase: "installing",  fraction: 0.8}
+ *        {url, phase: "done",        fraction: 1.0}
+ *        {url, phase: "failed",      fraction: 0.0, message: "<error>"}
  *   4. AppInstaller commits a PackageInstaller session (or falls back to
  *      an intent).  The actual install dialog/completion is user-gated (T3).
  *
+ * Parallel installs (Block 0084):
+ *   Flutter EventChannel allows only one active sink.  A second
+ *   receiveBroadcastStream used to cancel the first (onCancel cleared
+ *   inFlightKey + stole the sink), so Update looked aborted while its
+ *   PackageInstaller session still committed and restarted the app —
+ *   progress attributed to the wrong card.
+ *   Fix: every event carries `url`; Dart keeps one shared subscription and
+ *   fans out by url.  Native tracks a set of in-flight URLs (not a single
+ *   key).  onCancel only drops the sink — never aborts jobs.  Downloads run
+ *   on a small thread pool.  Self-update commits wait until companion
+ *   installs finish so process death does not strand YNavi mid-commit.
+ *
  * Threading:
- *   Downloads run on a single-thread executor so concurrent start() calls are
- *   serialised.  All EventChannel sink calls are made on the platform thread via
- *   Handler.post to satisfy Flutter's thread-safety requirement.
+ *   Downloads/installs run on a fixed pool (size 3).  EventChannel sink
+ *   calls are posted to the platform thread.
  */
 class InstallerController(
     private val context: Context,
@@ -42,24 +53,44 @@ class InstallerController(
         private const val TAG = "ZEE/Installer"
         private const val METHOD_CHANNEL = "zee/installer"
         private const val EVENT_CHANNEL  = "zee/installer/events"
+
+        /** Filenames used by 0069 self-update Releases. */
+        private val SELF_UPDATE_NAMES = setOf(
+            "zee-power-toys.apk",
+            "app-release.apk",
+        )
+
+        /**
+         * True when [url] is a Zee Power Toys self-update APK.
+         * Self-update PackageInstaller commit kills this process — defer it
+         * until companion installs have finished committing.
+         */
+        fun isSelfUpdateUrl(url: String): Boolean {
+            val name = url.substringAfterLast('/').substringBefore('?')
+            if (name in SELF_UPDATE_NAMES) return true
+            // browser_download_url may use a different asset name; repo path is stable.
+            return url.contains("/maxim-saplin/zee-power-toys/") &&
+                name.endsWith(".apk", ignoreCase = true)
+        }
     }
 
-    // Single-thread executor: serialises download/install operations.
-    private val executor = Executors.newSingleThreadExecutor()
+    // Parallel download/install slots (0084). Size 3 covers Update + 2 companions.
+    private val executor = Executors.newFixedThreadPool(3)
 
     // Active EventChannel sink — set when Flutter subscribes, cleared on cancel.
     @Volatile private var eventSink: EventChannel.EventSink? = null
 
-    // Dedup guard (Block 0014 reconciliation): both the "start" method call and
-    // the EventChannel onListen trigger startInstall on one Dart invocation; this
-    // is the URL currently in flight, so the second trigger is a NOOP.
-    @Volatile private var inFlightKey: String? = null
+    // URLs currently downloading/installing. Dedupes double-start (method+listen).
+    private val inFlightUrls: MutableSet<String> =
+        Collections.synchronizedSet(mutableSetOf())
+
+    // Companion (non-self-update) jobs still running — self-update waits on this.
+    private val companionInFlight = AtomicInteger(0)
 
     private val methodChannel = MethodChannel(messenger, METHOD_CHANNEL)
     private val eventChannel  = EventChannel(messenger, EVENT_CHANNEL)
 
     init {
-        // Method channel: start(url) kicks off the download.
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "start" -> {
@@ -67,7 +98,6 @@ class InstallerController(
                     if (url.isEmpty()) {
                         result.error("BAD_ARGS", "url required", null)
                     } else {
-                        // Acknowledge immediately; progress comes on the event stream.
                         result.success(null)
                         startInstall(url)
                     }
@@ -76,16 +106,14 @@ class InstallerController(
             }
         }
 
-        // Event channel: the Dart EventChannel.receiveBroadcastStream sends the
-        // {url} argument as the listen argument.
         eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                 eventSink = sink
                 Log.d(TAG, "EventChannel: Dart subscribed")
 
-                // The Dart side passes the install URL in receiveBroadcastStream.
-                // We kick off the download here (the method call "start" above is
-                // an alternative trigger — both paths guard against double-start).
+                // Compat: older Dart passed {url} in listen args and also called
+                // start().  Shared-subscription Dart (0084) listens with no args
+                // and only uses MethodChannel start — so this path is a NOOP then.
                 if (arguments is Map<*, *>) {
                     val url = arguments["url"] as? String ?: ""
                     if (url.isNotEmpty()) {
@@ -95,35 +123,34 @@ class InstallerController(
             }
 
             override fun onCancel(arguments: Any?) {
-                Log.d(TAG, "EventChannel: Dart unsubscribed")
+                // 0084: never clear inFlightUrls here.  A second listen used to
+                // cancel the first and wipe the key, aborting Update in the UI
+                // while the executor kept going.  Jobs outlive the sink; events
+                // are simply dropped until Dart re-subscribes.
+                Log.d(TAG, "EventChannel: Dart unsubscribed (jobs keep running)")
                 eventSink = null
-                inFlightKey = null
             }
         })
     }
 
     /**
-     * Kick off the download + install on the background executor.
+     * Kick off download + install on the background pool.
      *
-     * Dedup: a 2nd startInstall call for the same URL while one is already in
-     * flight is a NOOP — both the EventChannel onListen and the MethodChannel
-     * start() fire startInstall on one Dart invocation; the second trigger hits
-     * the key guard and returns immediately.  inFlightKey is cleared when the
-     * executor task reaches a terminal state (done or failed), so a later
-     * re-install of the same asset is allowed.  Two different assets queue on
-     * the single-thread executor.
-     *
-     * Invariant: inFlightKey is cleared BEFORE Dart is notified of any terminal
-     * state so that a re-tap from Dart cannot be wrongly NOOP'd.
+     * Dedup: a 2nd startInstall for a URL already in [inFlightUrls] is a NOOP
+     * (method + legacy listen double-fire).  Distinct URLs run concurrently.
      */
-    @Synchronized
     private fun startInstall(url: String) {
-        if (url == inFlightKey) {
-            Log.i(TAG, "startInstall: $url already in flight — NOOP (dedup)")
-            return
+        synchronized(inFlightUrls) {
+            if (!inFlightUrls.add(url)) {
+                Log.i(TAG, "startInstall: $url already in flight — NOOP (dedup)")
+                return
+            }
         }
-        inFlightKey = url
-        Log.i(TAG, "startInstall: url=$url")
+        val selfUpdate = isSelfUpdateUrl(url)
+        if (!selfUpdate) {
+            companionInFlight.incrementAndGet()
+        }
+        Log.i(TAG, "startInstall: url=$url selfUpdate=$selfUpdate")
         try {
             executor.submit {
                 var terminalPhase = "failed"
@@ -133,30 +160,30 @@ class InstallerController(
                     Log.i(TAG, "Resolved URL: $url")
 
                     val cacheDir = context.cacheDir
-                    // Derive a stable cache filename from the last path segment of the URL.
-                    val apkName = url.substringAfterLast('/').ifEmpty { "install.apk" }
+                    val apkName = url.substringAfterLast('/').substringBefore('?')
+                        .ifEmpty { "install.apk" }
                     val apkFile = File(cacheDir, apkName)
 
-                    // --- Download phase ---
-                    sendProgress("downloading", 0.0)
+                    sendProgress(url, "downloading", 0.0)
                     Downloader.download(url, apkFile) { downloaded, total ->
                         val fraction = if (total > 0) {
                             downloaded.toDouble() / total.toDouble()
                         } else {
-                            // Unknown Content-Length: pulse at 50 %
                             0.5
                         }
-                        sendProgress("downloading", fraction)
+                        sendProgress(url, "downloading", fraction)
                     }
                     Log.i(TAG, "Download complete: ${apkFile.absolutePath} (${apkFile.length()} bytes)")
 
-                    // --- Install phase ---
-                    sendProgress("installing", 0.8)
+                    if (selfUpdate) {
+                        waitForCompanionsBeforeSelfUpdate(url)
+                    }
+
+                    sendProgress(url, "installing", 0.8)
                     try {
                         AppInstaller.installViaSession(context, apkFile)
-                        Log.i(TAG, "PackageInstaller session committed")
+                        Log.i(TAG, "PackageInstaller session committed for $url")
                     } catch (e: Exception) {
-                        // PackageInstaller failed — try intent fallback.
                         Log.w(TAG, "PackageInstaller session failed, trying intent fallback", e)
                         AppInstaller.installViaIntent(context, apkFile)
                     }
@@ -165,38 +192,70 @@ class InstallerController(
                     terminalFraction = 1.0
 
                 } catch (e: Exception) {
-                    Log.e(TAG, "Install error: ${e.message}", e)
+                    Log.e(TAG, "Install error ($url): ${e.message}", e)
                     terminalPhase = "failed"
                     terminalFraction = 0.0
                     terminalMessage = e.message ?: "Unknown error"
                 } finally {
-                    // Clear inFlightKey BEFORE notifying Dart so a fast re-tap
-                    // after 'done' is never wrongly NOOP'd by the dedup guard.
-                    inFlightKey = null
+                    // Drop from in-flight BEFORE notifying Dart so a fast re-tap
+                    // is never wrongly NOOP'd.
+                    inFlightUrls.remove(url)
+                    if (!selfUpdate) {
+                        companionInFlight.decrementAndGet()
+                    }
                     if (terminalMessage != null) {
-                        sendProgress(terminalPhase, terminalFraction, terminalMessage)
+                        sendProgress(url, terminalPhase, terminalFraction, terminalMessage)
                     } else {
-                        sendProgress(terminalPhase, terminalFraction)
+                        sendProgress(url, terminalPhase, terminalFraction)
                     }
                 }
             }
         } catch (e: RejectedExecutionException) {
-            // Executor was shut down (tearDown called) — release the key so it
-            // isn't left permanently stuck.
             Log.w(TAG, "startInstall: executor shut down, releasing key $url", e)
-            inFlightKey = null
+            inFlightUrls.remove(url)
+            if (!selfUpdate) {
+                companionInFlight.decrementAndGet()
+            }
         }
     }
 
+    /**
+     * Block until companion installs leave flight (or timeout).  Prevents
+     * self-update PackageInstaller from killing the process before YNavi /
+     * launcher sessions are committed.
+     */
+    private fun waitForCompanionsBeforeSelfUpdate(url: String) {
+        val deadline = System.nanoTime() + 10L * 60L * 1_000_000_000L // 10 min
+        while (companionInFlight.get() > 0) {
+            if (System.nanoTime() > deadline) {
+                Log.w(TAG, "self-update $url: timed out waiting for companions; committing anyway")
+                return
+            }
+            Log.i(TAG, "self-update $url: waiting for ${companionInFlight.get()} companion install(s)")
+            try {
+                Thread.sleep(150)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return
+            }
+        }
+        Log.i(TAG, "self-update $url: companions clear — committing")
+    }
+
     /** Send a progress map on the EventChannel (posted to the platform thread). */
-    private fun sendProgress(phase: String, fraction: Double, message: String? = null) {
+    private fun sendProgress(
+        url: String,
+        phase: String,
+        fraction: Double,
+        message: String? = null,
+    ) {
         val map = mutableMapOf<String, Any>(
+            "url" to url,
             "phase" to phase,
             "fraction" to fraction,
         )
         if (message != null) map["message"] = message
-        Log.d(TAG, "progress: phase=$phase fraction=$fraction")
-        // EventChannel sinks must be called on the platform thread.
+        Log.d(TAG, "progress: url=$url phase=$phase fraction=$fraction")
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             eventSink?.success(map)
         }
@@ -206,7 +265,8 @@ class InstallerController(
     fun tearDown() {
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
-        inFlightKey = null
+        inFlightUrls.clear()
+        companionInFlight.set(0)
         executor.shutdown()
     }
 }

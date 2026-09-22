@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../installer.dart';
@@ -8,65 +9,146 @@ import '../installer.dart';
 ///
 /// Communicates with the native Kotlin [InstallerController] via two channels:
 ///   - MethodChannel  "zee/installer"        — start(url)
-///   - EventChannel   "zee/installer/events" — progress stream
+///   - EventChannel   "zee/installer/events" — multiplexed progress stream
 ///
-/// The resolved LFS raw-content URL is passed directly; the native side
-/// downloads the APK and launches PackageInstaller session API (or falls back
-/// to ACTION_VIEW).  URL form:
-///   `https://media.githubusercontent.com/media/<repo>/<branch>/<path>`
+/// Block 0084: Flutter's EventChannel allows only one active listener. Opening
+/// a second [receiveBroadcastStream] cancelled the first (Update looked
+/// aborted; progress landed on the wrong card).  This adapter keeps **one**
+/// shared native subscription while any install is active and fans events out
+/// by the `url` field that Kotlin attaches to every progress map.  Installs are
+/// started only via the MethodChannel (listen args are unused).
 class NativeInstaller implements Installer {
-  static const _method = MethodChannel('zee/installer');
-  static const _events = EventChannel('zee/installer/events');
+  NativeInstaller({
+    MethodChannel? methodChannel,
+    EventChannel? eventChannel,
+  })  : _method = methodChannel ?? const MethodChannel('zee/installer'),
+        _events = eventChannel ?? const EventChannel('zee/installer/events');
+
+  final MethodChannel _method;
+  final EventChannel _events;
+
+  /// url → controllers waiting for that job's progress.
+  final Map<String, Set<StreamController<InstallProgress>>> _listeners =
+      <String, Set<StreamController<InstallProgress>>>{};
+
+  StreamSubscription<dynamic>? _sharedSub;
+
+  /// Test seam: drop shared subscription + listener map.
+  @visibleForTesting
+  void resetForTest() {
+    _sharedSub?.cancel();
+    _sharedSub = null;
+    for (final set in _listeners.values) {
+      for (final c in set) {
+        if (!c.isClosed) c.close();
+      }
+    }
+    _listeners.clear();
+  }
+
+  @visibleForTesting
+  int get activeListenerCount =>
+      _listeners.values.fold<int>(0, (n, s) => n + s.length);
+
+  @visibleForTesting
+  bool get hasSharedSubscription => _sharedSub != null;
+
+  void _ensureSharedSubscription() {
+    if (_sharedSub != null) return;
+    // No listen args — native must not start a job from onListen.
+    final raw = _events.receiveBroadcastStream();
+    _sharedSub = raw.listen(
+      _dispatchEvent,
+      onError: (Object err, StackTrace st) {
+        final failed = InstallProgress(
+          phase: InstallPhase.failed,
+          fraction: 0.0,
+          message: err.toString(),
+        );
+        for (final set in _listeners.values.toList()) {
+          for (final c in set.toList()) {
+            if (!c.isClosed) {
+              c.add(failed);
+              c.close();
+            }
+          }
+        }
+        _listeners.clear();
+        _sharedSub = null;
+      },
+      onDone: () {
+        for (final set in _listeners.values.toList()) {
+          for (final c in set.toList()) {
+            if (!c.isClosed) c.close();
+          }
+        }
+        _listeners.clear();
+        _sharedSub = null;
+      },
+      cancelOnError: false,
+    );
+  }
+
+  void _dispatchEvent(dynamic event) {
+    if (event is! Map) return;
+    final url = event['url'] as String? ?? '';
+    final phase = _parsePhase(event['phase'] as String? ?? 'downloading');
+    final fraction = (event['fraction'] as num?)?.toDouble() ?? 0.0;
+    final message = event['message'] as String?;
+    final progress = InstallProgress(
+      phase: phase,
+      fraction: fraction,
+      message: message,
+    );
+
+    final targets = url.isEmpty
+        ? _listeners.values.expand((s) => s).toList()
+        : (_listeners[url]?.toList() ??
+            const <StreamController<InstallProgress>>[]);
+
+    for (final c in targets) {
+      if (c.isClosed) continue;
+      c.add(progress);
+      if (phase == InstallPhase.done || phase == InstallPhase.failed) {
+        c.close();
+      }
+    }
+
+    if (phase == InstallPhase.done || phase == InstallPhase.failed) {
+      if (url.isNotEmpty) {
+        _listeners.remove(url);
+      }
+      if (_listeners.isEmpty) {
+        _sharedSub?.cancel();
+        _sharedSub = null;
+      }
+    }
+  }
+
+  void _register(String url, StreamController<InstallProgress> controller) {
+    (_listeners[url] ??= <StreamController<InstallProgress>>{}).add(controller);
+    controller.onCancel = () {
+      final set = _listeners[url];
+      set?.remove(controller);
+      if (set != null && set.isEmpty) {
+        _listeners.remove(url);
+      }
+      // Keep the shared native subscription while *any* job still has a
+      // listener.  Do not cancel it here when the map goes empty mid-flight —
+      // the job may still emit a terminal event, and cancelling would hit
+      // native onCancel (harmless after 0084, but we would miss the event if
+      // a new listen is not yet open).  Tear happens after terminal dispatch.
+    };
+  }
 
   @override
   Stream<InstallProgress> install(GithubAsset asset) {
     final String url = asset.downloadUrl;
+    _ensureSharedSubscription();
 
-    // Open the native event stream before invoking start() so no progress
-    // events are missed between the method call returning and the stream setup.
-    final rawStream = _events.receiveBroadcastStream(<String, Object?>{
-      'url': url,
-    });
-
-    // Transform raw Map events → typed InstallProgress objects.
     final controller = StreamController<InstallProgress>();
+    _register(url, controller);
 
-    StreamSubscription<dynamic>? sub;
-    sub = rawStream.listen(
-      (dynamic event) {
-        if (event is Map) {
-          final phase = _parsePhase(event['phase'] as String? ?? 'downloading');
-          final fraction = (event['fraction'] as num?)?.toDouble() ?? 0.0;
-          final message = event['message'] as String?;
-          controller.add(InstallProgress(
-            phase: phase,
-            fraction: fraction,
-            message: message,
-          ));
-          // Close the controller on terminal states so callers see stream end.
-          if (phase == InstallPhase.done || phase == InstallPhase.failed) {
-            sub?.cancel();
-            controller.close();
-          }
-        }
-      },
-      onError: (Object err) {
-        controller.add(InstallProgress(
-          phase: InstallPhase.failed,
-          fraction: 0.0,
-          message: err.toString(),
-        ));
-        controller.close();
-      },
-      onDone: () {
-        if (!controller.isClosed) controller.close();
-      },
-      cancelOnError: false,
-    );
-
-    // Kick off the native download+install. Errors from the method call itself
-    // (e.g. channel not found before the engine is ready) are surfaced as a
-    // failed progress event so the UI always sees a clean stream.
     _method.invokeMethod<void>('start', <String, Object?>{
       'url': url,
     }).catchError((Object err) {
@@ -78,10 +160,21 @@ class NativeInstaller implements Installer {
         ));
         controller.close();
       }
+      final set = _listeners[url];
+      set?.remove(controller);
+      if (set != null && set.isEmpty) _listeners.remove(url);
+      if (_listeners.isEmpty) {
+        _sharedSub?.cancel();
+        _sharedSub = null;
+      }
     });
 
     return controller.stream;
   }
+
+  /// Inject a native-shaped event (tests / no platform channel).
+  @visibleForTesting
+  void debugDispatch(Map<String, Object?> event) => _dispatchEvent(event);
 
   static InstallPhase _parsePhase(String raw) {
     switch (raw) {
