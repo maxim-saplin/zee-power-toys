@@ -316,9 +316,15 @@ class DefaultSpeedcamService implements SpeedcamService {
     } else {
       list = _cams.where((c) => !c.isYnaviSourced).toList();
     }
-    // 0088: YNavi alert path active + lane alerts off → drop lane cams.
+    // 0088: drop pure-YNavi lane cams only — never silence OSM / osm+ynavi
+    // (merge must not inherit LANE onto an OSM speedcam and kill alerts).
     if (_ynaviEnrichEnabled && _ynaviAlertEnabled && !_alertLaneCams) {
-      list = list.where((c) => !isLaneCam(c)).toList();
+      list = list
+          .where(
+            (c) => !(isLaneCam(c) &&
+                (c.source == 'ynavi' || c.id.startsWith('ynavi:'))),
+          )
+          .toList();
     }
     return list;
   }
@@ -350,7 +356,8 @@ class DefaultSpeedcamService implements SpeedcamService {
           direction: o.direction,
           source: 'osm+ynavi',
           lastSeenEpochMs: match.lastSeenEpochMs,
-          camType: match.camType ?? o.camType,
+          // Keep OSM typing — do not stamp YNavi LANE onto osm+ynavi.
+          camType: o.camType,
         ));
       } else {
         out.add(o.source == null ? SpeedcamPoint(

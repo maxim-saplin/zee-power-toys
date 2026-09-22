@@ -158,4 +158,52 @@ void main() {
       expect(isLaneCam(hit), isTrue);
     });
   });
+
+  group('osm+ynavi merge must not silence OSM', () {
+    test('merge does not stamp YNavi LANE onto OSM camType', () {
+      final osm = [
+        const SpeedcamPoint(
+          id: 'osm-1',
+          lat: 53.907996,
+          lon: 27.424118,
+          maxspeed: 60,
+          source: 'overpass',
+        ),
+      ];
+      final ynavi = [
+        const SpeedcamPoint(
+          id: 'ynavi:lane',
+          lat: 53.907996,
+          lon: 27.424118,
+          maxspeed: 60,
+          source: 'ynavi',
+          camType: 'LANE',
+        ),
+      ];
+      final merged = DefaultSpeedcamService.mergeOsmWithYnavi(osm, ynavi);
+      expect(merged, hasLength(1));
+      expect(merged.single.source, 'osm+ynavi');
+      expect(merged.single.camType, isNull);
+      expect(isLaneCam(merged.single), isFalse);
+    });
+
+    test('camsForAlert keeps osm+ynavi even if camType were LANE', () {
+      final s = DefaultSpeedcamService(
+        packStore: FakeSpeedcamPackStore(cams: const []),
+        fallbackCams: const [
+          SpeedcamPoint(
+            id: 'osm-x',
+            lat: 53.9,
+            lon: 27.4,
+            maxspeed: 60,
+            source: 'osm+ynavi',
+            camType: 'LANE',
+          ),
+        ],
+      );
+      s.setYnaviEnrichEnabled(true);
+      s.setYnaviAlertEnabled(true);
+      expect(s.camsForAlert.any((c) => c.id == 'osm-x'), isTrue);
+    });
+  });
 }
