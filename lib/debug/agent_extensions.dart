@@ -378,6 +378,17 @@ void registerZeeExtensions({
       );
     }
 
+    // 0083 QA: force DHU system Overlay without Switch UI.
+    // dhuSystemOverlay=true|false — store.changes → Overlay enable + re-seed.
+    final rawDhuOverlay = params['dhuSystemOverlay'] ?? params['systemOverlay'];
+    if (rawDhuOverlay != null) {
+      next = next.copyWith(
+        speedcam: next.speedcam.copyWith(
+          dhuSystemOverlay: rawDhuOverlay == 'true' || rawDhuOverlay == '1',
+        ),
+      );
+    }
+
     // Minimap config: minimapEnabled=true|false,
     // minimapOnlyWhileGuidance=true|false (0057),
     // guidanceOverlay / etaBar (0055 Zee HUD 2),
