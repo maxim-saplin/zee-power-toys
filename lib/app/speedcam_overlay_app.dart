@@ -20,6 +20,12 @@ class SpeedcamOverlayApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.transparent,
       ),
+      // Same pin as HudApp/DhuApp — OS font scale must not diverge Overlay type.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.0,
+        maxScaleFactor: 1.0,
+        child: child!,
+      ),
       home: const _OverlayHome(),
     );
   }

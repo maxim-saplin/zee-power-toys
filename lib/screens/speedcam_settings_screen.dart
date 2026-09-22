@@ -272,7 +272,7 @@ class _SpeedcamSettingsScreenState
                   final useH = plate.height;
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
                   // Rectangular CRT composite — painter fills bounds (0080).
-                  // Real MediaQuery dpr + surface width drive alienDhuDpiBridge.
+                  // 0083: plate helper only — Alien paint is DPI-agnostic (shared path).
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
