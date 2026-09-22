@@ -1,5 +1,5 @@
 ---
-status: cooking-fix
+status: cooking
 labels: [speedcam, hud, dhu, alien, visual, hard]
 created: 2026-09-22
 satisfies: Alien CRT on DHU preview/overlay reads like HUD windshield — bold lines, grit, distance overlapping radar
@@ -51,3 +51,10 @@ PDM owned the miss: 0079 ACCEPT covered layout/wiring, not this visual bar. Trea
 ## Fix pass (Maxim FAIL — clip + km)
 - Dropped outer settings `ClipRRect` (shaved CRT/fan)
 - Km + limit bottom-left of full composite after CRT restore (HUD geometry; not mid-left)
+
+## Fix pass 2 (Maxim — DPI-aware + HUD composite)
+- Painter: strokes scale with size **and** `1/dpr` (DHU reported-low dpi)
+- Fan outline unclipped by CRT glass (no shaved top arc)
+- Km baseline at fan apex (`c.dy`), left — HUD composite geometry
+- Settings Alien: HUD-slot canvas (220×300) + FittedBox + MediaQuery dpr=1 (HudPreview pattern)
+- A/B: visible Tablet_12L + compare settings Alien vs HudPreview demo (low-DPI HUD canvas)

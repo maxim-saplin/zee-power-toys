@@ -266,10 +266,19 @@ class _SpeedcamSettingsScreenState
                   final maxDisk = (h - 280).clamp(140.0, 280.0);
                   final side = math.min(constraints.maxWidth, maxDisk);
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
-                  // Alien CRT paint is variant-agnostic; keep dhuLarge so settings
-                  // Semantics key stays `dhu-speedcam-radar` (radar_fit / 0039).
-                  // No outer ClipRRect — it shaved the CRT/fan (0080 Maxim).
-                  // Painter draws its own curved CRT face.
+                  // Alien: same composite geometry as HUD radar slot, then FittedBox
+                  // up (HudPreview pattern). MediaQuery dpr=1 matches HUD Presentation
+                  // / DHU reported-low dpi so CRT strokes use the DPI-aware path.
+                  // Keep dhuLarge so Semantics key stays `dhu-speedcam-radar` (0039).
+                  // No ClipRRect — painter owns CRT; fan strokes are unclipped.
+                  const hudRadarW = 220.0;
+                  const hudRadarH = 300.0;
+                  final radar = SpeedcamRadarWidget(
+                    variant: SpeedcamRadarVariant.dhuLarge,
+                    alwaysShow: !isAlien,
+                    forceDemoDanger: SpeedcamRadarWidget.demoDanger,
+                    displayRadiusM: sc.dhuRangeM,
+                  );
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
@@ -277,13 +286,21 @@ class _SpeedcamSettingsScreenState
                       height: side,
                       child: ColoredBox(
                         color: Colors.black,
-                        child: SpeedcamRadarWidget(
-                          variant: SpeedcamRadarVariant.dhuLarge,
-                          // Alien: demo contact only (no idle alwaysShow theater).
-                          alwaysShow: !isAlien,
-                          forceDemoDanger: SpeedcamRadarWidget.demoDanger,
-                          displayRadiusM: sc.dhuRangeM,
-                        ),
+                        child: isAlien
+                            ? FittedBox(
+                                fit: BoxFit.contain,
+                                child: SizedBox(
+                                  width: hudRadarW,
+                                  height: hudRadarH,
+                                  child: MediaQuery(
+                                    data: MediaQuery.of(context).copyWith(
+                                      devicePixelRatio: 1.0,
+                                    ),
+                                    child: radar,
+                                  ),
+                                ),
+                              )
+                            : radar,
                       ),
                     ),
                   );

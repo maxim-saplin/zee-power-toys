@@ -232,6 +232,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
+          final dpr = MediaQuery.devicePixelRatioOf(context);
           return CustomPaint(
             key: ValueKey(lookKey),
             painter: _AlienWedgePainter(
@@ -242,6 +243,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
               approachRadiusM: approachM,
               readoutM: labelDist,
               maxspeed: labelMax,
+              devicePixelRatio: dpr,
             ),
             child: const SizedBox.expand(),
           );
@@ -359,8 +361,11 @@ Color alienBlipFillColor({required bool highlight}) => highlight
 
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 ///
-/// 0080: strokes / grit / scan / readout scale with [Size] so a large sharp DHU
-/// disk keeps the same CRT density as the smaller HUD windshield paint.
+/// 0080: CRT density is **DPI-aware**. DHU reports low dpi on a high-res panel
+/// (dpr ≈ 1) — hairline logical strokes stay thin on glass. Scale strokes by
+/// paint size AND `1/dpr` so physical phosphor weight matches the HUD CRT look.
+/// Fan outline + readout are NOT clipped by the rounded CRT glass (Maxim: no
+/// shaved arc; km baseline at fan apex / composite bottom-left).
 class _AlienWedgePainter extends CustomPainter {
   _AlienWedgePainter({
     required this.sweepT,
@@ -370,6 +375,7 @@ class _AlienWedgePainter extends CustomPainter {
     required this.approachRadiusM,
     required this.readoutM,
     required this.maxspeed,
+    required this.devicePixelRatio,
   });
 
   final double sweepT;
@@ -379,36 +385,41 @@ class _AlienWedgePainter extends CustomPainter {
   final double approachRadiusM;
   final double? readoutM;
   final int? maxspeed;
+  final double devicePixelRatio;
 
   /// Design size where legacy fixed strokes (~1.1–3.2) looked right on HUD.
   static const double _designSide = 160.0;
+
+  /// Target dpr for "HUD Presentation" phosphor weight (HUD paints at ~1.0).
+  static const double _hudPresentationDpr = 1.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = Offset.zero & size;
     final minSide = math.min(size.width, size.height);
-    // Scale CRT density with paint size (0080). Slight boost so large DHU
-    // disks stay bold, not hairline vectors.
-    final s = (minSide / _designSide).clamp(0.85, 2.8) * 1.12;
-    // Curved CRT face (older tube — rounded square, not sharp rect).
-    final crtRRect = RRect.fromRectAndRadius(
-      bounds.deflate(1.5 * s),
-      Radius.circular(minSide * 0.12),
-    );
+    final dpr = devicePixelRatio.clamp(0.75, 4.0);
+    // Size scale + invert reported dpr (DHU low-dpi lie → thicker logical strokes).
+    final sizeS = (minSide / _designSide).clamp(0.85, 2.8);
+    final dpiS = (_hudPresentationDpr / dpr).clamp(0.7, 2.4);
+    final s = sizeS * dpiS * 1.08;
+
     final c = Offset(size.width / 2, size.height * 0.88);
-    final r = minSide * 0.78;
+    // Keep fan fully inside the square (margin) so nothing is shaved.
+    final r = minSide * 0.72;
 
     // Bezel / outside CRT
     canvas.drawRect(bounds, Paint()..color = const Color(0xFF0A0A0A));
 
-    // Clip all phosphor to curved CRT glass (hard clip via saveLayer).
+    final crtRRect = RRect.fromRectAndRadius(
+      bounds.deflate(1.5 * s),
+      Radius.circular(minSide * 0.10),
+    );
+
+    // Ground + grit + scan ONLY — rounded clip must not touch fan strokes.
     canvas.saveLayer(bounds, Paint());
     canvas.clipRRect(crtRRect, doAntiAlias: true);
-
-    // Deep CRT black-green ground
     canvas.drawRRect(crtRRect, Paint()..color = const Color(0xFF010401));
 
-    // Heavy phosphor grain (inside glass only) — count scales with area.
     final grit = Paint()
       ..color = const Color(0x2200FF44)
       ..isAntiAlias = false;
@@ -422,7 +433,6 @@ class _AlienWedgePainter extends CustomPainter {
       canvas.drawRect(Rect.fromLTWH(x, y, gritSide, gritSide), grit);
     }
 
-    // Dense horizontal scanlines with slight barrel bow near edges
     final scan = Paint()
       ..color = const Color(0x3300FF55)
       ..strokeWidth = math.max(1.0, 1.0 * s)
@@ -430,14 +440,14 @@ class _AlienWedgePainter extends CustomPainter {
     final scanStep = math.max(1.5, 2.0 * s);
     for (var y = 0.0; y < size.height; y += scanStep) {
       final ny = (y / size.height) * 2 - 1;
-      final bow = 3.5 * s * ny * ny; // edge distortion
+      final bow = 3.5 * s * ny * ny;
       canvas.drawLine(Offset(bow, y), Offset(size.width - bow, y), scan);
     }
+    canvas.restore();
 
-    // Prop tracker: wide front fan (~100°) from bottom origin
+    // Fan + blips + ring — unclipped (0080: no shaved top arc).
     const wedgeHalf = 50 * math.pi / 180;
     final baseAngle = -math.pi / 2;
-
     final wedgePath = Path()
       ..moveTo(c.dx, c.dy)
       ..arcTo(
@@ -448,15 +458,12 @@ class _AlienWedgePainter extends CustomPainter {
       )
       ..close();
 
-    // Dim fill inside fan
     canvas.drawPath(
       wedgePath,
       Paint()
         ..color = const Color(0xFF0A3D0A).withValues(alpha: 0.55)
         ..style = PaintingStyle.fill,
     );
-
-    // Outer fan outline
     canvas.drawPath(
       wedgePath,
       Paint()
@@ -466,7 +473,6 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Radial dividers
     for (var i = -2; i <= 2; i++) {
       if (i == 0) continue;
       final a = baseAngle + i * (wedgeHalf / 2);
@@ -488,7 +494,6 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Static range arcs (dashed) — already angularly limited to fan
     for (final frac in [0.28, 0.55, 0.82, 1.0]) {
       final rr = r * frac;
       final paint = Paint()
@@ -513,16 +518,14 @@ class _AlienWedgePainter extends CustomPainter {
       }
     }
 
-    // Expanding rings — hard-clipped to fan (no bloom bleed outside).
-    canvas.saveLayer(bounds, Paint());
+    canvas.save();
     canvas.clipPath(wedgePath, doAntiAlias: true);
-    // Single expanding wave — slightly bolder (Maxim).
     final phase = sweepT % 1.0;
-    final rr = r * phase;
-    if (rr >= 4 * s && rr <= r) {
+    final rrWave = r * phase;
+    if (rrWave >= 4 * s && rrWave <= r) {
       final fade = (1.0 - phase);
       canvas.drawArc(
-        Rect.fromCircle(center: c, radius: rr),
+        Rect.fromCircle(center: c, radius: rrWave),
         baseAngle - wedgeHalf,
         wedgeHalf * 2,
         false,
@@ -535,22 +538,9 @@ class _AlienWedgePainter extends CustomPainter {
           ..isAntiAlias = false,
       );
     }
-    canvas.restore(); // end wedge clip layer
+    canvas.restore();
 
-    // CRT edge vignette / corner distortion
-    final vignette = Paint()
-      ..shader = RadialGradient(
-        center: Alignment.center,
-        radius: 0.95,
-        colors: [
-          const Color(0x00000000),
-          const Color(0x99000000),
-        ],
-        stops: const [0.55, 1.0],
-      ).createShader(bounds);
-    canvas.drawRRect(crtRRect, vignette);
-
-    // Glass rim highlight
+    // Glass rim (decorative; does not clip content)
     canvas.drawRRect(
       crtRRect,
       Paint()
@@ -560,20 +550,9 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Origin pip (host)
-    canvas.drawCircle(
-      c,
-      4 * s,
-      Paint()..color = SpeedcamRadarWidget.phosphorGlow,
-    );
-    canvas.drawCircle(
-      c,
-      2 * s,
-      Paint()..color = const Color(0xFFE8FFE8),
-    );
+    canvas.drawCircle(c, 4 * s, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
+    canvas.drawCircle(c, 2 * s, Paint()..color = const Color(0xFFE8FFE8));
 
-    // Blips — round dots (Maxim: not squares). Bearings are forward-relative
-    // (0058). On-route highlight clamps to fan edge so it never vanishes.
     for (final b in blips) {
       var rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
       if (rel.abs() > wedgeHalf) {
@@ -592,7 +571,6 @@ class _AlienWedgePainter extends CustomPainter {
             highlight: b.highlight,
           ) *
           s;
-      // Route / on-course = bright; other in-range cams = dim.
       final baseA = b.highlight
           ? alienBlipAlphaForDistanceM(
               b.distanceM,
@@ -604,12 +582,10 @@ class _AlienWedgePainter extends CustomPainter {
                   ) *
                   0.35)
               .clamp(0.18, 0.45);
-      // Slight blink on all dots.
       final blink = 0.72 + 0.28 * (0.5 + 0.5 * math.sin(blinkT * math.pi * 2 * 2));
       final alpha = (baseA * blink).clamp(0.12, 1.0);
       final glowA = b.highlight ? alpha * 0.4 : alpha * 0.2;
       final fill = alienBlipFillColor(highlight: b.highlight);
-      // Soft halo: white for danger, phosphor glow for other cams (0064).
       final glowColor = b.highlight
           ? SpeedcamRadarWidget.blipDanger
           : SpeedcamRadarWidget.phosphorGlow;
@@ -627,11 +603,7 @@ class _AlienWedgePainter extends CustomPainter {
       );
     }
 
-    canvas.restore(); // end CRT glass
-
-    // Km + limit on the FULL composite bottom-left (HUD geometry — 0080).
-    // Painted after CRT restore so rounded glass clip cannot shave glyphs;
-    // fan origin at 0.88H still makes the numbers overlap the lower wedge.
+    // Km + limit: baseline at fan apex (c.dy), left of composite — HUD geometry.
     if (readoutM != null) {
       final km = TextPainter(
         text: TextSpan(
@@ -659,15 +631,14 @@ class _AlienWedgePainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       final kmLeft = 8 * s;
-      final bottom = size.height - 8 * s;
       final stackH = km.height + (maxspeed != null ? limit.height + 2 * s : 0);
-      final kmTop = bottom - stackH;
+      // Baseline of stack sits on fan apex (HUD: text at origin height).
+      final kmTop = (c.dy - stackH).clamp(0.0, size.height - stackH);
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
         limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 2 * s));
       }
     }
-
   }
 
   double _normalizeBearing(double bearingDeg) {
@@ -684,5 +655,7 @@ class _AlienWedgePainter extends CustomPainter {
       old.blips != blips ||
       old.displayRadiusM != displayRadiusM ||
       old.readoutM != readoutM ||
-      old.maxspeed != maxspeed;
+      old.maxspeed != maxspeed ||
+      old.devicePixelRatio != devicePixelRatio;
 }
+
