@@ -91,7 +91,12 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
           serviceDanger: liveDanger,
         );
     final danger = forceDemoDanger ?? modeDanger;
-    final look = cfg.radarLook;
+    // T1 HUD demo: compact + forced danger → Alien CRT gold (windshield A/B).
+    // DHU settings keeps cfg.radarLook so Default look still previews Default.
+    final look = (forceDemoDanger != null &&
+            variant == SpeedcamRadarVariant.hudCompact)
+        ? SpeedcamRadarLook.alien
+        : cfg.radarLook;
 
     final range = displayRadiusM ??
         (variant == SpeedcamRadarVariant.dhuLarge ? cfg.dhuRangeM : approachM);
@@ -438,10 +443,6 @@ class _AlienWedgePainter extends CustomPainter {
     // Full DHU surface (DhuScaledLayout / wide low-dpr) gets the 1.254 bridge.
     final s = sizeS * dpiBridge;
 
-    final c = Offset(size.width / 2, size.height * 0.88);
-    // Keep fan fully inside the square (margin) so nothing is shaved.
-    final r = minSide * 0.72;
-
     // Bezel / outside CRT
     canvas.drawRect(bounds, Paint()..color = const Color(0xFF0A0A0A));
 
@@ -449,6 +450,21 @@ class _AlienWedgePainter extends CustomPainter {
       bounds.deflate(1.5 * s),
       Radius.circular(minSide * 0.10),
     );
+
+    // Fan apex + radius: fit ±50° wedge + outer stroke inside CRT (0080 FAIL:
+    // r=0.72*minSide spilled past left/right on DHU). No tall-frame clip hack.
+    const wedgeHalf = 50 * math.pi / 180;
+    final c = Offset(size.width / 2, size.height * 0.90);
+    final strokePad = 2.5 * s;
+    final inner = bounds.deflate(1.5 * s + strokePad);
+    final tipLeft = -math.pi / 2 - wedgeHalf;
+    final tipRight = -math.pi / 2 + wedgeHalf;
+    final maxRLeft = (c.dx - inner.left) / -math.cos(tipLeft);
+    final maxRRight = (inner.right - c.dx) / math.cos(tipRight);
+    final maxRTop = c.dy - inner.top; // up arc at -π/2
+    final r = math
+        .min(minSide * 0.70, math.min(maxRLeft, math.min(maxRRight, maxRTop)))
+        .clamp(minSide * 0.40, minSide * 0.70);
 
     // Ground + grit + scan ONLY — rounded clip must not touch fan strokes.
     canvas.saveLayer(bounds, Paint());
@@ -480,9 +496,12 @@ class _AlienWedgePainter extends CustomPainter {
     }
     canvas.restore();
 
-    // Fan + blips + ring — unclipped (0080: no shaved top arc).
-    const wedgeHalf = 50 * math.pi / 180;
+    // Fan + blips + ring — inside CRT (fit r above + clip belt).
+    // Prior unclipped path spilled past CRT on DHU; clip must not shave the
+    // outer arc when r is fit-constrained.
     final baseAngle = -math.pi / 2;
+    canvas.save();
+    canvas.clipRRect(crtRRect, doAntiAlias: true);
     final wedgePath = Path()
       ..moveTo(c.dx, c.dy)
       ..arcTo(
@@ -573,17 +592,7 @@ class _AlienWedgePainter extends CustomPainter {
           ..isAntiAlias = false,
       );
     }
-    canvas.restore();
-
-    // Glass rim (decorative; does not clip content)
-    canvas.drawRRect(
-      crtRRect,
-      Paint()
-        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5 * s
-        ..isAntiAlias = false,
-    );
+    canvas.restore(); // end wedge sweep clip
 
     canvas.drawCircle(c, 4 * s, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
     canvas.drawCircle(c, 2 * s, Paint()..color = const Color(0xFFE8FFE8));
@@ -637,6 +646,18 @@ class _AlienWedgePainter extends CustomPainter {
         Paint()..color = fill.withValues(alpha: alpha),
       );
     }
+
+    canvas.restore(); // end CRT clip (fan/blips)
+
+    // Glass rim (decorative; does not clip content)
+    canvas.drawRRect(
+      crtRRect,
+      Paint()
+        ..color = SpeedcamRadarWidget.phosphor.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5 * s
+        ..isAntiAlias = false,
+    );
 
     // Km + limit: baseline at fan apex (c.dy), left of composite — HUD geometry.
     if (readoutM != null) {

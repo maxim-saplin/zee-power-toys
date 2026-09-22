@@ -51,9 +51,15 @@ class _HudScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // T1 desktop: no live GPS cams — without a demo blip the Alien CRT stays
+    // empty (black window). forceDemoSpeedcam paints HUD-gold CRT for DPI A/B
+    // vs DHU settings; Android car path stays idle-empty (Maxim: no cam → nothing).
+    final desktopDemo = !_compositesOverNative;
     return Scaffold(
       backgroundColor: _compositesOverNative ? Colors.transparent : Colors.black,
-      body: const SpeedcamAlertBinder(child: HudRoot()),
+      body: SpeedcamAlertBinder(
+        child: HudRoot(forceDemoSpeedcam: desktopDemo),
+      ),
     );
   }
 }

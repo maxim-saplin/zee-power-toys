@@ -366,6 +366,18 @@ void registerZeeExtensions({
       next = next.copyWith(locale: rawLocale == 'system' ? null : rawLocale);
     }
 
+    // speedcam.radarLook=alien|defaultLook (0080 T1 A/B)
+    final rawRadarLook = params['radarLook'];
+    if (rawRadarLook != null) {
+      final look = SpeedcamRadarLook.values.firstWhere(
+        (e) => e.name == rawRadarLook,
+        orElse: () => next.speedcam.radarLook,
+      );
+      next = next.copyWith(
+        speedcam: next.speedcam.copyWith(radarLook: look),
+      );
+    }
+
     // Minimap config: minimapEnabled=true|false,
     // minimapOnlyWhileGuidance=true|false (0057),
     // guidanceOverlay / etaBar (0055 Zee HUD 2),
