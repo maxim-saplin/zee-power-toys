@@ -38,6 +38,7 @@ CLI subcommands (output is always JSON to stdout):
   hud-display                          discover the HUD secondary display
                                         (displayId/w/h/dpi) via dumpsys display
   inject          kind=speed|blinker|charge|battery  value=...  [--surface dhu]
+  speedcam-demo   on|off [--no-overlay]   # 0089 Demo(+Overlay) one-shot
 
 Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py whoami-all
@@ -46,6 +47,8 @@ Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=blinker value=left
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py inject kind=charge charging=true kw=50
   uv run dev/feedback_loop.py hud-display
+  uv run dev/feedback_loop.py speedcam-demo on
+  uv run dev/feedback_loop.py speedcam-demo off
   uv run dev/feedback_loop.py shot --surface hud --layer both --out /tmp/hud.png
 """
 
@@ -324,6 +327,29 @@ class FeedbackLoop:
             "ext.zee.tapByKey", {"isolateId": iso_id, "key": key}
         )
 
+    async def speedcam_demo(
+        self,
+        *,
+        on: bool = True,
+        overlay: bool | None = True,
+        surface: str = "dhu",
+    ) -> dict[str, Any]:
+        """0089: force Speedcam HUD Demo (+ optional DHU Overlay) without UI taps.
+
+        ON  → ext.zee.speedcam action=demo overlay=true
+        OFF → ext.zee.speedcam action=demoStop overlay=false
+        Pass overlay=None to leave SpeedcamConfig.dhuSystemOverlay untouched.
+        """
+        iso_id = await self._resolve(surface)
+        params: dict[str, Any] = {
+            "isolateId": iso_id,
+            "action": "demo" if on else "demoStop",
+        }
+        if overlay is not None:
+            params["overlay"] = "true" if overlay else "false"
+        return await self._c.rpc("ext.zee.speedcam", params)
+
+
     async def shot(
         self, surface: str, out_path: str | None = None
     ) -> dict[str, Any]:
@@ -553,6 +579,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mm.add_argument("kvs", nargs="+", help="key=value pairs e.g. on=true x=0 y=0 w=640 h=360")
 
+    # speedcam-demo — 0089 one-shot Demo (+ Overlay) without OCR/taps
+    sd = sub.add_parser(
+        "speedcam-demo",
+        help="(0089) force Speedcam HUD Demo ON/OFF; optional DHU Overlay via "
+        "ext.zee.speedcam action=demo|demoStop (no OCR/coordinate taps)",
+    )
+    sd.add_argument(
+        "state",
+        choices=["on", "off"],
+        help="on = demo+overlay; off = clearPose + overlay false",
+    )
+    sd.add_argument(
+        "--surface",
+        default="dhu",
+        choices=["dhu", "hud"],
+        help="target surface (default: dhu)",
+    )
+    sd.add_argument(
+        "--no-overlay",
+        action="store_true",
+        help="do not touch SpeedcamConfig.dhuSystemOverlay (demo pose only)",
+    )
+
+
     return p
 
 
@@ -658,6 +708,18 @@ def main(argv: list[str] | None = None) -> int:
             params: dict[str, Any] = {"isolateId": iso_id}
             params.update(kv)
             result = await fl._c.rpc("ext.zee.minimap", params)
+        elif args.cmd == "speedcam-demo":
+            overlay = None if args.no_overlay else (args.state == "on")
+            # off always clears overlay unless --no-overlay
+            if args.state == "off" and not args.no_overlay:
+                overlay = False
+            if args.state == "on" and not args.no_overlay:
+                overlay = True
+            result = await fl.speedcam_demo(
+                on=(args.state == "on"),
+                overlay=overlay,
+                surface=args.surface,
+            )
         else:
             raise ValueError(f"unknown command {args.cmd!r}")
         return 0, result

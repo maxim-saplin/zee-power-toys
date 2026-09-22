@@ -5,6 +5,10 @@ description: Launch, drive, screenshot, and read state from the zee-power-toys a
 
 # drive-zee-app
 
+> **0089 — Prefer harness over OCR.** Do **not** drive Speedcam Demo / Overlay
+> with tesseract or coordinate taps. Use `ext.zee.speedcam action=demo` /
+> `feedback_loop.py speedcam-demo` (below). OCR/tap thrash is an SI anti-pattern.
+
 Operational front-end to the zee-power-toys Feedback Loop (ADR 0004).  For the
 deep VM-service layer see
 `docs/knowledge/flutter-debug-skill-vm-service.md`.  For the two-channel
@@ -157,9 +161,9 @@ Run with `uv run dev/feedback_loop.py <cmd>`.
 > `--layer both` — never trust a bare `--layer flutter` shot of the HUD to
 > prove the map renders.**
 
-### Full ext.zee.* surface (12 extensions)
+### Full ext.zee.* surface (13 extensions)
 
-All 12 are in `lib/debug/agent_extensions.dart`.  The `feedback_loop.py`
+All 13 are in `lib/debug/agent_extensions.dart`.  The `feedback_loop.py`
 subcommands cover the most-used ones; the rest go via the generic `call` form:
 
 ```bash
@@ -171,7 +175,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | `ext.zee.whoami` | both | — | `{surface, isolate, pid, hudBoxOn, hudEnabled}` | Identity probe; driver builds surface→isolateId map from this |
 | `ext.zee.dumpState` | both | — | `{surface, hudBoxOn, hudEnabled, locale, safeArea, blinker, battery, minimap}` | Raw ConfigStore snapshot |
 | `ext.zee.readViewModel` | both | — | full view-model incl. CarSignals snapshot, safeArea, activeSlots, minimap, systemLocale, usbMode, `hud` ({displayId,w,h,dpi}), `viewport` ({x,y,w,h}) | Derived Riverpod state; `hud`/`viewport` (Block 0027, DHU only) are the app's own HUD geometry + minimap ROI — use them to crop the native composite exactly, never reimplement the geometry in Python |
-| `ext.zee.setConfig` | both | `hudBoxOn=true\|false`, `hudEnabled=`, `safeArea=<json>`, `safeLeft/Top/Right/Bottom=<f>`, `blinkerShape=dots\|arrows\|smiley`, `blinkerSize=<f>`, `batteryShow=`, `tempShow=`, `chargingShow=`, `locale=en\|ru\|system`, `minimapEnabled=`, `minimapPreset=compact\|balanced\|large`, `minimapTheme=auto\|dark\|light` | dumpState snapshot | Writes to ConfigStore; DHU→HUD relay fires automatically |
+| `ext.zee.setConfig` | both | `hudBoxOn=true\|false`, `hudEnabled=`, `safeArea=<json>`, `safeLeft/Top/Right/Bottom=<f>`, `blinkerShape=dots\|arrows\|smiley`, `blinkerSize=<f>`, `batteryShow=`, `tempShow=`, `chargingShow=`, `locale=en\|ru\|system`, `minimapEnabled=`, `minimapPreset=compact\|balanced\|large`, `minimapTheme=auto\|dark\|light`, `dhuSystemOverlay=true\|false` (alias `overlay=`) | dumpState snapshot | Writes to ConfigStore; DHU→HUD relay fires automatically |
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped, key, mode\|x,y}` | Three-tier fallback: callback→pointer→ancestor |
 | `ext.zee.shot` | both | — | `{surface, w, h, png_b64}` | RepaintBoundary→PNG→base64 |
 | `ext.zee.inject` | dhu | `kind=speed value=<kmh>`, `kind=blinker value=left\|right\|hazard\|off`, `kind=charge charging=true\|false kw=<f> volts=<f> amps=<f>`, `kind=battery levelPct=<i> tempC=<f>`, `kind=powerFlow value=drive\|regen\|standstill\|unknown` | CarSignals snapshot | DHU only (FakeCarSignals); HUD CarSignals are relay-driven — always inject on dhu so both surfaces update. T2/T3 use ADB broadcast |
@@ -180,6 +184,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | `ext.zee.setLanguage` | dhu | `scope=app\|system\|cluster value=en\|ru\|system` | `{ok, reason?, surface, scope, value, systemLocale?}` | `scope=system\|cluster` is T3-only; T1/T2 returns `{ok:false, reason:"unsupported-on-device"}` |
 | `ext.zee.setUsbMode` | dhu | `value=peripheral\|host\|auto` | `{ok, reason?, usbMode, usbWritable}` | T1 FakeUsbMode always writable; T2 needs platform signing |
 | `ext.zee.bootState` | both | — | `{surface, hudEnabled, configReadOk, …native fields}` | DHU Android includes native FGS status; T1/HUD config-store only |
+| `ext.zee.speedcam` | dhu | `action=demo\|demoStop\|approach\|clearPose\|…`, `overlay=true\|false`, `distanceM=`, `speedKmh=`, `camId=` | `{ok, speedcam…}` | **0089:** `demo`/`demoStop` = Settings HUD Demo; `overlay=` flips `dhuSystemOverlay` in one RPC |
 
 ### Generic call form examples
 
@@ -360,6 +365,43 @@ Idempotent and re-runnable — every step is safe to repeat.
 ---
 
 ## Recipes
+
+### Speedcam Demo + Overlay ON/OFF (0089 — no OCR)
+
+One-shot (preferred):
+
+```bash
+# Demo pose + DHU system Overlay ON
+uv run dev/feedback_loop.py speedcam-demo on
+# Off (clears pose + Overlay)
+uv run dev/feedback_loop.py speedcam-demo off
+
+# Demo pose only (leave Overlay flag alone)
+uv run dev/feedback_loop.py speedcam-demo on --no-overlay
+```
+
+Equivalent raw RPCs:
+
+```bash
+uv run dev/zee_drive.py call ext.zee.speedcam --isolate dhu action=demo overlay=true
+uv run dev/zee_drive.py call ext.zee.speedcam --isolate dhu action=demoStop overlay=false
+# Or split: setConfig then approach
+uv run dev/feedback_loop.py set-config --surface dhu dhuSystemOverlay=true
+uv run dev/zee_drive.py call ext.zee.speedcam --isolate dhu action=approach speedKmh=50
+```
+
+UI-path fallback (only if you must exercise the Switch/Button widgets):
+
+```bash
+uv run dev/feedback_loop.py tap --surface dhu --key nav-speedcam
+uv run dev/feedback_loop.py tap --surface dhu --key speedcam-dhu-system-overlay
+uv run dev/feedback_loop.py tap --surface dhu --key speedcam-hud-demo
+# stop: speedcam-hud-demo-stop
+```
+
+Speedcam keys: `nav-speedcam`, `speedcam-dhu-system-overlay`, `speedcam-hud-demo`,
+`speedcam-hud-demo-stop`, `speedcam-overlay-size`, `speedcam-overlay-placement`,
+`speedcam-radar-look`, `speedcam-hud-mode`.
 
 ### Toggle HUD box and confirm both surfaces re-derive
 

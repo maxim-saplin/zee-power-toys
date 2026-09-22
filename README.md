@@ -194,6 +194,9 @@ Flutter draws **all** designed UI on DHU + HUD as **two engines / two isolates**
 Services (`CarSignals`, `ConfigStore`, `MinimapHost`, …) are ports — Dart fakes
 off-car, native adapters on-car (ADR 0002/0003), Riverpod injection (ADR 0006).
 Verified via dual-channel Feedback Loop across T1 Desktop / T2 Emulator / T3 Car
+
+
+Agent drive (no OCR): `uv run dev/feedback_loop.py speedcam-demo on` — see `.agents/skills/drive-zee-app/SKILL.md` (issue 0089).
 (ADR 0004), block by block (ADR 0007).
 
 | Path | What |

@@ -14,6 +14,7 @@ import '../services/fakes/fake_car_signals.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/speedcam.dart';
+import '../services/fakes/fake_speedcam_service.dart';
 import '../services/speedcam_pack_store.dart';
 import '../services/speedcam_drive.dart';
 import '../services/minimap_host.dart';
@@ -71,8 +72,9 @@ void registerZeeExtensions({
   SpeedcamService? speedcam,
   SpeedcamPackStore? speedcamPack,
 }) {
-  final SpeedcamDriveSim? speedcamDrive =
-      speedcam != null ? SpeedcamDriveSim(speedcam) : null;
+  final SpeedcamDriveSim? speedcamDrive = speedcam != null
+      ? SpeedcamDriveSim(speedcam)
+      : null;
   developer.registerExtension('ext.zee.whoami', (method, params) async {
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
@@ -116,8 +118,9 @@ void registerZeeExtensions({
     // here. Null when no CarSignals was provided at all (shouldn't happen on
     // a registered surface, but the extension must never throw).
     final String? signalSource = await carSignals?.sourceKind;
-    final SpeedcamPackMeta? packMeta =
-        await speedcamPack?.current(SpeedcamPackIds.by);
+    final SpeedcamPackMeta? packMeta = await speedcamPack?.current(
+      SpeedcamPackIds.by,
+    );
     return developer.ServiceExtensionResponse.result(
       jsonEncode(<String, Object?>{
         'surface': surface,
@@ -373,14 +376,15 @@ void registerZeeExtensions({
         (e) => e.name == rawRadarLook,
         orElse: () => next.speedcam.radarLook,
       );
-      next = next.copyWith(
-        speedcam: next.speedcam.copyWith(radarLook: look),
-      );
+      next = next.copyWith(speedcam: next.speedcam.copyWith(radarLook: look));
     }
 
     // 0083 QA: force DHU system Overlay without Switch UI.
     // dhuSystemOverlay=true|false — store.changes → Overlay enable + re-seed.
-    final rawDhuOverlay = params['dhuSystemOverlay'] ?? params['systemOverlay'];
+    final rawDhuOverlay =
+        params['dhuSystemOverlay'] ??
+        params['systemOverlay'] ??
+        params['overlay'];
     if (rawDhuOverlay != null) {
       next = next.copyWith(
         speedcam: next.speedcam.copyWith(
@@ -598,257 +602,300 @@ void registerZeeExtensions({
       );
     }); // end ext.zee.inject
 
-  // Speedcam (0030): set host pose / approach a sample cam / enable.
-  // T1 Fake only until pack+native land.
-  developer.registerExtension('ext.zee.speedcam', (method, params) async {
-    final svc = speedcam;
-    if (svc == null) {
-      return developer.ServiceExtensionResponse.result(
-        jsonEncode(<String, Object?>{
-          'ok': false,
-          'error': 'speedcam not available on this surface',
-        }),
-      );
-    }
-    final action = params['action'] ?? params['op'] ?? 'snapshot';
-    try {
-      switch (action) {
-        case 'enable':
-          await svc.setEnabled(params['on'] != 'false' && params['on'] != '0');
-        case 'disable':
-          await svc.setEnabled(false);
-        case 'pose':
-          final lat = double.parse(params['lat'] ?? '0');
-          final lon = double.parse(params['lon'] ?? '0');
-          final spd = params['speedKmh'] != null
-              ? double.tryParse(params['speedKmh']!)
-              : null;
-          final heading = params['headingDeg'] != null
-              ? double.tryParse(params['headingDeg']!)
-              : null;
-          await svc.setHostPose(
-            SpeedcamHostPose(
-              lat: lat,
-              lon: lon,
-              speedKmh: spd,
-              headingDeg: heading,
-            ),
-          );
-        case 'clearPose':
-          await svc.clearHostPose();
-        case 'approach':
-          // Place host distanceM from demo-limit cam (or cam id=).
-          // Default distance matches kSpeedcamDemoDistanceM (preview forceDemo).
-          final dist = double.parse(
-            params['distanceM'] ?? '$kSpeedcamDemoDistanceM',
-          );
-          final cams = svc.snapshot.cams;
-          if (cams.isEmpty) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'no cams loaded',
-              }),
-            );
-          }
-          final id = params['camId'];
-          final cam = id == null
-              ? pickSpeedcamDemoCam(cams)
-              : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
-          // 1 deg lat ≈ 111320 m — approach from south.
-          // Default heading null (like HUD Demo) so facing/ahead fail-open;
-          // heading=0 made Overlay hide behind cams before visible-gate fix.
-          final dLat = dist / 111320.0;
-          final heading = params['headingDeg'] != null
-              ? double.tryParse(params['headingDeg']!)
-              : null;
-          await svc.setHostPose(SpeedcamHostPose(
-            lat: cam.lat - dLat,
-            lon: cam.lon,
-            speedKmh: double.tryParse(params['speedKmh'] ?? ''),
-            headingDeg: heading,
-          ));
-        case 'reloadPack':
-          await svc.reloadFromPack();
-          break;
-        case 'packStatus':
-          final meta = await speedcamPack?.current(SpeedcamPackIds.by);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': true,
-              'speedcamPack': meta?.toJson(),
-            }),
-          );
-        case 'packUpdate':
-          if (speedcamPack == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'speedcamPack not available',
-              }),
-            );
-          }
-          final host = speedcam?.snapshot.host;
-          final meta = await speedcamPack.updatePack(
-            SpeedcamPackIds.by,
-            centerLat: host?.lat,
-            centerLon: host?.lon,
-          );
-          await speedcam?.reloadFromPack();
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': true,
-              'speedcamPack': meta.toJson(),
-              'speedcam': speedcam?.snapshot.toJson(),
-            }),
-          );
-        case 'packInstall':
-          // Offline QA: install fixture JSON (path= or body=). File store only.
-          if (speedcamPack is! FileSpeedcamPackStore) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'packInstall requires FileSpeedcamPackStore',
-              }),
-            );
-          }
-          final path = params['path'];
-          final bodyParam = params['body'];
-          late final String jsonBody;
-          if (path != null && path.isNotEmpty) {
-            jsonBody = await File(path).readAsString();
-          } else if (bodyParam != null && bodyParam.isNotEmpty) {
-            jsonBody = bodyParam;
-          } else {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'packInstall needs path= or body=',
-              }),
-            );
-          }
-          final installed = await speedcamPack.installFixture(
-            packId: params['packId'] ?? SpeedcamPackIds.by,
-            jsonBody: jsonBody,
-          );
-          await speedcam?.reloadFromPack();
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': true,
-              'speedcamPack': installed.toJson(),
-              'speedcam': speedcam?.snapshot.toJson(),
-            }),
-          );
-        case 'drive':
-          // Continuous polyline through pack cams (0036).
-          if (speedcamDrive == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'drive not available',
-              }),
-            );
-          }
-          await svc.reloadFromPack();
-          final cams = svc.snapshot.cams;
-          if (cams.length < 2) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode(<String, Object?>{
-                'ok': false,
-                'error': 'need >=2 pack cams (got ${cams.length})',
-                'camCount': cams.length,
-              }),
-            );
-          }
-          final camIds = (params['cams'] ?? '')
-              .split(',')
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList();
-          List<SpeedcamPoint> selected;
-          if (camIds.isEmpty) {
-            selected = cams.take(2).toList();
-          } else {
-            selected = <SpeedcamPoint>[];
-            for (final id in camIds) {
-              selected.add(
-                cams.firstWhere((c) => c.id == id, orElse: () => cams.first),
-              );
-            }
-            if (selected.length < 2) {
-              selected = cams.take(2).toList();
-            }
-          }
-          final approachM = double.tryParse(params['approachM'] ?? '') ?? 800;
-          final speedKmh = double.tryParse(params['speedKmh'] ?? '') ?? 50;
-          final tickMs = int.tryParse(params['tickMs'] ?? '') ?? 100;
-          final pathRaw = params['path'];
-          late final List<SpeedcamWaypoint> waypoints;
-          if (pathRaw != null && pathRaw.isNotEmpty) {
-            waypoints = pathRaw.split(';').map((pair) {
-              final parts = pair.split(',');
-              return SpeedcamWaypoint(
-                double.parse(parts[0].trim()),
-                double.parse(parts[1].trim()),
-              );
-            }).toList();
-          } else {
-            waypoints = pathThroughCams(selected, approachM: approachM);
-          }
-          final started = await speedcamDrive.start(
-            waypoints: waypoints,
-            speedKmh: speedKmh,
-            tickMs: tickMs,
-          );
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              ...started,
-              'cams': selected.map((c) => c.id).toList(),
-              'speedcam': svc.snapshot.toJson(),
-              'drive': speedcamDrive.statusJson(),
-            }),
-          );
-        case 'driveStop':
-          speedcamDrive?.stop();
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': true,
-              'drive': speedcamDrive?.statusJson(),
-              'speedcam': svc.snapshot.toJson(),
-            }),
-          );
-        case 'driveStatus':
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': true,
-              'drive': speedcamDrive?.statusJson(),
-              'speedcam': svc.snapshot.toJson(),
-            }),
-          );
-        case 'snapshot':
-          break;
-        default:
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode(<String, Object?>{
-              'ok': false,
-              'error': 'unknown action=$action',
-            }),
-          );
+    // Speedcam (0030): set host pose / approach a sample cam / enable.
+    // T1 Fake only until pack+native land.
+    developer.registerExtension('ext.zee.speedcam', (method, params) async {
+      final svc = speedcam;
+      if (svc == null) {
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode(<String, Object?>{
+            'ok': false,
+            'error': 'speedcam not available on this surface',
+          }),
+        );
       }
-      return developer.ServiceExtensionResponse.result(
-        jsonEncode(<String, Object?>{
-          'ok': true,
-          'surface': surface,
-          'speedcam': svc.snapshot.toJson(),
-        }),
-      );
-    } catch (e) {
-      return developer.ServiceExtensionResponse.result(
-        jsonEncode(<String, Object?>{'ok': false, 'error': '$e'}),
-      );
-    }
-  });
-
+      final action = params['action'] ?? params['op'] ?? 'snapshot';
+      try {
+        switch (action) {
+          case 'enable':
+            await svc.setEnabled(
+              params['on'] != 'false' && params['on'] != '0',
+            );
+          case 'disable':
+            await svc.setEnabled(false);
+          case 'pose':
+            final lat = double.parse(params['lat'] ?? '0');
+            final lon = double.parse(params['lon'] ?? '0');
+            final spd = params['speedKmh'] != null
+                ? double.tryParse(params['speedKmh']!)
+                : null;
+            final heading = params['headingDeg'] != null
+                ? double.tryParse(params['headingDeg']!)
+                : null;
+            await svc.setHostPose(
+              SpeedcamHostPose(
+                lat: lat,
+                lon: lon,
+                speedKmh: spd,
+                headingDeg: heading,
+              ),
+            );
+          case 'approach':
+          case 'demo':
+            // 0089: `demo` mirrors Speedcam Settings "Demo on HUD" (pose +
+            // speedKmh=50). Optional overlay=true|false also flips
+            // SpeedcamConfig.dhuSystemOverlay via the same store write as
+            // setConfig — one RPC for Demo+Overlay without OCR/tap thrash.
+            // `approach` keeps the older name; defaults now match Demo.
+            final dist = double.parse(
+              params['distanceM'] ?? '$kSpeedcamDemoDistanceM',
+            );
+            final cams = svc.snapshot.cams.isNotEmpty
+                ? svc.snapshot.cams
+                : FakeSpeedcamService.kFakeBySampleCams;
+            if (cams.isEmpty) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'no cams loaded',
+                }),
+              );
+            }
+            final id = params['camId'];
+            final cam = id == null
+                ? pickSpeedcamDemoCam(cams)
+                : cams.firstWhere((c) => c.id == id, orElse: () => cams.first);
+            // 1 deg lat ≈ 111320 m — approach from south.
+            // Default heading null (like HUD Demo) so facing/ahead fail-open;
+            // heading=0 made Overlay hide behind cams before visible-gate fix.
+            final dLat = dist / 111320.0;
+            final heading = params['headingDeg'] != null
+                ? double.tryParse(params['headingDeg']!)
+                : null;
+            // Demo button uses 50 km/h; approach used to leave speed null.
+            final speed =
+                double.tryParse(
+                  params['speedKmh'] ?? (action == 'demo' ? '50' : ''),
+                ) ??
+                (action == 'demo' ? 50.0 : null);
+            await svc.setHostPose(
+              SpeedcamHostPose(
+                lat: cam.lat - dLat,
+                lon: cam.lon,
+                speedKmh: speed ?? 50.0,
+                headingDeg: heading,
+              ),
+            );
+            final rawOverlay =
+                params['overlay'] ??
+                params['dhuSystemOverlay'] ??
+                params['systemOverlay'];
+            if (rawOverlay != null) {
+              final on = rawOverlay == 'true' || rawOverlay == '1';
+              final cfg = store.value;
+              await store.setConfig(
+                cfg.copyWith(
+                  speedcam: cfg.speedcam.copyWith(dhuSystemOverlay: on),
+                ),
+              );
+            }
+          case 'demoStop':
+          case 'clearPose':
+            // demoStop aliases clearPose; optional overlay=false tears Overlay down.
+            await svc.clearHostPose();
+            final rawOverlayStop =
+                params['overlay'] ??
+                params['dhuSystemOverlay'] ??
+                params['systemOverlay'];
+            if (rawOverlayStop != null) {
+              final on = rawOverlayStop == 'true' || rawOverlayStop == '1';
+              final cfg = store.value;
+              await store.setConfig(
+                cfg.copyWith(
+                  speedcam: cfg.speedcam.copyWith(dhuSystemOverlay: on),
+                ),
+              );
+            }
+          case 'reloadPack':
+            await svc.reloadFromPack();
+            break;
+          case 'packStatus':
+            final meta = await speedcamPack?.current(SpeedcamPackIds.by);
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'speedcamPack': meta?.toJson(),
+              }),
+            );
+          case 'packUpdate':
+            if (speedcamPack == null) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'speedcamPack not available',
+                }),
+              );
+            }
+            final host = speedcam?.snapshot.host;
+            final meta = await speedcamPack.updatePack(
+              SpeedcamPackIds.by,
+              centerLat: host?.lat,
+              centerLon: host?.lon,
+            );
+            await speedcam?.reloadFromPack();
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'speedcamPack': meta.toJson(),
+                'speedcam': speedcam?.snapshot.toJson(),
+              }),
+            );
+          case 'packInstall':
+            // Offline QA: install fixture JSON (path= or body=). File store only.
+            if (speedcamPack is! FileSpeedcamPackStore) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'packInstall requires FileSpeedcamPackStore',
+                }),
+              );
+            }
+            final path = params['path'];
+            final bodyParam = params['body'];
+            late final String jsonBody;
+            if (path != null && path.isNotEmpty) {
+              jsonBody = await File(path).readAsString();
+            } else if (bodyParam != null && bodyParam.isNotEmpty) {
+              jsonBody = bodyParam;
+            } else {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'packInstall needs path= or body=',
+                }),
+              );
+            }
+            final installed = await speedcamPack.installFixture(
+              packId: params['packId'] ?? SpeedcamPackIds.by,
+              jsonBody: jsonBody,
+            );
+            await speedcam?.reloadFromPack();
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'speedcamPack': installed.toJson(),
+                'speedcam': speedcam?.snapshot.toJson(),
+              }),
+            );
+          case 'drive':
+            // Continuous polyline through pack cams (0036).
+            if (speedcamDrive == null) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'drive not available',
+                }),
+              );
+            }
+            await svc.reloadFromPack();
+            final cams = svc.snapshot.cams;
+            if (cams.length < 2) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'need >=2 pack cams (got ${cams.length})',
+                  'camCount': cams.length,
+                }),
+              );
+            }
+            final camIds = (params['cams'] ?? '')
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList();
+            List<SpeedcamPoint> selected;
+            if (camIds.isEmpty) {
+              selected = cams.take(2).toList();
+            } else {
+              selected = <SpeedcamPoint>[];
+              for (final id in camIds) {
+                selected.add(
+                  cams.firstWhere((c) => c.id == id, orElse: () => cams.first),
+                );
+              }
+              if (selected.length < 2) {
+                selected = cams.take(2).toList();
+              }
+            }
+            final approachM = double.tryParse(params['approachM'] ?? '') ?? 800;
+            final speedKmh = double.tryParse(params['speedKmh'] ?? '') ?? 50;
+            final tickMs = int.tryParse(params['tickMs'] ?? '') ?? 100;
+            final pathRaw = params['path'];
+            late final List<SpeedcamWaypoint> waypoints;
+            if (pathRaw != null && pathRaw.isNotEmpty) {
+              waypoints = pathRaw.split(';').map((pair) {
+                final parts = pair.split(',');
+                return SpeedcamWaypoint(
+                  double.parse(parts[0].trim()),
+                  double.parse(parts[1].trim()),
+                );
+              }).toList();
+            } else {
+              waypoints = pathThroughCams(selected, approachM: approachM);
+            }
+            final started = await speedcamDrive.start(
+              waypoints: waypoints,
+              speedKmh: speedKmh,
+              tickMs: tickMs,
+            );
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                ...started,
+                'cams': selected.map((c) => c.id).toList(),
+                'speedcam': svc.snapshot.toJson(),
+                'drive': speedcamDrive.statusJson(),
+              }),
+            );
+          case 'driveStop':
+            speedcamDrive?.stop();
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'drive': speedcamDrive?.statusJson(),
+                'speedcam': svc.snapshot.toJson(),
+              }),
+            );
+          case 'driveStatus':
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'drive': speedcamDrive?.statusJson(),
+                'speedcam': svc.snapshot.toJson(),
+              }),
+            );
+          case 'snapshot':
+            break;
+          default:
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': false,
+                'error': 'unknown action=$action',
+              }),
+            );
+        }
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode(<String, Object?>{
+            'ok': true,
+            'surface': surface,
+            'speedcam': svc.snapshot.toJson(),
+          }),
+        );
+      } catch (e) {
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode(<String, Object?>{'ok': false, 'error': '$e'}),
+        );
+      }
+    });
   } // end if (surface == 'dhu')
 
   // tapByKey — synthetic-tap a widget identified by ValueKey<String>.

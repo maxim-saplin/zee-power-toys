@@ -14,10 +14,11 @@ not background noise.
 ## 2026-09-22 23:40 — App drive via OCR / coordinate taps -
 Agents failed to enable Speedcam HUD Demo and Overlay reliably using tesseract
 OCR and guessed taps; uiautomator idle dumps also flaked. → Prefer
-`ext.zee.tapByKey` / `ext.zee.setConfig` / ValueKeys via
-`.agents/skills/drive-zee-app/SKILL.md`. Tracked as product/process issue
-`docs/issues/0089-agent-app-drive-harness.md`. Until that lands, do not spend
-a multi-turn loop on blind UI guessing for a one-button action.
+`ext.zee.speedcam action=demo overlay=true` / `feedback_loop.py speedcam-demo`
+/ `ext.zee.setConfig` / ValueKeys via `.agents/skills/drive-zee-app/SKILL.md`.
+**Tipped 0089:** one-shot `speedcam-demo on|off` (+ `action=demo|demoStop`).
+Do not spend a multi-turn loop on blind UI guessing for a one-button action.
+
 
 ## 2026-09-22 23:55 — Overlay SYSTEM_ALERT_WINDOW GONE (Requested 0×0) -
 QA: Overlay ON + danger.insideApproach=true but window stayed View.GONE
