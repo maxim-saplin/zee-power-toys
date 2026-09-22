@@ -16,8 +16,6 @@ and companion installs — without fighting the stock UI.
 | **YNavi mod (HUD map)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
 | **Launcher mod** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
-> Screenshots below are TBD (store artwork still landing). Don’t block install or tips on artwork.
-
 ---
 
 
