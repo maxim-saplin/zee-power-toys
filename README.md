@@ -6,15 +6,22 @@
 
 <img width="1215" height="781" alt="image" src="https://github.com/user-attachments/assets/1177d745-ada6-43ed-a787-8bf60a62fd15" />
 
-Customization app for the car’s central display (DHU) and the windshield HUD:
-navigation minimap, blinkers, speed-camera alerts, battery/charge looks, language
-and companion installs — without fighting the stock UI.
+Windshield HUD projection:
+- YNavi navigation minimap
+- blinkers
+- speed-camera alerts
+- battery charge level and temperature
 
-| | |
+Also:
+- set the instrument-cluster language to English
+- change language on the tablet
+- switch USB between host and peripheral (wired connect + ADB)
+- quick download/install buttons for companions (Launcher with YNavi, YNavi)
+
+| Companions | |
 |---|---|
-| **This app** | [maxim-saplin/zee-power-toys](https://github.com/maxim-saplin/zee-power-toys) |
-| **YNavi mod (HUD map)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
-| **Launcher mod** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
+| **YNavi mod (needed for projection, larger scale)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
+| **Launcher mod (replaces Chinese nav with YNavi)** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
 ---
 
