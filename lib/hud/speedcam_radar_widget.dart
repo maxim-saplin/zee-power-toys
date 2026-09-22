@@ -450,20 +450,20 @@ class _AlienWedgePainter extends CustomPainter {
       Radius.circular(minSide * 0.10),
     );
 
-    // Landscape CRT (300×220): fit ±50° wedge AABB with EVEN pad on all
-    // four sides of the plate (Maxim 0080 — not portrait, not square).
-    // Apex-local: top (0,-r); tips (±r·sin50°, -r·cos50°); apex (0,0).
-    // bbox W = 2·r·sin(50°), H = r.
+    // Landscape CRT (300×220): even pad around horizontal fan; bottom strip
+    // reserved so km sits true bottom-left of the plate (Maxim/PDM lock).
     const wedgeHalf = 50 * math.pi / 180;
     final tipLeft = -math.pi / 2 - wedgeHalf;
     final tipRight = -math.pi / 2 + wedgeHalf;
     final strokePad = 3.0 * s;
     final pad = math.max(math.min(size.width, size.height) * 0.06, 1.5 * s + strokePad);
-    final inner = Rect.fromLTWH(
+    // Reserve bottom for 0.xx + limit (approx two lines + gaps).
+    final kmReserve = 12 * s + 9 * s + 4 * s;
+    final inner = Rect.fromLTRB(
       pad,
       pad,
-      size.width - 2 * pad,
-      size.height - 2 * pad,
+      size.width - pad,
+      size.height - pad - kmReserve,
     );
     final sinHalf = math.sin(wedgeHalf);
     final rFromW = inner.width / (2 * sinHalf);
@@ -471,7 +471,7 @@ class _AlienWedgePainter extends CustomPainter {
     final r = math.min(rFromW, rFromH);
     final fanW = 2 * r * sinHalf;
     final fanH = r;
-    // Center fan bbox inside inner → even leftover pad L/R/T/B.
+    // Center fan in the (plate minus km strip) → even pad around cluster.
     final fanLeft = inner.left + (inner.width - fanW) / 2;
     final fanTop = inner.top + (inner.height - fanH) / 2;
     final c = Offset(fanLeft + fanW / 2, fanTop + fanH);
@@ -670,14 +670,17 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Km + limit: bottom-left of the CRT bounding rect with pad (Maxim 0080).
+    // Km + limit: hard bottom-left of CRT plate (Maxim / PDM lock).
+    // Pad from left + bottom edges of [bounds]; stack stays left of center
+    // radial (c.dx). Never mid-fan / mid-plate.
     if (readoutM != null) {
+      final cornerPad = math.max(pad, 6.0 * s);
       final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 14 * s,
+            fontSize: 12 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -690,7 +693,7 @@ class _AlienWedgePainter extends CustomPainter {
           text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
-            fontSize: 10 * s,
+            fontSize: 9 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
             height: 1.0,
@@ -698,12 +701,19 @@ class _AlienWedgePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final stackH = km.height + (maxspeed != null ? limit.height + 1.5 * s : 0);
-      final kmLeft = pad;
-      final kmTop = size.height - pad - stackH;
+      final stackH = km.height + (maxspeed != null ? limit.height + 1.2 * s : 0);
+      // Bottom-left of plate.
+      final kmLeft = cornerPad;
+      final kmTop = size.height - cornerPad - stackH;
+      // Stay in left half — do not cross middle vertical / center radial.
+      final maxRight = math.min(c.dx - 2 * s, size.width * 0.48);
+      if (kmLeft + km.width > maxRight) {
+        // Shrink was already via fontSize; clip left stay, truncate not needed.
+      }
+      assert(kmTop + stackH <= size.height - cornerPad + 0.5);
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
-        limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 1.5 * s));
+        limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 1.2 * s));
       }
     }
   }
