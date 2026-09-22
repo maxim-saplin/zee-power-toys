@@ -266,19 +266,10 @@ class _SpeedcamSettingsScreenState
                   final maxDisk = (h - 280).clamp(140.0, 280.0);
                   final side = math.min(constraints.maxWidth, maxDisk);
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
-                  // Alien: same composite geometry as HUD radar slot, then FittedBox
-                  // up (HudPreview pattern). MediaQuery dpr=1 matches HUD Presentation
-                  // / DHU reported-low dpi so CRT strokes use the DPI-aware path.
-                  // Keep dhuLarge so Semantics key stays `dhu-speedcam-radar` (0039).
-                  // No ClipRRect — painter owns CRT; fan strokes are unclipped.
-                  const hudRadarW = 220.0;
-                  const hudRadarH = 300.0;
-                  final radar = SpeedcamRadarWidget(
-                    variant: SpeedcamRadarVariant.dhuLarge,
-                    alwaysShow: !isAlien,
-                    forceDemoDanger: SpeedcamRadarWidget.demoDanger,
-                    displayRadiusM: sc.dhuRangeM,
-                  );
+                  // One CRT composite: square disk, painter fills bounds (0080).
+                  // No FittedBox / tall 220×300 slot — that stacked a tall frame
+                  // through the radar. dpr=1 MediaQuery keeps DPI-aware strokes
+                  // on the reported-low path. dhuLarge → `dhu-speedcam-radar`.
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
@@ -286,22 +277,17 @@ class _SpeedcamSettingsScreenState
                       height: side,
                       child: ColoredBox(
                         color: Colors.black,
-                        child: isAlien
-                            ? FittedBox(
-                                fit: BoxFit.contain,
-                                alignment: Alignment.bottomCenter,
-                                child: SizedBox(
-                                  width: hudRadarW,
-                                  height: hudRadarH,
-                                  child: MediaQuery(
-                                    data: MediaQuery.of(context).copyWith(
-                                      devicePixelRatio: 1.0,
-                                    ),
-                                    child: radar,
-                                  ),
-                                ),
-                              )
-                            : radar,
+                        child: MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            devicePixelRatio: 1.0,
+                          ),
+                          child: SpeedcamRadarWidget(
+                            variant: SpeedcamRadarVariant.dhuLarge,
+                            alwaysShow: !isAlien,
+                            forceDemoDanger: SpeedcamRadarWidget.demoDanger,
+                            displayRadiusM: sc.dhuRangeM,
+                          ),
+                        ),
                       ),
                     ),
                   );

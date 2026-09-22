@@ -184,6 +184,9 @@ class _HudSlots extends ConsumerWidget {
       heightFrac: slotFracs.heightFrac,
     );
 
+    // 0080: square CRT composite — same aspect as DHU settings Alien disk.
+    final radarSide = math.min(saWidth * 0.22, saHeight * 0.42);
+
     return Stack(
       children: <Widget>[
         // BLINKER — full Safe Area layer (lowest z-order).
@@ -204,12 +207,12 @@ class _HudSlots extends ConsumerWidget {
           child: const BatteryWidget(),
         ),
 
-        // SPEEDCAM RADAR — right mid (Alien/CRT), below battery; idle = empty.
+        // SPEEDCAM RADAR — right mid; square CRT (0080 shared composite).
         Positioned(
           right: saWidth * 0.02,
           top: saHeight * 0.28,
-          width: saWidth * 0.22,
-          height: saHeight * 0.55,
+          width: radarSide,
+          height: radarSide,
           child: SpeedcamRadarWidget(
             forceDemoDanger: forceDemoSpeedcam
                 ? SpeedcamRadarWidget.demoDanger
