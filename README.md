@@ -4,6 +4,8 @@
 
 **Windshield HUD + DHU utilities for Zeekr Android head units.**
 
+<img width="1215" height="781" alt="image" src="https://github.com/user-attachments/assets/1177d745-ada6-43ed-a787-8bf60a62fd15" />
+
 Customization app for the car’s central display (DHU) and the windshield HUD:
 navigation minimap, blinkers, speed-camera alerts, battery/charge looks, language
 and companion installs — without fighting the stock UI.
