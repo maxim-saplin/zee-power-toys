@@ -16,8 +16,6 @@
 | **Мод YNavi (карта HUD)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
 | **Мод лаунчера** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
-> Скриншоты ниже — TBD (арт для стора ещё в работе). На установку и tips это не влияет.
-
 ---
 
 
