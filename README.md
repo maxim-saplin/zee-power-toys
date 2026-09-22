@@ -78,29 +78,25 @@ adb install -g -r -d zee-power-toys.apk
 
 ## Quick overview
 
-DHU settings app (Tablet / car head unit). Language: **EN** or **RU** under Language.
+DHU settings app (Tablet / car head unit). Switch language under **Language**.
 
 ### 1. Home
 
 Companion install status on the left; open **HUD**, **Minimap**, **Speedcam**, and the rest from **Sections** on the right.
 
-![Home (EN)](docs/assets/en-home.png)
-
-![Home (RU)](docs/assets/ru-home.png)
+![Home](docs/assets/en-home.png)
 
 ### 2. Speedcam
 
 OSM packs, approach alerts, Alien/Default radar look, and optional YNavi enrich/collect. Speedcam works without YNavi.
 
-![Speedcam (EN)](docs/assets/en-speedcam.png)
-
-![Speedcam (RU)](docs/assets/ru-speedcam.png)
+![Speedcam](docs/assets/en-speedcam.png)
 
 ### 3. Language & appearance
 
 Switch the app UI between English and Russian (and theme). System/cluster language controls are for the car when available.
 
-![Language (EN)](docs/assets/en-language.png)
+![Language](docs/assets/en-language.png)
 
 
 ---
