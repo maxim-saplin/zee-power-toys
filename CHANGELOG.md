@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing
 
 ## [Unreleased]
 
+## [1.0.0+10] — 2026-09-22
+
+### Fixed
+- About / self-update version from PackageInfo only — drop hardcoded `lib/app_version.dart` (+6 lie). Tip `0f38264`.
+
 ## [1.0.0+9] — 2026-09-21
 
 ### Fixed
