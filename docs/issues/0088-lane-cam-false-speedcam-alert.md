@@ -44,4 +44,4 @@ When YNavi feed is enabled, add an optional **alert on lane cams** toggle — **
 - `camsForAlert` excludes `isLaneCam` when YNavi alert path active and `!alertLaneCams` (map/enrich snapshot still keeps them). Danger binder already uses `camsForAlert`.
 
 ### Tip
-`TIP_SHA_PENDING` — unit tests: `test/services/speedcam_0088_lane_cam_test.dart`.
+`a1fd8d9` — unit tests: `test/services/speedcam_0088_lane_cam_test.dart`.
