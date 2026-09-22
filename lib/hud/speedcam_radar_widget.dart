@@ -455,16 +455,17 @@ class _AlienWedgePainter extends CustomPainter {
     // r=0.72*minSide spilled past left/right on DHU). No tall-frame clip hack.
     const wedgeHalf = 50 * math.pi / 180;
     final c = Offset(size.width / 2, size.height * 0.90);
-    final strokePad = 2.5 * s;
+    // Extra pad so outer stroke + glow never kiss the black plate edge.
+    final strokePad = 4.0 * s;
     final inner = bounds.deflate(1.5 * s + strokePad);
     final tipLeft = -math.pi / 2 - wedgeHalf;
     final tipRight = -math.pi / 2 + wedgeHalf;
     final maxRLeft = (c.dx - inner.left) / -math.cos(tipLeft);
     final maxRRight = (inner.right - c.dx) / math.cos(tipRight);
     final maxRTop = c.dy - inner.top; // up arc at -π/2
-    final r = math
-        .min(minSide * 0.70, math.min(maxRLeft, math.min(maxRRight, maxRTop)))
-        .clamp(minSide * 0.40, minSide * 0.70);
+    final rFit = math.min(maxRLeft, math.min(maxRRight, maxRTop));
+    final r = (math.min(minSide * 0.62, rFit) * 0.96)
+        .clamp(minSide * 0.38, minSide * 0.62);
 
     // Ground + grit + scan ONLY — rounded clip must not touch fan strokes.
     canvas.saveLayer(bounds, Paint());
