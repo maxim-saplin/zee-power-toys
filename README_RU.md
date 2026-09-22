@@ -6,15 +6,22 @@
 
 <img width="1215" height="781" alt="image" src="https://github.com/user-attachments/assets/1177d745-ada6-43ed-a787-8bf60a62fd15" />
 
-Приложение для центрального дисплея автомобиля (DHU) и HUD: миникарта навигации,
-поворотники, предупреждения о камерах, заряд/батарея, язык и установка компаньонов —
-без борьбы со штатным UI.
+Работа с проекцией на лобовом стекле:
+- Миникарта навигации Ynavi
+- поворотники
+- предупреждения о камерах скорости
+- уровень заряда и температура батареи, 
 
-| | |
+А также:
+- изменение языка на английский в приборке
+- изменение языка в планшете
+- переключение USB между режимам host и peripheral (для подключения по проводу и использования ADB)
+- кнопки для быстрого скачивания и установки компаньонов (лаунчер с YNavi, YNavi)
+
+|Компаньоны | |
 |---|---|
-| **Это приложение** | [maxim-saplin/zee-power-toys](https://github.com/maxim-saplin/zee-power-toys) |
-| **Мод YNavi (карта HUD)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
-| **Мод лаунчера** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
+| **Мод YNavi (нужен для проекции, увеличен масштаб)** | [maxim-saplin/ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) |
+| **Мод лаунчера (заменяет китайскую навигацию на YNavi)** | [maxim-saplin/zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) |
 
 ---
 
