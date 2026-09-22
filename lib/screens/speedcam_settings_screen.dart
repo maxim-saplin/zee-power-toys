@@ -263,22 +263,22 @@ class _SpeedcamSettingsScreenState
                 builder: (context, constraints) {
                   final h = MediaQuery.sizeOf(context).height;
                   // App bar + toggles + range + section chrome ≈ 280; leave margin.
-                  final maxH = (h - 280).clamp(160.0, 320.0);
-                  // 220×300 plate (Maxim: rectangle, not square).
-                  const plateAspect = 220.0 / 300.0;
-                  final plateH = math.min(
-                    constraints.maxWidth / plateAspect,
-                    maxH,
-                  );
-                  final plateW = plateH * plateAspect;
+                  final maxW = math.min(constraints.maxWidth, 360.0);
+                  // 300×220 landscape plate (Maxim: wide rect, not portrait/square).
+                  const plateAspect = 300.0 / 220.0;
+                  final plateW = maxW;
+                  final plateH = plateW / plateAspect;
+                  final maxH = (h - 280).clamp(120.0, 280.0);
+                  final useH = math.min(plateH, maxH);
+                  final useW = useH * plateAspect;
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
                   // Rectangular CRT composite — painter fills bounds (0080).
                   // Real MediaQuery dpr + surface width drive alienDhuDpiBridge.
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
-                      width: plateW,
-                      height: plateH,
+                      width: useW,
+                      height: useH,
                       child: ColoredBox(
                         color: Colors.black,
                         child: SpeedcamRadarWidget(

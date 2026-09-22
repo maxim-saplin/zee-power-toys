@@ -185,10 +185,10 @@ class _HudSlots extends ConsumerWidget {
       heightFrac: slotFracs.heightFrac,
     );
 
-    // 0080: rectangular CRT plate 220×300 (Maxim — NOT square 1:1).
-    const radarAspect = 220.0 / 300.0; // width / height
-    final radarH = math.min(saWidth * 0.22 / radarAspect, saHeight * 0.42);
-    final radarW = radarH * radarAspect;
+    // 0080: landscape CRT plate 300×220 (Maxim — wide rect, NOT portrait/square).
+    const radarAspect = 300.0 / 220.0; // width / height > 1
+    final radarW = math.min(saWidth * 0.28, saHeight * 0.42 * radarAspect);
+    final radarH = radarW / radarAspect;
 
     return Stack(
       children: <Widget>[

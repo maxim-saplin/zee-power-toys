@@ -451,7 +451,7 @@ class _AlienWedgePainter extends CustomPainter {
       Radius.circular(minSide * 0.10),
     );
 
-    // Fan on rectangular CRT (220:300 plate): even pad — outer arc + tips
+    // Fan on landscape CRT (300:220 plate): even pad — outer arc + tips
     // share the same inset (Maxim 0080: rectangle, not square).
     const wedgeHalf = 50 * math.pi / 180;
     final tipLeft = -math.pi / 2 - wedgeHalf;
