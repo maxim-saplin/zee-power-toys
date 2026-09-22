@@ -6,7 +6,7 @@ satisfies: foundation
 blocked-by: []
 modules: [InstallScreen, ynavi-zee]
 tier: T2
-tip: 8eca1e0
+tip: 1299105
 ---
 
 # 0087 — YNavi release label should show upstream major+build
@@ -17,7 +17,7 @@ tip: 8eca1e0
 ## FINDINGS — root cause
 Release tag / asset filenames used an **internal mod counter** (`ynavi-zeekr-v12`, `zeekr_v12_*.apk`, `deepal_v12.apk`). The real product bar on the base APK is apktool `versionName` **27.0.2** / `versionCode` **738798690**. Install cards and README Release tables echoed that `v12` name, so Deepal+Zeekr looked like a different major than Yandex Navi About.
 
-## Tip (`8eca1e0`)
+## Tip (`1299105`)
 - `install_targets.dart`: `kYnaviUpstreamVersionName` / `kYnaviUpstreamLabel` / `kYnaviUpstreamVersionBuild` (`27.0.2+738798690`); Release tag `ynavi-zeekr-v27.0.2`; assets `zeekr_v27.0.2_{margined,os7_nomargin}.apk`.
 - Install card titles (EN/RU) include `v27.0.2`.
 - README EN/RU Release cards + publish notes match.
