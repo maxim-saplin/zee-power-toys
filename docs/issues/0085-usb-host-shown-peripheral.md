@@ -6,7 +6,7 @@ satisfies: foundation
 blocked-by: []
 modules: [UsbAdbScreen, NativeUsbMode]
 tier: T3
-tip: 2c37c2e
+tip: efe1f35
 ---
 
 # 0085 — USB mode UI shows Peripheral while actually Host
@@ -22,7 +22,7 @@ switched Host via zSupport). UI must reflect the real USB role **on cold-open**
 successful `setUsbMode`. Cold-open therefore painted Peripheral whenever another
 app (zSupport) had set `persist.usb.mode=1`.
 
-## Tip (`2c37c2e`)
+## Tip (`efe1f35`)
 - `usbModeFromRaw` + `UsbModePort.refresh({autoPreferred})` syncs live prop → `currentMode`.
 - `dhuMain` awaits `refresh` after constructing the port (`autoUsbPeripheral` from
   ConfigStore).
