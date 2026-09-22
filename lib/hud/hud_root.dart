@@ -185,8 +185,10 @@ class _HudSlots extends ConsumerWidget {
       heightFrac: slotFracs.heightFrac,
     );
 
-    // 0080: square CRT composite — same aspect as DHU settings Alien disk.
-    final radarSide = math.min(saWidth * 0.22, saHeight * 0.42);
+    // 0080: rectangular CRT plate 220×300 (Maxim — NOT square 1:1).
+    const radarAspect = 220.0 / 300.0; // width / height
+    final radarH = math.min(saWidth * 0.22 / radarAspect, saHeight * 0.42);
+    final radarW = radarH * radarAspect;
 
     return Stack(
       children: <Widget>[
@@ -208,12 +210,12 @@ class _HudSlots extends ConsumerWidget {
           child: const BatteryWidget(),
         ),
 
-        // SPEEDCAM RADAR — right mid; square CRT (0080 shared composite).
+        // SPEEDCAM RADAR — right mid; rectangular CRT (0080 shared composite).
         Positioned(
           right: saWidth * 0.02,
           top: saHeight * 0.28,
-          width: radarSide,
-          height: radarSide,
+          width: radarW,
+          height: radarH,
           child: SpeedcamRadarWidget(
             forceDemoDanger: forceDemoSpeedcam
                 ? SpeedcamRadarWidget.demoDanger

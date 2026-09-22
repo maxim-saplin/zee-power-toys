@@ -451,8 +451,8 @@ class _AlienWedgePainter extends CustomPainter {
       Radius.circular(minSide * 0.10),
     );
 
-    // Fan on 1:1 CRT: even plate padding — outer arc + tips share the same
-    // inset (Maxim 0080: no huge empty top; square plate stays square).
+    // Fan on rectangular CRT (220:300 plate): even pad — outer arc + tips
+    // share the same inset (Maxim 0080: rectangle, not square).
     const wedgeHalf = 50 * math.pi / 180;
     final tipLeft = -math.pi / 2 - wedgeHalf;
     final tipRight = -math.pi / 2 + wedgeHalf;
@@ -669,15 +669,14 @@ class _AlienWedgePainter extends CustomPainter {
         ..isAntiAlias = false,
     );
 
-    // Km + limit: smaller, in left wedge lobe (≈45–90° from forward) —
-    // must not cross the center radial (Maxim 0080).
+    // Km + limit: bottom-left of the CRT bounding rect with pad (Maxim 0080).
     if (readoutM != null) {
       final km = TextPainter(
         text: TextSpan(
           text: (readoutM! / 1000).toStringAsFixed(2),
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor,
-            fontSize: 13 * s,
+            fontSize: 14 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w700,
             height: 1.0,
@@ -690,7 +689,7 @@ class _AlienWedgePainter extends CustomPainter {
           text: maxspeed != null ? '$maxspeed' : '',
           style: TextStyle(
             color: SpeedcamRadarWidget.phosphor.withValues(alpha: 0.75),
-            fontSize: 9 * s,
+            fontSize: 10 * s,
             fontFamily: 'monospace',
             fontWeight: FontWeight.w600,
             height: 1.0,
@@ -698,22 +697,9 @@ class _AlienWedgePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final textAngle = baseAngle - wedgeHalf * 0.55; // left lobe mid
-      final textR = r * 0.40;
-      final anchor = Offset(
-        c.dx + textR * math.cos(textAngle),
-        c.dy + textR * math.sin(textAngle),
-      );
       final stackH = km.height + (maxspeed != null ? limit.height + 1.5 * s : 0);
-      // Keep entire stack left of the middle radial.
-      final maxRight = c.dx - 2.5 * s;
-      var kmLeft = anchor.dx - km.width * 0.35;
-      if (kmLeft + km.width > maxRight) {
-        kmLeft = maxRight - km.width;
-      }
-      kmLeft = kmLeft.clamp(pad + 2 * s, maxRight - km.width);
-      final kmTop = (anchor.dy - stackH * 0.45)
-          .clamp(pad + 2 * s, size.height - pad - stackH);
+      final kmLeft = pad;
+      final kmTop = size.height - pad - stackH;
       km.paint(canvas, Offset(kmLeft, kmTop));
       if (maxspeed != null) {
         limit.paint(canvas, Offset(kmLeft, kmTop + km.height + 1.5 * s));

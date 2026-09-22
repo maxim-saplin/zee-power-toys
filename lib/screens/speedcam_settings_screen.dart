@@ -263,20 +263,22 @@ class _SpeedcamSettingsScreenState
                 builder: (context, constraints) {
                   final h = MediaQuery.sizeOf(context).height;
                   // App bar + toggles + range + section chrome ≈ 280; leave margin.
-                  final maxDisk = (h - 280).clamp(140.0, 280.0);
-                  final side = math.min(constraints.maxWidth, maxDisk);
+                  final maxH = (h - 280).clamp(160.0, 320.0);
+                  // 220×300 plate (Maxim: rectangle, not square).
+                  const plateAspect = 220.0 / 300.0;
+                  final plateH = math.min(
+                    constraints.maxWidth / plateAspect,
+                    maxH,
+                  );
+                  final plateW = plateH * plateAspect;
                   final isAlien = sc.radarLook == SpeedcamRadarLook.alien;
-                  // One CRT composite: square disk, painter fills bounds (0080).
-                  // No FittedBox / tall 220×300 slot — that stacked a tall frame
-                  // through the radar. dpr=1 MediaQuery keeps DPI-aware strokes
-                  // on the reported-low path. dhuLarge → `dhu-speedcam-radar`.
-                  // Real MediaQuery dpr + surface width drive alienDhuDpiBridge
-                  // (no fake dpr=1 — that falsely triggered DHU bridge on Tablet).
+                  // Rectangular CRT composite — painter fills bounds (0080).
+                  // Real MediaQuery dpr + surface width drive alienDhuDpiBridge.
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
-                      width: side,
-                      height: side,
+                      width: plateW,
+                      height: plateH,
                       child: ColoredBox(
                         color: Colors.black,
                         child: SpeedcamRadarWidget(
