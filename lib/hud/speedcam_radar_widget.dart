@@ -232,7 +232,9 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
-          final dpr = MediaQuery.devicePixelRatioOf(context);
+          // Prefer view dpr (not a MediaQuery override) for reported-vs-actual bridge.
+          final dpr = View.of(context).devicePixelRatio;
+          final surfaceW = MediaQuery.sizeOf(context).width;
           return CustomPaint(
             key: ValueKey(lookKey),
             painter: _AlienWedgePainter(
@@ -244,6 +246,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
               readoutM: labelDist,
               maxspeed: labelMax,
               devicePixelRatio: dpr,
+              surfaceLogicalWidth: surfaceW,
             ),
             child: const SizedBox.expand(),
           );
@@ -359,6 +362,20 @@ Color alienBlipFillColor({required bool highlight}) => highlight
     ? SpeedcamRadarWidget.blipDanger
     : SpeedcamRadarWidget.blipOther;
 
+
+/// 0080 — bridge DHU reported dpi (~160) to actual (~200.6 on 15.05" / 2.5k).
+/// HUD / non-automotive surfaces return 1.0 so windshield gold is unchanged.
+double alienDhuDpiBridge({
+  required double devicePixelRatio,
+  required double surfaceLogicalWidth,
+}) {
+  final automotive = devicePixelRatio < 2.0 && surfaceLogicalWidth >= 1600;
+  if (!automotive) return 1.0;
+  const actual = 200.6;
+  const reported = 160.0;
+  return (actual / reported).clamp(1.0, 1.5);
+}
+
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 ///
 /// 0080: CRT density is **DPI-aware**. DHU reports low dpi on a high-res panel
@@ -376,6 +393,7 @@ class _AlienWedgePainter extends CustomPainter {
     required this.readoutM,
     required this.maxspeed,
     required this.devicePixelRatio,
+    required this.surfaceLogicalWidth,
   });
 
   final double sweepT;
@@ -386,22 +404,26 @@ class _AlienWedgePainter extends CustomPainter {
   final double? readoutM;
   final int? maxspeed;
   final double devicePixelRatio;
+  /// Full-surface logical width (not the CRT disk) — drives DHU automotive detect.
+  final double surfaceLogicalWidth;
 
-  /// Design size where legacy fixed strokes (~1.1–3.2) looked right on HUD.
+  /// Design size where HUD-gold strokes (~1.1–3.2) were tuned (windshield CRT).
   static const double _designSide = 160.0;
-
-  /// Target dpr for "HUD Presentation" phosphor weight (HUD paints at ~1.0).
-  static const double _hudPresentationDpr = 1.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = Offset.zero & size;
     final minSide = math.min(size.width, size.height);
     final dpr = devicePixelRatio.clamp(0.75, 4.0);
-    // Size scale + invert reported dpr (DHU low-dpi lie → thicker logical strokes).
+    // Size-relative CRT density (shared). DPI bridge only on real DHU geometry.
     final sizeS = (minSide / _designSide).clamp(0.85, 2.8);
-    final dpiS = (_hudPresentationDpr / dpr).clamp(0.7, 2.4);
-    final s = sizeS * dpiS * 1.08;
+    final dpiBridge = alienDhuDpiBridge(
+      devicePixelRatio: dpr,
+      surfaceLogicalWidth: surfaceLogicalWidth,
+    );
+    // Note: settings preview is a small disk — identity bridge (won't fake DHU).
+    // Full DHU surface (DhuScaledLayout / wide low-dpr) gets the 1.254 bridge.
+    final s = sizeS * dpiBridge;
 
     final c = Offset(size.width / 2, size.height * 0.88);
     // Keep fan fully inside the square (margin) so nothing is shaved.
@@ -657,6 +679,7 @@ class _AlienWedgePainter extends CustomPainter {
       old.displayRadiusM != displayRadiusM ||
       old.readoutM != readoutM ||
       old.maxspeed != maxspeed ||
-      old.devicePixelRatio != devicePixelRatio;
+      old.devicePixelRatio != devicePixelRatio ||
+      old.surfaceLogicalWidth != surfaceLogicalWidth;
 }
 

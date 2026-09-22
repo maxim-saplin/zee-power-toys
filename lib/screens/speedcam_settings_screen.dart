@@ -270,6 +270,8 @@ class _SpeedcamSettingsScreenState
                   // No FittedBox / tall 220×300 slot — that stacked a tall frame
                   // through the radar. dpr=1 MediaQuery keeps DPI-aware strokes
                   // on the reported-low path. dhuLarge → `dhu-speedcam-radar`.
+                  // Real MediaQuery dpr + surface width drive alienDhuDpiBridge
+                  // (no fake dpr=1 — that falsely triggered DHU bridge on Tablet).
                   return Align(
                     alignment: Alignment.center,
                     child: SizedBox(
@@ -277,16 +279,11 @@ class _SpeedcamSettingsScreenState
                       height: side,
                       child: ColoredBox(
                         color: Colors.black,
-                        child: MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            devicePixelRatio: 1.0,
-                          ),
-                          child: SpeedcamRadarWidget(
-                            variant: SpeedcamRadarVariant.dhuLarge,
-                            alwaysShow: !isAlien,
-                            forceDemoDanger: SpeedcamRadarWidget.demoDanger,
-                            displayRadiusM: sc.dhuRangeM,
-                          ),
+                        child: SpeedcamRadarWidget(
+                          variant: SpeedcamRadarVariant.dhuLarge,
+                          alwaysShow: !isAlien,
+                          forceDemoDanger: SpeedcamRadarWidget.demoDanger,
+                          displayRadiusM: sc.dhuRangeM,
                         ),
                       ),
                     ),
