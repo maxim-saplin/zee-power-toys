@@ -6,7 +6,7 @@ satisfies: foundation
 blocked-by: []
 modules: [InstallScreen, AppSelfUpdate, InstallerController, NativeInstaller]
 tier: T2
-tip: PENDING
+tip: a07a549
 ---
 
 # 0084 — Parallel toys Update + YNavi Install race
@@ -23,7 +23,7 @@ Flutter `EventChannel` allows **one** active sink. Each `NativeInstaller.install
 
 Not a shared PackageInstaller session id collision; not concurrent adb. Progress-stream overwrite + single in-flight key.
 
-## Tip (`PENDING`)
+## Tip (`a07a549`)
 - Kotlin: tag every progress event with `url`; track `inFlightUrls` set; `onCancel` only drops the sink (jobs keep running); pool of 3 for parallel downloads; **self-update commit waits** until companion installs leave flight so process death does not strand YNavi.
 - Dart: one shared EventChannel subscription; fan-out by `url`; start only via MethodChannel.
 - Tests: `test/services/native_installer_parallel_test.dart`.
