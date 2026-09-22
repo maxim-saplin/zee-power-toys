@@ -1,5 +1,5 @@
 ---
-Status: OPEN (ACCEPT 6788dc5 retracted — enlarge type to classic HUD ~0.21)
+Status: ACCEPT (2026-09-23 tip ea3f461)
 labels: [hud, speedcam, crt]
 created: 2026-09-22
 satisfies: foundation
@@ -37,3 +37,7 @@ DoD: Overlay + DHU preview type scale **UP** to the **large HUD baseline**
 Not HUD FittedBox-down to Overlay-small. Keep Demo limit 60 sync.
 Math: km font ≈ 34×(minSide/160), limit ≈ 18×s → fraction ~0.21.
 QA: MEASURE vs large HUD target (~0.21), not Overlay-small.
+
+## ACCEPT (2026-09-23) tip `ea3f461`
+PDM pixel check PASS (Maxim large-HUD bar): type ratios ~0.18 across HUD/preview/Overlay (spread 0.0095), Demo 0.20+60 all three, Overlay HOME DoD PASS. Prior `6788dc5` ACCEPT retracted (shrunk HUD toward Overlay). Soft grit vs car secondary — no reopen.
+Evidence: `tmp/qa/0083-after/`.
