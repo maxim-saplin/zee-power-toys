@@ -139,7 +139,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Лаунчер с YNavi в качестве навигации по умолчанию';
 
   @override
-  String get installYnaviName => 'YNavi мод (с полями / по умолчанию)';
+  String get installYnaviName => 'YNavi мод v27.0.2 (с полями / по умолчанию)';
 
   @override
   String get installYnaviDesc =>
@@ -684,7 +684,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Точки камер — OpenStreetMap. © участники OpenStreetMap. Данные по лицензии Open Database License (ODbL).';
 
   @override
-  String get installYnaviOs7Name => 'YNavi мод (OS7+, без левого поля)';
+  String get installYnaviOs7Name => 'YNavi мод v27.0.2 (OS7+, без левого поля)';
 
   @override
   String get installYnaviOs7Desc =>

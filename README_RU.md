@@ -112,8 +112,8 @@ adb install -g -r -d zee-power-toys.apk
 
 | Компаньон | Репозиторий | Release |
 |-----------|-------------|---------|
-| YNavi с отступом (по умолчанию) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | тег `ynavi-zeekr-v12` / `zeekr_v12_margined.apk` |
-| YNavi OS7+ (без левого отступа) | тот же | тот же тег / `zeekr_v12_os7_nomargin.apk` |
+| YNavi с отступом (по умолчанию) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | тег `ynavi-zeekr-v27.0.2` / `zeekr_v27.0.2_margined.apk` (upstream YNavi 27.0.2) |
+| YNavi OS7+ (без левого отступа) | тот же | тот же тег / `zeekr_v27.0.2_os7_nomargin.apk` |
 | Мод лаунчера Zeekr | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | тег `launcher-670` / `XCLauncher3-670-yandex-signed.apk` |
 
 **Install UI** качает ассеты Release и запускает `PackageInstaller`.  

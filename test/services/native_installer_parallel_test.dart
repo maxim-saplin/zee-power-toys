@@ -70,7 +70,7 @@ void main() {
   test('parallel Update + YNavi keep one EventChannel listen and fan out by url',
       () async {
     final toysUrl = asset('zee-power-toys.apk').downloadUrl;
-    final ynaviUrl = asset('zeekr_v12_margined.apk').downloadUrl;
+    final ynaviUrl = asset('zeekr_v27.0.2_margined.apk').downloadUrl;
 
     final toysEvents = <InstallProgress>[];
     final ynaviEvents = <InstallProgress>[];
@@ -82,7 +82,7 @@ void main() {
       toysEvents.add,
       onDone: toysDone.complete,
     );
-    installer.install(asset('zeekr_v12_margined.apk')).listen(
+    installer.install(asset('zeekr_v27.0.2_margined.apk')).listen(
       ynaviEvents.add,
       onDone: ynaviDone.complete,
     );
@@ -171,7 +171,7 @@ void main() {
     );
     expect(
       isSelfUpdateUrl(
-        'https://github.com/maxim-saplin/ynavi-zee/releases/download/t/zeekr_v12_margined.apk',
+        'https://github.com/maxim-saplin/ynavi-zee/releases/download/t/zeekr_v27.0.2_margined.apk',
       ),
       isFalse,
     );

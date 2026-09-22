@@ -172,7 +172,7 @@
   "@installLauncherDesc": {
     "description": "Install target: modded launcher description"
   },
-  "installYnaviName": "YNavi mod (margined / default)",
+  "installYnaviName": "YNavi mod v27.0.2 (margined / default)",
   "@installYnaviName": {
     "description": "Install target: YNavi mod name"
   },
@@ -884,7 +884,7 @@
   "@aboutSpeedcamCreditBody": {
     "description": "OSM ODbL credit for Speedcam"
   },
-  "installYnaviOs7Name": "YNavi mod (OS7+ no left margin)",
+  "installYnaviOs7Name": "YNavi mod v27.0.2 (OS7+ no left margin)",
   "@installYnaviOs7Name": {
     "description": "Install card — OS7 YNavi variant"
   },

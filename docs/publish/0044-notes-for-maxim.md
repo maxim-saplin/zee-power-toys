@@ -30,9 +30,9 @@ flutter build apk --release -PuseAospDebugKey=true
 | Item | Reality | Pending action (you / agent after go) |
 |------|---------|----------------------------------------|
 | Published LFS | `modded_apks/zeekr_signed_v11.apk` — **pre-P1**, cannot bind (`Unrecognized host`) | Replace with post-P1 build |
-| Working local | `builds/zeekr_v12_margined.apk` / `builds/zeekr_v12_os7_nomargin.apk` | Upload to **draft Release** only — not git |
+| Working local | `builds/zeekr_v27.0.2_margined.apk` / `builds/zeekr_v27.0.2_os7_nomargin.apk` | Upload to **draft Release** only — not git |
 | OS7+ unpadded | Not in tree as a named artifact yet | Confirm whether `zeekr_no_keepalive_signed.apk` or a separate unpadded build is the OS7+ variant; publish under clear name |
-| Install bump | Done on prep | `kYnaviAsset` → Release `zeekr_v12_margined.apk` |
+| Install bump | Done on prep | `kYnaviAsset` → Release `zeekr_v27.0.2_margined.apk` (upstream YNavi 27.0.2; was internal v12) |
 
 ## 3. launcher — zeekr_apk_mod (`main`)
 
@@ -84,8 +84,8 @@ flutter build apk --release -PuseAospDebugKey=true
 
 | Asset | Repo | Tag | Filename |
 |-------|------|-----|----------|
-| YNavi margined | ynavi-zee | `ynavi-zeekr-v12` | `zeekr_v12_margined.apk` |
-| YNavi OS7+ | ynavi-zee | `ynavi-zeekr-v12` | `zeekr_v12_os7_nomargin.apk` |
+| YNavi margined | ynavi-zee | `ynavi-zeekr-v27.0.2` | `zeekr_v27.0.2_margined.apk` |
+| YNavi OS7+ | ynavi-zee | `ynavi-zeekr-v27.0.2` | `zeekr_v27.0.2_os7_nomargin.apk` |
 | Launcher | zeekr_apk_mod | `launcher-670` | `XCLauncher3-670-yandex-signed.apk` |
 
 ### Dual YNavi builds
@@ -103,16 +103,16 @@ See sibling NOTES on ynavi-zee / zeekr_apk_mod `0044-publish-prep`.
 
 | Repo | Draft page | Assets |
 |------|------------|--------|
-| ynavi-zee | https://github.com/maxim-saplin/ynavi-zee/releases/tag/untagged-309029f8dd29d2218b97 | `zeekr_v12_margined.apk`, `zeekr_v12_os7_nomargin.apk` |
+| ynavi-zee | https://github.com/maxim-saplin/ynavi-zee/releases/tag/untagged-309029f8dd29d2218b97 | `zeekr_v27.0.2_margined.apk`, `zeekr_v27.0.2_os7_nomargin.apk` |
 | zeekr_apk_mod | https://github.com/maxim-saplin/zeekr_apk_mod/releases/tag/untagged-d364752080d814335b65 | `XCLauncher3-670-yandex-signed.apk` |
 
 Draft download URLs (auth may be required; anonymous = 404):
 
-- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_margined.apk
-- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v12_os7_nomargin.apk
+- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v27.0.2_margined.apk
+- https://github.com/maxim-saplin/ynavi-zee/releases/download/untagged-309029f8dd29d2218b97/zeekr_v27.0.2_os7_nomargin.apk
 - https://github.com/maxim-saplin/zeekr_apk_mod/releases/download/untagged-d364752080d814335b65/XCLauncher3-670-yandex-signed.apk
 
-Install `releaseTag` targets `ynavi-zeekr-v12` / `launcher-670` — resolve after undraft/publish.
+Install `releaseTag` targets `ynavi-zeekr-v27.0.2` / `launcher-670` — resolve after undraft/publish.
 
 ## Launcher draft (zeekr_apk_mod — NOT zee_hud_2)
 

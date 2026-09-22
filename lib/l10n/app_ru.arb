@@ -172,7 +172,7 @@
   "@installLauncherDesc": {
     "description": "Install target: modded launcher description"
   },
-  "installYnaviName": "YNavi мод (с полями / по умолчанию)",
+  "installYnaviName": "YNavi мод v27.0.2 (с полями / по умолчанию)",
   "@installYnaviName": {
     "description": "Install target: YNavi mod name"
   },
@@ -884,7 +884,7 @@
   "@aboutSpeedcamCreditBody": {
     "description": "OSM ODbL credit for Speedcam"
   },
-  "installYnaviOs7Name": "YNavi мод (OS7+, без левого поля)",
+  "installYnaviOs7Name": "YNavi мод v27.0.2 (OS7+, без левого поля)",
   "@installYnaviOs7Name": {
     "description": "Install card — OS7 YNavi variant"
   },

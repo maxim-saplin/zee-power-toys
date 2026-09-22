@@ -139,7 +139,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Launcher with YNavi set as the default navigation app';
 
   @override
-  String get installYnaviName => 'YNavi mod (margined / default)';
+  String get installYnaviName => 'YNavi mod v27.0.2 (margined / default)';
 
   @override
   String get installYnaviDesc =>
@@ -683,7 +683,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Speed camera locations from OpenStreetMap. © OpenStreetMap contributors. Data available under the Open Database License (ODbL).';
 
   @override
-  String get installYnaviOs7Name => 'YNavi mod (OS7+ no left margin)';
+  String get installYnaviOs7Name => 'YNavi mod v27.0.2 (OS7+ no left margin)';
 
   @override
   String get installYnaviOs7Desc =>

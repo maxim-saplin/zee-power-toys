@@ -114,8 +114,8 @@ Optional for Speedcam; required for minimap / default-nav integration.
 
 | Companion | Repo | Release |
 |-----------|------|----------------|
-| YNavi margined (default) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | tag `ynavi-zeekr-v12` / `zeekr_v12_margined.apk` |
-| YNavi OS7+ (no left margin) | same | same tag / `zeekr_v12_os7_nomargin.apk` |
+| YNavi margined (default) | [ynavi-zee](https://github.com/maxim-saplin/ynavi-zee) | tag `ynavi-zeekr-v27.0.2` / `zeekr_v27.0.2_margined.apk` (upstream YNavi 27.0.2) |
+| YNavi OS7+ (no left margin) | same | same tag / `zeekr_v27.0.2_os7_nomargin.apk` |
 | Zeekr Launcher mod | [zeekr_apk_mod](https://github.com/maxim-saplin/zeekr_apk_mod) | tag `launcher-670` / `XCLauncher3-670-yandex-signed.apk` |
 
 **Install UI** downloads Release assets and runs `PackageInstaller`.  
