@@ -680,6 +680,10 @@ void _applySpeedcamConfig(
             sizeScale: sc.overlaySizeScale,
             placement: sc.overlayPlacement.name,
           );
+          // 0083: Demo/pose may have fired before Overlay engine existed —
+          // re-push current snapshot so float gets visible+hub relay (not idle empty).
+          await _pushSpeedcamSystemOverlay(speedcam.snapshot, sc);
+          pushSpeedcamToHud(speedcam.snapshot);
         }
       } catch (_) {}
     }();
