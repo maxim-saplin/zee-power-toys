@@ -410,6 +410,10 @@ double alienCrtPlateScale(Size size) {
 const double kAlienCrtKmDesignFont = 39.1;
 const double kAlienCrtLimitDesignFont = 20.7;
 
+/// Center pip radii at [alienCrtPlateScale] = 1 (0098: ×1.20 vs prior 4 / 2).
+const double kAlienCrtCenterPipGlowRadius = 4.8;
+const double kAlienCrtCenterPipCoreRadius = 2.4;
+
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 ///
 /// 0083 Maxim: **DPI-agnostic** vector + text. All strokes and km/limit scale
@@ -606,8 +610,8 @@ class _AlienWedgePainter extends CustomPainter {
     }
     canvas.restore(); // end wedge sweep clip
 
-    canvas.drawCircle(c, 4 * s, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
-    canvas.drawCircle(c, 2 * s, Paint()..color = const Color(0xFFE8FFE8));
+    canvas.drawCircle(c, kAlienCrtCenterPipGlowRadius * s, Paint()..color = SpeedcamRadarWidget.phosphorGlow);
+    canvas.drawCircle(c, kAlienCrtCenterPipCoreRadius * s, Paint()..color = const Color(0xFFE8FFE8));
 
     for (final b in blips) {
       var rel = _normalizeBearing(b.bearingDeg) * math.pi / 180;
