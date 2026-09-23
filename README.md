@@ -39,7 +39,7 @@ Honest split: we dogfood on 007 / 6.7. 001 and 6.3+ should work the same DHU sta
 
 ### A. Install on the DHU (no PC)
 
-1. On the car tablet, open the [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) page (browser) and download **`zee-power-toys.apk`** from the latest tag (`1.0.0+N`).
+1. On the car tablet, open the [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) page (browser) and download **`zee-power-toys.apk`** from the latest tag (`MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`)).
 2. Open the downloaded APK (Files / Downloads) and install with the system installer.
 3. If Android blocks it: allow **install from this source** (browser / Files) when prompted — normal for sideloads.
 4. Open **Zee Power Toys**. Grant **location** when Speedcam asks (runtime dialog — not an install-time permission).
@@ -68,7 +68,7 @@ adb install -g -r -d zee-power-toys.apk
 
 ### Self-update (already installed)
 
-- Latest asset: `zee-power-toys.apk` on tag `1.0.0+N`
+- Latest asset: `zee-power-toys.apk` on tag `MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`)
 - In-app: **Install → Check for updates → Update now**
 
 
@@ -128,7 +128,7 @@ Optional for Speedcam; required for minimap / default-nav integration.
 
 `pubspec.yaml`: **`MAJOR.MINOR.PATCH+BUILD`** (from `1.0.0+1`).  
 Bump `+BUILD` on every tip/car APK; bump semver for user-facing releases.  
-Keep `lib/app_version.dart` in sync. See [CHANGELOG.md](CHANGELOG.md).
+Version from `pubspec.yaml` via PackageInfo. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -154,7 +154,7 @@ Local / car APKs use the **committed** AOSP platform debug keystore:
 | **Alias / pass** | from `android/gradle.properties` |
 | **Build** | `flutter build apk --release -PuseAospDebugKey=true` |
 | **Install** | `adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk` |
-| **Publish** | tag `1.0.0+N` (or Actions → **release** → `workflow_dispatch`) → `release.yml` uploads `zee-power-toys.apk` |
+| **Publish** | tag `MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`) (or Actions → **release** → `workflow_dispatch`) → `release.yml` uploads `zee-power-toys.apk` |
 | **Push CI** | `ci.yml` on `main`: analyze + test only |
 
 Details: [docs/publish/ci-release.md](docs/publish/ci-release.md).

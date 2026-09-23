@@ -3,9 +3,28 @@
 All notable changes to Zee Power Toys are documented here.
 
 Versioning: `MAJOR.MINOR.PATCH+BUILD` in `pubspec.yaml`.
-Bump **+BUILD** on every tip/release APK; bump MAJOR.MINOR.PATCH for user-facing releases.
+Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091). Release tags fire `release.yml`.
 
 ## [Unreleased]
+
+## [1.1.0+11] — 2026-09-23
+
+MINOR release (0091): user-facing size past 1.0.0+N tips — CRT/lane/USB/install/harness stack.
+
+### Added
+- **0083** Alien CRT parity — one DPI-agnostic plate + large type across HUD / DHU preview / Overlay (`ea3f461`).
+- **0088** Lane-cam filter — `alertLaneCams` default OFF; pure-YNavi LANE only; merge does not stamp LANE onto OSM (`a1fd8d9`+`bd54d10`).
+- **0089** Agent drive harness — `ext.zee.speedcam action=demo|demoStop` + `feedback_loop.py speedcam-demo on|off` (no OCR) (`081431f`).
+
+### Fixed
+- **0084** Parallel Update + YNavi install — EventChannel multiplex; companions finish before self-update commit (`a07a549`).
+- **0085** USB cold-open — refresh live `persist.usb.mode` (no stale Peripheral default) (`efe1f35`).
+- **0086** Install progress backstep — installing indeterminate / fraction 1.0 after download (`88c6aa6`).
+- **0087** YNavi label — Deepal+Zeekr show upstream **v27.0.2** (not internal v12) (`1299105`).
+
+### Notes
+- **0090** direction enrich spike **NO-GO** — YNavi MapKit Event has no cam azimuth to copy onto undirected OSM (`2dae106`). Do not invent headings.
+- Versioning (0091): MAJOR/MINOR/PATCH for user-facing size; +BUILD every tip. This line is **1.1.0+11**.
 
 ## [1.0.0+10] — 2026-09-22
 

@@ -39,7 +39,7 @@
 
 ### A. Установка на DHU (без ПК)
 
-1. На планшете авто откройте страницу [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) в браузере и скачайте **`zee-power-toys.apk`** с последнего тега (`1.0.0+N`).
+1. На планшете авто откройте страницу [Releases](https://github.com/maxim-saplin/zee-power-toys/releases) в браузере и скачайте **`zee-power-toys.apk`** с последнего тега (`MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`)).
 2. Откройте скачанный APK (Файлы / Загрузки) и установите системным установщиком.
 3. Если Android блокирует: разрешите **установку из этого источника** (браузер / Файлы) по запросу — обычное дело для sideload.
 4. Откройте **Zee Power Toys**. Разрешите **геолокацию**, когда спросит Speedcam (runtime-диалог, не на этапе установки).
@@ -68,7 +68,7 @@ adb install -g -r -d zee-power-toys.apk
 
 ### Самообновление (уже установлено)
 
-- Актуальный ассет: `zee-power-toys.apk` на теге `1.0.0+N`
+- Актуальный ассет: `zee-power-toys.apk` на теге `MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`)
 - В приложении: **Install → Check for updates → Update now**
 
 
@@ -152,7 +152,7 @@ adb install -g -r -d zee-power-toys.apk
 | **Alias / pass** | из `android/gradle.properties` |
 | **Сборка** | `flutter build apk --release -PuseAospDebugKey=true` |
 | **Установка** | `adb install -g -r -d build/app/outputs/flutter-apk/app-release.apk` |
-| **Публикация** | тег `1.0.0+N` (или Actions → **release** → `workflow_dispatch`) → `release.yml` загружает `zee-power-toys.apk` |
+| **Публикация** | тег `MAJOR.MINOR.PATCH+BUILD` (e.g. `1.1.0+11`) (или Actions → **release** → `workflow_dispatch`) → `release.yml` загружает `zee-power-toys.apk` |
 | **Push CI** | `ci.yml` на `main`: analyze + test |
 
 Подробнее: [docs/publish/ci-release.md](docs/publish/ci-release.md).

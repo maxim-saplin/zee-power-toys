@@ -1,11 +1,15 @@
-# Publish platform-signed APK as zee-power-toys.apk on tag 1.0.0+N (or v1.0.0+N).
+# Publish platform-signed APK as zee-power-toys.apk on tag MAJOR.MINOR.PATCH+BUILD (e.g. 1.1.0+11).
 # Uses committed android/tools/zeekr/androiddebugkey.jks (public AOSP debug key; no secret).
 name: release
 on:
   push:
     tags:
+      - '1.*.*+*'
+      - 'v1.*.*+*'
       - '1.0.0+*'
       - 'v1.0.0+*'
+      - '1.1.0+*'
+      - 'v1.1.0+*'
   workflow_dispatch:
     inputs:
       tag:
