@@ -345,6 +345,7 @@ class FeedbackLoop:
         speed_kmh: float | None = None,
         heading_deg: float | None = None,
         approach_m: float | None = None,
+        last_seen_epoch_ms: int | None = None,
         clear: bool = True,
         surface: str = "dhu",
     ) -> dict[str, Any]:
@@ -372,6 +373,8 @@ class FeedbackLoop:
             params["headingDeg"] = str(heading_deg)
         if approach_m is not None:
             params["approachM"] = str(approach_m)
+        if last_seen_epoch_ms is not None:
+            params["lastSeenEpochMs"] = str(last_seen_epoch_ms)
         return await self._c.rpc("ext.zee.speedcam", params)
 
     async def speedcam_demo(
@@ -648,6 +651,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="pose host this many metres south of planted cam")
     sf.add_argument("--no-clear", action="store_true",
                     help="keep prior harness cams (B dedupe re-inject)")
+    sf.add_argument("--last-seen-epoch-ms", type=int, default=None,
+                    dest="last_seen_epoch_ms",
+                    help="aged lastSeen for C1/C2 TTL rows")
 
     # speedcam-demo — 0089 one-shot Demo (+ Overlay) without OCR/taps
     sd = sub.add_parser(
@@ -791,6 +797,7 @@ def main(argv: list[str] | None = None) -> int:
                 speed_kmh=args.speed_kmh,
                 heading_deg=args.heading_deg,
                 approach_m=args.approach_m,
+                last_seen_epoch_ms=args.last_seen_epoch_ms,
                 clear=not args.no_clear,
                 surface=args.surface,
             )

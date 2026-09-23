@@ -213,6 +213,8 @@ class DefaultSpeedcamService implements SpeedcamService {
   /// [camType]: e.g. `SPEED` / `LANE` / `SPEED_CONTROL` (isLaneCam keys on LANE).
   /// When [clearOthers] is true (default), drops prior harness OSM override +
   /// YNavi overlay so the fixture is the only planted cam.
+  /// Does **not** flip ynaviEnrich/collect/alert — set those via setConfig
+  /// first (A7/A8). Pass [lastSeenEpochMs] for aging rows (C1/C2).
   /// Returns the merged cam list after plant (for RPC echo).
   List<SpeedcamPoint> applyHarnessFixture({
     required String source,
@@ -237,13 +239,10 @@ class DefaultSpeedcamService implements SpeedcamService {
       _ynaviOverlay.clear();
     }
 
+    // 0096 beta: do NOT auto-force enrich/collect ON — A7/A8 need those
+    // gates left as set via set-config. ingestYnaviEvent already no-ops when
+    // enrich/collect are OFF (A7 prove).
     if (src == 'ynavi' || src == 'osm+ynavi' || src == 'osm_ynavi') {
-      if (!_ynaviEnrichEnabled) {
-        _ynaviEnrichEnabled = true;
-      }
-      if (!_ynaviCollectEnabled) {
-        _ynaviCollectEnabled = true;
-      }
       ingestYnaviEvent(<Object?, Object?>{
         'kind': 'cam',
         'lat': lat,

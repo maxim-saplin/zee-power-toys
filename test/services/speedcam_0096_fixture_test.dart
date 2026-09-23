@@ -15,6 +15,7 @@ void main() {
   });
 
   test('A2: pure YNavi SPEED alerts with mute OFF', () async {
+    s.setYnaviEnrichEnabled(true);
     s.setAlertLaneCams(false);
     s.applyHarnessFixture(
       source: 'ynavi',
@@ -34,6 +35,7 @@ void main() {
   });
 
   test('A3: pure YNavi LANE muted when alertLaneCams OFF', () async {
+    s.setYnaviEnrichEnabled(true);
     s.setAlertLaneCams(false);
     s.applyHarnessFixture(
       source: 'ynavi',
@@ -50,6 +52,7 @@ void main() {
   });
 
   test('A4: LANE alerts when alertLaneCams ON', () async {
+    s.setYnaviEnrichEnabled(true);
     s.setAlertLaneCams(true);
     s.applyHarnessFixture(
       source: 'ynavi',
@@ -64,6 +67,7 @@ void main() {
   });
 
   test('A5: OSM+YNavi LANE stamps mute OFF', () async {
+    s.setYnaviEnrichEnabled(true);
     s.setAlertLaneCams(false);
     s.applyHarnessFixture(
       source: 'osm+ynavi',
@@ -79,6 +83,7 @@ void main() {
   });
 
   test('A6: OSM+YNavi pure SPEED stays SPEED; mute OFF still alerts', () async {
+    s.setYnaviEnrichEnabled(true);
     s.setAlertLaneCams(false);
     s.applyHarnessFixture(
       source: 'osm+ynavi',
@@ -96,6 +101,7 @@ void main() {
   });
 
   test('B1: same eventId twice → one ynavi id', () {
+    s.setYnaviEnrichEnabled(true);
     s.applyHarnessFixture(
       source: 'ynavi',
       camType: 'SPEED',
@@ -114,5 +120,21 @@ void main() {
     );
     expect(s.snapshot.cams.where((c) => c.id == 'ynavi:dup'), hasLength(1));
     expect(s.ynaviSessionEvents, 1);
+  });
+
+  test('A7: fixture does not auto-force enrich/collect ON', () {
+    expect(s.ynaviEnrichEnabled, isFalse);
+    s.setYnaviCollectEnabled(false);
+    s.applyHarnessFixture(
+      source: 'ynavi',
+      camType: 'SPEED',
+      lat: 53.9,
+      lon: 27.4,
+      eventId: 'a7',
+    );
+    expect(s.ynaviEnrichEnabled, isFalse);
+    expect(s.ynaviCollectEnabled, isFalse);
+    expect(s.snapshot.cams.where((c) => c.id.startsWith('ynavi:')), isEmpty);
+    expect(s.ynaviSessionEvents, 0);
   });
 }

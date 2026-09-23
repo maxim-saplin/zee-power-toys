@@ -954,6 +954,9 @@ void registerZeeExtensions({
             }
             final clearOthers = params['clear'] != 'false' && params['clear'] != '0';
             final maxspeed = int.tryParse(params['maxspeed'] ?? params['speedLimit'] ?? '');
+            final lastSeen = int.tryParse(
+              params['lastSeenEpochMs'] ?? params['lastSeen'] ?? '',
+            );
             final planted = def.applyHarnessFixture(
               source: source,
               camType: camType,
@@ -962,6 +965,7 @@ void registerZeeExtensions({
               eventId: params['eventId'],
               maxspeed: maxspeed,
               clearOthers: clearOthers,
+              lastSeenEpochMs: lastSeen,
             );
             final hostLat = double.tryParse(params['hostLat'] ?? '');
             final hostLon = double.tryParse(params['hostLon'] ?? '');

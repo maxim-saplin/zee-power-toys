@@ -55,36 +55,35 @@
 ## Unit gate (before / with T2)
 - `flutter test test/services/speedcam_*` green, esp. `0088_lane_cam`, `ynavi_enrich`, `ynavi_merge`, `0072_74`, pack freshness / aging.
 
-## DoD (proposal)
-- [ ] Matrix checked into tip (`docs/qa/` or issue 0096)
-- [ ] Every A/B/C/D/E row PASS or explicit SKIP+reason on T2
-- [ ] F1 PASS; F2 if Maxim gives coords
-- [ ] Beta four-point; PDM ACCEPT
-- [ ] Soft: Script or zee_run recipe to replay matrix without OCR
+## DoD / skip (locked — see `docs/issues/0096-speedcam-hardening-matrix.md`)
+- Matrix A–F on T2; unit gate; F1 PASS; F2 only if Maxim gives coords.
+- Fixture RPC in-scope (`action=fixture` / `speedcam-fixture`); tip over SKIP.
+- **Never SKIP A2/A6 after fixture** — FAIL if mute kills true SPEED.
+- Honest SKIP+reason only when product surface missing; no ghost PASS from units/memory.
+- Evidence `tmp/qa/0096-cut-<sha>/`; harness only / keepalive; no OCR.
+- Beta four-point; PDM ACCEPT. Live stays **1.1.0+11** until ship call.
 
-## Owners (proposal)
-- **zee-pdm:** file issue 0096, lock DoD / skip policy
-- **zee-dev:** tip matrix doc + any harness gaps (inject pure SPEED vs LANE fixtures)
-- **zee-qa:** drive T2 matrix cut, FINDINGS per row
-- **zee-dev-beta:** early review matrix + four-point after FINDINGS; parallel cut on A2/A6 (true SPEED must flow)
+## Owners
+- **zee-pdm:** issue / DoD / skip / ACCEPT
+- **zee-dev:** fixture RPC + harness gaps
+- **zee-qa:** T2 matrix FINDINGS
+- **zee-dev-beta:** early review + parallel A2/A6 + four-point
 
 ## Harness gaps / fixtures (zee-dev notes, tip draft)
 
 **Already good (0094):** `dump-state --surface dhu|hud` (`speedcamConfig`), `set-config` aliases (`ynaviEnrich` / `ynaviAlert` / `alertLaneCams`), `speedcam-demo on|off`, `zee_run keepalive --tier t2`, pose via `ext.zee.speedcam action=pose`.
 
-**Fixture landed (0096 tip):**
+**Fixture landed (`d6880bd`+):** does **not** auto-force enrich/collect (A7/A8).
 ```bash
+# A2: set enrich/alert ON first, then plant
+uv run dev/feedback_loop.py --tier t2 set-config --surface dhu \
+  ynaviEnrich=true ynaviAlert=true alertLaneCams=false
 uv run dev/feedback_loop.py --tier t2 speedcam-fixture \
   --source ynavi --cam-type SPEED --lat 53.907996 --lon 27.424118 \
   --event-id a2 --approach-m 200
 # B dedupe: same --event-id with --no-clear
-uv run dev/feedback_loop.py --tier t2 speedcam-fixture \
-  --source ynavi --cam-type SPEED --lat 53.9 --lon 27.4 \
-  --event-id dup --no-clear
+# C1 aged: --last-seen-epoch-ms <old>
 # clear: ext.zee.speedcam action=fixtureClear
 ```
-Unit gate: `test/services/speedcam_0096_fixture_test.dart` (A2/A3/A4/A5/A6/B1).
-
-**Still soft gaps:**
-- Aging C rows — set-config / packInstall aged timestamps; SKIP+reason if knobs absent.
-- Demo path still fine for E3; prefer fixture for A/B.
+`camType`: use `SPEED` / `SPEED_CONTROL` (no `LANE` substring) vs `LANE` / `LANE_CONTROL`.
+Unit gate: `speedcam_0096_fixture_test.dart` (A2–A6/B1/A7).
