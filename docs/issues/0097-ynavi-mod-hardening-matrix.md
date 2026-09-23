@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: accepted
 labels: [ynavi, qa, matrix, hardening]
 created: 2026-09-23
 satisfies: Exhaustive T2 matrix for YNavi Zee mods on v27 + v30 stretch, same bar as toys 0096
@@ -54,3 +54,8 @@ Feature docs (source of truth): `ynavi-zee/features/{1.mapactivity_letterbox_pad
 
 ## Matrix
 See `docs/qa/0097-ynavi-mod-hardening-matrix.md`.
+
+## ACCEPT
+- **2026-09-23 ~21:02 Europe/Minsk** — PDM ACCEPT after own check of `tmp/qa/0097-cut-recut4/FINDINGS.md` + V4 cold-open shot.
+- Live tip `b9488c81c`: Deepal `25cab834…` / v30 `a364bfd8…`. V1/V4/L4/K1 PASS; V2/V3 first-cut PASS.
+- Soft: C1 (SHARED_USER), T1/G1.
