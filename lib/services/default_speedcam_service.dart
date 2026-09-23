@@ -186,7 +186,13 @@ class DefaultSpeedcamService implements SpeedcamService {
   @override
   Future<void> reloadFromPack() async {
     final cams = await _pack.loadCams(packId);
-    if (cams.isNotEmpty) {
+    if (_harnessOsmOverride != null) {
+      _cams = List<SpeedcamPoint>.unmodifiable(
+        mergeOsmWithYnavi(_harnessOsmOverride!, _ynaviOverlay),
+      );
+      _camSource =
+          _ynaviOverlay.isEmpty ? 'harness-osm' : 'harness-osm+ynavi';
+    } else if (cams.isNotEmpty) {
       _cams = List<SpeedcamPoint>.unmodifiable(
         mergeOsmWithYnavi(cams, _ynaviOverlay),
       );
@@ -199,6 +205,121 @@ class DefaultSpeedcamService implements SpeedcamService {
       _camSource = 'fallback';
     }
     _emit();
+  }
+
+  /// 0096 harness: plant a shaped SPEED/LANE cam without OCR (T2).
+  ///
+  /// [source]: `ynavi` | `osm` | `osm+ynavi`.
+  /// [camType]: e.g. `SPEED` / `LANE` / `SPEED_CONTROL` (isLaneCam keys on LANE).
+  /// When [clearOthers] is true (default), drops prior harness OSM override +
+  /// YNavi overlay so the fixture is the only planted cam.
+  /// Returns the merged cam list after plant (for RPC echo).
+  List<SpeedcamPoint> applyHarnessFixture({
+    required String source,
+    required String camType,
+    required double lat,
+    required double lon,
+    String? eventId,
+    int? maxspeed,
+    bool clearOthers = true,
+    int? lastSeenEpochMs,
+  }) {
+    final src = source.trim().toLowerCase();
+    final type = camType.trim().isEmpty ? null : camType.trim();
+    final eid = (eventId != null && eventId.trim().isNotEmpty)
+        ? eventId.trim()
+        : 'fix';
+    final seen = lastSeenEpochMs ?? DateTime.now().millisecondsSinceEpoch;
+    final limit = (maxspeed != null && maxspeed > 0) ? maxspeed : 60;
+
+    if (clearOthers) {
+      _harnessOsmOverride = null;
+      _ynaviOverlay.clear();
+    }
+
+    if (src == 'ynavi' || src == 'osm+ynavi' || src == 'osm_ynavi') {
+      if (!_ynaviEnrichEnabled) {
+        _ynaviEnrichEnabled = true;
+      }
+      if (!_ynaviCollectEnabled) {
+        _ynaviCollectEnabled = true;
+      }
+      ingestYnaviEvent(<Object?, Object?>{
+        'kind': 'cam',
+        'lat': lat,
+        'lon': lon,
+        'eventId': eid,
+        'speedLimit': limit,
+        'type': type,
+        'source': 'ynavi',
+        't_ms': seen,
+      });
+    }
+
+    if (src == 'osm' || src == 'osm+ynavi' || src == 'osm_ynavi') {
+      final osmId = 'osm-fixture-$eid';
+      final osmPoint = SpeedcamPoint(
+        id: osmId,
+        lat: lat,
+        lon: lon,
+        maxspeed: limit,
+        source: 'overpass',
+        camType: (src == 'osm') ? type : null,
+        lastSeenEpochMs: seen,
+      );
+      final base = <SpeedcamPoint>[
+        if (!clearOthers && _harnessOsmOverride != null) ..._harnessOsmOverride!,
+        if (!clearOthers && _harnessOsmOverride == null)
+          ..._cams.where(
+            (c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'),
+          ),
+        osmPoint,
+      ];
+      // Dedupe by id — last write wins.
+      final byId = <String, SpeedcamPoint>{};
+      for (final c in base) {
+        byId[c.id] = c;
+      }
+      _harnessOsmOverride = List<SpeedcamPoint>.unmodifiable(byId.values);
+      _rebuildMergedFromHarness();
+      _emit();
+    } else if (src != 'ynavi') {
+      throw ArgumentError(
+        'fixture source must be ynavi|osm|osm+ynavi (got $source)',
+      );
+    }
+
+    return List<SpeedcamPoint>.from(_cams);
+  }
+
+  /// Drop harness OSM override + YNavi overlay; reload pack base.
+  Future<void> clearHarnessFixture() async {
+    _harnessOsmOverride = null;
+    _ynaviOverlay.clear();
+    await reloadFromPack();
+  }
+
+  List<SpeedcamPoint>? _harnessOsmOverride;
+
+  void _rebuildMergedFromHarness() {
+    final osmBase = _harnessOsmOverride ??
+        _cams
+            .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
+            .toList();
+    if (osmBase.isEmpty && _ynaviOverlay.isEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
+      _camSource = 'fallback';
+      return;
+    }
+    if (osmBase.isEmpty) {
+      _cams = List<SpeedcamPoint>.unmodifiable(_ynaviOverlay);
+      _camSource = 'ynavi';
+      return;
+    }
+    _cams = List<SpeedcamPoint>.unmodifiable(
+      mergeOsmWithYnavi(osmBase, _ynaviOverlay),
+    );
+    _camSource = _ynaviOverlay.isEmpty ? 'harness-osm' : 'harness-osm+ynavi';
   }
 
   /// YNavi SPEEDCAM_DATA beside OSM (0071/72/73/74).
@@ -289,9 +410,10 @@ class DefaultSpeedcamService implements SpeedcamService {
   }
 
   void _rebuildMerged() {
-    final osmBase = _cams
-        .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
-        .toList();
+    final osmBase = _harnessOsmOverride ??
+        _cams
+            .where((c) => c.source != 'ynavi' && !c.id.startsWith('ynavi:'))
+            .toList();
     if (osmBase.isEmpty && _ynaviOverlay.isEmpty) {
       _cams = List<SpeedcamPoint>.unmodifiable(_fallback);
       _camSource = 'fallback';

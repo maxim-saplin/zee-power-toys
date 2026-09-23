@@ -412,6 +412,12 @@ One-shot (preferred):
 ```bash
 # Demo pose + DHU system Overlay ON
 uv run dev/feedback_loop.py speedcam-demo on
+
+# 0096 shaped SPEED|LANE plant (A2/A6)
+uv run dev/feedback_loop.py --tier t2 speedcam-fixture \
+  --source ynavi --cam-type SPEED --lat 53.907996 --lon 27.424118 \
+  --event-id a2 --approach-m 200
+uv run dev/feedback_loop.py --tier t2 dump-state --surface dhu
 # Off (clears pose + Overlay)
 uv run dev/feedback_loop.py speedcam-demo off
 

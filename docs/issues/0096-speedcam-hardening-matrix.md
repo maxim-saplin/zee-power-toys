@@ -21,7 +21,7 @@ Canonical matrix: `docs/qa/0096-hardening-matrix.md` (tip `ed09b08`, A–F). Hol
 
 ## Locked DoD
 - [ ] Matrix on tip (`docs/qa/0096-hardening-matrix.md`) — already tipped
-- [ ] **Fixture RPC in-scope this slice** (see below) landed before A2/A6 claim PASS
+- [x] **Fixture RPC in-scope this slice** (see below) landed before A2/A6 claim PASS — tip this wave (`action=fixture` / `speedcam-fixture` CLI)
 - [ ] Unit gate green (`speedcam_*` especially 0088 / ynavi_enrich / ynavi_merge / 0072_74 / aging)
 - [ ] Every **A/B/C/D/E** row on T2 is **PASS** or **SKIP+reason** per skip policy below
 - [ ] **F1** PASS (53.907996,27.424118 OFF→ON→OFF)

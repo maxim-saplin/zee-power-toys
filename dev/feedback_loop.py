@@ -39,6 +39,7 @@ CLI subcommands (output is always JSON to stdout):
                                         (displayId/w/h/dpi) via dumpsys display
   inject          kind=speed|blinker|charge|battery  value=...  [--surface dhu]
   speedcam-demo   on|off [--no-overlay]   # 0089 Demo(+Overlay) one-shot
+  speedcam-fixture --source ynavi --cam-type SPEED --lat .. --lon ..
 
 Examples:
   ZEE_VM_URI=ws://... uv run dev/feedback_loop.py whoami-all
@@ -49,6 +50,8 @@ Examples:
   uv run dev/feedback_loop.py hud-display
   uv run dev/feedback_loop.py speedcam-demo on
   uv run dev/feedback_loop.py speedcam-demo off
+  uv run dev/feedback_loop.py speedcam-fixture --source ynavi --cam-type SPEED \
+      --lat 53.907996 --lon 27.424118 --event-id a2 --approach-m 200
   uv run dev/feedback_loop.py shot --surface hud --layer both --out /tmp/hud.png
 """
 
@@ -327,6 +330,50 @@ class FeedbackLoop:
             "ext.zee.tapByKey", {"isolateId": iso_id, "key": key}
         )
 
+
+    async def speedcam_fixture(
+        self,
+        *,
+        source: str,
+        cam_type: str,
+        lat: float,
+        lon: float,
+        event_id: str | None = None,
+        maxspeed: int | None = None,
+        host_lat: float | None = None,
+        host_lon: float | None = None,
+        speed_kmh: float | None = None,
+        heading_deg: float | None = None,
+        approach_m: float | None = None,
+        clear: bool = True,
+        surface: str = "dhu",
+    ) -> dict[str, Any]:
+        """0096: plant shaped SPEED|LANE cam via ext.zee.speedcam action=fixture."""
+        iso_id = await self._resolve(surface)
+        params: dict[str, Any] = {
+            "isolateId": iso_id,
+            "action": "fixture",
+            "source": source,
+            "camType": cam_type,
+            "lat": str(lat),
+            "lon": str(lon),
+            "clear": "true" if clear else "false",
+        }
+        if event_id:
+            params["eventId"] = event_id
+        if maxspeed is not None:
+            params["maxspeed"] = str(maxspeed)
+        if host_lat is not None and host_lon is not None:
+            params["hostLat"] = str(host_lat)
+            params["hostLon"] = str(host_lon)
+        if speed_kmh is not None:
+            params["speedKmh"] = str(speed_kmh)
+        if heading_deg is not None:
+            params["headingDeg"] = str(heading_deg)
+        if approach_m is not None:
+            params["approachM"] = str(approach_m)
+        return await self._c.rpc("ext.zee.speedcam", params)
+
     async def speedcam_demo(
         self,
         *,
@@ -579,6 +626,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mm.add_argument("kvs", nargs="+", help="key=value pairs e.g. on=true x=0 y=0 w=640 h=360")
 
+
+    # speedcam-fixture — 0096 shaped SPEED|LANE plant
+    sf = sub.add_parser(
+        "speedcam-fixture",
+        help="(0096) plant shaped cam via ext.zee.speedcam action=fixture",
+    )
+    sf.add_argument("--surface", default="dhu", choices=["dhu", "hud"])
+    sf.add_argument("--source", required=True, choices=["ynavi", "osm", "osm+ynavi"])
+    sf.add_argument("--cam-type", required=True, dest="cam_type",
+                    help="SPEED or LANE (or SPEED_CONTROL / LANE_CONTROL tags)")
+    sf.add_argument("--lat", type=float, required=True)
+    sf.add_argument("--lon", type=float, required=True)
+    sf.add_argument("--event-id", dest="event_id", default=None)
+    sf.add_argument("--maxspeed", type=int, default=None)
+    sf.add_argument("--host-lat", type=float, default=None, dest="host_lat")
+    sf.add_argument("--host-lon", type=float, default=None, dest="host_lon")
+    sf.add_argument("--speed-kmh", type=float, default=None, dest="speed_kmh")
+    sf.add_argument("--heading-deg", type=float, default=None, dest="heading_deg")
+    sf.add_argument("--approach-m", type=float, default=None, dest="approach_m",
+                    help="pose host this many metres south of planted cam")
+    sf.add_argument("--no-clear", action="store_true",
+                    help="keep prior harness cams (B dedupe re-inject)")
+
     # speedcam-demo — 0089 one-shot Demo (+ Overlay) without OCR/taps
     sd = sub.add_parser(
         "speedcam-demo",
@@ -708,6 +778,23 @@ def main(argv: list[str] | None = None) -> int:
             params: dict[str, Any] = {"isolateId": iso_id}
             params.update(kv)
             result = await fl._c.rpc("ext.zee.minimap", params)
+        elif args.cmd == "speedcam-fixture":
+            result = await fl.speedcam_fixture(
+                source=args.source,
+                cam_type=args.cam_type,
+                lat=args.lat,
+                lon=args.lon,
+                event_id=args.event_id,
+                maxspeed=args.maxspeed,
+                host_lat=args.host_lat,
+                host_lon=args.host_lon,
+                speed_kmh=args.speed_kmh,
+                heading_deg=args.heading_deg,
+                approach_m=args.approach_m,
+                clear=not args.no_clear,
+                surface=args.surface,
+            )
+            print(json.dumps(result, indent=2))
         elif args.cmd == "speedcam-demo":
             overlay = None if args.no_overlay else (args.state == "on")
             # off always clears overlay unless --no-overlay

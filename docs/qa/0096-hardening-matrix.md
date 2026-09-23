@@ -72,21 +72,19 @@
 
 **Already good (0094):** `dump-state --surface dhu|hud` (`speedcamConfig`), `set-config` aliases (`ynaviEnrich` / `ynaviAlert` / `alertLaneCams`), `speedcam-demo on|off`, `zee_run keepalive --tier t2`, pose via `ext.zee.speedcam action=pose`.
 
-**Gaps for A2/A6 (pure SPEED vs LANE) — tip or parallel:**
-1. **No first-class inject for a shaped cam** — need `ext.zee.speedcam` action (or pack install body) that can plant a single cam with `camType=SPEED|LANE`, optional `source=ynavi|osm|osm+ynavi`, `eventId`, lat/lon without OCR taps. Today A2/A6 lean on live YNavi enrich + geo pins or unit tests; matrix wants deterministic T2.
-2. **Demo path** uses pack cams / demo pose — good for E3/F1-ish, not enough to force pure YNavi SPEED vs LANE.
-3. **Dedupe B rows** need inject of two SPEEDCAM_DATA (or ext) events with controlled `eventId` — check native SIMULATE / ynavi receiver path; document recipe or add `action=injectCam`.
-4. **Aging C rows** need pack meta / freshness knobs via set-config or packInstall with aged timestamps — verify which keys exist before SKIP.
-
-**Proposed fixture RPC (if PDM locks 0096):**
-```text
-ext.zee.speedcam action=fixture
-  source=ynavi|osm|osm+ynavi
-  camType=SPEED|LANE
-  eventId=...
-  lat=... lon=... maxspeed=60
-  hostLat=... hostLon=... speedKmh=50 headingDeg=...
-→ dump-state / snapshot.danger asserts
+**Fixture landed (0096 tip):**
+```bash
+uv run dev/feedback_loop.py --tier t2 speedcam-fixture \
+  --source ynavi --cam-type SPEED --lat 53.907996 --lon 27.424118 \
+  --event-id a2 --approach-m 200
+# B dedupe: same --event-id with --no-clear
+uv run dev/feedback_loop.py --tier t2 speedcam-fixture \
+  --source ynavi --cam-type SPEED --lat 53.9 --lon 27.4 \
+  --event-id dup --no-clear
+# clear: ext.zee.speedcam action=fixtureClear
 ```
+Unit gate: `test/services/speedcam_0096_fixture_test.dart` (A2/A3/A4/A5/A6/B1).
 
-Until that lands: unit gate (`speedcam_0088_lane_cam`, `ynavi_enrich`, `ynavi_merge`, `0072_74`) + F1 pin + SKIP A2/A6 on T2 with reason “no pure SPEED inject” is honest; prefer fixture tip same slice as matrix drive.
+**Still soft gaps:**
+- Aging C rows — set-config / packInstall aged timestamps; SKIP+reason if knobs absent.
+- Demo path still fine for E3; prefer fixture for A/B.

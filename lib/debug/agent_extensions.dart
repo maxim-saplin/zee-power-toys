@@ -15,6 +15,7 @@ import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/speedcam.dart';
 import '../services/fakes/fake_speedcam_service.dart';
+import '../services/default_speedcam_service.dart';
 import '../services/speedcam_pack_store.dart';
 import '../services/speedcam_drive.dart';
 import '../services/minimap_host.dart';
@@ -928,6 +929,89 @@ void registerZeeExtensions({
                 'speedcam': svc.snapshot.toJson(),
               }),
             );
+          case 'fixture':
+            // 0096: plant SPEED|LANE shaped cam (ynavi|osm|osm+ynavi) + optional host pose.
+            if (svc is! DefaultSpeedcamService) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'fixture requires DefaultSpeedcamService',
+                }),
+              );
+            }
+            final def = svc;
+            final source = params['source'] ?? 'ynavi';
+            final camType = params['camType'] ?? params['type'] ?? 'SPEED';
+            final lat = double.tryParse(params['lat'] ?? '');
+            final lon = double.tryParse(params['lon'] ?? '');
+            if (lat == null || lon == null) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'fixture needs lat= lon=',
+                }),
+              );
+            }
+            final clearOthers = params['clear'] != 'false' && params['clear'] != '0';
+            final maxspeed = int.tryParse(params['maxspeed'] ?? params['speedLimit'] ?? '');
+            final planted = def.applyHarnessFixture(
+              source: source,
+              camType: camType,
+              lat: lat,
+              lon: lon,
+              eventId: params['eventId'],
+              maxspeed: maxspeed,
+              clearOthers: clearOthers,
+            );
+            final hostLat = double.tryParse(params['hostLat'] ?? '');
+            final hostLon = double.tryParse(params['hostLon'] ?? '');
+            if (hostLat != null && hostLon != null) {
+              final spd = double.tryParse(params['speedKmh'] ?? '50') ?? 50.0;
+              final heading = params['headingDeg'] != null
+                  ? double.tryParse(params['headingDeg']!)
+                  : null;
+              await def.setHostPose(
+                SpeedcamHostPose(
+                  lat: hostLat,
+                  lon: hostLon,
+                  speedKmh: spd,
+                  headingDeg: heading,
+                ),
+              );
+            } else if (params['approachM'] != null) {
+              final dist = double.parse(params['approachM']!);
+              final cam = planted.isNotEmpty ? planted.first : null;
+              if (cam != null) {
+                await def.approachCam(cam, distanceM: dist, speedKmh: 50);
+              }
+            }
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode(<String, Object?>{
+                'ok': true,
+                'surface': surface,
+                'fixture': <String, Object?>{
+                  'source': source,
+                  'camType': camType,
+                  'eventId': params['eventId'],
+                  'planted': planted.map((c) => c.toJson()).toList(),
+                  'alertLaneCams': def.alertLaneCams,
+                  'ynaviEnrichEnabled': def.ynaviEnrichEnabled,
+                },
+                'speedcam': def.snapshot.toJson(),
+                'camsForAlert': def.camsForAlert.map((c) => c.toJson()).toList(),
+              }),
+            );
+          case 'fixtureClear':
+            if (svc is! DefaultSpeedcamService) {
+              return developer.ServiceExtensionResponse.result(
+                jsonEncode(<String, Object?>{
+                  'ok': false,
+                  'error': 'fixtureClear requires DefaultSpeedcamService',
+                }),
+              );
+            }
+            await svc.clearHarnessFixture();
+            break;
           case 'snapshot':
             break;
           default:
