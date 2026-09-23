@@ -10,7 +10,7 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 parent: 0088
-tip: TIP_SHA_PENDING
+tip: 0c0fd69
 ---
 
 # 0092 — Lane cams still register / alert as 60 km/h speedcams (0088 regression)
@@ -57,4 +57,4 @@ Field still saw 60 km/h because:
 - Harness: `ext.zee.setConfig` accepts `ynaviEnrich` / `ynaviAlert` / `alertLaneCams` / `hudMode` / `soundMode`.
 
 ### Tip
-`TIP_SHA_PENDING` — unit: `test/services/speedcam_0088_lane_cam_test.dart` (0092 group).
+`0c0fd69` — unit: `test/services/speedcam_0088_lane_cam_test.dart` (0092 group).
