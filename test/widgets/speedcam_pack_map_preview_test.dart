@@ -169,4 +169,39 @@ void main() {
       greaterThanOrEqualTo(2000),
     );
   });
+
+  // 0100 — zoom-aware cam dots / hit targets (larger than pre-0100 constants).
+  test('camDotRadius grows with zoom and stays capped for dense packs', () {
+    final sparseLo = SpeedcamPackMapPreview.camDotRadius(shownCount: 10, zoom: 11);
+    final sparseHi = SpeedcamPackMapPreview.camDotRadius(shownCount: 10, zoom: 15);
+    final denseLo = SpeedcamPackMapPreview.camDotRadius(shownCount: 500, zoom: 11);
+    final denseHi = SpeedcamPackMapPreview.camDotRadius(shownCount: 500, zoom: 15);
+
+    // Pre-0100 sparse was 3.5 / dense 2.0 — new bases are clearly larger.
+    expect(sparseLo, greaterThan(3.5));
+    expect(denseLo, greaterThan(2.0));
+    expect(sparseHi, greaterThan(sparseLo));
+    expect(denseHi, greaterThan(denseLo));
+    // Soft caps: readable when zoomed, not a smear.
+    expect(denseHi, lessThanOrEqualTo(9.0));
+    expect(sparseHi, lessThanOrEqualTo(9.0));
+  });
+
+  test('camHitExtent larger than pre-0100 22–28 clamp', () {
+    final hitSparse = SpeedcamPackMapPreview.camHitExtent(
+      SpeedcamPackMapPreview.camDotRadius(shownCount: 10, zoom: 12),
+    );
+    final hitDense = SpeedcamPackMapPreview.camHitExtent(
+      SpeedcamPackMapPreview.camDotRadius(shownCount: 500, zoom: 12),
+    );
+    expect(hitSparse, greaterThanOrEqualTo(28.0));
+    expect(hitDense, greaterThanOrEqualTo(28.0));
+    expect(hitSparse, lessThanOrEqualTo(44.0));
+    expect(hitDense, lessThanOrEqualTo(44.0));
+    // Old max was 28 — mid/high zoom sparse should clear that.
+    final hitZoomed = SpeedcamPackMapPreview.camHitExtent(
+      SpeedcamPackMapPreview.camDotRadius(shownCount: 10, zoom: 15),
+    );
+    expect(hitZoomed, greaterThan(28.0));
+  });
 }

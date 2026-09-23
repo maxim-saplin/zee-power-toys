@@ -51,6 +51,27 @@ class SpeedcamPackMapPreview extends StatefulWidget {
   /// High enough that typical harvests (≤~2000 cams) paint every marker (0052).
   static const int kMaxMarkers = 2000;
 
+  /// Visible cam-dot radius in logical px (0100).
+  ///
+  /// Pack density sets a base; zoom scales it up when zoomed in so fat-finger
+  /// taps stay easy while scrolling. Soft caps keep dense packs readable
+  /// (clustering is 0101 — not here).
+  @visibleForTesting
+  static double camDotRadius({
+    required int shownCount,
+    required double zoom,
+  }) {
+    final base = shownCount > 200 ? 3.0 : (shownCount > 80 ? 4.0 : 5.0);
+    // Ref zoom 11 ≈ fit for larger packs; ~+12% per zoom level, clamped.
+    final scale = (1.0 + (zoom - 11.0) * 0.12).clamp(0.85, 1.7);
+    return (base * scale).clamp(2.5, 9.0);
+  }
+
+  /// Marker hit-target extent (width/height) for [camDotRadius] (0100).
+  @visibleForTesting
+  static double camHitExtent(double dotR) =>
+      (dotR * 2 + 18).clamp(28.0, 44.0);
+
   static const String _osmTileUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -64,12 +85,24 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
   MapController _mapController = MapController();
   bool _expanded = false;
 
+  /// Quantized map zoom for cam-dot sizing (0100). Null until first camera report.
+  double? _zoom;
+
   double get _mapHeight =>
       _expanded ? widget.expandedHeight : widget.height;
+
+  static double _quantizeZoom(double zoom) => (zoom * 4).round() / 4.0;
+
+  void _onCameraZoom(double zoom) {
+    final q = _quantizeZoom(zoom);
+    if (_zoom == q) return;
+    setState(() => _zoom = q);
+  }
 
   void _toggleExpand() {
     setState(() {
       _expanded = !_expanded;
+      _zoom = null; // remount picks up fit zoom via onMapReady
       // Fresh controller — reuse across size remounts trips flutter_map assert.
       _mapController = MapController();
     });
@@ -191,8 +224,13 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
     final centerLat = widget.meta?.centerLat;
     final centerLon = widget.meta?.centerLon;
     final radiusKm = widget.meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
-    final dotR = shown.length > 200 ? 2.0 : (shown.length > 80 ? 2.5 : 3.5);
-    final hit = (dotR * 2 + 14).clamp(22.0, 28.0);
+    // 0100: larger visible + hit; zoom-aware (grow when zoomed in).
+    final zoom = _zoom ?? 12.0;
+    final dotR = SpeedcamPackMapPreview.camDotRadius(
+      shownCount: shown.length,
+      zoom: zoom,
+    );
+    final hit = SpeedcamPackMapPreview.camHitExtent(dotR);
     final pose = widget.hostPose;
 
     // Harvest radius + host pin stay circles; cams are Markers so they tap.
@@ -265,6 +303,14 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
           // Pan / pinch-zoom OK on DHU; rotation is awkward at compact height.
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
+        onMapReady: () {
+          if (!mounted) return;
+          _onCameraZoom(_mapController.camera.zoom);
+        },
+        onPositionChanged: (camera, _) {
+          if (!mounted) return;
+          _onCameraZoom(camera.zoom);
+        },
       ),
       children: [
         TileLayer(
