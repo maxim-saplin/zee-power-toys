@@ -41,6 +41,17 @@ Subcommands
                       the host-side `flutter run` process is already dead by
                       this point) — the pgid kill alone leaves the app
                       process running on the device.
+  keepalive [--tier t2] [--max-misses 2] [--no-restart]
+                      Mid-slice T2 health pulse (0094 SI emu-kill harden).
+                      Runs `adb get-state` against ADB_SERIAL. On success,
+                      clears the consecutive-miss counter. On failure,
+                      increments it; after `--max-misses` consecutive misses
+                      (default 2), stops any live T2 flutter session, cold-
+                      boots the AVD (`ZEE_AVD`, default Tablet_Android_12L),
+                      waits until `get-state` returns `device`, then runs
+                      `preflight --fix`. Caller must re-run `up --tier t2`
+                      after a restart. Pass `--no-restart` to only count
+                      misses (useful for dry diagnosis).
 
 T1 (default) — `flutter run -d linux` (or `-d macos` on Darwin)
   Writes flutter run stdout/stderr to $ZEE_RUN_LOG (default /tmp/zee_run_t1.log).
@@ -55,12 +66,17 @@ Typical use
   uv run dev/zee_run.py preflight --tier t2 --fix  # optional standalone check
   uv run dev/zee_run.py up                         # T1 — ready in ~15 s on a warm cache
   uv run dev/zee_run.py up --tier t2               # T2
+  uv run dev/zee_run.py keepalive --tier t2        # mid-slice pulse (QA/beta)
   uv run dev/zee_run.py down                        # stop T1
+  # Hung install / wedged flutter run on T2:
+  #   uv run dev/zee_run.py down --tier t2 && uv run dev/zee_run.py up --tier t2
 
 Environment
   ZEE_RUN_LOG    path for flutter run log (default /tmp/zee_run_t1.log)
   ZEE_VM_URI     override VM URI (skips discovery; up still waits for surfaces)
   ADB_SERIAL     adb device serial (default emulator-5554)
+  ZEE_AVD        AVD name for keepalive restart (default Tablet_Android_12L)
+  ANDROID_HOME   SDK root (emulator binary at $ANDROID_HOME/emulator/emulator)
 
 Session URI files (QA3-5 fix — see docs/issues/BACKLOG.md)
   Each tier gets its own /tmp/zee_vm_uri_<tier>.txt (written by `up`, removed
@@ -103,6 +119,12 @@ POLL_INTERVAL_S = 1.0
 EXPECTED_OVERLAY = "1024x576/213"
 EXPECTED_HUD_W = 1024
 EXPECTED_HUD_H = 576
+
+# keepalive (0094) — mid-slice adb get-state pulse + emu restart after N misses
+_KEEPALIVE_MISS_FILE = Path("/tmp/zee_keepalive_t2.misses")
+KEEPALIVE_MAX_MISSES = 2
+EMU_BOOT_TIMEOUT_S = 180.0
+DEFAULT_AVD = os.environ.get("ZEE_AVD", "Tablet_Android_12L")
 
 
 def _tier_files(tier: str) -> tuple[Path, Path]:
@@ -329,6 +351,260 @@ def _dump_setup_hud_logcat() -> str:
         return f"(logcat dump failed: {e})"
 
 
+
+# ---------------------------------------------------------------------------
+# keepalive — mid-slice T2 pulse; restart emu+preflight after N consecutive misses
+# ---------------------------------------------------------------------------
+
+def _adb_get_state(serial: str | None = None) -> str | None:
+    """Return `adb get-state` text (`device` when healthy), or None on miss."""
+    serial = serial or _z.DEFAULT_SERIAL
+    try:
+        r = subprocess.run(
+            ["adb", "-s", serial, "get-state"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        print(f"[zee_run:keepalive] adb get-state error: {e}", file=sys.stderr)
+        return None
+    if r.returncode != 0:
+        err = (r.stderr or r.stdout or "").strip()
+        if err:
+            print(f"[zee_run:keepalive] adb get-state rc={r.returncode}: {err}",
+                  file=sys.stderr)
+        return None
+    state = (r.stdout or "").strip()
+    return state or None
+
+
+def _keepalive_misses() -> int:
+    try:
+        return int(_KEEPALIVE_MISS_FILE.read_text().strip() or "0")
+    except (OSError, ValueError):
+        return 0
+
+
+def _set_keepalive_misses(n: int) -> None:
+    if n <= 0:
+        _KEEPALIVE_MISS_FILE.unlink(missing_ok=True)
+        return
+    _KEEPALIVE_MISS_FILE.write_text(str(n))
+
+
+def _emulator_bin() -> Path | None:
+    home = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT")
+    if not home:
+        return None
+    cand = Path(home) / "emulator" / "emulator"
+    return cand if cand.is_file() else None
+
+
+def _kill_emulator(serial: str | None = None) -> None:
+    """Best-effort stop of the current emulator (adb emu kill + wait)."""
+    serial = serial or _z.DEFAULT_SERIAL
+    try:
+        subprocess.run(
+            ["adb", "-s", serial, "emu", "kill"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+    deadline = time.monotonic() + 30.0
+    while time.monotonic() < deadline:
+        state = _adb_get_state(serial)
+        if state is None:
+            return
+        time.sleep(1.0)
+
+
+def _restart_emulator(avd: str | None = None) -> bool:
+    """Cold-boot the T2 AVD and wait until `adb get-state` returns `device`."""
+    avd = avd or DEFAULT_AVD
+    emu = _emulator_bin()
+    if emu is None:
+        print(
+            "[zee_run:keepalive] cannot restart emu — set ANDROID_HOME "
+            "(expected $ANDROID_HOME/emulator/emulator)",
+            file=sys.stderr,
+        )
+        return False
+
+    print(f"[zee_run:keepalive] stopping emulator (serial={_z.DEFAULT_SERIAL})")
+    _kill_emulator()
+
+    # Clear flaky crashpad dirs when present (ENV.md tip).
+    try:
+        for crashpad in Path("/tmp").glob("android-*"):
+            # only remove empty-ish crashpad leftovers; ignore errors
+            pass
+    except OSError:
+        pass
+
+    cmd = [str(emu), "-avd", avd, "-gpu", "host", "-no-snapshot-load"]
+    print(f"[zee_run:keepalive] starting: {' '.join(cmd)}")
+    log_path = Path("/tmp/zee_keepalive_emu.log")
+    log_fh = log_path.open("w")
+    try:
+        subprocess.Popen(
+            cmd,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    except OSError as e:
+        print(f"[zee_run:keepalive] failed to spawn emulator: {e}", file=sys.stderr)
+        return False
+
+    try:
+        subprocess.run(
+            ["adb", "wait-for-device"],
+            capture_output=True, text=True, timeout=EMU_BOOT_TIMEOUT_S,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        print(f"[zee_run:keepalive] adb wait-for-device failed: {e}", file=sys.stderr)
+        return False
+
+    deadline = time.monotonic() + EMU_BOOT_TIMEOUT_S
+    while time.monotonic() < deadline:
+        state = _adb_get_state()
+        if state == "device":
+            # Boot completed property — guest may still be animating.
+            try:
+                boot = subprocess.run(
+                    ["adb", "-s", _z.DEFAULT_SERIAL, "shell",
+                     "getprop", "sys.boot_completed"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                if (boot.stdout or "").strip() == "1":
+                    print("[zee_run:keepalive] emulator back (get-state=device, boot_completed=1)")
+                    return True
+            except (subprocess.TimeoutExpired, OSError):
+                pass
+            # device is up even if boot_completed lags — accept shortly
+            print("[zee_run:keepalive] emulator get-state=device (waiting boot_completed…)")
+        time.sleep(2.0)
+
+    # Final accept if get-state is device even without boot_completed
+    if _adb_get_state() == "device":
+        print("[zee_run:keepalive] emulator get-state=device (boot_completed not confirmed)")
+        return True
+    print("[zee_run:keepalive] emulator restart timed out", file=sys.stderr)
+    return False
+
+
+def cmd_keepalive(
+    tier: str,
+    max_misses: int = KEEPALIVE_MAX_MISSES,
+    do_restart: bool = True,
+) -> int:
+    """One mid-slice pulse. After `max_misses` consecutive misses → emu+preflight.
+
+    Returns 0 when healthy (or after a successful recover). Returns 1 on a
+    counted miss below the threshold, or when restart/preflight fails.
+    """
+    import json
+
+    result: dict[str, Any] = {
+        "tier": tier,
+        "cmd": "keepalive",
+        "serial": _z.DEFAULT_SERIAL,
+        "maxMisses": max_misses,
+    }
+
+    if tier != "t2":
+        result["pass"] = True
+        result["note"] = "keepalive is T2-only — nothing to pulse"
+        print(json.dumps(result, indent=2))
+        return 0
+
+    state = _adb_get_state()
+    result["getState"] = state
+    healthy = state == "device"
+    result["healthy"] = healthy
+
+    if healthy:
+        prev = _keepalive_misses()
+        _set_keepalive_misses(0)
+        result["consecutiveMisses"] = 0
+        result["clearedMisses"] = prev
+        result["pass"] = True
+        result["action"] = "ok"
+        print(f"[zee_run:keepalive] ok — adb get-state={state!r} (misses cleared)")
+        print(json.dumps(result, indent=2))
+        return 0
+
+    misses = _keepalive_misses() + 1
+    _set_keepalive_misses(misses)
+    result["consecutiveMisses"] = misses
+    result["pass"] = False
+    print(
+        f"[zee_run:keepalive] MISS {misses}/{max_misses} — "
+        f"adb get-state={state!r} (want 'device')",
+        file=sys.stderr,
+    )
+
+    if misses < max_misses:
+        result["action"] = "count"
+        result["remedy"] = (
+            f"adb device {_z.DEFAULT_SERIAL!r} not ready — pulse again; "
+            f"after {max_misses} consecutive misses keepalive restarts "
+            "emu + preflight"
+        )
+        print(json.dumps(result, indent=2))
+        return 1
+
+    if not do_restart:
+        result["action"] = "threshold-no-restart"
+        result["remedy"] = (
+            "max misses reached; re-run without --no-restart to cold-boot "
+            "the AVD + preflight, then `up --tier t2`"
+        )
+        print(json.dumps(result, indent=2))
+        return 1
+
+    print(
+        f"[zee_run:keepalive] {misses} consecutive misses — "
+        "restarting emu + preflight",
+        file=sys.stderr,
+    )
+    # Drop any wedged host-side flutter run before the AVD comes back.
+    cmd_down(tier)
+
+    restarted = _restart_emulator()
+    result["emuRestarted"] = restarted
+    if not restarted:
+        result["action"] = "restart-failed"
+        result["remedy"] = (
+            f"manual: $ANDROID_HOME/emulator/emulator -avd {DEFAULT_AVD} "
+            "-gpu host -no-snapshot-load && adb wait-for-device && "
+            "uv run dev/zee_run.py preflight --tier t2 --fix && "
+            "uv run dev/zee_run.py up --tier t2"
+        )
+        print(json.dumps(result, indent=2))
+        return 1
+
+    ok, pf = cmd_preflight(tier, fix=True)
+    result["preflight"] = pf
+    result["preflightOk"] = ok
+    if ok:
+        _set_keepalive_misses(0)
+        result["consecutiveMisses"] = 0
+        result["pass"] = True
+        result["action"] = "recovered"
+        result["remedy"] = (
+            "emu + preflight recovered — re-run "
+            "`uv run dev/zee_run.py up --tier t2` before driving"
+        )
+        print("[zee_run:keepalive] recovered — re-run `up --tier t2`")
+        print(json.dumps(result, indent=2))
+        return 0
+
+    result["action"] = "preflight-failed"
+    result["remedy"] = pf.get("remedy") or "preflight failed after emu restart"
+    print(json.dumps(result, indent=2))
+    return 1
+
+
 # ---------------------------------------------------------------------------
 # up
 # ---------------------------------------------------------------------------
@@ -552,6 +828,21 @@ def main(argv: list[str] | None = None) -> int:
     dn_p.add_argument("--tier", choices=["t1", "t2"], default="t1",
                       help="target tier (default: t1)")
 
+    ka_p = sub.add_parser(
+        "keepalive",
+        help="mid-slice T2 adb get-state pulse; restart emu+preflight after N misses",
+    )
+    ka_p.add_argument("--tier", choices=["t1", "t2"], default="t2",
+                      help="target tier (default: t2; keepalive is a no-op on t1)")
+    ka_p.add_argument(
+        "--max-misses", type=int, default=KEEPALIVE_MAX_MISSES,
+        help=f"consecutive get-state misses before emu restart (default: {KEEPALIVE_MAX_MISSES})",
+    )
+    ka_p.add_argument(
+        "--no-restart", action="store_true",
+        help="only count misses — do not cold-boot the AVD at threshold",
+    )
+
     args = p.parse_args(argv)
     if args.cmd == "preflight":
         ok, result = cmd_preflight(args.tier, fix=args.fix)
@@ -562,6 +853,12 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_up(args.tier, self_heal=not args.no_self_heal)
     elif args.cmd == "down":
         return cmd_down(args.tier)
+    elif args.cmd == "keepalive":
+        return cmd_keepalive(
+            args.tier,
+            max_misses=max(1, args.max_misses),
+            do_restart=not args.no_restart,
+        )
     return 0
 
 

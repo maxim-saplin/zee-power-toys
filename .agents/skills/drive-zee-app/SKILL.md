@@ -5,9 +5,11 @@ description: Launch, drive, screenshot, and read state from the zee-power-toys a
 
 # drive-zee-app
 
-> **0089 — Prefer harness over OCR.** Do **not** drive Speedcam Demo / Overlay
-> with tesseract or coordinate taps. Use `ext.zee.speedcam action=demo` /
-> `feedback_loop.py speedcam-demo` (below). OCR/tap thrash is an SI anti-pattern.
+> **0089 / 0094 — Prefer harness over OCR.** Do **not** drive Speedcam Demo /
+> Overlay / map-cam UI with tesseract or coordinate taps. Use
+> `ext.zee.speedcam` / `feedback_loop.py speedcam-demo` / `tap --key` /
+> `set-config` (below). Every 0092+ tip must show harness commands in FINDINGS.
+> OCR/tap thrash is an SI anti-pattern — harden the skill/script instead.
 
 Operational front-end to the zee-power-toys Feedback Loop (ADR 0004).  For the
 deep VM-service layer see
@@ -105,6 +107,41 @@ answered and its own `whoami` reports `hudEnabled=false`, it calls
 (guarded so it can never loop — pass `--no-self-heal` to disable and just
 time out normally instead). Turns a silent 60s hang into a ~40s automatic
 recovery using only existing extensions.
+
+### `keepalive` — mid-slice T2 pulse (0094 SI emu-kill)
+
+```bash
+uv run dev/zee_run.py keepalive --tier t2
+```
+
+QA / zee-dev-beta: call this **between drive steps** on long T2 slices (not
+only at launch). Each call runs `adb get-state` against `ADB_SERIAL`
+(default `emulator-5554`):
+
+- **ok** (`device`) → clears the consecutive-miss counter, exit 0.
+- **miss** → increments `/tmp/zee_keepalive_t2.misses`; exit 1.
+- **2 consecutive misses** (configurable `--max-misses`) → `down --tier t2`,
+  cold-boots `ZEE_AVD` (default `Tablet_Android_12L` via
+  `$ANDROID_HOME/emulator/emulator -gpu host -no-snapshot-load`), waits for
+  `get-state=device`, then `preflight --fix`. JSON result includes
+  `action=recovered` and reminds you to re-run `up --tier t2` before driving.
+
+`--no-restart` counts only (no AVD boot) for dry diagnosis. After two
+emu/adb failures in a session, stop the product tip, stabilize with
+keepalive/preflight, post the blocker, then resume (see `SI.md`).
+
+### Hung install / wedged `up --tier t2`
+
+If `flutter run` / Gradle install hangs mid-`up` (no VM URI, stuck
+"Installing…", or a wedged second `flutter` lock), do **not** keep waiting:
+
+```bash
+uv run dev/zee_run.py down --tier t2
+uv run dev/zee_run.py up --tier t2
+```
+
+`down` clears the host-side process group and force-stops the on-device app;
+a fresh `up` re-runs `preflight --fix` and relaunches cleanly.
 
 ### Stop
 
@@ -567,8 +604,8 @@ avoids mistaking ordinary map drift for a regression; `shape-geometry`'s
 - `docs/issues/0019-ynavi-map-render.md` — the working render recipe
 - `dev/zee_drive.py` — low-level VMClient + URI discovery
 - `dev/feedback_loop.py` — tier-agnostic semantic ops
-- `dev/zee_run.py` — launcher (this skill's primary entry point); `preflight`
-  subcommand + self-heal live here
+- `dev/zee_run.py` — launcher (this skill's primary entry point); `preflight`,
+  `keepalive` (mid-slice get-state pulse), and self-heal live here
 - `dev/zee_gate.py` — the Definition-of-Done gate (see its own section above)
 - `dev/zee_pixels.py` — pixel metrics/comparison primitives (no I/O/VM/adb dep)
 - `dev/zee_diff.py` — the pixel comparison CLI (`selftest`/`metrics`/`readable`/`differs`/`same`/`ab`)

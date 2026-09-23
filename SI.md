@@ -12,8 +12,19 @@ QA burned turns while Tablet_12L died (`adb: no devices/emulators found`).
 T2 (restart emu, keepalive, `zee_run.py preflight`), post the blocker, then
 resume. Harden preflight + pulse T2 health; treat repeated death as SI →
 script/skill, not noise.
-**Owner:** zee-dev + zee-qa · **Clear when:** preflight/keepalive tip on main and
-team proves a slice without mid-QA emu death.
+
+**Owner:** zee-dev + zee-qa
+
+**Tip status (0094):** `zee_run.py keepalive` lands on main (mid-slice
+`adb get-state` pulse; after **2 consecutive misses** → emu cold-boot +
+`preflight --fix`). Hung-install recovery documented: `down --tier t2 &&
+up --tier t2`.
+
+**Clear gate (do not clear yet):** keep this entry open until **one full QA
+slice** on T2 completes without mid-slice emu death **after** the keepalive tip
+is on main. Documenting the gate ≠ clearing. QA/beta: pulse with
+`uv run dev/zee_run.py keepalive --tier t2` between drive steps; on recover,
+re-run `up --tier t2`.
 
 ### App-drive OCR / tap thrash (2026-09-22) → see 0094
 0089 tipped `speedcam-demo` / one RPC. Follow-on **0094** is to *use*, tinker,

@@ -24,7 +24,7 @@ parent: 0089
 
 ## Definition of Done
 - [ ] 0092 (and 0093 as needed) tips prove harness use in FINDINGS (commands + logs, not OCR)
-- [ ] Known gaps from SI / agent tips fixed or documented with a recipe
+- [x] Known gaps from SI / agent tips fixed or documented with a recipe — **emu-kill:** `zee_run.py keepalive` (mid-slice `adb get-state`; 2 misses → emu+preflight); hung-install → `down && up`; SI clear gate documented (do not clear emu entry until one full QA slice without death)
 - [ ] Skill + `feedback_loop.py` recipes match what agents actually run
 - [ ] SI app-drive OCR item closed when harness is the default path
 - [ ] PDM ACCEPT when SI no longer lists app-drive thrash as open
