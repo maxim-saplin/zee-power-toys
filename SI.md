@@ -1,29 +1,28 @@
 # Self-improvement inbox
 
-## 2026-09-22 23:40 — Emulator killed / unstable mid-QA -
-QA burned turns on Overlay / CRT cuts while Tablet_12L repeatedly died
-(`adb: no devices/emulators found`). Maxim had to tell the team to pause and
-fix emu stability instead of the product slice. → When emu / adb / launch
-harness fails twice in a session, **stop the product tip**, diagnose and
-stabilize T2 (restart emu, keepalive, preflight), post the blocker, then
-resume. Do not keep retrying installs on a dead device hoping it recovers.
-Possible fix: harden `zee_run.py preflight` + a standing "T2 health" check in
-the delivery pulse; treat repeated emu death as an SI → skill/script change,
-not background noise.
+> Keep this empty. When you hit friction twice in a session, log it here, then
+> either fix harness/infra the same slice or file a ticket and clear the entry
+> when the tip lands. Product work waits on repeated harness failure.
 
-## 2026-09-22 23:40 — App drive via OCR / coordinate taps -
-Agents failed to enable Speedcam HUD Demo and Overlay reliably using tesseract
-OCR and guessed taps; uiautomator idle dumps also flaked. → Prefer
-`ext.zee.speedcam action=demo overlay=true` / `feedback_loop.py speedcam-demo`
-/ `ext.zee.setConfig` / ValueKeys via `.agents/skills/drive-zee-app/SKILL.md`.
-**Tipped 0089:** one-shot `speedcam-demo on|off` (+ `action=demo|demoStop`).
-Do not spend a multi-turn loop on blind UI guessing for a one-button action.
+## Open
 
+### Emulator killed / unstable mid-QA (2026-09-22)
+QA burned turns while Tablet_12L died (`adb: no devices/emulators found`).
+**Rule:** after two emu/adb failures in a session, stop the product tip, stabilize
+T2 (restart emu, keepalive, `zee_run.py preflight`), post the blocker, then
+resume. Harden preflight + pulse T2 health; treat repeated death as SI →
+script/skill, not noise.
+**Owner:** zee-dev + zee-qa · **Clear when:** preflight/keepalive tip on main and
+team proves a slice without mid-QA emu death.
 
-## 2026-09-22 23:55 — Overlay SYSTEM_ALERT_WINDOW GONE (Requested 0×0) -
-QA: Overlay ON + danger.insideApproach=true but window stayed View.GONE
-(collapsed 0×0). Root: `_pushSpeedcamSystemOverlay` re-ran `camPassesPresenceMode`
-after danger was already resolved — behind/pass-clear danger hid the float.
-Also `ext.zee.speedcam approach` defaulted `headingDeg=0` (Demo uses null).
-→ Show Overlay from enabled+danger+insideApproach (tip e6ec100); default
-approach heading null. Acted same session.
+### App-drive OCR / tap thrash (2026-09-22) → see 0094
+0089 tipped `speedcam-demo` / one RPC. Follow-on **0094** is to *use*, tinker,
+improve, and close. Prefer `ext.zee` / `feedback_loop.py` /
+`.agents/skills/drive-zee-app/SKILL.md`. Clear this entry when 0094 ACCEPTs.
+
+## Cleared
+
+### Overlay SYSTEM_ALERT_WINDOW GONE (2026-09-22 23:55) — cleared 2026-09-23
+Root: `_pushSpeedcamSystemOverlay` re-ran presence after danger resolved;
+`approach` defaulted `headingDeg=0`. Fixed same session (tip e6ec100+). Removed
+from open inbox.
