@@ -399,8 +399,8 @@ double alienCrtPlateScale(Size size) {
   return minSide / 160.0;
 }
 
-/// Design km font at [alienCrtPlateScale] = 1. Fraction of design side ≈ 0.21
-/// (classic pre-6788dc5 HUD glyph/min). Limit keeps ~18/34 of km.
+/// Design km font at [alienCrtPlateScale] = 1. Fraction of design side ≈ 0.24
+/// (classic pre-6788dc5 HUD glyph/min). Limit keeps ~20.7/39.1 of km.
 const double kAlienCrtKmDesignFont = 39.1;
 const double kAlienCrtLimitDesignFont = 20.7;
 
