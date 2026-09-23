@@ -401,8 +401,8 @@ double alienCrtPlateScale(Size size) {
 
 /// Design km font at [alienCrtPlateScale] = 1. Fraction of design side ≈ 0.21
 /// (classic pre-6788dc5 HUD glyph/min). Limit keeps ~18/34 of km.
-const double kAlienCrtKmDesignFont = 34.0;
-const double kAlienCrtLimitDesignFont = 18.0;
+const double kAlienCrtKmDesignFont = 39.1;
+const double kAlienCrtLimitDesignFont = 20.7;
 
 /// Alien motion-tracker: prop fan + expanding range rings from center + grit.
 ///
