@@ -55,8 +55,22 @@ adb -s emulator-5554 logcat -d | egrep -i 'AndroidRuntime|FATAL EXCEPTION|passpo
 ### C. Speedcam bridge → toys
 | ID | Setup | Expect |
 |----|--------|--------|
-| C1 | Toys **1.1.0+18** + YNavi V2 or V4; route/ghost/drive so bridge fires | toys pack / dump-state shows ynavi-sourced cams (or Intent observed) |
+| C1 | Toys **1.1.0+18** + YNavi V2 or V4; **follow C1 recipe below** | toys pack / dump-state shows ynavi-sourced cams (or Intent observed) |
 | C2 | YNavi alone (toys uninstalled) | bridge does not crash YNavi |
+
+**C1 recipe (required — silent fail without this):**
+1. Install toys Live **1.1.0+18** package `com.zeepowertoys.zee_power_toys` (Release APK). If `SHARED_USER_INCOMPATIBLE`, uninstall the prior toys build first — that trap is **toys debug↔release / sharedUser pairing**, not a YNavi install failure.
+2. With toys up: set `ynaviEnrich=true` (default **OFF** drops `SPEEDCAM_DATA` / ynavi ingest). Prefer harness `set-config` / dump-state echo before drive.
+3. Prove with **ghost+route** (or freeDriveRoute / ghost path), **not** windshield. Windshield alone is not a C1 PASS.
+4. Expect: dump-state / pack shows `source=ynavi` (or Intent observe) while enrich is ON.
+
+```bash
+# sketch — adjust serial / zee_run as on station
+adb -s emulator-5554 install -g -r -d zee-power-toys.apk   # Release 1.1.0+18
+# if INSTALL_FAILED_SHARED_USER_INCOMPATIBLE: adb uninstall com.zeepowertoys.zee_power_toys && retry
+# harness: set-config ynaviEnrich=true ; dump-state --surface dhu|hud | grep -i enrich
+# drive: ghost+route (not windshield) until SPEEDCAM_DATA / ynavi cams appear
+```
 
 ### T. Traffic recovery
 | ID | Setup | Expect |

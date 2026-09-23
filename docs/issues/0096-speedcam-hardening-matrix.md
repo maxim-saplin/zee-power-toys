@@ -15,7 +15,7 @@ matrix: docs/qa/0096-hardening-matrix.md
 # 0096 — Speedcam hardening matrix (T2 exhaustive)
 
 ## Block scope
-Maxim 2026-09-23 (via beta): not another pin prove — a **proper T2 use-case matrix** covering OSM / YNavi / merge+enrich / lane mute vs true SPEED / dedupe / aging / alert modes. Exhaustive harness cut. Live stays **1.1.0+11** until PDM says bump.
+Maxim 2026-09-23 (via beta): not another pin prove — a **proper T2 use-case matrix** covering OSM / YNavi / merge+enrich / lane mute vs true SPEED / dedupe / aging / alert modes. Exhaustive harness cut. Live stayed **1.1.0+11** through this slice; PDM later shipped Live **1.1.0+18**.
 
 Canonical matrix: `docs/qa/0096-hardening-matrix.md` (tip `ed09b08`, A–F). Holes from 0092: **A2/A6** (true YNavi SPEED must still flow with mute OFF).
 
@@ -55,7 +55,7 @@ Also cover controlled `eventId` inject for **B** rows (same tip or follow tip sa
 1. zee-dev: tip `action=fixture` (+ B inject if needed) on tip
 2. zee-qa: drive full matrix FINDINGS per row
 3. zee-dev-beta: early-review matrix/fixture; parallel A2/A6; four-point after QA
-4. PDM: ACCEPT; Live stay +11 unless separate ship call
+4. PDM: ACCEPT; Live stayed +11 until separate ship call (**1.1.0+18**)
 
 ## Owners
 - zee-pdm: this issue / DoD / skip policy / ACCEPT
@@ -67,5 +67,5 @@ Also cover controlled `eventId` inject for **B** rows (same tip or follow tip sa
 Tip `2fa6f8e` (fixture base `d6880bd`). QA T2 matrix PASS
 (`tmp/qa/0096-cut-2fa6f8e/`); beta four-point PASS; PDM own check PASS.
 A2/A6 PASS (true SPEED with mute OFF). C3 SKIP honest (no packFreshness/
-poller kill RPC — soft follow); F2 SKIP (no Maxim coords). Live stays
-**1.1.0+11**. Soft: fixtureClear CLI / B2–B3 unit gate / C3 poller when free.
+poller kill RPC — soft follow); F2 SKIP (no Maxim coords). Live stayed
+**1.1.0+11** through ACCEPT; later ship **1.1.0+18**. Soft: fixtureClear CLI / B2–B3 unit gate / C3 poller when free.

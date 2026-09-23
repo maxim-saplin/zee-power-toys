@@ -61,7 +61,7 @@
 - **Never SKIP A2/A6 after fixture** — FAIL if mute kills true SPEED.
 - Honest SKIP+reason only when product surface missing; no ghost PASS from units/memory.
 - Evidence `tmp/qa/0096-cut-<sha>/`; harness only / keepalive; no OCR.
-- Beta four-point; PDM ACCEPT. Live stays **1.1.0+11** until ship call.
+- Beta four-point; PDM ACCEPT. Live stayed **1.1.0+11** through ACCEPT; ship call later → Live **1.1.0+18**.
 
 ## Owners
 - **zee-pdm:** issue / DoD / skip / ACCEPT
