@@ -61,6 +61,8 @@ the per-tier session file automatically (QA3-5: `/tmp/zee_vm_uri_t1.txt` /
 live T1 session). `export ZEE_VM_URI` is still respected as an explicit
 override if you need to target a different session.
 
+> **0094:** a stale `$ZEE_VM_URI` in the shell (left from a prior `up`) outranks the session file and used to Connect-refuse on a dead port. `resolve_ws_uri` now liveness-probes the override and falls through to `/tmp/zee_vm_uri_<tier>.txt` when dead. Still fine to `unset ZEE_VM_URI` after `down && up`.
+
 `zee_run.py down` deletes `/tmp/zee_vm_uri_t1.txt` so a stale URI never
 shadows a new session.
 
@@ -210,7 +212,7 @@ uv run dev/zee_drive.py call ext.zee.<name> --isolate dhu|hud [k=v ...]
 | Extension | Surface | Params | Returns | Notes |
 |-----------|---------|--------|---------|-------|
 | `ext.zee.whoami` | both | — | `{surface, isolate, pid, hudBoxOn, hudEnabled}` | Identity probe; driver builds surface→isolateId map from this |
-| `ext.zee.dumpState` | both | — | `{surface, hudBoxOn, hudEnabled, locale, safeArea, blinker, battery, minimap}` | Raw ConfigStore snapshot |
+| `ext.zee.dumpState` | both | — | `{surface, hudEnabled, locale, safeArea, blinker, battery, minimap, speedcamConfig}` | Raw ConfigStore snapshot + speedcam flags (0094) |
 | `ext.zee.readViewModel` | both | — | full view-model incl. CarSignals snapshot, safeArea, activeSlots, minimap, systemLocale, usbMode, `hud` ({displayId,w,h,dpi}), `viewport` ({x,y,w,h}) | Derived Riverpod state; `hud`/`viewport` (Block 0027, DHU only) are the app's own HUD geometry + minimap ROI — use them to crop the native composite exactly, never reimplement the geometry in Python |
 | `ext.zee.setConfig` | both | `hudBoxOn=true\|false`, `hudEnabled=`, `safeArea=<json>`, `safeLeft/Top/Right/Bottom=<f>`, `blinkerShape=dots\|arrows\|smiley`, `blinkerSize=<f>`, `batteryShow=`, `tempShow=`, `chargingShow=`, `locale=en\|ru\|system`, `minimapEnabled=`, `minimapPreset=compact\|balanced\|large`, `minimapTheme=auto\|dark\|light`, `dhuSystemOverlay=true\|false` (alias `overlay=`) | dumpState snapshot | Writes to ConfigStore; DHU→HUD relay fires automatically |
 | `ext.zee.tapByKey` | both | `key=<ValueKey string>` | `{tapped, key, mode\|x,y}` | Three-tier fallback: callback→pointer→ancestor |

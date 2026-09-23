@@ -6,12 +6,17 @@
 
 ## Open
 
-### App-drive OCR / tap thrash (2026-09-22) → see 0094
-0089 tipped `speedcam-demo` / one RPC. Follow-on **0094** is to *use*, tinker,
-improve, and close. Prefer `ext.zee` / `feedback_loop.py` /
-`.agents/skills/drive-zee-app/SKILL.md`. Clear this entry when 0094 ACCEPTs.
+_(empty)_
 
 ## Cleared
+
+### App-drive OCR / tap thrash (2026-09-22) — cleared 2026-09-23
+Harness is the default path on tip after 0094 FINDINGS (`e1791da`+): `dump-state`
+shows `speedcamConfig`; `set-config` aliases (`ynaviEnrich`/`alertLaneCams`)
+echo; `speedcam-demo on|off` one-shot; `zee_run keepalive`. Soft: stale
+`$ZEE_VM_URI` now liveness-probed like session files. Prefer skill recipes —
+no OCR / guessed taps for one-button Demo/Overlay/config.
+
 
 ### Emulator killed / unstable mid-QA (2026-09-22) — cleared 2026-09-23
 Clear gate met: QA 0092+0093 slice on `c844baa` pulsed `keepalive --tier t2`

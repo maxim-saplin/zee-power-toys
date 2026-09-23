@@ -368,7 +368,17 @@ def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
     """
     override = override or os.environ.get("ZEE_VM_URI")
     if override:
-        return _normalize_ws_uri(override)
+        # Same liveness gate as session files: a stale $ZEE_VM_URI from a prior
+        # shell (common after `zee_run down && up`) used to short-circuit
+        # discovery and yield Connect refused on a dead port (0094 FINDINGS).
+        uri = _normalize_ws_uri(override)
+        if asyncio.run(_probe_uri_alive(uri)):
+            return uri
+        print(
+            f"[zee_drive] stale $ZEE_VM_URI / --vm-uri (unreachable at {uri}) — "
+            "ignoring; falling through to rediscover",
+            file=sys.stderr,
+        )
 
     # Per-tier session file(s) — written by `zee_run.py up`. A given [tier] is
     # a PREFERENCE, not an exclusive filter: callers like feedback_loop.py's
