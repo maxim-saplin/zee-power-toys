@@ -1,5 +1,7 @@
 # Issues — the backlog & board
 
+- [ ] **0097** YNavi mod hardening matrix (v27 + v30 on T2) — see `0097-ynavi-mod-hardening-matrix.md`
+
 The single ledger of work. Each row is a **Block** (ADR 0007): a thin vertical slice of delivered value, **runtime-confirmed**. A Block *points at* its two stable references — it does not restate them:
 - the **what** → [REQUIREMENTS.md](../../REQUIREMENTS.md)
 - the load-bearing **how** → [docs/adr/](../adr/)
