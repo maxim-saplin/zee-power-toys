@@ -1,5 +1,5 @@
 ---
-status: tip-ready
+status: accepted
 labels: [speedcam, map, spike, cluster]
 created: 2026-09-23
 satisfies: polish
@@ -10,6 +10,9 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 parent: 0100
+tip: 0633d85
+accepted: 2026-09-23
+evidence: tmp/qa/0101-cut-0633d85/
 ---
 
 # 0101 — Spike: speedcam map clustering (implement if reasonable)
@@ -27,9 +30,9 @@ Today: hard downsample `kMaxMarkers = 2000` + tiny dots when dense — lose cams
 
 ## Definition of Done
 - [x] Spike note in issue Reconciliation (or `docs/knowledge/`) — go / no-go + why
-- [x] If go: ship clustering on tip with T2 evidence (zoom-out cluster, zoom-in individuals, tap paths)
-- [ ] If no-go: document cheaper alternative (zoom-scaled dots only / smarter downsample) and close spike
-- [ ] QA FINDINGS when implemented; beta four-point; PDM ACCEPT after own check
+- [x] If go: ship clustering on tip with T2 evidence (zoom-out cluster, zoom-in individuals, tap paths) — `0633d85`
+- [x] If no-go: document cheaper alternative (zoom-scaled dots only / smarter downsample) and close spike — N/A (GO shipped; cheaper alt noted in Reconciliation)
+- [x] QA FINDINGS when implemented; beta four-point; PDM ACCEPT after own check — ACCEPT `0633d85` (2026-09-23)
 
 ## Notes
 - Do not block 0100 on this spike — larger dots can land first.
@@ -51,3 +54,6 @@ Custom **zoom-scaled geographic grid** in `speedcam_pack_map_preview.dart` — *
 **Cheaper alternative (if reverted):** keep 0100 zoom-scaled dots + smarter downsample only — readable but still loses cams / tap targets when dense.
 
 Tip: `tip/0101-speedcam-map-clustering` (see commit). Caption always shows full pack count (no “showing N” drop).
+
+## ACCEPT (PDM 2026-09-23)
+Tip `0633d85` (1.1.0+19). Spike **GO**: custom zoom-grid clustering (no plugin). QA T2 PASS (`tmp/qa/0101-cut-0633d85/`); beta four-point PASS; PDM own check PASS. Dense 130 → count bubbles; cluster tap → individuals; single → 0093 sheet. Soft: myloc z≈13 on dense still clustered — ACCEPT, no zoom-threshold tweak. Soft C1 Live SHARED_USER on Tablet — do not block Live +19.

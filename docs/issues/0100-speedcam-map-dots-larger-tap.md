@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: accepted
 labels: [speedcam, map, ui, tap]
 created: 2026-09-23
 satisfies: polish
@@ -10,6 +10,9 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 parent: 0093
+tip: feb5c13
+accepted: 2026-09-23
+evidence: tmp/qa/0100-cut-0633d85/
 ---
 
 # 0100 — Larger tappable speedcam map dots while scrolling / zoomed
@@ -25,10 +28,13 @@ Maxim 2026-09-23: cam dots on the DHU speedcam pack map are hard to tap while sc
 Raise **visible** and **hit** size so mid/high zoom and scroll still hit the marker; keep dense packs readable (may pair with 0101 clustering).
 
 ## Definition of Done
-- [ ] Tip: dots + hit targets clearly larger / easier to tap while scrolling on T2
-- [ ] 0093 metadata sheet still opens on tap
-- [ ] Dense packs do not become an unusable smear (cap, zoom-scaled size, or 0101 cluster)
-- [ ] QA FINDINGS + screenshots; beta four-point; PDM ACCEPT after own check
+- [x] Tip: dots + hit targets clearly larger / easier to tap while scrolling on T2 — zoom-aware `camDotRadius` / `camHitExtent` (`feb5c13`)
+- [x] 0093 metadata sheet still opens on tap
+- [x] Dense packs do not become an unusable smear (cap, zoom-scaled size, or 0101 cluster) — density base + soft caps; clustering is 0101
+- [x] QA FINDINGS + screenshots; beta four-point; PDM ACCEPT after own check — ACCEPT cut `0633d85` / fix `feb5c13` (2026-09-23)
 
 ## Notes
 - Prefer zoom-aware sizing (larger when zoomed in) over a single huge constant.
+
+## ACCEPT (PDM 2026-09-23)
+Fix `feb5c13` (cut on tip `0633d85`, 1.1.0+19). QA T2 PASS (`tmp/qa/0100-cut-0633d85/`); beta four-point PASS; PDM own check PASS. Zoom-aware larger dots + hit targets; 0093 sheet still opens. Soft: myloc mid-zoom clusters deferred to 0101 note — do not block Live +19.

@@ -11,4 +11,4 @@
 4. No clip of fan; even pad; text (0095) unchanged
 
 ## Evidence
-`tmp/qa/0098-cut/` — before/after or parent vs tip screenshots + FINDINGS.md
+`tmp/qa/0098-cut-aaab4d3/` — before/after or parent vs tip screenshots + FINDINGS.md

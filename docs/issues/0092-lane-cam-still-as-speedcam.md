@@ -1,5 +1,5 @@
 ---
-status: accept
+status: accepted
 labels: [speedcam, osm, ynavi, false-alarm, regression]
 created: 2026-09-23
 satisfies: foundation

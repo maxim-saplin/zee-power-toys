@@ -1,5 +1,5 @@
 ---
-status: accept
+status: accepted
 labels: [speedcam, flutter, preview, dx, osm, ynavi]
 created: 2026-09-23
 satisfies: foundation
