@@ -1213,6 +1213,22 @@ String _dumpStateJson(String surface, ConfigStore store) =>
       'battery': store.value.battery.toJson(),
       'minimap': store.value.minimap.toJson(),
       'autoUsbPeripheral': store.value.autoUsbPeripheral,
+      // 0094 soft: expose speedcam flags so harness can confirm enrich/lane
+      // without readViewModel (beta FINDINGS on c844baa pin cut).
+      'speedcamConfig': <String, Object?>{
+        'hudMode': store.value.speedcam.hudMode.name,
+        'soundMode': store.value.speedcam.soundMode.name,
+        'hudRadarEnabled': store.value.speedcam.hudRadarEnabled,
+        'radarLook': store.value.speedcam.radarLook.name,
+        'soundEnabled': store.value.speedcam.soundEnabled,
+        'soundVolume': store.value.speedcam.soundVolume,
+        'dhuRangeM': store.value.speedcam.dhuRangeM,
+        'ynaviEnrichEnabled': store.value.speedcam.ynaviEnrichEnabled,
+        'ynaviCollectEnabled': store.value.speedcam.ynaviCollectEnabled,
+        'ynaviAlertEnabled': store.value.speedcam.ynaviAlertEnabled,
+        'alertLaneCams': store.value.speedcam.alertLaneCams,
+        'dhuSystemOverlay': store.value.speedcam.dhuSystemOverlay,
+      },
     });
 
 developer.ServiceExtensionResponse _extError(String message) =>

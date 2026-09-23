@@ -434,9 +434,15 @@ def _restart_emulator(avd: str | None = None) -> bool:
 
     # Clear flaky crashpad dirs when present (ENV.md tip).
     try:
+        import shutil
         for crashpad in Path("/tmp").glob("android-*"):
-            # only remove empty-ish crashpad leftovers; ignore errors
-            pass
+            try:
+                if crashpad.is_dir():
+                    shutil.rmtree(crashpad, ignore_errors=True)
+                else:
+                    crashpad.unlink(missing_ok=True)
+            except OSError:
+                pass
     except OSError:
         pass
 
@@ -457,7 +463,7 @@ def _restart_emulator(avd: str | None = None) -> bool:
 
     try:
         subprocess.run(
-            ["adb", "wait-for-device"],
+            ["adb", "-s", _z.DEFAULT_SERIAL, "wait-for-device"],
             capture_output=True, text=True, timeout=EMU_BOOT_TIMEOUT_S,
         )
     except (subprocess.TimeoutExpired, OSError) as e:

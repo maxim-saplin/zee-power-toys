@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [speedcam, flutter, preview, dx, osm, ynavi]
 created: 2026-09-23
 satisfies: foundation
@@ -9,6 +9,9 @@ tier: T1
 owner: zee-dev
 priority: now
 filed-by: zee-pdm
+tip: c844baa
+accepted: 2026-09-23
+evidence: tmp/qa/0093-cut-c844baa/
 ---
 
 # 0093 — Flutter preview: tap any DB cam → show metadata
@@ -23,13 +26,17 @@ Maxim 2026-09-23: in the **current Flutter preview**, click/tap **any** speedcam
 - Make OSM↔YNavi enrich visible at a glance (e.g. `source=osm+ynavi`, which fields came from which feed).
 
 ## Definition of Done
-- [ ] Tap any cam in preview opens metadata UI with the stored record
-- [ ] Enriched / merged cams clearly show OSM vs YNavi (and other) contributions
-- [ ] Works for pure OSM, pure YNavi, and merged points
-- [ ] T1/T2 screenshot evidence; QA FINDINGS; PDM ACCEPT
+- [x] Tap any cam in preview opens metadata UI with the stored record
+- [x] Enriched / merged cams clearly show OSM vs YNavi (and other) contributions
+- [x] Works for pure OSM, pure YNavi, and merged points
+- [x] T1/T2 screenshot evidence; QA FINDINGS; PDM ACCEPT
 
 ## Why now
 Required to debug 0092 lane/speed mis-typing and future enrich bugs without adb dumps.
 
 ## Tip
 Flutter preview: tap map marker or DB sample → bottom sheet with full `SpeedcamPoint` fields + OSM↔YNavi merge provenance. Live snapshot cams preferred on map (so `osm+ynavi` shows). Marker colors: coral OSM / purple YNavi / amber merged. ValueKeys: `speedcam-cam-tap-<id>`, `speedcam-db-sample-<id>`, `speedcam-cam-detail*`.
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 on `c844baa` (own check after QA PASS + beta four-point).
+Evidence: `tmp/qa/0093-cut-c844baa/`.

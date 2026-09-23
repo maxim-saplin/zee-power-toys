@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [speedcam, osm, ynavi, false-alarm, regression]
 created: 2026-09-23
 satisfies: foundation
@@ -10,7 +10,9 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 parent: 0088
-tip: 0c0fd69
+tip: c844baa
+accepted: 2026-09-23
+evidence: tmp/qa/0092-cut-c844baa/
 ---
 
 # 0092 — Lane cams still register / alert as 60 km/h speedcams (0088 regression)
@@ -31,8 +33,8 @@ Maxim 2026-09-23 (car / today): **plenty of lane cams** still register as speed 
 ## Definition of Done
 - [x] Root cause vs 0088 tip documented (regression vs new path)
 - [x] Fix on tip; known pin does **not** register/alert as 60 km/h speedcam with defaults
-- [ ] QA FINDINGS + artifacts at 53.907996,27.424118 (and any extra coords Maxim supplies)
-- [ ] Beta four-point; PDM ACCEPT after own double-check
+- [x] QA FINDINGS + artifacts at 53.907996,27.424118 (and any extra coords Maxim supplies)
+- [x] Beta four-point; PDM ACCEPT after own double-check
 
 ## Notes
 - Do not rubber-stamp 0088 ACCEPT notes — field evidence wins.
@@ -58,3 +60,7 @@ Field still saw 60 km/h because:
 
 ### Tip
 `0c0fd69` — unit: `test/services/speedcam_0088_lane_cam_test.dart` (0092 group).
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 on `c844baa` (own check after QA PASS + beta four-point).
+Evidence: `tmp/qa/0092-cut-c844baa/`.
