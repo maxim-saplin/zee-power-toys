@@ -76,8 +76,9 @@ class NativeUsbMode implements UsbModePort {
   }
 
   static UsbModeResult _parseResult(Map<String, Object?>? raw) {
-    if (raw == null)
+    if (raw == null) {
       return const UsbModeResult(ok: false, reason: 'null-response');
+    }
     final ok = raw['ok'] as bool? ?? false;
     final reason = raw['reason'] as String?;
     return UsbModeResult(ok: ok, reason: reason);

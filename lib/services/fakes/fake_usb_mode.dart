@@ -13,10 +13,9 @@ import '../usb_mode.dart';
 class FakeUsbMode implements UsbModePort {
   FakeUsbMode({
     UsbMode initialMode = UsbMode.peripheral,
-    bool unsupported = false,
+    this._unsupported = false,
     this.liveRaw,
-  }) : _currentMode = initialMode,
-       _unsupported = unsupported;
+  }) : _currentMode = initialMode;
 
   final bool _unsupported;
   UsbMode _currentMode;
