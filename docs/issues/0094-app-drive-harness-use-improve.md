@@ -1,5 +1,5 @@
 ---
-status: open
+status: accepted
 labels: [agent, harness, dx, si]
 created: 2026-09-23
 satisfies: foundation
@@ -27,7 +27,7 @@ parent: 0089
 - [x] Known gaps from SI / agent tips fixed or documented with a recipe — **emu-kill:** `zee_run.py keepalive` (mid-slice `adb get-state`; 2 misses → emu+preflight); hung-install → `down && up`; SI clear gate documented (do not clear emu entry until one full QA slice without death); **stale `$ZEE_VM_URI`:** liveness-probe override like session files (Connect refused on dead port)
 - [x] Skill + `feedback_loop.py` recipes match what agents actually run — dump-state needs `--surface`; speedcam-demo positional `on|off`; set-config short aliases `ynaviEnrich`/`alertLaneCams` → dump `*Enabled` keys
 - [x] SI app-drive OCR item closed when harness is the default path
-- [ ] PDM ACCEPT when SI no longer lists app-drive thrash as open
+- [x] PDM ACCEPT when SI no longer lists app-drive thrash as open — ACCEPT `5d8ee28` (2026-09-23; QA cut + beta four-point + PDM evidence)
 
 ## Anti-pattern
 Spending multi-turn loops on tesseract / coordinate taps for one-button actions.
@@ -54,3 +54,8 @@ uv run dev/feedback_loop.py --tier t2 speedcam-demo --surface dhu off
 
 No OCR / coordinate taps. Soft improve same tip: `$ZEE_VM_URI` / `--vm-uri`
 unreachable → ignore + rediscover (was Connect refused on port from prior session).
+
+## ACCEPT (PDM 2026-09-23)
+Tip `5d8ee28` (1.1.0+13). QA independent cut PASS (`tmp/qa/0094-cut-5d8ee28/`);
+beta four-point PASS; PDM own evidence PASS. SI Open empty. Soft docstring /
+unset-env nits deferred. Harness is the default path; no OCR.

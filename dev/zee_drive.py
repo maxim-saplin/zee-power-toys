@@ -344,7 +344,8 @@ def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
     """Discover (or accept an override of) the host-reachable WebSocket URI.
 
     Precedence:
-      1. explicit override (arg or $ZEE_VM_URI)
+      1. explicit override (arg or $ZEE_VM_URI) — liveness-probed; stale
+         unreachable overrides are ignored and discovery falls through
       2. per-tier session file /tmp/zee_vm_uri_<tier>.txt (written by
          `zee_run.py up --tier <tier>`, deleted by `zee_run.py down --tier
          <tier>`) — tried first if [tier] is given, but [tier] is a
