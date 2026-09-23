@@ -24,6 +24,58 @@ class SpeedcamRadarBlip {
   final double distanceM;
   final bool highlight;
   final int? maxspeed;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SpeedcamRadarBlip &&
+      other.bearingDeg == bearingDeg &&
+      other.distanceM == distanceM &&
+      other.highlight == highlight &&
+      other.maxspeed == maxspeed;
+
+  @override
+  int get hashCode => Object.hash(bearingDeg, distanceM, highlight, maxspeed);
+}
+
+/// Build Alien/Default radar blips for [cams] around [host].
+///
+/// 0099: opposite-lane (facing-muted) cams stay on the scan as **non-highlight**
+/// blips. Facing may mute danger/alert only — never drop presence from the
+/// radar. [danger] still drives the bright highlight / sting target.
+List<SpeedcamRadarBlip> buildSpeedcamRadarBlips({
+  required SpeedcamHostPose host,
+  required List<SpeedcamPoint> cams,
+  required double rangeM,
+  SpeedcamDanger? danger,
+}) {
+  final heading = host.headingDeg;
+  final blips = <SpeedcamRadarBlip>[];
+  for (final cam in cams) {
+    final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
+    if (d > rangeM) continue;
+    final absBearing =
+        initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
+    // Front-hemisphere scan for candidates (0060).
+    if (!isCamAheadOfTravel(host, absBearing)) continue;
+    final isDanger = danger != null && danger.cam.id == cam.id;
+    blips.add(SpeedcamRadarBlip(
+      bearingDeg: relativeBearingDegrees(absBearing, heading),
+      distanceM: d,
+      highlight: isDanger,
+      maxspeed: cam.maxspeed,
+    ));
+  }
+  if (danger != null &&
+      danger.insideApproach &&
+      !blips.any((b) => b.highlight)) {
+    blips.add(SpeedcamRadarBlip(
+      bearingDeg: relativeBearingDegrees(danger.bearingDeg, heading),
+      distanceM: danger.distanceM,
+      highlight: true,
+      maxspeed: danger.cam.maxspeed,
+    ));
+  }
+  return blips;
 }
 
 /// HUD / DHU speedcam radar — Default (text) or Alien (CRT wedge).
@@ -129,39 +181,14 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
         maxspeed: 50,
       ));
     } else if (snap.host != null && cfg.hudMode != SpeedcamPresenceMode.off) {
-      final host = snap.host!;
-      final heading = host.headingDeg;
-      for (final cam in hudCams) {
-        final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
-        if (d > range) continue;
-        final absBearing =
-            initialBearingDegrees(host.lat, host.lon, cam.lat, cam.lon);
-        // Front-hemisphere scan for candidates (0060).
-        if (!isCamAheadOfTravel(host, absBearing)) continue;
-        // Dangerous HUD: facing mute; Any: show all ahead blips.
-        if (cfg.hudMode == SpeedcamPresenceMode.dangerous &&
-            !isCamRelevantForHost(host, cam)) {
-          continue;
-        }
-        final isDanger = danger != null && danger.cam.id == cam.id;
-        blips.add(SpeedcamRadarBlip(
-          // Alien fan + Default arrow expect forward-relative degrees.
-          bearingDeg: relativeBearingDegrees(absBearing, heading),
-          distanceM: d,
-          highlight: isDanger,
-          maxspeed: cam.maxspeed,
-        ));
-      }
-      if (danger != null &&
-          danger.insideApproach &&
-          !blips.any((b) => b.highlight)) {
-        blips.add(SpeedcamRadarBlip(
-          bearingDeg: relativeBearingDegrees(danger.bearingDeg, heading),
-          distanceM: danger.distanceM,
-          highlight: true,
-          maxspeed: danger.cam.maxspeed,
-        ));
-      }
+      // 0099: facing mute-over-drop — opposite-lane cams stay as dim blips;
+      // danger/highlight still requires facing-relevant (service / modeDanger).
+      blips.addAll(buildSpeedcamRadarBlips(
+        host: snap.host!,
+        cams: hudCams,
+        rangeM: range,
+        danger: danger,
+      ));
     } else if (danger != null && danger.insideApproach) {
       // No host pose — danger.bearingDeg may be absolute; treat as relative
       // (fail-open) so the approach blip still paints near center.
@@ -181,10 +208,12 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     // HUD Alien with radar ON but idle: still nothing (Maxim: no cam → nothing).
     final showDefault = look == SpeedcamRadarLook.defaultLook &&
         (approaching || forceDemoDanger != null || alwaysShow);
+    // 0099: also paint when only muted (non-highlight) opposite-lane blips.
     final showAlien = look == SpeedcamRadarLook.alien &&
         (alwaysShow ||
             hasHighlight ||
             approaching ||
+            blips.isNotEmpty ||
             forceDemoDanger != null);
 
     if (look == SpeedcamRadarLook.defaultLook && !showDefault) {

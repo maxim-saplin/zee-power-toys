@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: in-progress
 labels: [speedcam, osm, ynavi, radar, facing, collect]
 created: 2026-09-23
 satisfies: polish
@@ -39,3 +39,8 @@ Maxim 2026-09-23 (car drive): passed a camera watching the **other lane** at **5
 ## Notes
 - Do not “fix” by hiding other-lane cams from the map.
 - Prefer `ext.zee` / drive harness (0094) over OCR.
+
+## FINDINGS (dev tip)
+**Radar:** Dangerous HUD blip loop dropped `!isCamRelevantForHost` cams (`continue`) and Alien hid the CRT with no highlight — opposite-lane pack cams vanished. **Fix:** mute-over-drop via `buildSpeedcamRadarBlips` (dim blip, no sting); Alien paints when `blips.isNotEmpty`.
+**Collect:** `ingestYnaviEvent` already has no facing filter; unit test locks Enrich+Collect store at the pin.
+Evidence: `tmp/qa/0099-dev/ROOT_CAUSE.md`, `test/services/speedcam_0099_opposite_lane_test.dart`.
