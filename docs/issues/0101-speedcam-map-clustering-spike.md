@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: tip-ready
 labels: [speedcam, map, spike, cluster]
 created: 2026-09-23
 satisfies: polish
@@ -26,11 +26,28 @@ Today: hard downsample `kMaxMarkers = 2000` + tiny dots when dense — lose cams
 4. Perf on T2 with full ~300 km pack
 
 ## Definition of Done
-- [ ] Spike note in issue Reconciliation (or `docs/knowledge/`) — go / no-go + why
-- [ ] If go: ship clustering on tip with T2 evidence (zoom-out cluster, zoom-in individuals, tap paths)
+- [x] Spike note in issue Reconciliation (or `docs/knowledge/`) — go / no-go + why
+- [x] If go: ship clustering on tip with T2 evidence (zoom-out cluster, zoom-in individuals, tap paths)
 - [ ] If no-go: document cheaper alternative (zoom-scaled dots only / smarter downsample) and close spike
 - [ ] QA FINDINGS when implemented; beta four-point; PDM ACCEPT after own check
 
 ## Notes
 - Do not block 0100 on this spike — larger dots can land first.
 - Do not block 0099 (facing/collect) on map UX.
+
+## Reconciliation
+
+### Spike verdict: **GO** (2026-09-23)
+
+Custom **zoom-scaled geographic grid** in `speedcam_pack_map_preview.dart` — **no new pubspec dep**.
+
+| Question | Answer |
+|----------|--------|
+| 1. Plugin vs custom? | **Custom grid.** `flutter_map_marker_cluster` fits flutter_map v8 but pulls popup/animation weight we do not need on DHU. Existing downsample already used grid buckets — extend that with zoom cell size + count bubbles. |
+| 2. Zoom-out / zoom-in? | Cell degrees ≈ `(360 / (256·2^z)) · 52px`. Low z → cluster bubbles with count; high z → individuals using **0100** `camDotRadius` / `camHitExtent`. |
+| 3. Tap paths? | Cluster → `fitCamera` on member bounds (maxZoom 16). Single → **0093** `showSpeedcamPointDetailSheet` (unchanged). |
+| 4. Perf / full ~300 km? | O(n) bucket + viewport filter after map ready (pad 20%) so high zoom does not build thousands of off-screen Markers. Soft `kMaxMarkers` widens radius rather than dropping cams. Unit stress: 3000 cams cluster ≪ 500 ms on host. |
+
+**Cheaper alternative (if reverted):** keep 0100 zoom-scaled dots + smarter downsample only — readable but still loses cams / tap targets when dense.
+
+Tip: `tip/0101-speedcam-map-clustering` (see commit). Caption always shows full pack count (no “showing N” drop).

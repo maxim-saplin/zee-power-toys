@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/services/speedcam.dart';
 import 'package:zee_power_toys/widgets/speedcam_pack_map_preview.dart';
@@ -203,5 +204,87 @@ void main() {
       SpeedcamPackMapPreview.camDotRadius(shownCount: 10, zoom: 15),
     );
     expect(hitZoomed, greaterThan(28.0));
+  });
+
+  // 0101 — zoom-grid clustering (no flutter_map_marker_cluster dep).
+  test('clusterCams merges neighbors at low zoom and splits when zoomed in', () {
+    final cams = [
+      for (var i = 0; i < 9; i++)
+        SpeedcamPoint(
+          id: 'n$i',
+          lat: 53.90 + (i % 3) * 0.002,
+          lon: 27.50 + (i ~/ 3) * 0.002,
+        ),
+    ];
+    final low = SpeedcamPackMapPreview.clusterCams(cams, 9);
+    final high = SpeedcamPackMapPreview.clusterCams(cams, 16);
+    expect(low.length, lessThan(cams.length));
+    expect(low.any((n) => n.isCluster), isTrue);
+    expect(high.length, cams.length);
+    expect(high.every((n) => !n.isCluster), isTrue);
+    expect(low.fold<int>(0, (s, n) => s + n.count), cams.length);
+  });
+
+  test('clusterCams keeps full pack count under soft cap for dense 300km-like pack', () {
+    // ~3k cams on a ~3°×3° grid — rough full-pack stress without device.
+    final cams = [
+      for (var i = 0; i < 3000; i++)
+        SpeedcamPoint(
+          id: 'p$i',
+          lat: 52.0 + (i % 60) * 0.05,
+          lon: 26.0 + (i ~/ 60) * 0.05,
+        ),
+    ];
+    final sw = Stopwatch()..start();
+    final nodesLo = SpeedcamPackMapPreview.clusterCams(cams, 8);
+    final nodesMid = SpeedcamPackMapPreview.clusterCams(cams, 11);
+    final nodesHi = SpeedcamPackMapPreview.clusterCams(cams, 15);
+    sw.stop();
+    expect(nodesLo.length, lessThan(SpeedcamPackMapPreview.kMaxMarkers));
+    expect(nodesLo.length, lessThan(nodesMid.length));
+    expect(nodesMid.fold<int>(0, (s, n) => s + n.count), 3000);
+    expect(nodesHi.fold<int>(0, (s, n) => s + n.count), 3000);
+    // Pure Dart grid — should be well under a frame on desktop CI.
+    expect(sw.elapsedMilliseconds, lessThan(500));
+  });
+
+  test('camsInBounds pads and filters', () {
+    const cams = [
+      SpeedcamPoint(id: 'in', lat: 53.9, lon: 27.5),
+      SpeedcamPoint(id: 'out', lat: 55.0, lon: 29.0),
+    ];
+    final bounds = LatLngBounds(const LatLng(53.85, 27.45), const LatLng(53.95, 27.55));
+    final kept = SpeedcamPackMapPreview.camsInBounds(cams, bounds);
+    expect(kept.map((c) => c.id), ['in']);
+  });
+
+  testWidgets('cluster bubble appears for dense pack at default fit', (tester) async {
+    final cams = [
+      for (var i = 0; i < 40; i++)
+        SpeedcamPoint(
+          id: 'd$i',
+          lat: 53.9 + (i % 5) * 0.001,
+          lon: 27.5 + (i ~/ 5) * 0.001,
+        ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeedcamPackMapPreview(
+            cams: cams,
+            tileProvider: fakeTiles,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    // At assumed zoom 12 before camera sync, tight 40-cam grid should cluster.
+    final clusterTap = find.byWidgetPredicate(
+      (w) =>
+          w is GestureDetector &&
+          w.key is ValueKey<String> &&
+          (w.key as ValueKey<String>).value.startsWith('speedcam-cluster-tap-'),
+    );
+    expect(clusterTap, findsWidgets);
   });
 }

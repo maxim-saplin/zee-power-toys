@@ -8,11 +8,47 @@ import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
 import 'speedcam_point_detail_sheet.dart';
 
+/// One paint node on the pack map: a single cam or a zoom-grid cluster (0101).
+@visibleForTesting
+class SpeedcamMapNode {
+  const SpeedcamMapNode({
+    required this.cams,
+    required this.lat,
+    required this.lon,
+  });
+
+  final List<SpeedcamPoint> cams;
+  final double lat;
+  final double lon;
+
+  bool get isCluster => cams.length > 1;
+  int get count => cams.length;
+
+  SpeedcamPoint get primary => cams.first;
+
+  factory SpeedcamMapNode.fromCams(List<SpeedcamPoint> cams) {
+    assert(cams.isNotEmpty);
+    if (cams.length == 1) {
+      final c = cams.first;
+      return SpeedcamMapNode(cams: cams, lat: c.lat, lon: c.lon);
+    }
+    var lat = 0.0;
+    var lon = 0.0;
+    for (final c in cams) {
+      lat += c.lat;
+      lon += c.lon;
+    }
+    final n = cams.length.toDouble();
+    return SpeedcamMapNode(cams: cams, lat: lat / n, lon: lon / n);
+  }
+}
+
 /// DHU OSM map preview of cached pack cams.
 ///
-/// Real OpenStreetMap tiles via [flutter_map]. Packs above [kMaxMarkers]
-/// (~2000) are downsampled so the DHU stays smooth; typical ≤2000 packs
-/// paint all markers. ODbL credit lives in Speedcam settings; the map shows
+/// Real OpenStreetMap tiles via [flutter_map]. Zoom-scaled grid clustering
+/// (0101) keeps zoomed-out packs readable without a cluster plugin; typical
+/// packs paint every cam when zoomed in. Soft [kMaxMarkers] is a layer-item
+/// safety cap only. ODbL credit lives in Speedcam settings; the map shows
 /// the standard OSM tile attribution chip.
 ///
 /// 0075: expand/collapse + go-to-my-location (host pose; fail loud if none).
@@ -48,14 +84,19 @@ class SpeedcamPackMapPreview extends StatefulWidget {
   @visibleForTesting
   final TileProvider? tileProvider;
 
-  /// High enough that typical harvests (≤~2000 cams) paint every marker (0052).
+  /// Soft cap on painted layer items (clusters + singles) after viewport filter
+  /// + grid cluster. Prefer widening the grid over dropping cams (0101).
   static const int kMaxMarkers = 2000;
+
+  /// Default cluster radius in screen px → geographic cell size at [zoom].
+  @visibleForTesting
+  static const double kClusterRadiusPx = 52;
 
   /// Visible cam-dot radius in logical px (0100).
   ///
   /// Pack density sets a base; zoom scales it up when zoomed in so fat-finger
-  /// taps stay easy while scrolling. Soft caps keep dense packs readable
-  /// (clustering is 0101 — not here).
+  /// taps stay easy while scrolling. Soft caps keep dense packs readable;
+  /// zoom-out density is handled by clustering (0101).
   @visibleForTesting
   static double camDotRadius({
     required int shownCount,
@@ -72,6 +113,65 @@ class SpeedcamPackMapPreview extends StatefulWidget {
   static double camHitExtent(double dotR) =>
       (dotR * 2 + 18).clamp(28.0, 44.0);
 
+  /// Geographic cell size (degrees) for [zoom] at [radiusPx] screen radius.
+  @visibleForTesting
+  static double clusterCellDegrees(
+    double zoom, {
+    double radiusPx = kClusterRadiusPx,
+  }) {
+    final worldPx = 256.0 * math.pow(2.0, zoom.clamp(1.0, 20.0));
+    return math.max(1e-6, (360.0 / worldPx) * radiusPx);
+  }
+
+  /// Zoom-grid cluster: nearby cams merge at low zoom, split when zoomed in.
+  @visibleForTesting
+  static List<SpeedcamMapNode> clusterCams(
+    List<SpeedcamPoint> cams,
+    double zoom, {
+    double radiusPx = kClusterRadiusPx,
+    int maxNodes = kMaxMarkers,
+  }) {
+    if (cams.isEmpty) return const [];
+    var radius = radiusPx;
+    for (var attempt = 0; attempt < 8; attempt++) {
+      final cell = clusterCellDegrees(zoom, radiusPx: radius);
+      final buckets = <String, List<SpeedcamPoint>>{};
+      for (final c in cams) {
+        final i = (c.lat / cell).floor();
+        final j = (c.lon / cell).floor();
+        buckets.putIfAbsent('$i:$j', () => <SpeedcamPoint>[]).add(c);
+      }
+      if (buckets.length <= maxNodes || attempt == 7) {
+        return [
+          for (final group in buckets.values) SpeedcamMapNode.fromCams(group),
+        ];
+      }
+      radius *= 1.55;
+    }
+    return const [];
+  }
+
+  /// Keep cams inside [bounds] (+ fractional pad) so high-zoom layers stay light.
+  @visibleForTesting
+  static List<SpeedcamPoint> camsInBounds(
+    List<SpeedcamPoint> cams,
+    LatLngBounds bounds, {
+    double padFrac = 0.2,
+  }) {
+    final latSpan = (bounds.north - bounds.south).abs();
+    final lonSpan = (bounds.east - bounds.west).abs();
+    final latPad = math.max(latSpan * padFrac, 1e-4);
+    final lonPad = math.max(lonSpan * padFrac, 1e-4);
+    final n = bounds.north + latPad;
+    final s = bounds.south - latPad;
+    final e = bounds.east + lonPad;
+    final w = bounds.west - lonPad;
+    return [
+      for (final c in cams)
+        if (c.lat <= n && c.lat >= s && c.lon <= e && c.lon >= w) c,
+    ];
+  }
+
   static const String _osmTileUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -84,25 +184,44 @@ class SpeedcamPackMapPreview extends StatefulWidget {
 class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
   MapController _mapController = MapController();
   bool _expanded = false;
+  bool _mapReady = false;
 
-  /// Quantized map zoom for cam-dot sizing (0100). Null until first camera report.
+  /// Quantized map zoom for cam-dot sizing (0100) + clustering (0101).
   double? _zoom;
+
+  /// Coarse view-bounds key so pan does not rebuild every pixel.
+  String? _viewKey;
+  LatLngBounds? _viewBounds;
 
   double get _mapHeight =>
       _expanded ? widget.expandedHeight : widget.height;
 
   static double _quantizeZoom(double zoom) => (zoom * 4).round() / 4.0;
 
-  void _onCameraZoom(double zoom) {
-    final q = _quantizeZoom(zoom);
-    if (_zoom == q) return;
-    setState(() => _zoom = q);
+  static String _boundsKey(LatLngBounds b) {
+    String q(double v) => (v * 50).round().toString(); // ~0.02°
+    return '${q(b.south)}:${q(b.west)}:${q(b.north)}:${q(b.east)}';
+  }
+
+  void _syncCamera(MapCamera camera) {
+    final q = _quantizeZoom(camera.zoom);
+    final key = _boundsKey(camera.visibleBounds);
+    if (_zoom == q && _viewKey == key && _mapReady) return;
+    setState(() {
+      _zoom = q;
+      _viewKey = key;
+      _viewBounds = camera.visibleBounds;
+      _mapReady = true;
+    });
   }
 
   void _toggleExpand() {
     setState(() {
       _expanded = !_expanded;
-      _zoom = null; // remount picks up fit zoom via onMapReady
+      _zoom = null;
+      _viewKey = null;
+      _viewBounds = null;
+      _mapReady = false;
       // Fresh controller — reuse across size remounts trips flutter_map assert.
       _mapController = MapController();
     });
@@ -121,6 +240,27 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
       return;
     }
     _mapController.move(LatLng(pose.lat, pose.lon), 13);
+  }
+
+  void _onClusterTap(SpeedcamMapNode node) {
+    if (!node.isCluster) {
+      showSpeedcamPointDetailSheet(context, node.primary);
+      return;
+    }
+    final points = [for (final c in node.cams) LatLng(c.lat, c.lon)];
+    // Degenerate / tiny clusters: nudge so CameraFit has a span, then cap zoom.
+    if (points.length == 1) {
+      final p = points.first;
+      points.add(LatLng(p.latitude + 0.01, p.longitude + 0.01));
+      points.add(LatLng(p.latitude - 0.01, p.longitude - 0.01));
+    }
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(36),
+        maxZoom: 16,
+      ),
+    );
   }
 
   @override
@@ -218,22 +358,29 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
   }
 
   Widget _buildMap(BuildContext context, ColorScheme scheme) {
-    final shown = _downsample(widget.cams, SpeedcamPackMapPreview.kMaxMarkers);
-    final bounds = _fitBounds(shown, widget.meta);
+    final zoom = _zoom ?? 12.0;
+    // Before first camera report, cluster the full pack at assumed fit zoom.
+    // After ready, viewport-filter so high zoom does not build thousands of
+    // off-screen Marker widgets (T2 / full 300 km pack).
+    final sourceCams = (_mapReady && _viewBounds != null)
+        ? SpeedcamPackMapPreview.camsInBounds(widget.cams, _viewBounds!)
+        : widget.cams;
+    final nodes = SpeedcamPackMapPreview.clusterCams(sourceCams, zoom);
+    final bounds = _fitBounds(widget.cams, widget.meta);
     final accent = scheme.primary;
     final centerLat = widget.meta?.centerLat;
     final centerLon = widget.meta?.centerLon;
     final radiusKm = widget.meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
     // 0100: larger visible + hit; zoom-aware (grow when zoomed in).
-    final zoom = _zoom ?? 12.0;
+    // Density base uses full pack size (not viewport slice).
     final dotR = SpeedcamPackMapPreview.camDotRadius(
-      shownCount: shown.length,
+      shownCount: widget.cams.length,
       zoom: zoom,
     );
     final hit = SpeedcamPackMapPreview.camHitExtent(dotR);
     final pose = widget.hostPose;
 
-    // Harvest radius + host pin stay circles; cams are Markers so they tap.
+    // Harvest radius + host pin stay circles; cams/clusters are Markers so they tap.
     final circles = <CircleMarker>[
       if (centerLat != null && centerLon != null) ...[
         CircleMarker(
@@ -261,28 +408,51 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
     ];
 
     final markers = <Marker>[
-      for (final cam in shown)
-        Marker(
-          key: ValueKey('speedcam-cam-marker-${cam.id}'),
-          point: LatLng(cam.lat, cam.lon),
-          width: hit,
-          height: hit,
-          child: GestureDetector(
-            key: ValueKey('speedcam-cam-tap-${cam.id}'),
-            behavior: HitTestBehavior.opaque,
-            onTap: () => showSpeedcamPointDetailSheet(context, cam),
-            child: Center(
-              child: Container(
-                width: dotR * 2,
-                height: dotR * 2,
-                decoration: BoxDecoration(
-                  color: speedcamMarkerColor(cam.source),
-                  shape: BoxShape.circle,
+      for (final node in nodes)
+        if (node.isCluster)
+          Marker(
+            key: ValueKey(
+              'speedcam-cluster-${node.count}-'
+              '${node.lat.toStringAsFixed(4)}-${node.lon.toStringAsFixed(4)}',
+            ),
+            point: LatLng(node.lat, node.lon),
+            width: _clusterExtent(node.count),
+            height: _clusterExtent(node.count),
+            child: GestureDetector(
+              key: ValueKey(
+                'speedcam-cluster-tap-${node.count}-'
+                '${node.lat.toStringAsFixed(4)}-${node.lon.toStringAsFixed(4)}',
+              ),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _onClusterTap(node),
+              child: _ClusterBubble(
+                count: node.count,
+                color: accent,
+              ),
+            ),
+          )
+        else
+          Marker(
+            key: ValueKey('speedcam-cam-marker-${node.primary.id}'),
+            point: LatLng(node.lat, node.lon),
+            width: hit,
+            height: hit,
+            child: GestureDetector(
+              key: ValueKey('speedcam-cam-tap-${node.primary.id}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => showSpeedcamPointDetailSheet(context, node.primary),
+              child: Center(
+                child: Container(
+                  width: dotR * 2,
+                  height: dotR * 2,
+                  decoration: BoxDecoration(
+                    color: speedcamMarkerColor(node.primary.source),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
     ];
 
     return FlutterMap(
@@ -305,11 +475,11 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
         ),
         onMapReady: () {
           if (!mounted) return;
-          _onCameraZoom(_mapController.camera.zoom);
+          _syncCamera(_mapController.camera);
         },
         onPositionChanged: (camera, _) {
           if (!mounted) return;
-          _onCameraZoom(camera.zoom);
+          _syncCamera(camera);
         },
       ),
       children: [
@@ -328,14 +498,16 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
     );
   }
 
+  static double _clusterExtent(int count) {
+    if (count >= 100) return 44;
+    if (count >= 20) return 40;
+    return 36;
+  }
+
   static String _caption(int n, SpeedcamPackMeta? meta) {
     final coverage = meta?.coverageLabel ?? 'within 300 km';
-    // Only mention a cap when we actually downsample — never "showing 400"
-    // for a ~574 pack (0052).
-    final shown = n > SpeedcamPackMapPreview.kMaxMarkers
-        ? ' · showing ${SpeedcamPackMapPreview.kMaxMarkers}'
-        : '';
-    return '$n cameras · $coverage$shown';
+    // Clustering aggregates — caption always shows the full pack count.
+    return '$n cameras · $coverage';
   }
 
   /// Bounds from cam markers (+ harvest center pin). Does **not** expand to the
@@ -361,30 +533,40 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
     }
     return LatLngBounds.fromPoints(points);
   }
+}
 
-  /// Grid-bucket downsample — keeps spatial spread for large packs.
-  static List<SpeedcamPoint> _downsample(List<SpeedcamPoint> cams, int max) {
-    if (cams.length <= max) return cams;
-    var minLat = cams.first.lat;
-    var maxLat = cams.first.lat;
-    var minLon = cams.first.lon;
-    var maxLon = cams.first.lon;
-    for (final c in cams) {
-      minLat = math.min(minLat, c.lat);
-      maxLat = math.max(maxLat, c.lat);
-      minLon = math.min(minLon, c.lon);
-      maxLon = math.max(maxLon, c.lon);
-    }
-    final cells = math.max(8, math.sqrt(max).ceil());
-    final dLat = math.max(1e-9, (maxLat - minLat) / cells);
-    final dLon = math.max(1e-9, (maxLon - minLon) / cells);
-    final buckets = <String, SpeedcamPoint>{};
-    for (final c in cams) {
-      final i = ((c.lat - minLat) / dLat).floor().clamp(0, cells - 1);
-      final j = ((c.lon - minLon) / dLon).floor().clamp(0, cells - 1);
-      buckets.putIfAbsent('$i:$j', () => c);
-      if (buckets.length >= max) break;
-    }
-    return buckets.values.toList();
+class _ClusterBubble extends StatelessWidget {
+  const _ClusterBubble({required this.count, required this.color});
+
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 999 ? '999+' : '$count';
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
+      ),
+    );
   }
 }
