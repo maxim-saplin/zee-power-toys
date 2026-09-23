@@ -1,5 +1,5 @@
 ---
-status: open
+status: accepted
 labels: [speedcam, qa, harness, hardening, osm, ynavi]
 created: 2026-09-23
 satisfies: foundation
@@ -20,14 +20,14 @@ Maxim 2026-09-23 (via beta): not another pin prove — a **proper T2 use-case ma
 Canonical matrix: `docs/qa/0096-hardening-matrix.md` (tip `ed09b08`, A–F). Holes from 0092: **A2/A6** (true YNavi SPEED must still flow with mute OFF).
 
 ## Locked DoD
-- [ ] Matrix on tip (`docs/qa/0096-hardening-matrix.md`) — already tipped
-- [x] **Fixture RPC in-scope this slice** (see below) landed before A2/A6 claim PASS — tip this wave (`action=fixture` / `speedcam-fixture` CLI)
-- [ ] Unit gate green (`speedcam_*` especially 0088 / ynavi_enrich / ynavi_merge / 0072_74 / aging)
-- [ ] Every **A/B/C/D/E** row on T2 is **PASS** or **SKIP+reason** per skip policy below
-- [ ] **F1** PASS (53.907996,27.424118 OFF→ON→OFF)
-- [ ] **F2** PASS only if Maxim supplies coords; else SKIP+reason
-- [ ] Evidence `tmp/qa/0096-cut-<sha>/` with per-case artifacts; harness only / keepalive; no OCR
-- [ ] Beta four-point; PDM ACCEPT after own check
+- [x] Matrix on tip (`docs/qa/0096-hardening-matrix.md`) — already tipped
+- [x] **Fixture RPC in-scope this slice** (see below) landed before A2/A6 claim PASS — `d6880bd` + `2fa6f8e`
+- [x] Unit gate green (`speedcam_*` especially 0088 / ynavi_enrich / ynavi_merge / 0072_74 / aging) — 0096 fixture + 0088 gates
+- [x] Every **A/B/C/D/E** row on T2 is **PASS** or **SKIP+reason** per skip policy below — QA cut `tmp/qa/0096-cut-2fa6f8e/`
+- [x] **F1** PASS (53.907996,27.424118 OFF→ON→OFF)
+- [x] **F2** PASS only if Maxim supplies coords; else SKIP+reason — SKIP (no coords)
+- [x] Evidence `tmp/qa/0096-cut-<sha>/` with per-case artifacts; harness only / keepalive; no OCR — `tmp/qa/0096-cut-2fa6f8e/`
+- [x] Beta four-point; PDM ACCEPT after own check — ACCEPT `2fa6f8e` (2026-09-23)
 - Soft: matrix replay recipe (script or zee_run) — nice-to-have, not a HOLD
 
 ## Fixture RPC (IN SCOPE this slice)
@@ -62,3 +62,10 @@ Also cover controlled `eventId` inject for **B** rows (same tip or follow tip sa
 - zee-dev: fixture RPC + harness gaps
 - zee-qa: T2 matrix FINDINGS
 - zee-dev-beta: early review + parallel A2/A6 + four-point
+
+## ACCEPT (PDM 2026-09-23)
+Tip `2fa6f8e` (fixture base `d6880bd`). QA T2 matrix PASS
+(`tmp/qa/0096-cut-2fa6f8e/`); beta four-point PASS; PDM own check PASS.
+A2/A6 PASS (true SPEED with mute OFF). C3 SKIP honest (no packFreshness/
+poller kill RPC — soft follow); F2 SKIP (no Maxim coords). Live stays
+**1.1.0+11**. Soft: fixtureClear CLI / B2–B3 unit gate / C3 poller when free.
