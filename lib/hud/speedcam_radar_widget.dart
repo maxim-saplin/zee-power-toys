@@ -86,12 +86,18 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     final approachM = snap.approachRadiusM > 0
         ? snap.approachRadiusM
         : cfg.dhuRangeM;
+    // 0092: HUD presence/blips must honor alertLaneCams (service danger already
+    // uses camsForAlert; hudMode=any recomputes from the list we pass here).
+    final hudCams = applyLaneCamAlertFilter(
+      snap.cams,
+      alertLaneCams: cfg.alertLaneCams,
+    );
     // Presence selection for HUD channel (independent of sound mode).
     final modeDanger = forceDemoDanger ??
         resolvePresenceDanger(
           mode: cfg.hudMode,
           host: snap.host,
-          cams: snap.cams,
+          cams: hudCams,
           approachRadiusM: approachM,
           serviceDanger: liveDanger,
         );
@@ -125,7 +131,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     } else if (snap.host != null && cfg.hudMode != SpeedcamPresenceMode.off) {
       final host = snap.host!;
       final heading = host.headingDeg;
-      for (final cam in snap.cams) {
+      for (final cam in hudCams) {
         final d = haversineMetres(host.lat, host.lon, cam.lat, cam.lon);
         if (d > range) continue;
         final absBearing =

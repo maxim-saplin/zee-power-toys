@@ -137,6 +137,11 @@ void registerZeeExtensions({
           'soundEnabled': store.value.speedcam.soundEnabled,
           'soundVolume': store.value.speedcam.soundVolume,
           'dhuRangeM': store.value.speedcam.dhuRangeM,
+          'ynaviEnrichEnabled': store.value.speedcam.ynaviEnrichEnabled,
+          'ynaviCollectEnabled': store.value.speedcam.ynaviCollectEnabled,
+          'ynaviAlertEnabled': store.value.speedcam.ynaviAlertEnabled,
+          'alertLaneCams': store.value.speedcam.alertLaneCams,
+          'dhuSystemOverlay': store.value.speedcam.dhuSystemOverlay,
         },
         'speedKmh': snap?.speedKmh,
         'blinker': <String, Object?>{
@@ -389,6 +394,56 @@ void registerZeeExtensions({
       next = next.copyWith(
         speedcam: next.speedcam.copyWith(
           dhuSystemOverlay: rawDhuOverlay == 'true' || rawDhuOverlay == '1',
+        ),
+      );
+    }
+
+    // 0092/0094 harness: YNavi enrich/alert + lane filter + presence modes.
+    bool? parseBoolParam(String? raw) {
+      if (raw == null) return null;
+      if (raw == 'true' || raw == '1') return true;
+      if (raw == 'false' || raw == '0') return false;
+      return null;
+    }
+
+    final rawEnrich = params['ynaviEnrichEnabled'] ?? params['ynaviEnrich'];
+    final rawCollect = params['ynaviCollectEnabled'] ?? params['ynaviCollect'];
+    final rawYnaviAlert = params['ynaviAlertEnabled'] ?? params['ynaviAlert'];
+    final rawAlertLane = params['alertLaneCams'] ?? params['alertLane'];
+    final rawHudMode = params['hudMode'] ?? params['speedcamHudMode'];
+    final rawSoundMode = params['soundMode'] ?? params['speedcamSoundMode'];
+    final enrich = parseBoolParam(rawEnrich);
+    final collect = parseBoolParam(rawCollect);
+    final yAlert = parseBoolParam(rawYnaviAlert);
+    final alertLane = parseBoolParam(rawAlertLane);
+    SpeedcamPresenceMode? hudMode;
+    if (rawHudMode != null) {
+      hudMode = SpeedcamPresenceMode.values.firstWhere(
+        (e) => e.name == rawHudMode,
+        orElse: () => next.speedcam.hudMode,
+      );
+    }
+    SpeedcamPresenceMode? soundMode;
+    if (rawSoundMode != null) {
+      soundMode = SpeedcamPresenceMode.values.firstWhere(
+        (e) => e.name == rawSoundMode,
+        orElse: () => next.speedcam.soundMode,
+      );
+    }
+    if (enrich != null ||
+        collect != null ||
+        yAlert != null ||
+        alertLane != null ||
+        hudMode != null ||
+        soundMode != null) {
+      next = next.copyWith(
+        speedcam: next.speedcam.copyWith(
+          ynaviEnrichEnabled: enrich,
+          ynaviCollectEnabled: collect,
+          ynaviAlertEnabled: yAlert,
+          alertLaneCams: alertLane,
+          hudMode: hudMode,
+          soundMode: soundMode,
         ),
       );
     }

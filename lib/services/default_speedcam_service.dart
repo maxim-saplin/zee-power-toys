@@ -308,7 +308,7 @@ class DefaultSpeedcamService implements SpeedcamService {
     _camSource = _ynaviOverlay.isEmpty ? 'pack' : 'pack+ynavi';
   }
 
-  /// Cams used for alert/HUD danger when YNavi alert is gated (0074/0088).
+  /// Cams used for alert/HUD danger when YNavi alert is gated (0074/0088/0092).
   List<SpeedcamPoint> get camsForAlert {
     List<SpeedcamPoint> list;
     if (_ynaviEnrichEnabled && _ynaviAlertEnabled) {
@@ -316,15 +316,11 @@ class DefaultSpeedcamService implements SpeedcamService {
     } else {
       list = _cams.where((c) => !c.isYnaviSourced).toList();
     }
-    // 0088: drop pure-YNavi lane cams only — never silence OSM / osm+ynavi
-    // (merge must not inherit LANE onto an OSM speedcam and kill alerts).
-    if (_ynaviEnrichEnabled && _ynaviAlertEnabled && !_alertLaneCams) {
-      list = list
-          .where(
-            (c) => !(isLaneCam(c) &&
-                (c.source == 'ynavi' || c.id.startsWith('ynavi:'))),
-          )
-          .toList();
+    // 0092: drop *all* isLaneCam (pure YNavi and osm+ynavi with stamped LANE).
+    // Field: lane cams still alerted as 60 because HUD/sound used snap.cams and
+    // bd54d10 kept OSM typing on merge — filter must cover both.
+    if (_ynaviEnrichEnabled && _ynaviAlertEnabled) {
+      list = applyLaneCamAlertFilter(list, alertLaneCams: _alertLaneCams);
     }
     return list;
   }
@@ -356,8 +352,9 @@ class DefaultSpeedcamService implements SpeedcamService {
           direction: o.direction,
           source: 'osm+ynavi',
           lastSeenEpochMs: match.lastSeenEpochMs,
-          // Keep OSM typing — do not stamp YNavi LANE onto osm+ynavi.
-          camType: o.camType,
+          // 0092: if YNavi says LANE, stamp it so camsForAlert can mute.
+          // Otherwise keep OSM typing (usually null) — do not invent LANE.
+          camType: isLaneCam(match) ? match.camType : o.camType,
         ));
       } else {
         out.add(o.source == null ? SpeedcamPoint(

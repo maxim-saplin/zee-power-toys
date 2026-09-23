@@ -101,12 +101,24 @@ class SpeedcamPoint {
       );
 }
 
-/// 0088: YNavi lane-control cam (type/tags contain `LANE`).
+/// 0088/0092: YNavi lane-control cam (type/tags contain `LANE`).
+///
+/// Real bridge tags look like `SPEED_CONTROL,LANE_CONTROL,POLICE` (see
+/// ynavi-zee SpeedCamBroadcaster) — still a lane cam for alert purposes.
 bool isLaneCam(SpeedcamPoint cam) {
   final raw = (cam.camType ?? '').toUpperCase();
   if (!raw.contains('LANE')) return false;
   // Speed-only labels without LANE already fail the check above.
   return true;
+}
+
+/// 0092: drop lane cams from alert/HUD/sound lists when [alertLaneCams] is off.
+List<SpeedcamPoint> applyLaneCamAlertFilter(
+  List<SpeedcamPoint> cams, {
+  required bool alertLaneCams,
+}) {
+  if (alertLaneCams) return cams;
+  return cams.where((c) => !isLaneCam(c)).toList(growable: false);
 }
 
 /// Host vehicle position for proximity (T1 inject / later GPS).

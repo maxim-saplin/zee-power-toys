@@ -159,8 +159,8 @@ void main() {
     });
   });
 
-  group('osm+ynavi merge must not silence OSM', () {
-    test('merge does not stamp YNavi LANE onto OSM camType', () {
+  group('0092 osm+ynavi LANE stamp + filter', () {
+    test('merge stamps YNavi LANE onto osm+ynavi at known pin', () {
       final osm = [
         const SpeedcamPoint(
           id: 'osm-1',
@@ -177,17 +177,42 @@ void main() {
           lon: 27.424118,
           maxspeed: 60,
           source: 'ynavi',
-          camType: 'LANE',
+          camType: 'SPEED_CONTROL,LANE_CONTROL,POLICE',
         ),
       ];
       final merged = DefaultSpeedcamService.mergeOsmWithYnavi(osm, ynavi);
       expect(merged, hasLength(1));
       expect(merged.single.source, 'osm+ynavi');
+      expect(merged.single.camType, 'SPEED_CONTROL,LANE_CONTROL,POLICE');
+      expect(isLaneCam(merged.single), isTrue);
+    });
+
+    test('merge does not invent LANE when YNavi is speed-only', () {
+      final osm = [
+        const SpeedcamPoint(
+          id: 'osm-speed',
+          lat: 53.9,
+          lon: 27.56,
+          maxspeed: 60,
+          source: 'overpass',
+        ),
+      ];
+      final ynavi = [
+        const SpeedcamPoint(
+          id: 'ynavi:speed',
+          lat: 53.9,
+          lon: 27.56,
+          maxspeed: 60,
+          source: 'ynavi',
+          camType: 'SPEED_CONTROL,POLICE',
+        ),
+      ];
+      final merged = DefaultSpeedcamService.mergeOsmWithYnavi(osm, ynavi);
       expect(merged.single.camType, isNull);
       expect(isLaneCam(merged.single), isFalse);
     });
 
-    test('camsForAlert keeps osm+ynavi even if camType were LANE', () {
+    test('camsForAlert excludes osm+ynavi LANE when alertLaneCams OFF', () {
       final s = DefaultSpeedcamService(
         packStore: FakeSpeedcamPackStore(cams: const []),
         fallbackCams: const [
@@ -203,7 +228,37 @@ void main() {
       );
       s.setYnaviEnrichEnabled(true);
       s.setYnaviAlertEnabled(true);
+      expect(s.camsForAlert.any((c) => c.id == 'osm-x'), isFalse);
+      s.setAlertLaneCams(true);
       expect(s.camsForAlert.any((c) => c.id == 'osm-x'), isTrue);
+    });
+
+    test('applyLaneCamAlertFilter drops LANE for HUD/sound lists', () {
+      const lane = SpeedcamPoint(
+        id: 'ynavi:pin',
+        lat: 53.907996,
+        lon: 27.424118,
+        maxspeed: 60,
+        source: 'ynavi',
+        camType: 'SPEED_CONTROL,LANE_CONTROL,POLICE',
+      );
+      const speed = SpeedcamPoint(
+        id: 'ynavi:speed',
+        lat: 53.91,
+        lon: 27.43,
+        maxspeed: 60,
+        source: 'ynavi',
+        camType: 'SPEED_CONTROL,POLICE',
+      );
+      final filtered = applyLaneCamAlertFilter(
+        const [lane, speed],
+        alertLaneCams: false,
+      );
+      expect(filtered.map((c) => c.id), ['ynavi:speed']);
+      expect(
+        applyLaneCamAlertFilter(const [lane, speed], alertLaneCams: true),
+        hasLength(2),
+      );
     });
   });
 }
