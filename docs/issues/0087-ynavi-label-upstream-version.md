@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [ynavi, publish]
 created: 2026-09-22
 satisfies: foundation
@@ -7,6 +7,8 @@ blocked-by: []
 modules: [InstallScreen, ynavi-zee]
 tier: T2
 tip: 1299105
+accepted: 2026-09-23
+evidence: tmp/qa/0087-cut/
 ---
 
 # 0087 — YNavi release label should show upstream major+build
@@ -26,8 +28,8 @@ Release tag / asset filenames used an **internal mod counter** (`ynavi-zeekr-v12
 ## Definition of Done
 - [x] UI + Release naming show upstream YNavi version for both variants — tipped (code/docs; PDM cuts GH Release)
 - [x] Docs/README cards match — tipped
-- [ ] PDM creates/uploads Release `ynavi-zeekr-v27.0.2` assets (Deepal + both Zeekr)
-- [ ] PDM ACCEPT after double-check
+- [x] PDM creates/uploads Release `ynavi-zeekr-v27.0.2` assets (Deepal + both Zeekr)
+- [x] PDM ACCEPT after double-check
 
 ## QA recipe (T2 / docs)
 1. Open Install — YNavi cards titled with **v27.0.2** (not v12).
@@ -35,3 +37,7 @@ Release tag / asset filenames used an **internal mod counter** (`ynavi-zeekr-v12
 3. After PDM Release exists: Install → YNavi download URL resolves under that tag (no 404).
 4. Optional: installed YNavi About / `dumpsys package` versionName matches **27.0.2**.
 5. Unit: `flutter test test/services/install_targets_upstream_label_test.dart`.
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 — UI v27.0.2; Release ynavi-zeekr-v27.0.2 published + downloads resolve.
+Evidence: `tmp/qa/0087-cut/`

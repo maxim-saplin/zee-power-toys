@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: qa-pass
 labels: [agent, harness, dx]
 created: 2026-09-22
 tipped: 2026-09-23
@@ -10,6 +10,9 @@ tier: T2
 owner: zee-dev
 priority: next
 filed-by: zee-pdm
+tip: 081431f
+accepted: 2026-09-23
+evidence: tmp/qa/0089-cut/
 ---
 
 # 0089 — Agent app-drive harness (stop OCR/tap thrash)
@@ -44,3 +47,7 @@ UI fallback keys: `nav-speedcam`, `speedcam-dhu-system-overlay`, `speedcam-hud-d
 - [x] Reliable one-command (or short recipe) to force Demo + Overlay ON/OFF without OCR
 - [x] Skill updated; SI.md notes the anti-pattern
 - [ ] QA uses harness for next Overlay/Demo cuts without pixel guessing
+
+## ACCEPT notes
+QA PASS 2026-09-23 — speedcam-demo on|off Demo+Overlay; awaiting PDM ACCEPT for 1.1.0.
+Evidence: `tmp/qa/0089-cut/`

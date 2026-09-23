@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [install, ux]
 created: 2026-09-22
 satisfies: foundation
@@ -7,6 +7,8 @@ blocked-by: []
 modules: [InstallScreen, AppSelfUpdate, InstallerController]
 tier: T2
 tip: 88c6aa6
+accepted: 2026-09-23
+evidence: tmp/qa/0086-cut/
 ---
 
 # 0086 — Install progress bar goes backwards after download
@@ -30,8 +32,8 @@ Both `_SelfUpdateCard` and `_InstallCard` bound `LinearProgressIndicator.value` 
 
 ## Definition of Done
 - [x] Download phase stays determinate; install phase does not look like progress reversing — tipped
-- [ ] T2 recording / screenshots of Update flow (PDM QA)
-- [ ] PDM ACCEPT after double-check
+- [x] T2 recording / screenshots of Update flow (PDM QA)
+- [x] PDM ACCEPT after double-check
 
 ## QA recipe (T2)
 1. Install screen → tap **Install** on Launcher or YNavi (or **Update** if a newer release is available).
@@ -39,3 +41,7 @@ Both `_SelfUpdateCard` and `_InstallCard` bound `LinearProgressIndicator.value` 
 3. Expect: bar fills 0→100% during **Downloading…**; on **Installing…** it becomes an **indeterminate** (sliding) bar — never drops a few %; on **Done** it sits at full.
 4. Optional parallel with 0084: Update + YNavi together — each card still monotonic / install-spinner independently.
 5. logcat `ZEE/Installer`: `phase=downloading fraction=…` up to ~1.0, then `phase=installing fraction=1.0`, then `phase=done fraction=1.0`.
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 — download→install stays at 1.0 / indeterminate; no 0.8 backstep.
+Evidence: `tmp/qa/0086-cut/`

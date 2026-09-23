@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [install, race]
 created: 2026-09-22
 satisfies: foundation
@@ -7,6 +7,8 @@ blocked-by: []
 modules: [InstallScreen, AppSelfUpdate, InstallerController, NativeInstaller]
 tier: T2
 tip: a07a549
+accepted: 2026-09-23
+evidence: tmp/qa/0084-cut/
 ---
 
 # 0084 — Parallel toys Update + YNavi Install race
@@ -31,8 +33,8 @@ Not a shared PackageInstaller session id collision; not concurrent adb. Progress
 ## Definition of Done
 - [x] Reproduce root cause from code (EventChannel steal) — tipped
 - [x] Isolate installers so both complete correctly (multiplex + defer self-update commit)
-- [ ] Runtime evidence on T2 (PDM QA)
-- [ ] PDM ACCEPT after double-check
+- [x] Runtime evidence on T2 (PDM QA)
+- [x] PDM ACCEPT after double-check
 
 ## QA recipe (T2)
 1. Install screen: Check for Update so Update button is enabled (needs a newer GH release than the build under test, or sideload an older build).
@@ -41,3 +43,7 @@ Not a shared PackageInstaller session id collision; not concurrent adb. Progress
 4. Expect: YNavi reaches Done first (or at least commits) while Update may show “installing” then the app restarts from the toys APK.
 5. After restart: YNavi package present (`com.yandex.yandexnavi` / device package probe) and toys version matches the release just installed.
 6. logcat `ZEE/Installer`: one EventChannel subscribe; two `startInstall` lines; self-update line `waiting for N companion` then `companions clear — committing`.
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 — overlap Update+YNavi both commit; companions clear.
+Evidence: `tmp/qa/0084-cut/`

@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accept
 labels: [usb]
 created: 2026-09-22
 satisfies: foundation
@@ -7,6 +7,8 @@ blocked-by: []
 modules: [UsbAdbScreen, NativeUsbMode]
 tier: T3
 tip: efe1f35
+accepted: 2026-09-23
+evidence: tmp/qa/0085-cut/
 ---
 
 # 0085 — USB mode UI shows Peripheral while actually Host
@@ -32,8 +34,8 @@ app (zSupport) had set `persist.usb.mode=1`.
 
 ## Definition of Done
 - [x] Read actual USB role from system (not stale default) — tipped
-- [ ] Car or instrumented T2 evidence Host vs Peripheral matches UI (PDM QA)
-- [ ] PDM ACCEPT after double-check
+- [x] Car or instrumented T2 evidence Host vs Peripheral matches UI (PDM QA)
+- [x] PDM ACCEPT after double-check
 
 ## QA recipe (T3 / car)
 1. With device in Host (`adb shell getprop persist.usb.mode` → `1`), force-stop
@@ -43,3 +45,7 @@ app (zSupport) had set `persist.usb.mode=1`.
    without launching zSupport.
 4. Flip to Peripheral via zSupport, force-stop Zee, cold-open again → must show
    Peripheral.
+
+## ACCEPT notes
+PDM ACCEPT 2026-09-23 — cold-open reads live persist.usb.mode (widget Host + T2 peripheral).
+Evidence: `tmp/qa/0085-cut/`
