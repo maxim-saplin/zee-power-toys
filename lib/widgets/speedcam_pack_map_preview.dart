@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../services/speedcam.dart';
 import '../services/speedcam_pack_store.dart';
+import 'speedcam_point_detail_sheet.dart';
 
 /// DHU OSM map preview of cached pack cams.
 ///
@@ -191,8 +192,10 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
     final centerLon = widget.meta?.centerLon;
     final radiusKm = widget.meta?.radiusKm ?? kSpeedcamHarvestRadiusKm;
     final dotR = shown.length > 200 ? 2.0 : (shown.length > 80 ? 2.5 : 3.5);
+    final hit = (dotR * 2 + 14).clamp(22.0, 28.0);
     final pose = widget.hostPose;
 
+    // Harvest radius + host pin stay circles; cams are Markers so they tap.
     final circles = <CircleMarker>[
       if (centerLat != null && centerLon != null) ...[
         CircleMarker(
@@ -209,12 +212,6 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
           color: accent,
         ),
       ],
-      for (final cam in shown)
-        CircleMarker(
-          point: LatLng(cam.lat, cam.lon),
-          radius: dotR,
-          color: const Color(0xFFFF6B4A),
-        ),
       if (pose != null)
         CircleMarker(
           point: LatLng(pose.lat, pose.lon),
@@ -222,6 +219,31 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
           color: const Color(0xFF4FC3F7),
           borderStrokeWidth: 2,
           borderColor: Colors.white,
+        ),
+    ];
+
+    final markers = <Marker>[
+      for (final cam in shown)
+        Marker(
+          key: ValueKey('speedcam-cam-marker-${cam.id}'),
+          point: LatLng(cam.lat, cam.lon),
+          width: hit,
+          height: hit,
+          child: GestureDetector(
+            key: ValueKey('speedcam-cam-tap-${cam.id}'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => showSpeedcamPointDetailSheet(context, cam),
+            child: Center(
+              child: Container(
+                width: dotR * 2,
+                height: dotR * 2,
+                decoration: BoxDecoration(
+                  color: speedcamMarkerColor(cam.source),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
         ),
     ];
 
@@ -252,6 +274,7 @@ class _SpeedcamPackMapPreviewState extends State<SpeedcamPackMapPreview> {
           tileProvider: widget.tileProvider,
         ),
         CircleLayer(circles: circles),
+        MarkerLayer(markers: markers),
         const SimpleAttributionWidget(
           source: Text('OpenStreetMap'),
         ),

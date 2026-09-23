@@ -1,5 +1,5 @@
 ---
-status: open
+status: tipped
 labels: [speedcam, flutter, preview, dx, osm, ynavi]
 created: 2026-09-23
 satisfies: foundation
@@ -30,3 +30,6 @@ Maxim 2026-09-23: in the **current Flutter preview**, click/tap **any** speedcam
 
 ## Why now
 Required to debug 0092 lane/speed mis-typing and future enrich bugs without adb dumps.
+
+## Tip
+Flutter preview: tap map marker or DB sample → bottom sheet with full `SpeedcamPoint` fields + OSM↔YNavi merge provenance. Live snapshot cams preferred on map (so `osm+ynavi` shows). Marker colors: coral OSM / purple YNavi / amber merged. ValueKeys: `speedcam-cam-tap-<id>`, `speedcam-db-sample-<id>`, `speedcam-cam-detail*`.

@@ -14,6 +14,7 @@ import '../services/default_speedcam_service.dart';
 import '../services/speedcam_pack_store.dart';
 import '../widgets/settings_layout.dart';
 import '../widgets/speedcam_pack_map_preview.dart';
+import '../widgets/speedcam_point_detail_sheet.dart';
 import '../services/fakes/fake_speedcam_service.dart';
 
 /// Speedcam settings — harvest/DB first (0037), then radar (0034).
@@ -245,6 +246,10 @@ class _SpeedcamSettingsScreenState
                 ? '${age.inHours}h'
                 : '${age.inMinutes}m';
     final stale = meta?.isStale(afterDays: sc.staleAfterDays) ?? true;
+    // Live service cams include osm+ynavi merge; pack alone is OSM-only.
+    final liveCams = ref.watch(speedcamSnapshotProvider).cams;
+    final mapCams = liveCams.isNotEmpty ? liveCams : _allCams;
+    final sampleCams = pickSpeedcamSampleCams(mapCams.isNotEmpty ? mapCams : _sampleCams);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.speedcamTitle)),
@@ -555,7 +560,7 @@ class _SpeedcamSettingsScreenState
             title: l10n.speedcamDbSection,
             children: [
               SpeedcamPackMapPreview(
-                cams: _allCams,
+                cams: mapCams,
                 meta: meta,
                 hostPose: ref.watch(speedcamSnapshotProvider).host,
                 expandTooltip: l10n.speedcamMapExpand,
@@ -700,21 +705,25 @@ class _SpeedcamSettingsScreenState
               ),
             ],
           ),
-          if (_sampleCams.isNotEmpty) ...[
+          if (sampleCams.isNotEmpty) ...[
             const SizedBox(height: 16),
             SettingsSection(
               title: l10n.speedcamDbSample,
               children: [
-                ..._sampleCams.map(
+                ...sampleCams.map(
                   (c) => ListTile(
+                    key: ValueKey('speedcam-db-sample-${c.id}'),
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(c.id),
                     subtitle: Text(
                       '${c.lat.toStringAsFixed(4)}, ${c.lon.toStringAsFixed(4)}'
                       '${c.maxspeed != null ? ' · ${c.maxspeed}' : ''}'
-                      '${c.direction != null ? ' · ${c.direction}' : ''}',
+                      '${c.direction != null ? ' · ${c.direction}' : ''}'
+                      ' · ${speedcamSourceLabel(c.source)}',
                     ),
+                    trailing: const Icon(Icons.info_outline, size: 20),
+                    onTap: () => showSpeedcamPointDetailSheet(context, c),
                   ),
                 ),
               ],

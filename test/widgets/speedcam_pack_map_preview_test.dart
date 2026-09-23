@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/services/speedcam.dart';
 import 'package:zee_power_toys/widgets/speedcam_pack_map_preview.dart';
+import 'package:zee_power_toys/widgets/speedcam_point_detail_sheet.dart';
 
 /// 1×1 transparent PNG — avoids network tile fetches in widget tests.
 final Uint8List _kTinyPng = Uint8List.fromList(
@@ -107,6 +108,38 @@ void main() {
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.byType(TileLayer), findsOneWidget);
     expect(find.byType(CircleLayer), findsOneWidget);
+    expect(find.byType(MarkerLayer), findsOneWidget);
+  });
+
+  testWidgets('tap cam marker opens metadata sheet with provenance', (tester) async {
+    final cams = [
+      const SpeedcamPoint(
+        id: 'osm-tap-1',
+        lat: 53.9,
+        lon: 27.5,
+        maxspeed: 70,
+        source: 'osm+ynavi',
+        lastSeenEpochMs: 123,
+      ),
+    ];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SpeedcamPackMapPreview(
+            cams: cams,
+            tileProvider: fakeTiles,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('speedcam-cam-tap-osm-tap-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('speedcam-cam-tap-osm-tap-1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('speedcam-cam-detail')), findsOneWidget);
+    expect(find.text('osm-tap-1'), findsOneWidget);
+    expect(find.textContaining('osm+ynavi'), findsWidgets);
+    expect(speedcamMarkerColor('osm+ynavi'), const Color(0xFFFFB300));
   });
 
   testWidgets('caption omits showing-cap for packs under kMaxMarkers', (tester) async {
