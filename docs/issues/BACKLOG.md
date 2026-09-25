@@ -1,6 +1,7 @@
 # Issues — the backlog & board
 
 - [ ] **0097** YNavi mod hardening matrix (v27 + v30 on T2) — see `0097-ynavi-mod-hardening-matrix.md`
+- [ ] **0103** Install Update vs Reinstall + YNavi/Launcher version align — see `0103-install-update-vs-reinstall.md`
 - [ ] **0102** Other traffic cams false speedcam alerts (3rd pass; RCA in tmp/qa/0102-other-traffic-cams-rca/) — see `0102-other-traffic-cams-false-alert.md`
 
 The single ledger of work. Each row is a **Block** (ADR 0007): a thin vertical slice of delivered value, **runtime-confirmed**. A Block *points at* its two stable references — it does not restate them:

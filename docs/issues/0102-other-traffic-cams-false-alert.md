@@ -10,7 +10,7 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 parent: [0088, 0092, 0099]
-gate: maxim-ok-on-rca-before-code
+gate: armed-2026-09-25
 evidence-rca: tmp/qa/0102-other-traffic-cams-rca/
 ---
 
@@ -28,7 +28,7 @@ Maxim 2026-09-25 (car, morning): false speedcam alerts at four pins that are **t
 
 **HARD:** This is the **3rd attempt** (after 0088 / 0092). Complete RCA + repro must exist before code. Product name for the filter/toggle: **"Other traffic cams"** — **not** exclusively “lane cams”.
 
-**FIX GATE:** Do **not** start implementation until Maxim arms after reviewing `tmp/qa/0102-other-traffic-cams-rca/`.
+**ARMED 2026-09-25:** Maxim GO — implement now. RCA remains the contract: `tmp/qa/0102-other-traffic-cams-rca/`.
 
 ## RCA summary (2026-09-25 — verified, no code)
 
@@ -54,7 +54,7 @@ Full writeup: [`tmp/qa/0102-other-traffic-cams-rca/`](../../tmp/qa/0102-other-tr
 
 ## Definition of Done
 - [x] Complete RCA + repro on disk (`tmp/qa/0102-other-traffic-cams-rca/`) — **done 2026-09-25**
-- [ ] Maxim OK / arm after RCA review
+- [x] Maxim OK / arm after RCA review (2026-09-25 — GO fix + Update/Reinstall scope)
 - [ ] Fix on tip with **"Other traffic cams"** naming (not lane-only)
 - [ ] T2 evidence: fixture `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE` at P2 does **not** alert @ defaults; alerts when toggle ON; LANE control still muted
 - [ ] Optional roadside confirm: logcat `SPEEDCAM_DATA` tags at P1–P4
