@@ -1,5 +1,5 @@
 ---
-status: ready-for-qa
+status: accepted
 labels: [hud, battery, range, honesty, adapt]
 created: 2026-09-25
 satisfies: Own estimated range that reconciles with observed SoC / distance / consumption
@@ -9,6 +9,9 @@ blocked-by: []  # prefer after 0106 then 0107 (one Tablet); may supersede 0105 E
 modules: [RangeEstimator, RangeEstimateService, BatteryWidget / settings help]
 priority: now
 filed-by: zee-pdm
+tip: 11ae3cd
+accepted: 2026-09-25
+evidence: tmp/qa/0108-cut-11ae3cd/
 related: [0105, 0107]
 parent: [0105]
 ---
@@ -52,7 +55,7 @@ single opaque EWMA:
 - [x] 0107 polish still applies if already landed: always-show marker when ON,
   no `~`, smaller `km`, smaller `%`, and enough width for one line. Do not
   regress it.
-- [ ] QA FINDINGS T2 dens320 + PDM ACCEPT.
+- [x] QA FINDINGS T2 dens320 + PDM ACCEPT — PASS / ACCEPT `11ae3cd` (2026-09-25).
 - [ ] Soft: car T3 live honesty check.
 - [ ] No Live bump until Maxim GO after ACCEPT.
 
@@ -72,6 +75,10 @@ single opaque EWMA:
 `flutter test` — `test/services/range_estimator_test.dart` (empty/short, 50 km trim, 3/10 overweight, 1 km refresh, Adapt-ballpark fixtures, regen/charge/gap, persist+migrate), `test/widgets/battery_widget_test.dart`, `test/hud/battery_geometry_test.dart`.
 
 **Divergence:** None from scope; change-only. Soft: car T3 live honesty check.
+
+## ACCEPT (PDM 2026-09-25)
+
+Tip `11ae3cd` (1.1.0+21; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0108-cut-11ae3cd/`); 70/70 tests PASS, including the ~50 km trim, heavier last 10/3 km, and ~1 km refresh cadence. EN/RU help explains the window and weighting and says the result is not the car's Adapt range; 0107 presentation remains intact. Soft: hint copy is stale versus the always-show pending marker; car T3 honesty check remains open. Neither soft is a blocker.
 
 ## Notes for agents
 

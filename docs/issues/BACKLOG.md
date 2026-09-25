@@ -1,5 +1,8 @@
 # Issues — the backlog & board
 
+- [x] **0108** Own-range honesty window (~50 km, heavier recent 10/3 km) — ACCEPT `11ae3cd` — `0108-own-range-honesty-window.md`
+- [x] **0107** Own-range HUD polish (always-visible pending + typography/layout) — ACCEPT `e1c3419` — `0107-own-range-hud-polish.md`
+- [x] **0106** Overlay size slider scales window + CRT content — ACCEPT `488d7ec` — `0106-overlay-size-noop.md`
 - [x] **0105** Own estimated range beside battery % (toggle + plain how) — ACCEPT `97784bb` — `0105-hud-own-range-estimate.md`
 - [x] **0104** HUD drive-mode change toast 5 s fade — ACCEPT `bc48d13` — `0104-hud-drive-mode-toast.md`
 - [ ] **0097** YNavi mod hardening matrix (v27 + v30 on T2) — see `0097-ynavi-mod-hardening-matrix.md`

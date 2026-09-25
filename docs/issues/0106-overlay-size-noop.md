@@ -1,5 +1,5 @@
 ---
-status: ready-for-qa
+status: accepted
 labels: [speedcam, overlay, hud, dhu]
 created: 2026-09-25
 satisfies: Overlay size slider actually changes system overlay size when Overlay ON
@@ -9,6 +9,9 @@ blocked-by: []
 modules: [SpeedcamSystemOverlay, Speedcam settings, SpeedcamConfig.overlaySizeScale]
 priority: now
 filed-by: zee-pdm
+tip: 488d7ec
+accepted: 2026-09-25
+evidence: tmp/qa/0106-cut-488d7ec/
 ---
 
 # 0106 — Overlay size slider has no visible effect
@@ -38,7 +41,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 - [x] The change is live; no Overlay toggle off/on is required, and it persists across relaunch.
 - [x] Placement still works; Overlay OFF still hides size chrome.
 - [x] Unit/widget coverage verifies scale application to layout and content if that is the bug.
-- [ ] QA FINDINGS on tip + PDM ACCEPT.
+- [x] QA FINDINGS on tip + PDM ACCEPT — PASS / ACCEPT `488d7ec` (2026-09-25).
 
 ## Reconciliation
 
@@ -53,6 +56,10 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 **Verification:** `flutter test` — geometry overlay px (0.6/1.0/1.6 @ dens2), successive `setLayout` recording, Alien CRT fills 168×123 vs 448×329 slots; analyzer clean on touched Dart. Live bump **not** done (Maxim GO after ACCEPT). Soft: car T3 still open for QA.
 
 **Divergence:** None from scope; change-only.
+
+## ACCEPT (PDM 2026-09-25)
+
+Tip `488d7ec` (1.1.0+21; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0106-cut-488d7ec/`); 12/12 related tests PASS; live 0.6×→1.6× drag resized the overlay window and Alien CRT content without toggling Overlay; placement, OFF chrome, and relaunch persistence PASS. Soft: car T3 confirmation remains open.
 
 ## Notes
 

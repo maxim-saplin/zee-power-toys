@@ -1,5 +1,5 @@
 ---
-status: ready-for-qa
+status: accepted
 labels: [hud, battery, range, polish]
 created: 2026-09-25
 satisfies: Own estimated range HUD — always visible when ON + typography/layout polish
@@ -9,6 +9,9 @@ blocked-by: []
 modules: [BatteryWidget, RangeEstimator, BatteryConfig.showOwnRangeEstimate]
 priority: now
 filed-by: zee-pdm
+tip: e1c3419
+accepted: 2026-09-25
+evidence: tmp/qa/0107-cut-e1c3419/
 related: [0105]
 ---
 
@@ -38,7 +41,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 - [x] Toggle OFF → % only (unchanged intent).
 - [x] Help copy still says estimate is not the car’s range.
 - [x] Units/widget tests updated. Soft: car T3.
-- [ ] QA FINDINGS on tip + PDM ACCEPT. Soft: car T3.
+- [x] QA FINDINGS on tip + PDM ACCEPT — PASS / ACCEPT `e1c3419` (2026-09-25). Soft: car T3.
 
 
 ## Reconciliation
@@ -57,6 +60,10 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 `flutter test` — `test/widgets/battery_widget_test.dart` (0107 pending/ready/justText typography), `test/hud/battery_geometry_test.dart` (own-range width), `test/services/range_estimator_test.dart`. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope; change-only. Soft: car T3.
+
+## ACCEPT (PDM 2026-09-25)
+
+Tip `e1c3419` (1.1.0+21; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0107-cut-e1c3419/`); 63/63 widget, geometry, and estimator tests PASS. OFF stays percentage-only; ON with no history shows `… km`; ready state shows `360 km` without `~`, with smaller `km`/`%` and one-line layout. Soft: hint copy is stale versus the always-show pending marker; car T3 remains open. Neither soft is a blocker.
 
 ## Notes
 
