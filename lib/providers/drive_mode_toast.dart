@@ -18,8 +18,9 @@ class DriveModeToast {
   final Duration hold;
 }
 
-/// Change-only toast: cold-open / first snapshot baseline does **not** show;
-/// subsequent [DriveModeEvent]s with a different known mode do.
+/// Change-only toast (0104 FAIL fix): never toast on cold-open / seed /
+/// first known observation after [DriveMode.unknown] bootstrap. Toast only
+/// when mode changes from a previously known mode to a different known mode.
 final driveModeToastProvider =
     NotifierProvider<DriveModeToastNotifier, DriveModeToast?>(
   DriveModeToastNotifier.new,
@@ -58,6 +59,12 @@ class DriveModeToastNotifier extends Notifier<DriveModeToast?> {
       return;
     }
     if (mode == DriveMode.unknown) return;
+    // First known value after unknown / empty baseline — seed & cold-open.
+    // Must NOT toast (PDM 2026-09-25 FAIL: change-only).
+    if (_seen == null) {
+      _seen = mode;
+      return;
+    }
     if (mode == _seen) return;
     _seen = mode;
     _hide?.cancel();

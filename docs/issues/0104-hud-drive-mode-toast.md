@@ -42,7 +42,8 @@ Maxim 2026-09-25: when the driver picks a drive mode, show a short **HUD animati
 
 ## Reconciliation
 **2026-09-25 tip:** HUD drive-mode change toast.
-**Tip SHA:** 30a390b
+**FAIL fix tip:** cold-open / first-known-after-unknown never toasts.
+**Tip SHA:** 6e1aa6f
 
 ### Mapping (`0x22010100`)
 ECarX Adapt emits raw ints in the function-id family `0x22010100 + n` (field notes / LynkCoTrack AdaptAPI):
@@ -58,6 +59,10 @@ ECarX Adapt emits raw ints in the function-id family `0x22010100 + n` (field not
 Small ordinals `1..14` accepted as soft fallback. Adapt start **seeds snapshot without emitting** (change-only). Kotlin `publishDriveMode` suppresses same-mode re-emits.
 
 ### Toast
+**FAIL fix (2026-09-25):** first known observation after `bootstrap(unknown)` /
+HUD seed `DriveModeEvent` is baseline only — **no toast**. Toast only when
+mode changes from a previously known mode to a different known mode.
+
 - Hold ~5 s then fade (~450 ms); top-centre Safe Area (clear of blinker edges, battery, Alien radar).
 - HUD Off tears down engine → no toast. Simulate / live HudRoot preview shows toast.
 
