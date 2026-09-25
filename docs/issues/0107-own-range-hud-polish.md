@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: ready-for-qa
 labels: [hud, battery, range, polish]
 created: 2026-09-25
 satisfies: Own estimated range HUD — always visible when ON + typography/layout polish
@@ -32,13 +32,33 @@ Maxim 2026-09-25 ~21:53 Minsk (after Live 1.1.0+21 / 0105):
 
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
-- [ ] Toggle ON + no ready estimate → visible pending marker beside/near % (not identical to OFF).
-- [ ] Toggle ON + ready → `N km` without `~`; km smaller than digits; % slightly smaller than before.
-- [ ] Battery+range stays one line (no wrap) on Tablet dens320 HUD / justText and default pack looks — widen panel as needed.
-- [ ] Toggle OFF → % only (unchanged intent).
-- [ ] Help copy still says estimate is not the car’s range.
-- [ ] Units/widget tests updated; QA FINDINGS + PDM ACCEPT. Soft: car T3.
+- [x] Toggle ON + no ready estimate → visible pending marker beside/near % (not identical to OFF).
+- [x] Toggle ON + ready → `N km` without `~`; km smaller than digits; % slightly smaller than before.
+- [x] Battery+range stays one line (no wrap) on Tablet dens320 HUD / justText and default pack looks — widen panel as needed.
+- [x] Toggle OFF → % only (unchanged intent).
+- [x] Help copy still says estimate is not the car’s range.
+- [x] Units/widget tests updated. Soft: car T3.
+- [ ] QA FINDINGS on tip + PDM ACCEPT. Soft: car T3.
+
+
+## Reconciliation
+
+**2026-09-25 tip:** Own-range ON always shows chrome; drop `~`; typography + slot width.
+
+### Changes
+1. **Pending (ON + !ready):** `N% · … km` via `_SocRangeLabel` — not identical to OFF bare `%`.
+2. **Ready:** `N% · N km` — tilde removed.
+3. **Typography:** SoC/`%` at 0.90× label size; range digits full size; `km` at 0.70×.
+4. **Layout:** When toggle ON, SoC+range renders **below** the pack (not inside DualColor). Slot width floor `kBatterySlotWidthFracOwnRange` (0.18). `softWrap: false` / `maxLines: 1`.
+5. **OFF:** `%` only (dual-color inside pack unchanged for default batteryText).
+6. Help hint unchanged (still “not the car’s range”). No Live bump (`1.1.0+21`). 0108 honesty window **not** touched.
+
+### Verification
+`flutter test` — `test/widgets/battery_widget_test.dart` (0107 pending/ready/justText typography), `test/hud/battery_geometry_test.dart` (own-range width), `test/services/range_estimator_test.dart`. `dart analyze` clean on touched Dart.
+
+**Divergence:** None from scope; change-only. Soft: car T3.
 
 ## Notes
 
-Cooking: change-only; no Live bump until Maxim GO after ACCEPT. Prefer after 0106 if one Tablet contested.
+- Cooking: change-only; no Live bump until Maxim GO after ACCEPT. Prefer after 0106 if one Tablet contested.
+- Do **not** implement 0108 honesty window here.

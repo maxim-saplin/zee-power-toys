@@ -27,18 +27,28 @@ const double kBatterySlotHeightFracCharging = 0.82;
 /// Slightly wider while charging so kW digits are not clipped.
 const double kBatterySlotWidthFracCharging = 0.15;
 
+/// Wider when own-range estimate toggle is ON so `N% · N km` stays one line
+/// (0107 — Tablet dens320 / justText + default pack).
+const double kBatterySlotWidthFracOwnRange = 0.18;
+
 /// Height/width fracs for the cluster given charging + [sizeScale].
 ///
 /// 0067b: multiply baseline (and charging) fracs by [sizeScale] so the slot
 /// grows with the slider. Without this, FittedBox(scaleDown) inside a fixed
 /// slot reverses growth past ~1.5× (content bigger than box → crush).
+/// 0107: when [ownRangeEstimate] is on, width uses at least
+/// [kBatterySlotWidthFracOwnRange] so SoC+range does not wrap.
 ({double widthFrac, double heightFrac}) batteryClusterSlotFracs({
   required bool chargingStatsVisible,
   double sizeScale = 1.0,
+  bool ownRangeEstimate = false,
 }) {
   final scale = sizeScale.clamp(0.5, 2.5);
-  final baseW =
+  var baseW =
       chargingStatsVisible ? kBatterySlotWidthFracCharging : kBatterySlotWidthFrac;
+  if (ownRangeEstimate && baseW < kBatterySlotWidthFracOwnRange) {
+    baseW = kBatterySlotWidthFracOwnRange;
+  }
   final baseH = chargingStatsVisible
       ? kBatterySlotHeightFracCharging
       : kBatterySlotHeightFrac;

@@ -493,8 +493,8 @@ class BatteryConfig {
   /// hidden; when true it auto-shows/hides with the charging flag.
   final bool showChargingStats;
 
-  /// 0105: show own estimated range beside battery % when estimate is ready.
-  /// Default **OFF** — km stays hidden until toggle ON and ≥~5 km moving history.
+  /// 0105/0107: show own estimated range beside battery %.
+  /// Default **OFF**. When ON: ready → `N km`; pending → `… km` (always visible).
   final bool showOwnRangeEstimate;
 
   /// Multiplier applied to the base widget size (1.0 = default).

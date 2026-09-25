@@ -287,4 +287,31 @@ void main() {
     });
   });
 
+
+  group('batteryClusterSlotFracs — 0107 own-range width', () {
+    test('own-range widens idle slot past baseline', () {
+      final off = batteryClusterSlotFracs(chargingStatsVisible: false);
+      final on = batteryClusterSlotFracs(
+        chargingStatsVisible: false,
+        ownRangeEstimate: true,
+      );
+      expect(off.widthFrac, kBatterySlotWidthFrac);
+      expect(on.widthFrac, kBatterySlotWidthFracOwnRange);
+      expect(on.widthFrac, greaterThan(off.widthFrac));
+      expect(on.heightFrac, off.heightFrac);
+    });
+
+    test('own-range at least as wide as charging; charging height kept', () {
+      final charging = batteryClusterSlotFracs(chargingStatsVisible: true);
+      final both = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        ownRangeEstimate: true,
+      );
+      expect(both.widthFrac, greaterThanOrEqualTo(charging.widthFrac));
+      expect(both.widthFrac, kBatterySlotWidthFracOwnRange);
+      expect(both.heightFrac, charging.heightFrac);
+    });
+  });
+
+
 }

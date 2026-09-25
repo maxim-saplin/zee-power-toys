@@ -12,9 +12,10 @@ final rangeEstimateServiceProvider = Provider<RangeEstimateService>((ref) {
   return svc;
 });
 
-/// Own estimated range km for HUD (null = hidden).
+/// Own estimated range km for HUD (null = off or not ready yet).
 ///
-/// Default toggle OFF; even when ON, null until ≥~5 km moving history.
+/// Default toggle OFF. When ON, null until ≥~5 km moving history — HUD still
+/// shows a pending `… km` marker (0107); this provider only supplies the digits.
 final estimatedRangeKmProvider = Provider<int?>((ref) {
   final cfg = ref.watch(batteryConfigProvider);
   if (!cfg.showOwnRangeEstimate) return null;

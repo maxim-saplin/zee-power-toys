@@ -71,7 +71,7 @@ class BatteryWidget extends ConsumerWidget {
     final tempC = ref.watch(batteryTempCProvider); // double? °C
     final charging = ref.watch(chargingProvider);
     final kw = ref.watch(chargeKwProvider); // double?
-    final rangeKm = ref.watch(estimatedRangeKmProvider); // 0105 own estimate
+    final rangeKm = ref.watch(estimatedRangeKmProvider); // 0105/0107 own estimate
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
@@ -105,11 +105,13 @@ class BatteryWidget extends ConsumerWidget {
 
     final showStats = isCharging && cfg.showChargingStats;
     final showIcon = cfg.contentMode != BatteryContentMode.textOnly;
+    final showOwnRange = cfg.showOwnRangeEstimate;
     // Separate % below the pack: shown for both/textOnly, but suppressed when
     // pctInside paints the % inside the pack and the icon is visible (avoid
-    // duplicating the label).
+    // duplicating the label). 0107: when own-range toggle is ON, keep the
+    // combined SoC+range line below the pack (never cram `N% · N km` inside).
     final pctInsidePack =
-        showIcon && cfg.style == BatteryStyle.pctInside;
+        showIcon && cfg.style == BatteryStyle.pctInside && !showOwnRange;
     final showPctBelow = cfg.contentMode != BatteryContentMode.iconOnly &&
         !pctInsidePack;
 
@@ -124,15 +126,8 @@ class BatteryWidget extends ConsumerWidget {
       fontSize: base * 0.45,
       height: 1.0,
     );
-    // 0105: `72% · ~180 km` when toggle ON + estimate ready; else plain %.
-    final String pctLabel;
-    if (pct == null) {
-      pctLabel = '--%';
-    } else if (rangeKm != null) {
-      pctLabel = '$pct% · ~$rangeKm km';
-    } else {
-      pctLabel = '$pct%';
-    }
+    // Inside-pack DualColor still wants a short plain SoC string.
+    final String pctInsideLabel = pct != null ? '$pct%' : '--%';
 
     // Align the cluster toward the active edge so left placement mirrors
     // right without changing pack/styles (0051). Temp + charging stay in
@@ -191,7 +186,7 @@ class BatteryWidget extends ConsumerWidget {
                         bottom: 0,
                         child: _DualColorPctLabel(
                           key: const ValueKey('battery-inline-pct'),
-                          label: pctLabel,
+                          label: pctInsideLabel,
                           bodyW: bodyW,
                           bodyH: bodyH,
                           fillFrac: fillFrac,
@@ -206,9 +201,10 @@ class BatteryWidget extends ConsumerWidget {
             // ---- Percentage text (below pack, when not painted inside) ----
             if (showPctBelow) ...<Widget>[
               if (showIcon) SizedBox(height: base * 0.12),
-              Text(
-                pctLabel,
-                key: const ValueKey('battery-pct-text'),
+              _SocRangeLabel(
+                pct: pct,
+                rangeKm: rangeKm,
+                showOwnRange: showOwnRange,
                 style: labelStyle,
               ),
             ],
@@ -385,6 +381,68 @@ class _BatteryPainter extends CustomPainter {
       old.showBolt != showBolt ||
       old.outlineColor != outlineColor ||
       old.style != style;
+}
+
+// ---------------------------------------------------------------------------
+// SoC (+ optional own-range) label — 0105/0107.
+// ---------------------------------------------------------------------------
+
+/// Battery % alone, or `N% · N km` / pending `N% · … km` when own-range is ON.
+///
+/// Typography (0107): `%` slightly smaller than the prior single-size label;
+/// range digits at full [style] size; `km` smaller than the digits; no `~`.
+class _SocRangeLabel extends StatelessWidget {
+  const _SocRangeLabel({
+    required this.pct,
+    required this.rangeKm,
+    required this.showOwnRange,
+    required this.style,
+  });
+
+  final int? pct;
+  final int? rangeKm;
+  final bool showOwnRange;
+  final TextStyle style;
+
+  static const Key _key = ValueKey<String>('battery-pct-text');
+
+  @override
+  Widget build(BuildContext context) {
+    final soc = pct != null ? '$pct' : '--';
+    if (!showOwnRange) {
+      return Text(
+        '$soc%',
+        key: _key,
+        style: style,
+        maxLines: 1,
+        softWrap: false,
+      );
+    }
+
+    final baseSize = style.fontSize ?? 12.0;
+    final pctStyle = style.copyWith(fontSize: baseSize * 0.90);
+    final numStyle = style;
+    final unitStyle = style.copyWith(
+      fontSize: baseSize * 0.70,
+      fontWeight: FontWeight.w500,
+    );
+    final rangeText = rangeKm != null ? '$rangeKm' : '…';
+
+    return Text.rich(
+      TextSpan(
+        children: <InlineSpan>[
+          TextSpan(text: soc, style: pctStyle),
+          TextSpan(text: '%', style: pctStyle),
+          TextSpan(text: ' · ', style: pctStyle),
+          TextSpan(text: rangeText, style: numStyle),
+          TextSpan(text: ' km', style: unitStyle),
+        ],
+      ),
+      key: _key,
+      maxLines: 1,
+      softWrap: false,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

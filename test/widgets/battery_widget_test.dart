@@ -606,8 +606,13 @@ void main() {
   });
 
 
-  group('0105 own range beside %', () {
-    testWidgets('default OFF: pct without ~km even if service seeded', (tester) async {
+  group('0105/0107 own range beside %', () {
+    String pctPlain(Finder f) {
+      final text = f.evaluate().single.widget as Text;
+      return text.data ?? text.textSpan!.toPlainText();
+    }
+
+    testWidgets('default OFF: pct without km even if service seeded', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
@@ -627,11 +632,13 @@ void main() {
       ));
       signals.emitBattery(levelPct: 72, tempC: 25);
       await tester.pump();
-      expect(find.text('72%'), findsNWidgets(2)); // stroke + fill
+      expect(find.text('72%'), findsNWidgets(2)); // dual-color stroke + fill
+      expect(find.textContaining('km'), findsNothing);
       expect(find.textContaining('~'), findsNothing);
+      expect(find.textContaining('…'), findsNothing);
     });
 
-    testWidgets('ON + ready: shows 72% · ~360 km', (tester) async {
+    testWidgets('ON + ready: 72% · 360 km (no tilde), below pack', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
@@ -653,10 +660,15 @@ void main() {
       ));
       signals.emitBattery(levelPct: 72, tempC: 25);
       await tester.pump();
-      expect(find.text('72% · ~360 km'), findsNWidgets(2)); // stroke + fill
+      final label = find.byKey(const ValueKey('battery-pct-text'));
+      expect(label, findsOneWidget);
+      expect(pctPlain(label), '72% · 360 km');
+      expect(find.textContaining('~'), findsNothing);
+      // Range chrome lives below pack — not dual-color inside.
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsNothing);
     });
 
-    testWidgets('ON + no history: plain % only', (tester) async {
+    testWidgets('ON + no history: pending … km (not identical to OFF)', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       await tester.binding.setSurfaceSize(const Size(200, 200));
@@ -673,8 +685,49 @@ void main() {
       ));
       signals.emitBattery(levelPct: 55, tempC: 22);
       await tester.pump();
-      expect(find.text('55%'), findsNWidgets(2)); // stroke + fill
+      final label = find.byKey(const ValueKey('battery-pct-text'));
+      expect(label, findsOneWidget);
+      expect(pctPlain(label), '55% · … km');
       expect(find.textContaining('~'), findsNothing);
+    });
+
+    testWidgets('justText ON + ready: one-line 72% · 360 km', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final signals = FakeCarSignals();
+      final svc = RangeEstimateService();
+      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      await tester.binding.setSurfaceSize(const Size(320, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 320, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+        config: AppConfig(
+          battery: const BatteryConfig(showOwnRangeEstimate: true)
+              .withLook(BatteryLook.justText),
+        ),
+        extraOverrides: [
+          rangeEstimateServiceProvider.overrideWithValue(svc),
+        ],
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 25);
+      await tester.pump();
+      final label = find.byKey(const ValueKey('battery-pct-text'));
+      expect(label, findsOneWidget);
+      expect(pctPlain(label), '72% · 360 km');
+      final text = tester.widget<Text>(label);
+      expect(text.softWrap, isFalse);
+      expect(text.maxLines, 1);
+      // km unit smaller than range digits; % slightly smaller than digits.
+      final root = text.textSpan! as TextSpan;
+      final spans = root.children!.cast<TextSpan>();
+      final rangeSpan = spans.firstWhere((s) => s.text == '360');
+      final kmSpan = spans.firstWhere((s) => s.text == ' km');
+      expect(kmSpan.style!.fontSize!, lessThan(rangeSpan.style!.fontSize!));
+      final pctSpan = spans.firstWhere((s) => s.text == '72');
+      expect(pctSpan.style!.fontSize!, lessThan(rangeSpan.style!.fontSize!));
     });
   });
 
