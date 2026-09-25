@@ -7,6 +7,22 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+20] — 2026-09-25
+
+Live ship: **0102** Other traffic cams mute + **0103** Install Update vs Reinstall.
+
+### Fixed
+- **0102** Other traffic cams — mute YNavi `CROSS_ROAD_CONTROL` / `ROAD_MARKING_CONTROL` / `NO_STOPPING_CONTROL` / `TRAFFIC_CONTROL` (+ LANE) by default on alert/HUD/sound; settings **"Other traffic cams"** (`62720d0`).
+- Soft: `MOBILE_CONTROL` left out of taxonomy (no strong field evidence).
+
+### Changed
+- **0103** Install self-update + companion cards: **Update** when Release newer; **Reinstall** when same (or tip-ahead); package `versionCode` probe vs pins (`bb45870`).
+- Soft: home companions still Install-when-missing only; Live version bump is this line.
+
+### Notes
+- Docs ACCEPT `910676c`. Code tips `62720d0` (0102) + `bb45870` (0103). AOSP platform-signed via `release.yml` (same keystore as +19).
+- Soft SHARED_USER on Tablet google_apis still expected for Release install (uninstall prior debug/sharedUser pairing first).
+
 ## [1.1.0+11] — 2026-09-23
 
 MINOR release (0091): user-facing size past 1.0.0+N tips — CRT/lane/USB/install/harness stack.
