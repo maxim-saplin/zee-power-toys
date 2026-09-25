@@ -7,6 +7,21 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+22] — 2026-09-25
+
+Live ship: **0106** overlay size slider scales window + CRT + **0107** own-range HUD polish + **0108** own-range weighted 50 km window.
+
+### Fixed
+- **0106** Overlay size slider — scales system overlay window + Alien CRT content (no letterbox/noop on re-enable); keep VISIBLE + force Flutter view size after WM layout (`488d7ec`).
+- **0107** Own-range ON always visible — pending `… km` or ready `N km` (no ~); km/smaller %; SoC+range below pack (`e1c3419`).
+
+### Changed
+- **0108** Own-range honesty — distance-trimmed composite Wh/km (8×/4×/1× bands over 50 km, heavier last 10/3); 1 km display cadence; EN/RU help (`11ae3cd`).
+
+### Notes
+- Docs ACCEPT `7c1fc66`. Code tips `488d7ec` (0106) + `e1c3419` (0107) + `11ae3cd` (0108). AOSP platform-signed via `release.yml` (same keystore as +21).
+- Soft: hint wording / car T3 stay soft — not chased in this ship.
+
 ## [1.1.0+21] — 2026-09-25
 
 Live ship: **0104** HUD drive-mode change toast + **0105** own estimated range beside battery %.
