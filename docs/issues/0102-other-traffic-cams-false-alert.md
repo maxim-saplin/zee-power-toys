@@ -1,5 +1,5 @@
 ---
-status: tip-ready
+status: accepted
 labels: [speedcam, ynavi, false-alarm, other-traffic-cams]
 created: 2026-09-25
 satisfies: foundation
@@ -11,6 +11,9 @@ priority: now
 filed-by: zee-pdm
 parent: [0088, 0092, 0099]
 gate: armed-2026-09-25
+tip: 62720d0
+accepted: 2026-09-25
+evidence: tmp/qa/0102-cut-62720d0/
 evidence-rca: tmp/qa/0102-other-traffic-cams-rca/
 ---
 
@@ -55,14 +58,17 @@ Full writeup: [`tmp/qa/0102-other-traffic-cams-rca/`](../../tmp/qa/0102-other-tr
 ## Definition of Done
 - [x] Complete RCA + repro on disk (`tmp/qa/0102-other-traffic-cams-rca/`) — **done 2026-09-25**
 - [x] Maxim OK / arm after RCA review (2026-09-25 — GO fix + Update/Reinstall scope)
-- [x] Fix on tip with **"Other traffic cams"** naming (not lane-only) — classifier + mute + settings
+- [x] Fix on tip with **"Other traffic cams"** naming (not lane-only) — classifier + mute + settings (`62720d0`)
 - [x] Unit/fixture: `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE` at P2 does **not** alert @ defaults; alerts when toggle ON; LANE control still muted (`test/services/speedcam_0102_other_traffic_cams_test.dart`)
-- [ ] Optional roadside confirm: logcat `SPEEDCAM_DATA` tags at P1–P4
-- [ ] Beta four-point; PDM ACCEPT after own double-check (not rubber-stamp)
+- [x] T2 evidence P2 CROSS_ROAD mute/on + LANE neg + settings chrome — `tmp/qa/0102-cut-62720d0/` (optional roadside logcat SKIP)
+- [x] Beta four-point; PDM ACCEPT after own double-check — ACCEPT `62720d0` (2026-09-25)
 
 ## Reconciliation
-**2026-09-25 tip:** Extended `isOtherTrafficCam` beyond LANE-only (`CROSS_ROAD_CONTROL`, `ROAD_MARKING_CONTROL`, `NO_STOPPING_CONTROL`, `TRAFFIC_CONTROL` + LANE). Same alert surfaces as 0092 (`camsForAlert` / HUD / sound). Settings label **"Other traffic cams"** (prefs key `alertLaneCams` retained, default OFF). `MOBILE_CONTROL` left out (no strong in-repo field evidence). Map/store still shows muted cams. Pure `SPEED_CONTROL` / `SPEED_CONTROL,POLICE` remain speedcams. Live version **not** bumped.
+**2026-09-25 tip `62720d0`:** Extended `isOtherTrafficCam` beyond LANE-only (`CROSS_ROAD_CONTROL`, `ROAD_MARKING_CONTROL`, `NO_STOPPING_CONTROL`, `TRAFFIC_CONTROL` + LANE). Same alert surfaces as 0092 (`camsForAlert` / HUD / sound). Settings label **"Other traffic cams"** (prefs key `alertLaneCams` retained, default OFF). `MOBILE_CONTROL` left out (no strong in-repo field evidence). Map/store still shows muted cams. Pure `SPEED_CONTROL` / `SPEED_CONTROL,POLICE` remain speedcams. Live version **not** bumped.
+
+## ACCEPT (PDM 2026-09-25)
+Tip `62720d0` (1.1.0+19). QA T2 PASS (`tmp/qa/0102-cut-62720d0/`); beta four-point PASS (`FOURPOINT.md`); PDM own check PASS. Settings **"Other traffic cams"** default OFF. P2 `53.908212,27.423801` fixture `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE`: mute → danger null + store keep; toggle ON → ~150 m / 60 sting. LANE still muted. Soft: **MOBILE_CONTROL** left out of taxonomy (still alerts @ defaults); **P1/P3/P4** not geo-cut on T2 (P2 class stands in); optional roadside `SPEEDCAM_DATA` logcat SKIP — do not block.
 
 ## Notes
-- Live `1.1.0+19` / tip ≥ `3442724` still exhibits the gap.
-- Residual: live tag dump at the four Minsk pins not captured this morning — RCA used Overpass + prior QA logcat patterns (`SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE` ×80 in 0097 ghost logs) + code path. Roadside logcat before tip still valuable.
+- Live `1.1.0+19` / tip ≥ `3442724` exhibited the gap before `62720d0`.
+- Residual: live tag dump at the four Minsk pins not captured morning of RCA — RCA used Overpass + prior QA logcat patterns + code path.
