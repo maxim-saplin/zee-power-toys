@@ -1,5 +1,7 @@
 # Issues — the backlog & board
 
+- [ ] **0105** Own estimated range beside battery % (toggle + plain how) — `0105-hud-own-range-estimate.md` — **ARMED**
+- [ ] **0104** HUD drive-mode change toast 5 s fade — `0104-hud-drive-mode-toast.md` — **ARMED**
 - [ ] **0097** YNavi mod hardening matrix (v27 + v30 on T2) — see `0097-ynavi-mod-hardening-matrix.md`
 - [x] **0103** Install Update vs Reinstall + YNavi/Launcher version align — ACCEPT `bb45870` (`0103-install-update-vs-reinstall.md`)
 - [x] **0102** Other traffic cams false speedcam alerts — ACCEPT `62720d0` (`0102-other-traffic-cams-false-alert.md`)
