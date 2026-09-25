@@ -7,6 +7,18 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+21] — 2026-09-25
+
+Live ship: **0104** HUD drive-mode change toast + **0105** own estimated range beside battery %.
+
+### Added
+- **0104** HUD drive-mode change toast — ECO / Comfort / Sport (~5 s fade) on Adapt `0x22010100` change only; cold-open / first-known-after-unknown never toasts (`bc48d13`).
+- **0105** Own estimated range beside battery % — EWMA Wh/km while moving; toggle default OFF; hide ~km until ≥~5 km moving history; usable pack 100 kWh constant (`97784bb`).
+
+### Notes
+- Docs ACCEPT `5efac8f`. Code tips `bc48d13` (0104) + `97784bb` (0105). AOSP platform-signed via `release.yml` (same keystore as +20).
+- Soft: T3 live Adapt enum tune / Adapt efficiency seed / pack constant stay soft — not chased in this ship.
+
 ## [1.1.0+20] — 2026-09-25
 
 Live ship: **0102** Other traffic cams mute + **0103** Install Update vs Reinstall.
