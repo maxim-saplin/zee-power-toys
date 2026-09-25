@@ -42,7 +42,7 @@ Maxim 2026-09-25: when the driver picks a drive mode, show a short **HUD animati
 
 ## Reconciliation
 **2026-09-25 tip:** HUD drive-mode change toast.
-**Tip SHA:** 44577f6
+**Tip SHA:** 30a390b
 
 ### Mapping (`0x22010100`)
 ECarX Adapt emits raw ints in the function-id family `0x22010100 + n` (field notes / LynkCoTrack AdaptAPI):
