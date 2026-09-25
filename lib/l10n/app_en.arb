@@ -308,6 +308,14 @@
   "@showChargingStats": {
     "description": "Toggle: show charging stats panel"
   },
+  "showOwnRangeEstimate": "Show estimated range",
+  "@showOwnRangeEstimate": {
+    "description": "0105: own Wh/km range beside battery % (default off)"
+  },
+  "showOwnRangeEstimateHint": "From your recent Wh/km while moving — not the car’s range. Needs a few kilometres of driving before it shows beside the battery %.",
+  "@showOwnRangeEstimateHint": {
+    "description": "0105: plain-language how-calculated; OEM range not primary"
+  },
   "batteryContentMode": "Content",
   "@batteryContentMode": {
     "description": "Battery content mode label"

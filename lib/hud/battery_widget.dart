@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
+import '../providers/range_estimate.dart';
 import '../services/config_store.dart';
 import 'battery_geometry.dart';
 
@@ -70,6 +71,7 @@ class BatteryWidget extends ConsumerWidget {
     final tempC = ref.watch(batteryTempCProvider); // double? °C
     final charging = ref.watch(chargingProvider);
     final kw = ref.watch(chargeKwProvider); // double?
+    final rangeKm = ref.watch(estimatedRangeKmProvider); // 0105 own estimate
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
@@ -122,7 +124,15 @@ class BatteryWidget extends ConsumerWidget {
       fontSize: base * 0.45,
       height: 1.0,
     );
-    final pctLabel = pct != null ? '$pct%' : '--%';
+    // 0105: `72% · ~180 km` when toggle ON + estimate ready; else plain %.
+    final String pctLabel;
+    if (pct == null) {
+      pctLabel = '--%';
+    } else if (rangeKm != null) {
+      pctLabel = '$pct% · ~$rangeKm km';
+    } else {
+      pctLabel = '$pct%';
+    }
 
     // Align the cluster toward the active edge so left placement mirrors
     // right without changing pack/styles (0051). Temp + charging stay in

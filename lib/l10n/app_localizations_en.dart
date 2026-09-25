@@ -242,6 +242,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showChargingStats => 'Show charging stats (while charging)';
 
   @override
+  String get showOwnRangeEstimate => 'Show estimated range';
+
+  @override
+  String get showOwnRangeEstimateHint =>
+      'From your recent Wh/km while moving — not the car’s range. Needs a few kilometres of driving before it shows beside the battery %.';
+
+  @override
   String get batteryContentMode => 'Content';
 
   @override

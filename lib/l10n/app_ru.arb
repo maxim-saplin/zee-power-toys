@@ -308,6 +308,14 @@
   "@showChargingStats": {
     "description": "Toggle: show charging stats panel"
   },
+  "showOwnRangeEstimate": "Показывать оценку запаса хода",
+  "@showOwnRangeEstimate": {
+    "description": "0105: own Wh/km range beside battery % (default off)"
+  },
+  "showOwnRangeEstimateHint": "По вашему недавнему расходу Wh/км в движении — не по запасу хода автомобиля. Нужно несколько километров поездки, прежде чем цифра появится рядом с % батареи.",
+  "@showOwnRangeEstimateHint": {
+    "description": "0105: plain-language how-calculated; OEM range not primary"
+  },
   "batteryContentMode": "Содержимое",
   "@batteryContentMode": {
     "description": "Battery content mode label"

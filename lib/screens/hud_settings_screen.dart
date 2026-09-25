@@ -452,6 +452,25 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   ),
                 ),
               ),
+              SettingsToggleRow(
+                label: l10n.showOwnRangeEstimate,
+                control: Switch(
+                  key: const ValueKey('battery-show-own-range'),
+                  value: batteryCfg.showOwnRangeEstimate,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(showOwnRangeEstimate: v),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: Insets.sm),
+                child: Text(
+                  l10n.showOwnRangeEstimateHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
               const SizedBox(height: Insets.md),
               Text(
                 l10n.batteryPlacement,

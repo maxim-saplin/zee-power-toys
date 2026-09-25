@@ -560,6 +560,18 @@ abstract class AppLocalizations {
   /// **'Show charging stats (while charging)'**
   String get showChargingStats;
 
+  /// 0105: own Wh/km range beside battery % (default off)
+  ///
+  /// In en, this message translates to:
+  /// **'Show estimated range'**
+  String get showOwnRangeEstimate;
+
+  /// 0105: plain-language how-calculated; OEM range not primary
+  ///
+  /// In en, this message translates to:
+  /// **'From your recent Wh/km while moving — not the car’s range. Needs a few kilometres of driving before it shows beside the battery %.'**
+  String get showOwnRangeEstimateHint;
+
   /// Battery content mode label
   ///
   /// In en, this message translates to:

@@ -471,6 +471,7 @@ class BatteryConfig {
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
+    this.showOwnRangeEstimate = false,
     this.sizeScale = 1.0,
     this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
@@ -491,6 +492,10 @@ class BatteryConfig {
   /// while the car reports charging=true.  When false the panel is always
   /// hidden; when true it auto-shows/hides with the charging flag.
   final bool showChargingStats;
+
+  /// 0105: show own estimated range beside battery % when estimate is ready.
+  /// Default **OFF** — km stays hidden until toggle ON and ≥~5 km moving history.
+  final bool showOwnRangeEstimate;
 
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
@@ -525,6 +530,7 @@ class BatteryConfig {
     bool? showBattery,
     bool? showTemp,
     bool? showChargingStats,
+    bool? showOwnRangeEstimate,
     double? sizeScale,
     BatteryLook? look,
     BatteryContentMode? contentMode,
@@ -557,6 +563,8 @@ class BatteryConfig {
       showBattery: showBattery ?? this.showBattery,
       showTemp: showTemp ?? this.showTemp,
       showChargingStats: showChargingStats ?? this.showChargingStats,
+      showOwnRangeEstimate:
+          showOwnRangeEstimate ?? this.showOwnRangeEstimate,
       sizeScale: sizeScale ?? this.sizeScale,
       look: nextLook,
       contentMode: nextMode,
@@ -587,6 +595,7 @@ class BatteryConfig {
     'showBattery': showBattery,
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
+    'showOwnRangeEstimate': showOwnRangeEstimate,
     'sizeScale': sizeScale,
     'look': look.name,
     'contentMode': contentMode.name,
@@ -636,6 +645,7 @@ class BatteryConfig {
       showBattery: json['showBattery'] as bool? ?? true,
       showTemp: json['showTemp'] as bool? ?? true,
       showChargingStats: json['showChargingStats'] as bool? ?? true,
+      showOwnRangeEstimate: json['showOwnRangeEstimate'] as bool? ?? false,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       look: look,
       contentMode: resolvedMode,
@@ -653,6 +663,7 @@ class BatteryConfig {
       other.showBattery == showBattery &&
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
+      other.showOwnRangeEstimate == showOwnRangeEstimate &&
       other.sizeScale == sizeScale &&
       other.look == look &&
       other.contentMode == contentMode &&
@@ -667,6 +678,7 @@ class BatteryConfig {
     showBattery,
     showTemp,
     showChargingStats,
+    showOwnRangeEstimate,
     sizeScale,
     look,
     contentMode,

@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/hud/battery_widget.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
+import 'package:zee_power_toys/services/range_estimate_service.dart';
+import 'package:zee_power_toys/providers/range_estimate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/harness.dart';
 
@@ -21,6 +24,7 @@ void main() {
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
       expect(cfg.showChargingStats, isTrue);
+      expect(cfg.showOwnRangeEstimate, isFalse);
       expect(cfg.sizeScale, 1.0);
       expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);
@@ -598,6 +602,79 @@ void main() {
           reason: 'no RenderFlex overflow with ClipRect + adequate slot');
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
+    });
+  });
+
+
+  group('0105 own range beside %', () {
+    testWidgets('default OFF: pct without ~km even if service seeded', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final signals = FakeCarSignals();
+      final svc = RangeEstimateService();
+      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+        config: const AppConfig(), // showOwnRangeEstimate false
+        extraOverrides: [
+          rangeEstimateServiceProvider.overrideWithValue(svc),
+        ],
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 25);
+      await tester.pump();
+      expect(find.text('72%'), findsNWidgets(2)); // stroke + fill
+      expect(find.textContaining('~'), findsNothing);
+    });
+
+    testWidgets('ON + ready: shows 72% · ~360 km', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final signals = FakeCarSignals();
+      final svc = RangeEstimateService();
+      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+        config: const AppConfig(
+          battery: BatteryConfig(showOwnRangeEstimate: true),
+        ),
+        extraOverrides: [
+          rangeEstimateServiceProvider.overrideWithValue(svc),
+        ],
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 25);
+      await tester.pump();
+      expect(find.text('72% · ~360 km'), findsNWidgets(2)); // stroke + fill
+    });
+
+    testWidgets('ON + no history: plain % only', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+        config: const AppConfig(
+          battery: BatteryConfig(showOwnRangeEstimate: true),
+        ),
+      ));
+      signals.emitBattery(levelPct: 55, tempC: 22);
+      await tester.pump();
+      expect(find.text('55%'), findsNWidgets(2)); // stroke + fill
+      expect(find.textContaining('~'), findsNothing);
     });
   });
 

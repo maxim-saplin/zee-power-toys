@@ -95,6 +95,7 @@ Widget wrapWithProviders(
   PackageStatus? packageStatus,
   SystemConfig? systemConfig,
   UsbModePort? usbMode,
+  List? extraOverrides,
 }) {
   final effectiveStore = store ?? SharedPrefsConfigStore();
   if (config != null) {
@@ -118,6 +119,7 @@ Widget wrapWithProviders(
       speedcamSystemOverlayProvider.overrideWithValue(FakeSpeedcamSystemOverlay()),
       systemConfigProvider.overrideWithValue(systemConfig ?? FakeSystemConfig()),
       if (usbMode != null) usbModeProvider.overrideWithValue(usbMode),
+      ...?extraOverrides,
     ],
     child: localizations
         ? MaterialApp(

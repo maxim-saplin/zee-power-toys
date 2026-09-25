@@ -87,6 +87,7 @@ class CarSnapshot {
     this.batteryPct,
     this.batteryTempC,
     this.powerFlow = PowerFlow.unknown,
+    this.efficiencyKwhPer100km,
   });
 
   final int? speedKmh;
@@ -98,6 +99,10 @@ class CarSnapshot {
   final double? batteryTempC;
   final PowerFlow powerFlow;
 
+  /// Adapt Energy Cons 1 (`0x00103100`) when non-sentinel — **seed only** for
+  /// 0105 own-range EWMA. Never HUD primary (OEM range IDs unused on HUD).
+  final double? efficiencyKwhPer100km;
+
   CarSnapshot copyWith({
     int? speedKmh,
     BlinkerState? blinker,
@@ -106,6 +111,7 @@ class CarSnapshot {
     int? batteryPct,
     double? batteryTempC,
     PowerFlow? powerFlow,
+    double? efficiencyKwhPer100km,
   }) => CarSnapshot(
     speedKmh: speedKmh ?? this.speedKmh,
     blinker: blinker ?? this.blinker,
@@ -114,6 +120,8 @@ class CarSnapshot {
     batteryPct: batteryPct ?? this.batteryPct,
     batteryTempC: batteryTempC ?? this.batteryTempC,
     powerFlow: powerFlow ?? this.powerFlow,
+    efficiencyKwhPer100km:
+        efficiencyKwhPer100km ?? this.efficiencyKwhPer100km,
   );
 
   /// Serialise to JSON for the relay and the Feedback Loop readViewModel.
@@ -125,5 +133,6 @@ class CarSnapshot {
     'batteryPct': batteryPct,
     'batteryTempC': batteryTempC,
     'powerFlow': powerFlow.name,
+    'efficiencyKwhPer100km': efficiencyKwhPer100km,
   };
 }

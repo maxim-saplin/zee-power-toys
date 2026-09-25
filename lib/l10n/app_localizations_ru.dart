@@ -242,6 +242,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get showChargingStats => 'Показывать данные зарядки (при зарядке)';
 
   @override
+  String get showOwnRangeEstimate => 'Показывать оценку запаса хода';
+
+  @override
+  String get showOwnRangeEstimateHint =>
+      'По вашему недавнему расходу Wh/км в движении — не по запасу хода автомобиля. Нужно несколько километров поездки, прежде чем цифра появится рядом с % батареи.';
+
+  @override
   String get batteryContentMode => 'Содержимое';
 
   @override
