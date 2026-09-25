@@ -81,8 +81,17 @@ class SpeedcamSystemOverlayController(
                             tearDownEngineAndWindow()
                         } else if (canDrawOverlays()) {
                             ensureEngine()
-                            // Window stays GONE until update(visible=true).
-                            ensureWindow(shown = false)
+                            // 0106: re-asserting enable (every slider tick via
+                            // _applySpeedcamConfig) must NOT force GONE — that
+                            // raced setLayout and left FlutterTextureView
+                            // without a live onSizeChanged, so window LP
+                            // changed while CRT paint stayed at the old size.
+                            if (root == null) {
+                                // Cold enable: stay GONE until update(visible=true).
+                                ensureWindow(shown = false)
+                            } else if (contentVisible) {
+                                root?.visibility = android.view.View.VISIBLE
+                            }
                         }
                         result.success(null)
                     }
@@ -316,18 +325,19 @@ class SpeedcamSystemOverlayController(
         (widthPx / OVERLAY_ASPECT).toInt().coerceAtLeast(1)
 
 
-    /** After GONE→VISIBLE, push lp so WM allocates a surface (non-zero Requested). */
+    /** After GONE→VISIBLE (or size change), push lp + FlutterView metrics. */
     private fun forceOverlaySurface() {
         val container = root ?: return
         val lp = container.layoutParams as? WindowManager.LayoutParams ?: return
         val density = appContext.resources.displayMetrics.density
-        if (lp.width <= 0 || lp.height <= 0) {
-            lp.width = overlayWidthPx(density)
-            lp.height = overlayHeightPx(lp.width)
-            applyPlacement(lp, density)
-        }
+        // Always re-apply current sizeScale — not only when lp was 0×0 —
+        // so a size change that landed while GONE is honored on show.
+        lp.width = overlayWidthPx(density)
+        lp.height = overlayHeightPx(lp.width)
+        applyPlacement(lp, density)
         try {
             wm.updateViewLayout(container, lp)
+            forceFlutterViewSize(lp.width, lp.height)
         } catch (e: Exception) {
             Log.w(TAG, "forceOverlaySurface: ${e.message}")
         }
@@ -344,10 +354,26 @@ class SpeedcamSystemOverlayController(
         applyPlacement(lp, density)
         try {
             wm.updateViewLayout(container, lp)
+            // 0106: WM LP update alone can leave FlutterTextureView / viewport
+            // metrics at the old size (letterbox / blank frame). Force an
+            // explicit measure+layout so Alien FittedBox CRT scales with window.
+            forceFlutterViewSize(widthPx, heightPx)
             Log.i(TAG, "setLayout scale=$sizeScale place=$placement ${widthPx}x${heightPx}px")
         } catch (e: Exception) {
             Log.e(TAG, "updateViewLayout failed", e)
         }
+    }
+
+    /** Push FlutterView to [widthPx]×[heightPx] so onSizeChanged → viewport metrics. */
+    private fun forceFlutterViewSize(widthPx: Int, heightPx: Int) {
+        val container = root ?: return
+        container.requestLayout()
+        val fv = flutterView ?: return
+        fv.measure(
+            android.view.View.MeasureSpec.makeMeasureSpec(widthPx, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(heightPx, android.view.View.MeasureSpec.EXACTLY),
+        )
+        fv.layout(0, 0, widthPx, heightPx)
     }
 
 }

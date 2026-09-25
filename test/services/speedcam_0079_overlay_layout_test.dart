@@ -22,4 +22,15 @@ void main() {
     expect(o.lastSizeScale, 0.8);
     expect(o.lastPlacement, 'topStart');
   });
+
+  test('0106: successive setLayout scales are recorded (live slider)', () async {
+    final o = FakeSpeedcamSystemOverlay();
+    await o.setLayout(sizeScale: 0.6, placement: 'topEnd');
+    expect(o.lastSizeScale, 0.6);
+    await o.setLayout(sizeScale: 1.6, placement: 'topEnd');
+    expect(o.lastSizeScale, 1.6);
+    await o.setLayout(sizeScale: 1.0, placement: 'bottomStart');
+    expect(o.lastSizeScale, 1.0);
+    expect(o.lastPlacement, 'bottomStart');
+  });
 }
