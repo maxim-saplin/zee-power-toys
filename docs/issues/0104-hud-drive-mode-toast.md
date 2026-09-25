@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accepted
 labels: [hud, adapt, drive-mode]
 created: 2026-09-25
 satisfies: foundation
@@ -10,6 +10,9 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 gate: armed-2026-09-25
+tip: bc48d13
+accepted: 2026-09-25
+evidence: tmp/qa/0104-cut-bc48d13/
 parent: []
 ---
 
@@ -37,8 +40,8 @@ Maxim 2026-09-25: when the driver picks a drive mode, show a short **HUD animati
 - [x] HUD toast appears **only on mode change**, shows picked mode ~5 s, fades
 - [x] ECO / Comfort / Sport mapping documented in issue Reconciliation + unit/fixture covering at least one change
 - [x] Settings/Sim: way to fire a change on T2 without car
-- [ ] T2 evidence on Tablet dens 320 (preview/HUD shot mute-on + fade timing note) — `tmp/qa/0104-cut-<sha>/`
-- [ ] Beta four-point; PDM ACCEPT after own check
+- [x] T2 evidence on Tablet dens 320 (preview/HUD shot + fade timing note) — `tmp/qa/0104-cut-bc48d13/`
+- [x] Beta four-point; PDM ACCEPT after own check — ACCEPT `bc48d13` (2026-09-25)
 
 ## Reconciliation
 **2026-09-25 tip:** HUD drive-mode change toast.
@@ -74,6 +77,10 @@ mode changes from a previously known mode to a different known mode.
 
 ### Defaults
 - No permanent badge; toast only on change after cold-open baseline.
+
+## ACCEPT (PDM 2026-09-25)
+
+Tip `bc48d13` (1.1.0+20; Live not bumped). QA T2 PASS (`tmp/qa/0104-cut-bc48d13/`); beta four-point PASS; PDM own check PASS. Cold-open / first known after unknown is silent; known→known mode changes show the selected mode for ~5 s then fade; same-mode re-fire is silent. Soft: T3 enum map confirmation remains open.
 
 ## Notes
 - Soft: full theme/animation polish deferred; readable 5 s toast is enough.

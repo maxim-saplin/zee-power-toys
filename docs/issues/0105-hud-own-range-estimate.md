@@ -1,5 +1,5 @@
 ---
-status: tipped
+status: accepted
 labels: [hud, battery, range, adapt]
 created: 2026-09-25
 satisfies: foundation
@@ -10,6 +10,9 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 gate: armed-2026-09-25
+tip: 97784bb
+accepted: 2026-09-25
+evidence: tmp/qa/0105-cut-97784bb/
 parent: []
 ---
 
@@ -38,9 +41,9 @@ Maxim 2026-09-25: **do not** trust the car’s Adapt range as the HUD primary (t
 - [x] Toggle in settings (EN/RU) with **plain-language how-it-is-calculated** help under the control
 - [x] HUD battery line shows estimate when toggle ON and estimate ready; hidden/soft when not
 - [x] Units / Simulated fixtures for: no-history → no km; after seeded trip → ~km appears; toggle OFF hides
-- [ ] T2 Tablet dens 320 evidence — `tmp/qa/0105-cut-<sha>/` (settings chrome + HUD battery line)
-- [ ] Soft note if car T3 live tune still owed
-- [ ] Beta four-point; PDM ACCEPT after own check
+- [x] T2 Tablet dens 320 evidence — `tmp/qa/0105-cut-97784bb/` (settings chrome + HUD battery line)
+- [x] Soft note if car T3 live tune still owed — Adapt efficiency seed native TBD
+- [x] Beta four-point; PDM ACCEPT after own check — ACCEPT `97784bb` (2026-09-25)
 
 ## Reconciliation
 **2026-09-25 tip:** Own-range EWMA beside battery %.
@@ -66,6 +69,10 @@ OEM range IDs **never** HUD primary.
 ### Defaults
 - `BatteryConfig.showOwnRangeEstimate` = **false**
 - Km hidden until ready even when toggled ON
+
+## ACCEPT (PDM 2026-09-25)
+
+Tip `97784bb` (1.1.0+20; Live not bumped). QA T2 PASS (`tmp/qa/0105-cut-97784bb/`); beta four-point PASS; PDM own check PASS. Toggle defaults OFF; no-history stays percentage-only; seeded own EWMA shows the approximate range beside battery percentage. Soft: 100 kWh usable-pack assumption; Adapt efficiency seed native follow-up remains TBD.
 
 ## Notes
 - Prefer shipping **0105 before or with 0104**; one Tablet — no parallel emu.
