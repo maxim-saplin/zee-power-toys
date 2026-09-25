@@ -105,6 +105,7 @@ class SpeedcamPoint {
 ///
 /// Real bridge tags look like `SPEED_CONTROL,LANE_CONTROL,POLICE` (see
 /// ynavi-zee SpeedCamBroadcaster) — still a lane cam for alert purposes.
+/// Folded into [isOtherTrafficCam] for the 0102 mute taxonomy.
 bool isLaneCam(SpeedcamPoint cam) {
   final raw = (cam.camType ?? '').toUpperCase();
   if (!raw.contains('LANE')) return false;
@@ -112,14 +113,54 @@ bool isLaneCam(SpeedcamPoint cam) {
   return true;
 }
 
-/// 0092: drop lane cams from alert/HUD/sound lists when [alertLaneCams] is off.
+/// 0102: non-speed YNavi traffic-control tokens (MapKit EventTag).
+///
+/// Co-presence of `SPEED_CONTROL` is **not** proof of a speedcam when any of
+/// these are also present (field: `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE`).
+///
+/// `MOBILE_CONTROL` left out — MapKit enum only; no strong in-repo field
+/// evidence it is a non-speed false-alert class (0097/0072 logs dominated by
+/// CROSS_ROAD / NO_STOPPING / LANE). Bare `SPEED_CONTROL` / `SPEED_CONTROL,POLICE`
+/// remain speedcams.
+const kOtherTrafficControlTokens = <String>[
+  'CROSS_ROAD_CONTROL',
+  'ROAD_MARKING_CONTROL',
+  'NO_STOPPING_CONTROL',
+  'TRAFFIC_CONTROL',
+];
+
+/// 0102: Other traffic cams — LANE (0092) plus crossing / marking / no-stopping
+/// / traffic control. Used by the default-mute alert filter.
+bool isOtherTrafficCam(SpeedcamPoint cam) {
+  if (isLaneCam(cam)) return true;
+  final raw = (cam.camType ?? '').toUpperCase();
+  if (raw.isEmpty) return false;
+  for (final token in kOtherTrafficControlTokens) {
+    if (raw.contains(token)) return true;
+  }
+  return false;
+}
+
+/// 0102: drop other-traffic cams (incl. LANE) from alert/HUD/sound when the
+/// "Other traffic cams" toggle ([alertLaneCams] prefs key) is off.
+List<SpeedcamPoint> applyOtherTrafficCamAlertFilter(
+  List<SpeedcamPoint> cams, {
+  required bool alertOtherTrafficCams,
+}) {
+  if (alertOtherTrafficCams) return cams;
+  return cams.where((c) => !isOtherTrafficCam(c)).toList(growable: false);
+}
+
+/// 0092 alias — same surfaces; now covers full other-traffic taxonomy (0102).
+/// Prefs / API still use [alertLaneCams] (default false).
 List<SpeedcamPoint> applyLaneCamAlertFilter(
   List<SpeedcamPoint> cams, {
   required bool alertLaneCams,
-}) {
-  if (alertLaneCams) return cams;
-  return cams.where((c) => !isLaneCam(c)).toList(growable: false);
-}
+}) =>
+    applyOtherTrafficCamAlertFilter(
+      cams,
+      alertOtherTrafficCams: alertLaneCams,
+    );
 
 /// Host vehicle position for proximity (T1 inject / later GPS).
 class SpeedcamHostPose {

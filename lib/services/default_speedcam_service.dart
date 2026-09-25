@@ -66,7 +66,8 @@ class DefaultSpeedcamService implements SpeedcamService {
   bool get ynaviEnrichEnabled => _ynaviEnrichEnabled;
   bool get ynaviCollectEnabled => _ynaviCollectEnabled;
   bool get ynaviAlertEnabled => _ynaviAlertEnabled;
-  /// 0088: alert on YNavi lane cams (default OFF).
+  /// 0088/0102: alert on Other traffic cams (LANE + crossing/marking/…). Default OFF.
+  /// Prefs key remains `alertLaneCams` for migration.
   bool get alertLaneCams => _alertLaneCams;
   int get ynaviPointTtlDays => _ynaviPointTtlDays;
 
@@ -210,7 +211,7 @@ class DefaultSpeedcamService implements SpeedcamService {
   /// 0096 harness: plant a shaped SPEED/LANE cam without OCR (T2).
   ///
   /// [source]: `ynavi` | `osm` | `osm+ynavi`.
-  /// [camType]: e.g. `SPEED` / `LANE` / `SPEED_CONTROL` (isLaneCam keys on LANE).
+  /// [camType]: e.g. `SPEED` / `LANE` / `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE`.
   /// When [clearOthers] is true (default), drops prior harness OSM override +
   /// YNavi overlay so the fixture is the only planted cam.
   /// Does **not** flip ynaviEnrich/collect/alert — set those via setConfig
@@ -437,9 +438,9 @@ class DefaultSpeedcamService implements SpeedcamService {
     } else {
       list = _cams.where((c) => !c.isYnaviSourced).toList();
     }
-    // 0092: drop *all* isLaneCam (pure YNavi and osm+ynavi with stamped LANE).
-    // Field: lane cams still alerted as 60 because HUD/sound used snap.cams and
-    // bd54d10 kept OSM typing on merge — filter must cover both.
+    // 0092/0102: drop *all* other-traffic cams (LANE + CROSS_ROAD / …) —
+    // pure YNavi and osm+ynavi with stamped camType. HUD/sound use the same
+    // filter via applyLaneCamAlertFilter / applyOtherTrafficCamAlertFilter.
     if (_ynaviEnrichEnabled && _ynaviAlertEnabled) {
       list = applyLaneCamAlertFilter(list, alertLaneCams: _alertLaneCams);
     }
@@ -473,9 +474,9 @@ class DefaultSpeedcamService implements SpeedcamService {
           direction: o.direction,
           source: 'osm+ynavi',
           lastSeenEpochMs: match.lastSeenEpochMs,
-          // 0092: if YNavi says LANE, stamp it so camsForAlert can mute.
-          // Otherwise keep OSM typing (usually null) — do not invent LANE.
-          camType: isLaneCam(match) ? match.camType : o.camType,
+          // 0092/0102: stamp YNavi other-traffic camType (LANE / CROSS_ROAD / …)
+          // so camsForAlert can mute. Else keep OSM typing — do not invent tags.
+          camType: isOtherTrafficCam(match) ? match.camType : o.camType,
         ));
       } else {
         out.add(o.source == null ? SpeedcamPoint(

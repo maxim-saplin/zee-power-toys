@@ -32,7 +32,7 @@ class SpeedcamAlertBinder extends HookConsumerWidget {
     arm.enabled = soundOn;
 
     // 0074: when YNavi alert off (or enrich off), ignore ynavi-sourced cams for sound.
-    // 0092: also drop isLaneCam when alertLaneCams is off (soundMode=any path).
+    // 0092/0102: drop other-traffic cams when alertLaneCams is off (soundMode=any).
     var alertCams = (!cfg.ynaviEnrichEnabled || !cfg.ynaviAlertEnabled)
         ? snap.cams.where((c) => !c.isYnaviSourced).toList()
         : List<SpeedcamPoint>.from(snap.cams);

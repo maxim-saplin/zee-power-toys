@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: tip-ready
 labels: [speedcam, ynavi, false-alarm, other-traffic-cams]
 created: 2026-09-25
 satisfies: foundation
@@ -55,13 +55,13 @@ Full writeup: [`tmp/qa/0102-other-traffic-cams-rca/`](../../tmp/qa/0102-other-tr
 ## Definition of Done
 - [x] Complete RCA + repro on disk (`tmp/qa/0102-other-traffic-cams-rca/`) — **done 2026-09-25**
 - [x] Maxim OK / arm after RCA review (2026-09-25 — GO fix + Update/Reinstall scope)
-- [ ] Fix on tip with **"Other traffic cams"** naming (not lane-only)
-- [ ] T2 evidence: fixture `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE` at P2 does **not** alert @ defaults; alerts when toggle ON; LANE control still muted
+- [x] Fix on tip with **"Other traffic cams"** naming (not lane-only) — classifier + mute + settings
+- [x] Unit/fixture: `SPEED_CONTROL,CROSS_ROAD_CONTROL,POLICE` at P2 does **not** alert @ defaults; alerts when toggle ON; LANE control still muted (`test/services/speedcam_0102_other_traffic_cams_test.dart`)
 - [ ] Optional roadside confirm: logcat `SPEEDCAM_DATA` tags at P1–P4
 - [ ] Beta four-point; PDM ACCEPT after own double-check (not rubber-stamp)
 
 ## Reconciliation
-RCA only so far. Docs filed 2026-09-25. Code deferred behind Maxim gate.
+**2026-09-25 tip:** Extended `isOtherTrafficCam` beyond LANE-only (`CROSS_ROAD_CONTROL`, `ROAD_MARKING_CONTROL`, `NO_STOPPING_CONTROL`, `TRAFFIC_CONTROL` + LANE). Same alert surfaces as 0092 (`camsForAlert` / HUD / sound). Settings label **"Other traffic cams"** (prefs key `alertLaneCams` retained, default OFF). `MOBILE_CONTROL` left out (no strong in-repo field evidence). Map/store still shows muted cams. Pure `SPEED_CONTROL` / `SPEED_CONTROL,POLICE` remain speedcams. Live version **not** bumped.
 
 ## Notes
 - Live `1.1.0+19` / tip ≥ `3442724` still exhibits the gap.

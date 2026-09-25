@@ -940,7 +940,9 @@ class SpeedcamConfig {
   /// 0074: when enrich ON, alert/HUD treat YNavi-sourced cams. Default ON.
   final bool ynaviAlertEnabled;
 
-  /// 0088: when enrich ON, also alert on YNavi lane cams. Default OFF.
+  /// 0088/0102: when enrich ON, also alert on Other traffic cams
+  /// (LANE + CROSS_ROAD / ROAD_MARKING / NO_STOPPING / TRAFFIC control).
+  /// Prefs key `alertLaneCams`; settings label "Other traffic cams". Default OFF.
   final bool alertLaneCams;
 
   /// 0073: TTL days for YNavi overlay points (not OSM pack). Default 7.

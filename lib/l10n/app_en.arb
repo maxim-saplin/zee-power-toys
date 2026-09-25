@@ -983,13 +983,13 @@
   "@speedcamYnaviAlertHint": {
     "description": "0074 alert hint"
   },
-  "speedcamAlertLaneCams": "Alert lane cams",
+  "speedcamAlertLaneCams": "Other traffic cams",
   "@speedcamAlertLaneCams": {
-    "description": "0088 lane cam alert toggle (default off)"
+    "description": "0102 Other traffic cams alert toggle (prefs alertLaneCams; default off)"
   },
-  "speedcamAlertLaneCamsHint": "When on, YNavi lane-control cameras also trigger alerts. Default off (speedcams only).",
+  "speedcamAlertLaneCamsHint": "When on, YNavi crossing / marking / no-stopping / traffic-control and lane cameras also trigger alerts. Default off (speedcams only).",
   "@speedcamAlertLaneCamsHint": {
-    "description": "0088 lane cam alert hint"
+    "description": "0102 Other traffic cams alert hint"
   },
   "speedcamYnaviAging": "YNavi point aging",
   "@speedcamYnaviAging": {

@@ -983,13 +983,13 @@
   "@speedcamYnaviAlertHint": {
     "description": "0074 alert hint"
   },
-  "speedcamAlertLaneCams": "Оповещения о полосных",
+  "speedcamAlertLaneCams": "Другие дорожные камеры",
   "@speedcamAlertLaneCams": {
-    "description": "0088 lane cam alert toggle (default off)"
+    "description": "0102 Other traffic cams alert toggle (prefs alertLaneCams; default off)"
   },
-  "speedcamAlertLaneCamsHint": "Вкл. — оповещения и для камер контроля полос из YNavi. По умолчанию выкл. (только скоростные).",
+  "speedcamAlertLaneCamsHint": "Вкл. — оповещения и для камер перекрёстков / разметки / остановки / контроля и полос из YNavi. По умолчанию выкл. (только скоростные).",
   "@speedcamAlertLaneCamsHint": {
-    "description": "0088 lane cam alert hint"
+    "description": "0102 Other traffic cams alert hint"
   },
   "speedcamYnaviAging": "Старение точек YNavi",
   "@speedcamYnaviAging": {

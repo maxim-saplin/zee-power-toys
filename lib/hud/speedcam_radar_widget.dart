@@ -138,7 +138,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     final approachM = snap.approachRadiusM > 0
         ? snap.approachRadiusM
         : cfg.dhuRangeM;
-    // 0092: HUD presence/blips must honor alertLaneCams (service danger already
+    // 0092/0102: HUD presence/blips must honor Other traffic cams mute (danger already
     // uses camsForAlert; hudMode=any recomputes from the list we pass here).
     final hudCams = applyLaneCamAlertFilter(
       snap.cams,

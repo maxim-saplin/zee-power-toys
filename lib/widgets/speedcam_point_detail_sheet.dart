@@ -29,7 +29,7 @@ List<MapEntry<String, String>> speedcamFieldProvenance(SpeedcamPoint cam) {
       MapEntry('direction', 'OSM only (YNavi has no facing)'),
       MapEntry(
         'camType',
-        'YNavi LANE stamped when match isLaneCam (0092); else OSM',
+        'YNavi LANE/other-traffic camType stamped when isOtherTrafficCam (0092/0102); else OSM',
       ),
       MapEntry('maxspeed', 'OSM if set, else YNavi'),
       MapEntry('lastSeenEpochMs', 'YNavi overlay'),
@@ -93,6 +93,7 @@ class SpeedcamPointDetailSheet extends StatelessWidget {
       MapEntry('lastSeenEpochMs', cam.lastSeenEpochMs?.toString() ?? '—'),
       MapEntry('isYnaviSourced', cam.isYnaviSourced.toString()),
       MapEntry('isLaneCam', isLaneCam(cam).toString()),
+      MapEntry('isOtherTrafficCam', isOtherTrafficCam(cam).toString()),
     ];
 
     final provenance = speedcamFieldProvenance(cam);

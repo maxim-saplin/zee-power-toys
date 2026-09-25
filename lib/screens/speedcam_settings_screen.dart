@@ -350,7 +350,8 @@ class _SpeedcamSettingsScreenState
                       _patchSpeedcam((c) => c.copyWith(ynaviAlertEnabled: v)),
                 ),
                 SwitchListTile(
-                  key: const ValueKey('speedcam-alert-lane-cams'),
+                  // 0102: product name "Other traffic cams"; prefs key alertLaneCams.
+                  key: const ValueKey('speedcam-alert-other-traffic-cams'),
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.speedcamAlertLaneCams),
                   subtitle: Text(l10n.speedcamAlertLaneCamsHint),
