@@ -17,6 +17,7 @@ object SimulatorState {
     @Volatile var batteryPct: Int? = null
     @Volatile var batteryTempC: Double? = null
     @Volatile var powerFlow: String = "unknown"
+    @Volatile var driveMode: String = "unknown"
 
     fun snapshot() = CarSignalSnapshot(
         speedKmh = speedKmh,
@@ -28,6 +29,7 @@ object SimulatorState {
         batteryPct = batteryPct,
         batteryTempC = batteryTempC,
         powerFlow = powerFlow,
+        driveMode = driveMode,
     )
 
     // Apply a kind/value pair from the SIMULATE broadcast.
@@ -80,6 +82,18 @@ object SimulatorState {
                 }
                 powerFlow = flow
                 SignalEvent.PowerFlow(flow)
+            }
+            "drivemode" -> {
+                val mode = when (value.lowercase()) {
+                    "eco" -> "eco"
+                    "comfort" -> "comfort"
+                    "sport" -> "sport"
+                    "other" -> "other"
+                    "unknown" -> "unknown"
+                    else -> return null
+                }
+                driveMode = mode
+                SignalEvent.DriveMode(mode)
             }
             else -> null
         }

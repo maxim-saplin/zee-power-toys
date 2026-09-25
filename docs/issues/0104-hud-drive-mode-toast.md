@@ -1,12 +1,12 @@
 ---
-status: ready-for-agent
+status: tipped
 labels: [hud, adapt, drive-mode]
 created: 2026-09-25
 satisfies: foundation
 blocked-by: []
 modules: [AdaptApiCarSignals, CarSignals, HudHost, battery/blinker HUD chrome]
 tier: T2
-owner:
+owner: zee-dev
 priority: now
 filed-by: zee-pdm
 gate: armed-2026-09-25
@@ -33,13 +33,44 @@ Maxim 2026-09-25: when the driver picks a drive mode, show a short **HUD animati
 - Emulator: Simulated path required for T2 (no Adapt on Tablet).
 
 ## Definition of Done
-- [ ] Drive-mode Adapt (or Simulated) value reaches Dart as a first-class signal
-- [ ] HUD toast appears **only on mode change**, shows picked mode ~5 s, fades
-- [ ] ECO / Comfort / Sport mapping documented in issue Reconciliation + unit/fixture covering at least one change
-- [ ] Settings/Sim: way to fire a change on T2 without car
+- [x] Drive-mode Adapt (or Simulated) value reaches Dart as a first-class signal
+- [x] HUD toast appears **only on mode change**, shows picked mode ~5 s, fades
+- [x] ECO / Comfort / Sport mapping documented in issue Reconciliation + unit/fixture covering at least one change
+- [x] Settings/Sim: way to fire a change on T2 without car
 - [ ] T2 evidence on Tablet dens 320 (preview/HUD shot mute-on + fade timing note) — `tmp/qa/0104-cut-<sha>/`
 - [ ] Beta four-point; PDM ACCEPT after own check
 
+## Reconciliation
+**2026-09-25 tip:** HUD drive-mode change toast.
+**Tip SHA:** 44577f6
+
+### Mapping (`0x22010100`)
+ECarX Adapt emits raw ints in the function-id family `0x22010100 + n` (field notes / LynkCoTrack AdaptAPI):
+
+| n | Mode | HUD |
+|---|------|-----|
+| 1 | ECO | **ECO** (green) |
+| 2 | COMFORT | **Comfort** (cyan) |
+| 3 | SPORT | **Sport** (orange) |
+| 4–14 | EV / HYBRID / POWER / SNOW / MUD / ROCK / SAND / OFF-ROAD / TRACK / ADAPTIVE / CUSTOM | generic **Mode** (soft; no 4th permanent chip) |
+| 255 / −1 / other | sentinel / unknown | **soft skip** (no toast) |
+
+Small ordinals `1..14` accepted as soft fallback. Adapt start **seeds snapshot without emitting** (change-only). Kotlin `publishDriveMode` suppresses same-mode re-emits.
+
+### Toast
+- Hold ~5 s then fade (~450 ms); top-centre Safe Area (clear of blinker edges, battery, Alien radar).
+- HUD Off tears down engine → no toast. Simulate / live HudRoot preview shows toast.
+
+### Simulated / T2 fire
+- **Settings → Simulate → Drive mode** segmented ECO / Comfort / Sport (debug).
+- Agent keys: `simulate-drive-mode-eco` / `-comfort` / `-sport`.
+- ADB: `adb shell am broadcast -a com.zeepowertoys.SIMULATE --es kind driveMode --es value sport`
+- `ext.zee.inject kind=driveMode value=sport` (T1 Fake).
+
+### Defaults
+- No permanent badge; toast only on change after cold-open baseline.
+
 ## Notes
-- Sequence with **0105** (own range): either tip after 0105 or parallel early review; **one Tablet** — no parallel emu cuts.
-- Soft: do not block on full theme/animation polish; readable 5 s toast is enough.
+- Soft: full theme/animation polish deferred; readable 5 s toast is enough.
+- Soft: car T3 confirm exact n→label if firmware diverges from +1/+2/+3.
+- Live bump only on Maxim GO after ACCEPT.

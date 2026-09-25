@@ -61,12 +61,22 @@ class NativeCarSignals implements CarSignals {
             final pct = _asInt(raw['batteryPct']);
             final tempC = _asDouble(raw['batteryTempC']);
             final speed = _asInt(raw['speedKmh']);
+            final driveModeName = raw['driveMode'] as String?;
+            DriveMode? driveMode;
+            if (driveModeName != null) {
+              try {
+                driveMode = DriveMode.values.byName(driveModeName);
+              } catch (_) {
+                driveMode = null;
+              }
+            }
             _snapshot = _snapshot.copyWith(
               charging: charging,
               chargeKw: kw,
               batteryPct: pct,
               batteryTempC: tempC,
               speedKmh: speed,
+              driveMode: driveMode,
             );
           }
         })
@@ -109,6 +119,7 @@ class NativeCarSignals implements CarSignals {
         '$levelPct:$tempC',
       ),
       PowerFlowEvent(:final flow) => ('powerFlow', flow.name),
+      DriveModeEvent(:final mode) => ('driveMode', mode.name),
     };
     return _methodCh.invokeMethod<void>('simulate', <String, String>{
       'kind': kind,
@@ -162,6 +173,13 @@ class NativeCarSignals implements CarSignals {
           );
           _snapshot = _snapshot.copyWith(powerFlow: flow);
           _ctrl.add(PowerFlowEvent(flow));
+
+        case 'driveMode':
+          final mode = DriveMode.values.byName(
+            (m['mode'] as String?) ?? 'unknown',
+          );
+          _snapshot = _snapshot.copyWith(driveMode: mode);
+          _ctrl.add(DriveModeEvent(mode));
       }
     } catch (e) {
       debugPrintNativeEvent('NativeCarSignals: decode error type=$type: $e');

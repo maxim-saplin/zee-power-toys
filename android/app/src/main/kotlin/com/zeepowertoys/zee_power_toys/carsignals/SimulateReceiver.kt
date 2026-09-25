@@ -12,7 +12,7 @@ import android.util.Log
 //   com.zeepowertoys.DUMP      — return current snapshot JSON in result data (ordered broadcast)
 //
 // SIMULATE extras:
-//   kind   (String) — "speed" | "blinker" | "charge" | "battery" | "powerFlow"
+//   kind   (String) — "speed" | "blinker" | "charge" | "battery" | "powerFlow" | "driveMode"
 //   value  (String) — kind-specific value:
 //     speed:     "<kmh>"                           e.g. "80"
 //     blinker:   "left" | "right" | "hazard" | "off"

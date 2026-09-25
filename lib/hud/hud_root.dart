@@ -10,6 +10,7 @@ import 'battery_geometry.dart';
 import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
+import 'drive_mode_toast.dart';
 import 'speedcam_crt_geometry.dart';
 import '../providers/guidance.dart';
 
@@ -243,6 +244,10 @@ class _HudSlots extends ConsumerWidget {
             child: const _MinimapGlyph(),
           ),
 
+        // 0104 drive-mode toast — top-centre, clear of blinker / radar / battery.
+        const Positioned.fill(
+          child: IgnorePointer(child: DriveModeToastLayer()),
+        ),
       ],
     );
   }

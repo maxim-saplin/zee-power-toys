@@ -166,6 +166,75 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
           const SizedBox(height: Insets.xl),
 
           // ----------------------------------------------------------------
+          // Drive mode (0104) — fires a change for HUD toast on T2
+          // ----------------------------------------------------------------
+          SettingsSection(
+            title: l10n.simulateDriveModeLabel,
+            children: <Widget>[
+              SegmentedButton<DriveMode>(
+                segments: <ButtonSegment<DriveMode>>[
+                  ButtonSegment(
+                    value: DriveMode.eco,
+                    label: Text(l10n.simulateDriveModeEco),
+                  ),
+                  ButtonSegment(
+                    value: DriveMode.comfort,
+                    label: Text(l10n.simulateDriveModeComfort),
+                  ),
+                  ButtonSegment(
+                    value: DriveMode.sport,
+                    label: Text(l10n.simulateDriveModeSport),
+                  ),
+                ],
+                emptySelectionAllowed: true,
+                selected: () {
+                  final m = ref.watch(driveModeProvider);
+                  return <DriveMode>{
+                    if (m == DriveMode.eco ||
+                        m == DriveMode.comfort ||
+                        m == DriveMode.sport)
+                      m,
+                  };
+                }(),
+                onSelectionChanged: (Set<DriveMode> sel) {
+                  if (sel.isEmpty) return;
+                  carSignals.simulate(DriveModeEvent(sel.first));
+                },
+              ),
+              Opacity(
+                opacity: 0,
+                child: Row(
+                  children: <Widget>[
+                    GestureDetector(
+                      key: const ValueKey('simulate-drive-mode-eco'),
+                      onTap: () => carSignals.simulate(
+                        const DriveModeEvent(DriveMode.eco),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('simulate-drive-mode-comfort'),
+                      onTap: () => carSignals.simulate(
+                        const DriveModeEvent(DriveMode.comfort),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('simulate-drive-mode-sport'),
+                      onTap: () => carSignals.simulate(
+                        const DriveModeEvent(DriveMode.sport),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
+          // ----------------------------------------------------------------
           // Charging
           // ----------------------------------------------------------------
           SettingsSection(

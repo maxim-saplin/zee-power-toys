@@ -210,6 +210,7 @@ Map<String, Object?> _carSignalToJson(CarSignalEvent event) {
         'tempC': tempC,
       },
     PowerFlowEvent(:final flow) => {'type': 'powerFlow', 'flow': flow.name},
+    DriveModeEvent(:final mode) => {'type': 'driveMode', 'mode': mode.name},
   };
 }
 
@@ -232,6 +233,9 @@ CarSignalEvent? _carSignalFromJson(Map<String, Object?> j) {
       ),
     'powerFlow' => PowerFlowEvent(
         PowerFlow.values.byName(j['flow'] as String),
+      ),
+    'driveMode' => DriveModeEvent(
+        DriveMode.values.byName(j['mode'] as String),
       ),
     _ => null,
   };

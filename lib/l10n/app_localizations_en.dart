@@ -506,6 +506,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get simulateSpeedLabel => 'Speed';
 
   @override
+  String get simulateDriveModeLabel => 'Drive mode';
+
+  @override
+  String get simulateDriveModeEco => 'ECO';
+
+  @override
+  String get simulateDriveModeComfort => 'Comfort';
+
+  @override
+  String get simulateDriveModeSport => 'Sport';
+
+  @override
   String get homeTitle => 'Zee Power Toys';
 
   @override

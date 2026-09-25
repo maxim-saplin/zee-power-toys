@@ -22,7 +22,7 @@ import java.lang.reflect.Proxy
 //   SPEED=0x00100100  BLINKER_L=0x21051100  BLINKER_R=0x21051200
 //   CHARGE_STATE=0x00201500  BATTERY_SOC=0x00404000  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
 //   CHARGE_V=0x24140100  CHARGE_A=0x24140200  CHARGE_KW=0x2420C000
-//   POWER_FLOW=0x24010100  ZONE_GLOBAL=0x80000000
+//   POWER_FLOW=0x24010100  DRIVE_MODE=0x22010100  ZONE_GLOBAL=0x80000000
 class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
 
     private val TAG = "ZEE"
@@ -43,6 +43,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private val CHARGE_AMPS   = 0x24140200
     private val CHARGE_KW     = 0x2420C000
     private val POWER_FLOW    = 0x24010100
+    private val DRIVE_MODE   = 0x22010100  // FUNC_ID_DRIVE_MODE
     private val ZONE_GLOBAL   = 0x80000000.toInt()
 
     // Power-flow enum constants (raw int values from CAR_API.md:114-128)
@@ -108,6 +109,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         registerListeners()
         seedBatteryFromLatest()
         seedChargeFromLatest()
+        seedDriveModeFromLatest()
         startBlinkerPoll()
         startBatteryPoll()
         Log.i(TAG, "AdaptApiCarSignals started — listeners + SoC/charge seed/poll + blinker poll")
@@ -136,6 +138,41 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     // ---------------------------------------------------------------------------
     // Listener registration via dynamic proxy
     // ---------------------------------------------------------------------------
+
+
+    /** Map Adapt raw `0x22010100+n` → eco|comfort|sport|other|unknown (0104). */
+    private fun mapDriveMode(raw: Int): String {
+        if (raw == 255 || raw == -1) return "unknown"
+        val offset = raw - DRIVE_MODE
+        val n = when {
+            offset in 1..64 -> offset
+            raw in 1..14 -> raw
+            else -> return "unknown"
+        }
+        return when (n) {
+            1 -> "eco"
+            2 -> "comfort"
+            3 -> "sport"
+            else -> "other"
+        }
+    }
+
+    private fun publishDriveMode(raw: Int) {
+        val mode = mapDriveMode(raw)
+        if (mode == "unknown") return
+        if (lastSnapshot.driveMode == mode) return
+        lastSnapshot = lastSnapshot.copy(driveMode = mode)
+        emitter?.invoke(SignalEvent.DriveMode(mode))
+    }
+
+    private fun seedDriveModeFromLatest() {
+        val fm = functionMgr ?: return
+        val raw = ReflectionUtils.callInstance(fm, "getFunctionValue", DRIVE_MODE) as? Int ?: return
+        val mode = mapDriveMode(raw)
+        if (mode == "unknown") return
+        lastSnapshot = lastSnapshot.copy(driveMode = mode)
+        Log.i(TAG, "DriveMode seed: raw=$raw → $mode (no event — change-only toast)")
+    }
 
     private fun registerListeners() {
         val sm = sensorMgr ?: return
@@ -233,6 +270,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                             lastSnapshot = lastSnapshot.copy(powerFlow = flow)
                             emitter?.invoke(SignalEvent.PowerFlow(flow))
                         }
+                        DRIVE_MODE -> publishDriveMode(value)
                     }
                 }
                 "onCustomizeFunctionValueChanged" -> {
@@ -280,7 +318,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             arrayOf(watcherClass),
             watcherHandler,
         )
-        val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
+        val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, DRIVE_MODE, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
         ReflectionUtils.callInstanceResult(fm, "registerFunctionValueWatcher", funcIds, functionWatcherProxy)
     }
 
@@ -541,7 +579,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             ReflectionUtils.callInstanceResult(sm, "unregisterListener", sl)
         }
         if (fm != null && fw != null) {
-            val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
+            val funcIds = intArrayOf(BLINKER_LEFT, BLINKER_RIGHT, POWER_FLOW, DRIVE_MODE, CHARGE_VOLTS, CHARGE_AMPS, CHARGE_KW)
             ReflectionUtils.callInstanceResult(fm, "unregisterFunctionValueWatcher", funcIds, fw)
         }
     }

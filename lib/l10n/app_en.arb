@@ -648,6 +648,22 @@
   "@simulateSpeedLabel": {
     "description": "Speed slider label on the Simulate screen"
   },
+  "simulateDriveModeLabel": "Drive mode",
+  "@simulateDriveModeLabel": {
+    "description": "0104 Simulate drive-mode section"
+  },
+  "simulateDriveModeEco": "ECO",
+  "@simulateDriveModeEco": {
+    "description": "0104 Simulate ECO"
+  },
+  "simulateDriveModeComfort": "Comfort",
+  "@simulateDriveModeComfort": {
+    "description": "0104 Simulate Comfort"
+  },
+  "simulateDriveModeSport": "Sport",
+  "@simulateDriveModeSport": {
+    "description": "0104 Simulate Sport"
+  },
   "homeTitle": "Zee Power Toys",
   "@homeTitle": {
     "description": "DHU home app-bar title"

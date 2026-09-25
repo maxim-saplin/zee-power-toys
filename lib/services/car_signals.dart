@@ -64,6 +64,11 @@ class PowerFlowEvent extends CarSignalEvent {
   final PowerFlow flow;
 }
 
+class DriveModeEvent extends CarSignalEvent {
+  const DriveModeEvent(this.mode);
+  final DriveMode mode;
+}
+
 // ---------------------------------------------------------------------------
 // Enums
 // ---------------------------------------------------------------------------
@@ -73,6 +78,10 @@ enum BlinkerState { off, left, right, hazard }
 /// Drive/regen/standstill power-flow state.
 /// Hazard = left && right (the dedicated hazard ID is dead on firmware).
 enum PowerFlow { unknown, drive, regen, standstill }
+
+/// Adapt drive mode `0x22010100` — HUD toast: eco/comfort/sport;
+/// other known → [other] ("Mode"); sentinels → [unknown].
+enum DriveMode { unknown, eco, comfort, sport, other }
 
 // ---------------------------------------------------------------------------
 // Snapshot — immutable latest-of-each across signal kinds.
@@ -87,6 +96,7 @@ class CarSnapshot {
     this.batteryPct,
     this.batteryTempC,
     this.powerFlow = PowerFlow.unknown,
+    this.driveMode = DriveMode.unknown,
     this.efficiencyKwhPer100km,
   });
 
@@ -98,6 +108,9 @@ class CarSnapshot {
   final int? batteryPct;
   final double? batteryTempC;
   final PowerFlow powerFlow;
+
+  /// Adapt drive mode (`0x22010100`) — see [DriveModeMapping].
+  final DriveMode driveMode;
 
   /// Adapt Energy Cons 1 (`0x00103100`) when non-sentinel — **seed only** for
   /// 0105 own-range EWMA. Never HUD primary (OEM range IDs unused on HUD).
@@ -111,6 +124,7 @@ class CarSnapshot {
     int? batteryPct,
     double? batteryTempC,
     PowerFlow? powerFlow,
+    DriveMode? driveMode,
     double? efficiencyKwhPer100km,
   }) => CarSnapshot(
     speedKmh: speedKmh ?? this.speedKmh,
@@ -120,6 +134,7 @@ class CarSnapshot {
     batteryPct: batteryPct ?? this.batteryPct,
     batteryTempC: batteryTempC ?? this.batteryTempC,
     powerFlow: powerFlow ?? this.powerFlow,
+    driveMode: driveMode ?? this.driveMode,
     efficiencyKwhPer100km:
         efficiencyKwhPer100km ?? this.efficiencyKwhPer100km,
   );
@@ -133,6 +148,7 @@ class CarSnapshot {
     'batteryPct': batteryPct,
     'batteryTempC': batteryTempC,
     'powerFlow': powerFlow.name,
+    'driveMode': driveMode.name,
     'efficiencyKwhPer100km': efficiencyKwhPer100km,
   };
 }

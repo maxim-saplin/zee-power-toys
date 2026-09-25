@@ -64,6 +64,11 @@ class FakeCarSignals implements CarSignals {
     _ctrl.add(PowerFlowEvent(flow));
   }
 
+  void emitDriveMode(DriveMode mode) {
+    _snapshot = _snapshot.copyWith(driveMode: mode);
+    _ctrl.add(DriveModeEvent(mode));
+  }
+
   /// Re-emit a [CarSignalEvent] that arrived from the relay (HUD-side use).
   void relay(CarSignalEvent event) {
     switch (event) {
@@ -80,6 +85,8 @@ class FakeCarSignals implements CarSignals {
         );
       case PowerFlowEvent(:final flow):
         _snapshot = _snapshot.copyWith(powerFlow: flow);
+      case DriveModeEvent(:final mode):
+        _snapshot = _snapshot.copyWith(driveMode: mode);
     }
     _ctrl.add(event);
   }

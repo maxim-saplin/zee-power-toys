@@ -438,6 +438,7 @@ Future<void> seedHudFromCarSignals(CarSignals cs) async {
   }
   await pushCarSignalToHud(BlinkerEvent(s.blinker));
   await pushCarSignalToHud(PowerFlowEvent(s.powerFlow));
+  await pushCarSignalToHud(DriveModeEvent(s.driveMode));
 }
 
 // ---------------------------------------------------------------------------

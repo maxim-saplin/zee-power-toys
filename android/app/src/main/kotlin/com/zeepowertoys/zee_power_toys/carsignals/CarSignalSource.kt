@@ -25,4 +25,5 @@ sealed class SignalEvent {
     ) : SignalEvent()
     data class Battery(val levelPct: Int, val tempC: Double) : SignalEvent()
     data class PowerFlow(val flow: String) : SignalEvent()   // unknown|drive|regen|standstill
+    data class DriveMode(val mode: String) : SignalEvent()   // unknown|eco|comfort|sport|other
 }

@@ -18,6 +18,7 @@ data class CarSignalSnapshot(
     val batteryPct: Int? = null,
     val batteryTempC: Double? = null,
     val powerFlow: String = "unknown",
+    val driveMode: String = "unknown", // unknown|eco|comfort|sport|other
     val source: String = "unknown",   // adaptapi | simulated | unknown
 ) {
     fun toMap(): Map<String, Any?> = mutableMapOf(
@@ -30,6 +31,7 @@ data class CarSignalSnapshot(
         "batteryPct" to batteryPct,
         "batteryTempC" to batteryTempC,
         "powerFlow" to powerFlow,
+        "driveMode" to driveMode,
         "source" to source,
     )
 
@@ -44,6 +46,7 @@ data class CarSignalSnapshot(
         append("\"batteryPct\":${batteryPct ?: "null"},")
         append("\"batteryTempC\":${batteryTempC ?: "null"},")
         append("\"powerFlow\":\"$powerFlow\",")
+        append("\"driveMode\":\"$driveMode\",")
         append("\"source\":\"$source\"")
         append("}")
     }

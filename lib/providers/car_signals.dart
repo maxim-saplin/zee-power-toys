@@ -59,6 +59,12 @@ final powerFlowProvider = Provider<PowerFlow>((ref) {
   return ref.watch(carSignalsProvider).snapshot.powerFlow;
 });
 
+/// Adapt drive mode from snapshot (0104).
+final driveModeProvider = Provider<DriveMode>((ref) {
+  _touchEvents(ref);
+  return ref.watch(carSignalsProvider).snapshot.driveMode;
+});
+
 /// Which car-signal source is live: 'adaptapi' | 'simulated' | 'fake'.
 final signalSourceProvider = FutureProvider<String>((ref) {
   return ref.watch(carSignalsProvider).sourceKind;

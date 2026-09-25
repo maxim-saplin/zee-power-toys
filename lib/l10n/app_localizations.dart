@@ -1070,6 +1070,30 @@ abstract class AppLocalizations {
   /// **'Speed'**
   String get simulateSpeedLabel;
 
+  /// 0104 Simulate drive-mode section
+  ///
+  /// In en, this message translates to:
+  /// **'Drive mode'**
+  String get simulateDriveModeLabel;
+
+  /// 0104 Simulate ECO
+  ///
+  /// In en, this message translates to:
+  /// **'ECO'**
+  String get simulateDriveModeEco;
+
+  /// 0104 Simulate Comfort
+  ///
+  /// In en, this message translates to:
+  /// **'Comfort'**
+  String get simulateDriveModeComfort;
+
+  /// 0104 Simulate Sport
+  ///
+  /// In en, this message translates to:
+  /// **'Sport'**
+  String get simulateDriveModeSport;
+
   /// DHU home app-bar title
   ///
   /// In en, this message translates to:

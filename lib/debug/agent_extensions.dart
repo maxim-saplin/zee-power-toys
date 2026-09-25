@@ -167,6 +167,7 @@ void registerZeeExtensions({
           'horizBiasFrac': bat.horizBiasFrac,
         },
         'powerFlow': snap?.powerFlow.name ?? PowerFlow.unknown.name,
+        'driveMode': snap?.driveMode.name ?? DriveMode.unknown.name,
         // HUD layout state — safeArea fractions + which slots are active.
         // activeSlots: slots with real rendered content on the production HUD.
         // The minimap is native (a TextureView beneath the transparent Flutter
@@ -645,9 +646,12 @@ void registerZeeExtensions({
           case 'powerFlow':
             final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
             fake.emitPowerFlow(flow);
+          case 'driveMode':
+            final mode = DriveMode.values.byName(params['value'] ?? 'unknown');
+            fake.emitDriveMode(mode);
           default:
             return _extError(
-              'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow',
+              'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow|driveMode',
             );
         }
       } catch (e) {

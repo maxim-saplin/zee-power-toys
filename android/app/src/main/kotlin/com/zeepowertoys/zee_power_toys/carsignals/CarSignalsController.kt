@@ -199,6 +199,7 @@ class CarSignalsController(
                 "tempC" to event.tempC,
             )
             is SignalEvent.PowerFlow -> mutableMapOf("type" to "powerFlow", "flow" to event.flow)
+            is SignalEvent.DriveMode -> mutableMapOf("type" to "driveMode", "mode" to event.mode)
         }
         mainHandler.post {
             try {
