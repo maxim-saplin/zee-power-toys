@@ -44,7 +44,7 @@ Maxim 2026-09-25: **do not** trust the car’s Adapt range as the HUD primary (t
 
 ## Reconciliation
 **2026-09-25 tip:** Own-range EWMA beside battery %.
-**Tip SHA:** 2744597
+**Tip SHA:** 97784bb
 
 ### Formula
 ```
