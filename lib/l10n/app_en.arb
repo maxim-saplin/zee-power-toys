@@ -312,9 +312,9 @@
   "@showOwnRangeEstimate": {
     "description": "0105: own Wh/km range beside battery % (default off)"
   },
-  "showOwnRangeEstimateHint": "From your recent Wh/km while moving — not the car’s range. Needs a few kilometres of driving before it shows beside the battery %.",
+  "showOwnRangeEstimateHint": "Uses about the last 50 km of driving, with more weight on the most recent 10 km — especially the last 3 km. Our estimate, not the car’s Adapt range. Needs a few kilometres before it shows beside the battery %.",
   "@showOwnRangeEstimateHint": {
-    "description": "0105: plain-language how-calculated; OEM range not primary"
+    "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
   },
   "batteryContentMode": "Content",
   "@batteryContentMode": {

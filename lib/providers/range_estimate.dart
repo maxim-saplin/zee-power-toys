@@ -7,7 +7,7 @@ import 'services.dart';
 
 final rangeEstimateServiceProvider = Provider<RangeEstimateService>((ref) {
   final svc = RangeEstimateService();
-  // Prefs load is async; first ticks may run before restore — OK (fresh EWMA).
+  // Prefs load is async; first ticks may run before restore — OK (fresh window).
   svc.ensureLoaded();
   return svc;
 });

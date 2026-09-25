@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: ready-for-qa
 labels: [hud, battery, range, honesty, adapt]
 created: 2026-09-25
 satisfies: Own estimated range that reconciles with observed SoC / distance / consumption
@@ -39,17 +39,17 @@ single opaque EWMA:
 
 ## Definition of Done
 
-- [ ] Estimator redesign is implemented and unit-tested for:
+- [x] Estimator redesign is implemented and unit-tested for:
   - empty and less-than-ready history;
   - a full 50 km window with oldest history discarded as new distance arrives;
   - recent 3 km and 10 km being overweight relative to older kilometres;
   - one-kilometre refresh cadence (no displayed-value thrash between boundaries);
   - SoC drop plus distance producing consumption in the ballpark of Adapt trip
     figures on representative fixtures.
-- [ ] Settings help is updated in EN and RU: approximately 50 km of driving is
+- [x] Settings help is updated in EN and RU: approximately 50 km of driving is
   used, the most recent kilometres count more (mention 10 and 3 where space
   allows), and this is not the car's Adapt range.
-- [ ] 0107 polish still applies if already landed: always-show marker when ON,
+- [x] 0107 polish still applies if already landed: always-show marker when ON,
   no `~`, smaller `km`, smaller `%`, and enough width for one line. Do not
   regress it.
 - [ ] QA FINDINGS T2 dens320 + PDM ACCEPT.
@@ -58,69 +58,20 @@ single opaque EWMA:
 
 ## Reconciliation
 
-### Proposed composite
+**2026-09-25 tip:** Replace opaque EWMA with weighted ~50 km composite (heavier last 10 / last 3).
 
-Use moving-driving segments as the history record. Each accepted record carries
-`distanceKm` and the net battery energy represented by its SoC change. Energy is
-computed with the single explicit constant from 0105:
+### Changes
+1. **Estimator:** `RangeEstimator` keeps moving-driving segments trimmed to ~50 km. Weighted Wh/km bands: 0..3 → 8×/km, 3..10 → 4×/km, 10..50 → 1×/km. `rangeKm = (SoC/100)×100000 / weightedWhPerKm`.
+2. **Refresh:** Display value publishes on first ready sample, then only after ~1 km further moving (no per-tick thrash). History still updates continuously.
+3. **Exclusions:** Parked/charging, gaps >25 s, tiny SoCΔ, absurd Wh/km rejected. Regen-while-moving kept. Adapt efficiency **does not** seed the composite; HUD primary remains ours.
+4. **Persist:** `zee.range_estimate` stores segment history (v2); migrates 0105 EWMA prefs into one synthetic segment.
+5. **Help EN/RU:** ~50 km window, more weight last 10 especially last 3; not Adapt range.
+6. **0107 polish preserved:** pending `… km`, no `~`, typography, wider slot. No Live bump (`1.1.0+21`).
 
-```text
-usablePackWh = 100000 Wh
-segmentWh = -deltaSoC / 100 * usablePackWh
-segmentWhPerKm = segmentWh / distanceKm
-```
+### Verification
+`flutter test` — `test/services/range_estimator_test.dart` (empty/short, 50 km trim, 3/10 overweight, 1 km refresh, Adapt-ballpark fixtures, regen/charge/gap, persist+migrate), `test/widgets/battery_widget_test.dart`, `test/hud/battery_geometry_test.dart`.
 
-Ignore parked/charging intervals, telemetry gaps, and records too small to be
-meaningful. Regen while moving remains part of the observed drive history;
-plugged-in charging is excluded. Keep enough records to cover the most recent
-50 km and trim by distance, so a short final segment does not accidentally
-replace a whole older trip.
-
-Calculate one weighted energy-vs-distance ratio rather than averaging displayed
-ranges. The initial design uses three distance bands:
-
-```text
-older:     km 10..50       weight 1x per km
-recent:    km 3..10        weight 4x per km
-latest:    km 0..3         weight 8x per km
-weightedWhPerKm = sum(weight * segmentWh) / sum(weight * segmentKm)
-```
-
-The exact constants may be tuned against the fixtures, but the invariants are
-fixed: all usable history is bounded to about 50 km; the last 10 km outweighs
-the older 40 km; and the last 3 km is the strongest signal. A robust estimator
-must avoid letting one malformed SoC jump or a near-zero-distance sample
- dominate the ratio; tests should cover the chosen rejection/clamp behavior.
-
-Project from the current SoC with the same pack constant and keep our estimate
-as the HUD primary:
-
-```text
-remainingWh = currentSoC / 100 * usablePackWh
-rangeKm = remainingWh / weightedWhPerKm
-```
-
-Do not use Adapt range IDs as the primary value. An Adapt efficiency reading may
-be shown for diagnostics or comparison, but it must not silently seed a result
-that contradicts the observed SoC/distance history.
-
-### Readiness and refresh
-
-Hide the numeric estimate until the estimator has a meaningful ready window (the
-existing approximately 5 km readiness rule may remain unless fixtures require a
-clearer minimum). Accumulate moving distance continuously, but publish a new
-rounded/display value only after another approximately 1 km boundary. Telemetry
-samples within that boundary may update the stored history, but must not make the
-HUD jump every tick. Persist the history/state needed across process death in
-the existing range-estimate preferences path.
-
-### Settings hint
-
-Keep the copy short and non-technical. EN should say that the estimate uses
-about the last 50 km of driving and gives more weight to the most recent 10 km,
-especially the last 3 km; it is our estimate, not the car's Adapt range. RU
-should convey the same meaning in natural plain language rather than exposing
-EWMA, alpha, or pack math.
+**Divergence:** None from scope; change-only. Soft: car T3 live honesty check.
 
 ## Notes for agents
 

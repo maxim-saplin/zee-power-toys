@@ -616,7 +616,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
-      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      svc.debugSeedReady(movingKm: 8, whPerKm: 200, shownKm: 360);
       await tester.binding.setSurfaceSize(const Size(200, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -642,7 +642,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
-      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      svc.debugSeedReady(movingKm: 8, whPerKm: 200, shownKm: 360);
       await tester.binding.setSurfaceSize(const Size(200, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -695,7 +695,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
-      svc.debugSeedReady(movingKm: 8, ewmaWhPerKm: 200, shownKm: 360);
+      svc.debugSeedReady(movingKm: 8, whPerKm: 200, shownKm: 360);
       await tester.binding.setSurfaceSize(const Size(320, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 

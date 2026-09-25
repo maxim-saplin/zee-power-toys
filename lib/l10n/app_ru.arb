@@ -312,9 +312,9 @@
   "@showOwnRangeEstimate": {
     "description": "0105: own Wh/km range beside battery % (default off)"
   },
-  "showOwnRangeEstimateHint": "По вашему недавнему расходу Wh/км в движении — не по запасу хода автомобиля. Нужно несколько километров поездки, прежде чем цифра появится рядом с % батареи.",
+  "showOwnRangeEstimateHint": "Берёт примерно последние 50 км поездки и сильнее учитывает недавние 10 км — особенно последние 3 км. Это наша оценка, не запас хода Adapt. Нужно несколько километров, прежде чем цифра появится рядом с % батареи.",
   "@showOwnRangeEstimateHint": {
-    "description": "0105: plain-language how-calculated; OEM range not primary"
+    "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
   },
   "batteryContentMode": "Содержимое",
   "@batteryContentMode": {

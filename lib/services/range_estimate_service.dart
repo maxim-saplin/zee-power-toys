@@ -5,7 +5,8 @@ import 'range_estimator.dart';
 
 const String kRangeEstimatePrefKey = 'zee.range_estimate';
 
-/// Owns [RangeEstimator], persists EWMA across trips / process death (0105).
+/// Owns [RangeEstimator], persists the ~50 km honesty window across trips /
+/// process death (0105 prefs path; 0108 composite).
 class RangeEstimateService {
   RangeEstimateService({RangeEstimator? estimator})
       : _estimator = estimator ?? RangeEstimator();
@@ -40,7 +41,7 @@ class RangeEstimateService {
     );
     if (km != _currentKm) {
       _currentKm = km;
-      // Fire-and-forget persist (EWMA / moving km).
+      // Fire-and-forget persist (window / display).
       _save();
     }
     return km;
@@ -49,15 +50,15 @@ class RangeEstimateService {
   /// Test/harness: plant a ready estimate without a real trip.
   void debugSeedReady({
     double movingKm = 6,
-    double ewmaWhPerKm = 200,
+    double whPerKm = 200,
     int? shownKm,
   }) {
     _estimator.debugForceState(
       movingKm: movingKm,
-      ewmaWhPerKm: ewmaWhPerKm,
+      whPerKm: whPerKm,
       lastShownKm: shownKm,
     );
     _currentKm = shownKm ??
-        ((100 / 100.0) * RangeEstimator.kUsablePackWh / ewmaWhPerKm).round();
+        ((100 / 100.0) * RangeEstimator.kUsablePackWh / whPerKm).round();
   }
 }
