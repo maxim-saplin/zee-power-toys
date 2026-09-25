@@ -83,7 +83,7 @@ void main() {
       expect(avail.asset.directUrl, contains('1.0.0+5'));
     });
 
-    test('up to date', () async {
+    test('same build → reinstall with asset', () async {
       final client = MockClient((request) async {
         return http.Response(
           jsonEncode([
@@ -107,7 +107,41 @@ void main() {
         client: client,
         installedCode: 3,
       ).check();
-      expect(check, isA<AppUpdateUpToDate>());
+      expect(check, isA<AppUpdateReinstall>());
+      final same = check as AppUpdateReinstall;
+      expect(same.remoteCode, 3);
+      expect(same.asset.directUrl, 'https://example.com/a.apk');
+    });
+
+    test('tip ahead of published → tipAhead with Release asset', () async {
+      final client = MockClient((request) async {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': '1.0.0+3',
+              'draft': false,
+              'prerelease': false,
+              'assets': [
+                {
+                  'name': 'zee-power-toys.apk',
+                  'browser_download_url': 'https://example.com/a.apk',
+                },
+              ],
+            },
+          ]),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final check = await AppSelfUpdate(
+        client: client,
+        installedCode: 9,
+      ).check();
+      expect(check, isA<AppUpdateTipAhead>());
+      final tip = check as AppUpdateTipAhead;
+      expect(tip.remoteCode, 3);
+      expect(tip.installedCode, 9);
+      expect(tip.asset.path, 'zee-power-toys.apk');
     });
 
     test('http failure', () async {

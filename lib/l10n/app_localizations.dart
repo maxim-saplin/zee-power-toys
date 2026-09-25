@@ -359,7 +359,7 @@ abstract class AppLocalizations {
   /// Install target: YNavi mod name
   ///
   /// In en, this message translates to:
-  /// **'YNavi mod (margined / default)'**
+  /// **'YNavi mod v27.0.2 (margined / default)'**
   String get installYnaviName;
 
   /// Install target: YNavi mod description
@@ -1415,7 +1415,7 @@ abstract class AppLocalizations {
   /// Install card — OS7 YNavi variant
   ///
   /// In en, this message translates to:
-  /// **'YNavi mod (OS7+ no left margin)'**
+  /// **'YNavi mod v27.0.2 (OS7+ no left margin)'**
   String get installYnaviOs7Name;
 
   /// Install card desc OS7 YNavi
@@ -1442,11 +1442,29 @@ abstract class AppLocalizations {
   /// **'Check for updates'**
   String get updateCheckButton;
 
-  /// Download and install newer APK
+  /// 0103: Download and install newer APK (Update)
   ///
   /// In en, this message translates to:
-  /// **'Update now'**
+  /// **'Update'**
   String get updateInstallButton;
+
+  /// 0103: Re-download and install same Latest build
+  ///
+  /// In en, this message translates to:
+  /// **'Reinstall'**
+  String get updateReinstallButton;
+
+  /// 0103: First install when companion package missing
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get installActionInstall;
+
+  /// 0103: lab tip ahead of published Release
+  ///
+  /// In en, this message translates to:
+  /// **'Installed build is ahead of Release {label}. Reinstall to match published.'**
+  String updateStatusTipAhead(String label);
 
   /// Self-update checking status
   ///
@@ -1525,17 +1543,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full Speedcam radar over other apps when approaching (needs display-over permission).'**
   String get speedcamDhuSystemOverlayHint;
-  /// Overlay size slider label (0079).
-  String get speedcamOverlaySize;
-
-  /// Overlay placement section (0079).
-  String get speedcamOverlayPlacement;
-
-  String get speedcamOverlayTopStart;
-  String get speedcamOverlayTopEnd;
-  String get speedcamOverlayBottomStart;
-  String get speedcamOverlayBottomEnd;
-
 
   /// 0065 permission denied
   ///
@@ -1596,6 +1603,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop YNavi cams not seen for this many days (OSM pack uses Harvest stale separately).'**
   String get speedcamYnaviAgingHint;
+
+  /// No description provided for @speedcamOverlaySize.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay size'**
+  String get speedcamOverlaySize;
+
+  /// No description provided for @speedcamOverlayPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay location'**
+  String get speedcamOverlayPlacement;
+
+  /// No description provided for @speedcamOverlayTopStart.
+  ///
+  /// In en, this message translates to:
+  /// **'TL'**
+  String get speedcamOverlayTopStart;
+
+  /// No description provided for @speedcamOverlayTopEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'TR'**
+  String get speedcamOverlayTopEnd;
+
+  /// No description provided for @speedcamOverlayBottomStart.
+  ///
+  /// In en, this message translates to:
+  /// **'BL'**
+  String get speedcamOverlayBottomStart;
+
+  /// No description provided for @speedcamOverlayBottomEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'BR'**
+  String get speedcamOverlayBottomEnd;
 }
 
 class _AppLocalizationsDelegate

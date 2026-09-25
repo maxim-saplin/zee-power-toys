@@ -904,9 +904,22 @@
   "@updateCheckButton": {
     "description": "Probe GitHub for newer release"
   },
-  "updateInstallButton": "Update now",
+  "updateInstallButton": "Update",
   "@updateInstallButton": {
-    "description": "Download and install newer APK"
+    "description": "0103: Download and install newer APK (Update)"
+  },
+  "updateReinstallButton": "Reinstall",
+  "@updateReinstallButton": {
+    "description": "0103: Re-download and install same Latest build"
+  },
+  "installActionInstall": "Install",
+  "@installActionInstall": {
+    "description": "0103: First install when companion package missing"
+  },
+  "updateStatusTipAhead": "Installed build is ahead of Release {label}. Reinstall to match published.",
+  "@updateStatusTipAhead": {
+    "description": "0103: lab tip ahead of published Release",
+    "placeholders": {"label": {"type": "String"}}
   },
   "updateStatusChecking": "Checking…",
   "@updateStatusChecking": {

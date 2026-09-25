@@ -906,7 +906,20 @@
   },
   "updateInstallButton": "Обновить",
   "@updateInstallButton": {
-    "description": "Download and install newer APK"
+    "description": "0103: Download and install newer APK (Update)"
+  },
+  "updateReinstallButton": "Переустановить",
+  "@updateReinstallButton": {
+    "description": "0103: Re-download and install same Latest build"
+  },
+  "installActionInstall": "Установить",
+  "@installActionInstall": {
+    "description": "0103: First install when companion package missing"
+  },
+  "updateStatusTipAhead": "Установленная сборка новее релиза {label}. Переустановите, чтобы совпасть с опубликованной.",
+  "@updateStatusTipAhead": {
+    "description": "0103: lab tip ahead of published Release",
+    "placeholders": {"label": {"type": "String"}}
   },
   "updateStatusChecking": "Проверка…",
   "@updateStatusChecking": {

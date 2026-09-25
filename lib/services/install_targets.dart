@@ -21,6 +21,18 @@ const String kYnaviUpstreamLabel = 'v$kYnaviUpstreamVersionName';
 const String kYnaviUpstreamVersionBuild =
     '$kYnaviUpstreamVersionName+$kYnaviUpstreamVersionCode';
 
+
+/// Release pin: upstream versionCode for companion Update/Reinstall compare (0103).
+const int kYnaviReleaseVersionCode = 738798690;
+
+/// Launcher Release pin (apktool versionCode for launcher-670 asset). Tag
+/// `launcher-670` is the GH label; numeric compare uses this code.
+const int kLauncherReleaseVersionCode = 305019;
+
+/// Launcher product versionName for status labels (apktool).
+const String kLauncherReleaseVersionName = '3.0.5019';
+
+
 /// Release tag for all Deepal + Zeekr YNavi variants (0087).
 const String kYnaviReleaseTag = 'ynavi-zeekr-v$kYnaviUpstreamVersionName';
 

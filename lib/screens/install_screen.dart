@@ -8,9 +8,11 @@ import '../providers/services.dart';
 import '../services/app_self_update.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
+import '../services/package_status.dart';
+import '../services/release_compare.dart';
 import '../theme/app_theme.dart';
 
-/// Install screen — companions from GitHub Releases + self-update (0069).
+/// Install screen — companions from GitHub Releases + self-update (0069 / 0103).
 class InstallScreen extends ConsumerWidget {
   const InstallScreen({super.key});
 
@@ -18,6 +20,7 @@ class InstallScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final installer = ref.read(installerProvider);
+    final packages = ref.read(packageStatusProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.installTitle)),
@@ -35,7 +38,11 @@ class InstallScreen extends ConsumerWidget {
             name: l10n.installLauncherName,
             description: l10n.installLauncherDesc,
             asset: kLauncherAsset,
+            packageName: CompanionPackages.launcher,
+            releaseVersionCode: kLauncherReleaseVersionCode,
+            releaseLabel: kLauncherAsset.releaseTag ?? 'launcher-670',
             installer: installer,
+            packages: packages,
           ),
           const SizedBox(height: Insets.md),
           _InstallCard(
@@ -44,7 +51,11 @@ class InstallScreen extends ConsumerWidget {
             name: l10n.installYnaviName,
             description: l10n.installYnaviDesc,
             asset: kYnaviAsset,
+            packageName: CompanionPackages.ynavi,
+            releaseVersionCode: kYnaviReleaseVersionCode,
+            releaseLabel: kYnaviUpstreamVersionBuild,
             installer: installer,
+            packages: packages,
           ),
           const SizedBox(height: Insets.md),
           _InstallCard(
@@ -53,14 +64,17 @@ class InstallScreen extends ConsumerWidget {
             name: l10n.installYnaviOs7Name,
             description: l10n.installYnaviOs7Desc,
             asset: kYnaviOs7Asset,
+            packageName: CompanionPackages.ynavi,
+            releaseVersionCode: kYnaviReleaseVersionCode,
+            releaseLabel: kYnaviUpstreamVersionBuild,
             installer: installer,
+            packages: packages,
           ),
         ],
       ),
     );
   }
 }
-
 
 /// Progress-bar value for [InstallProgress].
 ///
@@ -80,8 +94,22 @@ double? installProgressBarValue(InstallProgress progress) {
   }
 }
 
+String releaseActionButtonLabel(AppLocalizations l10n, ReleaseActionKind kind) {
+  switch (kind) {
+    case ReleaseActionKind.install:
+      return l10n.installActionInstall;
+    case ReleaseActionKind.installOrUpdate:
+      return l10n.installButtonLabel;
+    case ReleaseActionKind.update:
+      return l10n.updateInstallButton;
+    case ReleaseActionKind.reinstall:
+    case ReleaseActionKind.tipAhead:
+      return l10n.updateReinstallButton;
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Self-update (0069)
+// Self-update (0069 / 0103)
 // ---------------------------------------------------------------------------
 
 class _SelfUpdateCard extends StatefulWidget {
@@ -103,6 +131,14 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
       _progress != null &&
       _progress!.phase != InstallPhase.done &&
       _progress!.phase != InstallPhase.failed;
+
+  GithubAsset? get _actionAsset {
+    final c = _check;
+    if (c is AppUpdateAvailable) return c.asset;
+    if (c is AppUpdateReinstall) return c.asset;
+    if (c is AppUpdateTipAhead) return c.asset;
+    return null;
+  }
 
   @override
   void dispose() {
@@ -160,9 +196,10 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    final available = _check is AppUpdateAvailable
-        ? _check as AppUpdateAvailable
-        : null;
+    final asset = _actionAsset;
+    final isUpdate = _check is AppUpdateAvailable;
+    final isReinstall =
+        _check is AppUpdateReinstall || _check is AppUpdateTipAhead;
 
     return Card(
       child: Padding(
@@ -203,13 +240,15 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
                   ),
                 ),
                 const SizedBox(width: Insets.md),
-                if (available != null)
+                if (asset != null && (isUpdate || isReinstall))
                   ElevatedButton(
-                    key: const ValueKey('update-install'),
-                    onPressed: _busyInstall
-                        ? null
-                        : () => _startUpdate(available.asset),
-                    child: Text(l10n.updateInstallButton),
+                    key: ValueKey(isUpdate ? 'update-install' : 'update-reinstall'),
+                    onPressed: _busyInstall ? null : () => _startUpdate(asset),
+                    child: Text(
+                      isUpdate
+                          ? l10n.updateInstallButton
+                          : l10n.updateReinstallButton,
+                    ),
                   )
                 else
                   ElevatedButton(
@@ -264,6 +303,10 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
     if (c is AppUpdateAvailable) {
       return l10n.updateStatusAvailable(c.remoteLabel);
     }
+    if (c is AppUpdateReinstall) return l10n.updateStatusUpToDate;
+    if (c is AppUpdateTipAhead) {
+      return l10n.updateStatusTipAhead(c.remoteLabel);
+    }
     if (c is AppUpdateUpToDate) return l10n.updateStatusUpToDate;
     if (c is AppUpdateNonePublished) return l10n.updateStatusNone;
     if (c is AppUpdateCheckFailed) {
@@ -293,7 +336,7 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
 }
 
 // ---------------------------------------------------------------------------
-// Individual install target card
+// Individual install target card (0103: Update / Reinstall vs probe)
 // ---------------------------------------------------------------------------
 
 class _InstallCard extends StatefulWidget {
@@ -303,14 +346,22 @@ class _InstallCard extends StatefulWidget {
     required this.name,
     required this.description,
     required this.asset,
+    required this.packageName,
+    required this.releaseVersionCode,
+    required this.releaseLabel,
     required this.installer,
+    required this.packages,
   });
 
   final Key installKey;
   final String name;
   final String description;
   final GithubAsset asset;
+  final String packageName;
+  final int releaseVersionCode;
+  final String releaseLabel;
   final Installer installer;
+  final PackageStatus packages;
 
   @override
   State<_InstallCard> createState() => _InstallCardState();
@@ -319,16 +370,44 @@ class _InstallCard extends StatefulWidget {
 class _InstallCardState extends State<_InstallCard> {
   StreamSubscription<InstallProgress>? _sub;
   InstallProgress? _progress;
+  PackageProbe? _probe;
+  bool _probing = true;
 
   bool get _busy =>
       _progress != null &&
       _progress!.phase != InstallPhase.done &&
       _progress!.phase != InstallPhase.failed;
 
+  ReleaseActionKind get _action {
+    final p = _probe;
+    if (p == null) return ReleaseActionKind.installOrUpdate;
+    return releaseActionFor(
+      state: p.state,
+      installedCode: p.versionCode,
+      releaseCode: widget.releaseVersionCode,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshProbe();
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _refreshProbe() async {
+    setState(() => _probing = true);
+    final probe = await widget.packages.probe(widget.packageName);
+    if (!mounted) return;
+    setState(() {
+      _probe = probe;
+      _probing = false;
+    });
   }
 
   void _startInstall() {
@@ -353,6 +432,7 @@ class _InstallCardState extends State<_InstallCard> {
                 ),
               );
             }
+            _refreshProbe();
           },
           onError: (Object err) => setState(
             () => _progress = InstallProgress(
@@ -370,6 +450,9 @@ class _InstallCardState extends State<_InstallCard> {
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final phase = _progress?.phase;
+    final action = _action;
+    final buttonLabel = releaseActionButtonLabel(l10n, action);
+    final status = _companionStatus(l10n, action);
 
     return Card(
       child: Padding(
@@ -413,10 +496,20 @@ class _InstallCardState extends State<_InstallCard> {
                 ElevatedButton(
                   key: widget.installKey,
                   onPressed: _busy ? null : _startInstall,
-                  child: Text(l10n.installButtonLabel),
+                  child: Text(buttonLabel),
                 ),
               ],
             ),
+            if (!_probing && status != null) ...[
+              const SizedBox(height: Insets.md),
+              Text(
+                status,
+                key: ValueKey('install-status-${widget.packageName}-${widget.asset.path}'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ],
             if (_progress != null) ...[
               const SizedBox(height: Insets.md),
               ClipRRect(
@@ -441,6 +534,21 @@ class _InstallCardState extends State<_InstallCard> {
         ),
       ),
     );
+  }
+
+  String? _companionStatus(AppLocalizations l10n, ReleaseActionKind action) {
+    switch (action) {
+      case ReleaseActionKind.install:
+        return null;
+      case ReleaseActionKind.installOrUpdate:
+        return null;
+      case ReleaseActionKind.update:
+        return l10n.updateStatusAvailable(widget.releaseLabel);
+      case ReleaseActionKind.reinstall:
+        return l10n.updateStatusUpToDate;
+      case ReleaseActionKind.tipAhead:
+        return l10n.updateStatusTipAhead(widget.releaseLabel);
+    }
   }
 
   static String _phaseLabel(

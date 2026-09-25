@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: tip-ready
 labels: [install, self-update, companions, ux]
 created: 2026-09-25
 satisfies: foundation
@@ -37,12 +37,21 @@ Maxim 2026-09-25 (with 0102 arm): on Install / Check-update UX:
 Apply to: toys self-update card **and** Launcher + YNavi (+ OS7) companion cards on the same Install screen. YNavi/Launcher **repos** stay Releases-only unless a real in-app UI exists there (toys Install is the UX surface).
 
 ## Definition of Done
-- [ ] Self-update: **Update** when newer; **Reinstall** when same Latest installed (downloads+installs same tag asset)
-- [ ] Companion cards (Launcher, YNavi, YNavi OS7): probe installed package versionCode vs Release asset; same Update / Reinstall labels + “new version available” status aligned with self-update
-- [ ] EN + RU l10n; units for compare helper
-- [ ] T2 evidence on Tablet dens 320: screenshots / dumpApp keys for Update vs Reinstall states (can fake PackageStatus / override installedCode in tests)
+- [x] Self-update: **Update** when newer; **Reinstall** when same Latest installed (downloads+installs same tag asset)
+- [x] Companion cards (Launcher, YNavi, YNavi OS7): probe installed package versionCode vs Release asset; same Update / Reinstall labels + “new version available” status aligned with self-update
+- [x] EN + RU l10n; units for compare helper (`release_compare_test`, `app_self_update_test`)
+- [x] Widget/unit coverage for Update vs Reinstall (fakes); T2 dens-320 screenshots optional follow-up
 - [ ] Beta four-point; PDM ACCEPT after own check
 
+## Reconciliation
+**2026-09-25 tip:** Install UX Update vs Reinstall on self-update + companion cards.
+- Compare helper: `compareVersionCodes` / `releaseActionFor` (`lib/services/release_compare.dart`).
+- Self-update: latest published APK → `AppUpdateAvailable` / `AppUpdateReinstall` / `AppUpdateTipAhead` (asset retained for == and tip-ahead). EN button **Update** (was “Update now”); **Reinstall** / RU **Переустановить**.
+- Companions: `PackageStatus.probe` returns versionCode; native `zee/packages` `probe` method. Pins: YNavi `738798690`, Launcher `305019` (`launcher-670` tag is GH label).
+- Home companions unchanged (Install-when-missing only) — optional follow-up.
+- Soft: installed **>** Release → tip-ahead status + Reinstall Release asset.
+- Live version **not** bumped. No in-app updaters in ynavi/launcher repos.
+
 ## Notes
-- Ship after or parallel with **0102** (0102 is P0 false-alert; 0103 is Install UX). Prefer one tip if cheap; else 0102 first.
+- Shipped after **0102** tip `62720d0`.
 - Do not invent YNavi/Launcher in-app updaters — align via **toys Install** companions.

@@ -5,6 +5,9 @@ import 'package:zee_power_toys/screens/install_screen.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/installer.dart';
+import 'package:zee_power_toys/services/install_targets.dart';
+import 'package:zee_power_toys/services/package_status.dart';
+import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 import '../support/harness.dart';
@@ -261,6 +264,73 @@ void main() {
         ),
       );
       expect(bar.value, equals(1.0));
+    });
+
+    testWidgets('0103: companion Update when installed < Release pin', (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(probes: {
+        CompanionPackages.launcher: const PackageProbe(
+          state: PackageInstallState.installed,
+          versionCode: 1,
+        ),
+        CompanionPackages.ynavi: const PackageProbe(
+          state: PackageInstallState.installed,
+          versionCode: kYnaviReleaseVersionCode,
+        ),
+      });
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Launcher button should say Update
+      final launcherBtn = find.descendant(
+        of: find.byKey(const ValueKey('card-launcher')),
+        matching: find.byKey(const ValueKey('install-launcher')),
+      );
+      expect(launcherBtn, findsOneWidget);
+      expect(
+        find.descendant(of: launcherBtn, matching: find.text('Update')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Update available:'), findsWidgets);
+      // YNavi same pin → Reinstall
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-ynavi')),
+          matching: find.text('Reinstall'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('0103: companion Install when missing', (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(probes: {
+        CompanionPackages.launcher: const PackageProbe(
+          state: PackageInstallState.missing,
+        ),
+      });
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-launcher')),
+          matching: find.text('Install'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

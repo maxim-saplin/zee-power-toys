@@ -704,6 +704,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get updateInstallButton => 'Обновить';
 
   @override
+  String get updateReinstallButton => 'Переустановить';
+
+  @override
+  String get installActionInstall => 'Установить';
+
+  @override
+  String updateStatusTipAhead(String label) {
+    return 'Установленная сборка новее релиза $label. Переустановите, чтобы совпасть с опубликованной.';
+  }
+
+  @override
   String get updateStatusChecking => 'Проверка…';
 
   @override
@@ -784,17 +795,22 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get speedcamYnaviAgingHint =>
       'Удалять камеры YNavi, не виденные столько дней (пакет OSM стареет отдельно в Harvest).';
+
   @override
   String get speedcamOverlaySize => 'Размер оверлея';
+
   @override
   String get speedcamOverlayPlacement => 'Положение оверлея';
+
   @override
   String get speedcamOverlayTopStart => 'ВЛ';
+
   @override
   String get speedcamOverlayTopEnd => 'ВП';
+
   @override
   String get speedcamOverlayBottomStart => 'НЛ';
+
   @override
   String get speedcamOverlayBottomEnd => 'НП';
-
 }

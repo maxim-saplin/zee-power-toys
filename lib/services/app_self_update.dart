@@ -5,19 +5,52 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'install_targets.dart';
 import 'installer.dart';
+import 'release_compare.dart';
 
-/// Result of probing GitHub Releases for a newer Zee Power Toys APK.
+/// Result of probing GitHub Releases for a Zee Power Toys APK.
 sealed class AppUpdateCheck {
   const AppUpdateCheck();
 }
 
+/// Published Latest found but no installable APK asset (rare).
 class AppUpdateUpToDate extends AppUpdateCheck {
   const AppUpdateUpToDate({required this.installedCode});
   final int installedCode;
 }
 
+/// Remote versionCode **>** installed → Update.
 class AppUpdateAvailable extends AppUpdateCheck {
   const AppUpdateAvailable({
+    required this.installedCode,
+    required this.remoteCode,
+    required this.remoteLabel,
+    required this.asset,
+  });
+
+  final int installedCode;
+  final int remoteCode;
+  final String remoteLabel;
+  final GithubAsset asset;
+}
+
+/// Remote versionCode **==** installed → Reinstall same Latest asset (0103).
+class AppUpdateReinstall extends AppUpdateCheck {
+  const AppUpdateReinstall({
+    required this.installedCode,
+    required this.remoteCode,
+    required this.remoteLabel,
+    required this.asset,
+  });
+
+  final int installedCode;
+  final int remoteCode;
+  final String remoteLabel;
+  final GithubAsset asset;
+}
+
+/// Installed code **>** Latest published → lab tip ahead; soft Reinstall Release (0103).
+class AppUpdateTipAhead extends AppUpdateCheck {
+  const AppUpdateTipAhead({
     required this.installedCode,
     required this.remoteCode,
     required this.remoteLabel,
@@ -92,7 +125,18 @@ GithubAsset? pickApkAsset({
   );
 }
 
-/// Fetches public releases and returns whether a newer APK is available.
+class _LatestRelease {
+  const _LatestRelease({
+    required this.code,
+    required this.label,
+    required this.asset,
+  });
+  final int code;
+  final String label;
+  final GithubAsset asset;
+}
+
+/// Fetches public releases and returns Update / Reinstall / tip-ahead.
 class AppSelfUpdate {
   AppSelfUpdate({
     http.Client? client,
@@ -133,7 +177,7 @@ class AppSelfUpdate {
         return const AppUpdateCheckFailed('Unexpected releases payload');
       }
 
-      AppUpdateAvailable? best;
+      _LatestRelease? latest;
       var sawPublished = false;
 
       for (final item in body) {
@@ -157,22 +201,41 @@ class AppSelfUpdate {
         final asset = pickApkAsset(repo: repo, tag: tag, assets: assets);
         if (asset == null) continue;
 
-        if (code > installedCode) {
-          final candidate = AppUpdateAvailable(
-            installedCode: installedCode,
-            remoteCode: code,
-            remoteLabel: tag.isNotEmpty ? tag : name,
-            asset: asset,
-          );
-          if (best == null || candidate.remoteCode > best.remoteCode) {
-            best = candidate;
-          }
+        final label = tag.isNotEmpty ? tag : name;
+        final candidate = _LatestRelease(code: code, label: label, asset: asset);
+        if (latest == null || candidate.code > latest.code) {
+          latest = candidate;
         }
       }
 
-      if (best != null) return best;
-      if (!sawPublished) return const AppUpdateNonePublished();
-      return AppUpdateUpToDate(installedCode: installedCode);
+      if (latest == null) {
+        if (!sawPublished) return const AppUpdateNonePublished();
+        return AppUpdateUpToDate(installedCode: installedCode);
+      }
+
+      switch (compareVersionCodes(installedCode, latest.code)) {
+        case VersionRelation.older:
+          return AppUpdateAvailable(
+            installedCode: installedCode,
+            remoteCode: latest.code,
+            remoteLabel: latest.label,
+            asset: latest.asset,
+          );
+        case VersionRelation.same:
+          return AppUpdateReinstall(
+            installedCode: installedCode,
+            remoteCode: latest.code,
+            remoteLabel: latest.label,
+            asset: latest.asset,
+          );
+        case VersionRelation.newer:
+          return AppUpdateTipAhead(
+            installedCode: installedCode,
+            remoteCode: latest.code,
+            remoteLabel: latest.label,
+            asset: latest.asset,
+          );
+      }
     } catch (e) {
       return AppUpdateCheckFailed(e.toString());
     }

@@ -30,6 +30,7 @@ import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
 import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
+import 'package:zee_power_toys/services/package_status.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_service.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_alert.dart';
 import 'package:zee_power_toys/services/fakes/fake_speedcam_pack_store.dart';
@@ -91,6 +92,7 @@ Widget wrapWithProviders(
   bool localizations = true,
   bool scaffold = false,
   Installer? installer,
+  PackageStatus? packageStatus,
   SystemConfig? systemConfig,
   UsbModePort? usbMode,
 }) {
@@ -109,7 +111,7 @@ Widget wrapWithProviders(
       minimapHostProvider.overrideWithValue(FakeMinimapHost()),
       hudHostProvider.overrideWithValue(FakeHudHost()),
       installerProvider.overrideWithValue(installer ?? FakeInstaller()),
-      packageStatusProvider.overrideWithValue(FakePackageStatus()),
+      packageStatusProvider.overrideWithValue(packageStatus ?? FakePackageStatus()),
       speedcamServiceProvider.overrideWithValue(FakeSpeedcamService()),
       speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
       speedcamPackStoreProvider.overrideWithValue(FakeSpeedcamPackStore()),
