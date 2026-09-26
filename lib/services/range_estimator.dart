@@ -31,13 +31,17 @@ class DriveSegment {
 /// segmentWh = −ΔSoC/100 × usablePackWh
 /// bands (distance from now): 0..3 → 8×/km; 3..10 → 4×/km; 10..50 → 1×/km
 /// weightedWhPerKm = Σ(w·Wh) / Σ(w·km)
-/// rangeKm = (SoC/100)×usablePackWh / weightedWhPerKm
+/// rangeKm = (SoC/100)×usablePackWh / displayWhPerKm
 /// ```
 ///
-/// Display publishes ~every 1 km of moving distance. Ready at ≥~5 km window.
-/// Segments stay open while Wh/km exceeds [maxAbsWhPerKm] so a 1% SoC tick on
-/// a short hop cannot 8×-dominate the window (0114). Adapt efficiency may be
-/// observed for diagnostics but never seeds or replaces the HUD primary.
+/// Display publishes ~every 1 km of moving distance on the own-window path.
+/// Ready at ≥~5 km window. Segments stay open while Wh/km exceeds
+/// [maxAbsWhPerKm] so a 1% SoC tick on a short hop cannot 8×-dominate (0114).
+///
+/// 0117 — When Adapt trip Cons is trustworthy (≥ [kMinAdaptConsKwhPer100ForHonesty]
+/// kWh/100), HUD Est projects from that Cons (Wh/km = Cons×10) so Est stays
+/// within ±10% of (SoC% ÷ Cons)×100. Adapt never seeds the composite window
+/// (0108); missing/invalid Cons falls back to weighted own Wh/km.
 class RangeEstimator {
   RangeEstimator({
     this.usablePackWh = kUsablePackWh,
@@ -80,11 +84,21 @@ class RangeEstimator {
   /// winter/spirited driving and still dilutes a 1% step over ≥2 km.
   static const double kMaxAbsWhPerKm = 500.0;
 
+  /// 0117 — Adapt trip Cons at/above this (kWh/100) is trusted for HUD Est
+  /// projection. Below it (or invalid/missing) → own weighted window only.
+  static const double kMinAdaptConsKwhPer100ForHonesty = 15.0;
+
   /// Adapt Energy Cons 1 (`0x00103100`) kWh/100km — reject sentinels.
   static bool isValidEfficiencyKwhPer100km(double? v) {
     if (v == null || v.isNaN || v.isInfinite) return false;
     if (v <= 0 || v >= 200) return false;
     return true;
+  }
+
+  /// 0117 — Valid Adapt Cons that is strong enough to drive HUD Est honesty.
+  static bool isTrustworthyAdaptCons(double? v) {
+    return isValidEfficiencyKwhPer100km(v) &&
+        v! >= kMinAdaptConsKwhPer100ForHonesty;
   }
 
   final double usablePackWh;
@@ -114,6 +128,8 @@ class RangeEstimator {
   int? _lastShownKm;
   double _distanceAtLastPublish = 0;
   bool _hasPublished = false;
+  /// Latest trustworthy Adapt trip Cons for display projection (0117), or null.
+  double? _displayAdaptConsKwhPer100;
 
   double get movingKmAccum => _movingKmAccum;
   double get historyKm => _historyKm;
@@ -191,10 +207,11 @@ class RangeEstimator {
     }
   }
 
-  /// 0108: Adapt efficiency must not seed or replace the composite.
+  /// 0108: Adapt efficiency must not seed or replace the composite window.
   /// Parameter retained so callers/tests stay source-compatible.
+  /// 0117 uses Adapt Cons at display time only (see [_displayRange]).
   void maybeSeedFromAdaptEfficiency(double? kwhPer100km) {
-    // Intentionally no-op.
+    // Intentionally no-op — never write Adapt into the honesty window.
   }
 
   /// Ingest one sample. Returns rounded km to show, or null if not ready.
@@ -206,6 +223,11 @@ class RangeEstimator {
     double? efficiencyKwhPer100km,
   }) {
     maybeSeedFromAdaptEfficiency(efficiencyKwhPer100km);
+    // 0117: observe Adapt trip Cons for display projection only.
+    _displayAdaptConsKwhPer100 =
+        isTrustworthyAdaptCons(efficiencyKwhPer100km)
+            ? efficiencyKwhPer100km
+            : null;
 
     final last = _lastTick;
     _lastTick = now;
@@ -368,7 +390,13 @@ class RangeEstimator {
 
   int? _displayRange(int? socPct) {
     if (!ready || socPct == null) return null;
-    final whPerKm = _weightedWhPerKm!;
+
+    // 0117: trustworthy Adapt trip Cons → project Est from Cons (Wh/km = ×10).
+    // Otherwise keep 0108 weighted own-window Wh/km.
+    final adapt = _displayAdaptConsKwhPer100;
+    final useAdapt = adapt != null;
+    final whPerKm = useAdapt ? adapt * 10.0 : _weightedWhPerKm!;
+
     final raw = (socPct / 100.0) * usablePackWh / whPerKm;
     if (raw.isNaN || raw.isInfinite || raw < 1) return null;
     final candidate = raw.round().clamp(1, 999);
@@ -380,8 +408,11 @@ class RangeEstimator {
       return candidate;
     }
 
-    // Publish a new display value only after ~1 km of further moving distance.
-    if (_movingKmAccum - _distanceAtLastPublish >= displayRefreshKm) {
+    // Adapt path tracks SoC/Cons directly (no 1 km hold) so a ready window
+    // with live Cons cannot sit ~2× under the envelope. Own-window path keeps
+    // the 0108 ~1 km refresh cadence.
+    if (useAdapt ||
+        _movingKmAccum - _distanceAtLastPublish >= displayRefreshKm) {
       _lastShownKm = candidate;
       _distanceAtLastPublish = _movingKmAccum;
     }

@@ -298,6 +298,89 @@ void main() {
       expect(e.ready, isFalse);
     });
 
+    test('0117 Adapt Cons ≥15 projects Est within ±10% of SoC÷Cons envelope', () {
+      // Incident: persisted ~353 Wh/km → ~218 @ 77%; Adapt Cons 24.2 → ~318.
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      final t0 = DateTime.utc(2026, 9, 26, 18);
+      const soc = 77;
+      const adaptCons = 24.2;
+      final envelope = (soc / adaptCons) * 100; // ≈318.18
+      final km = e.ingest(
+        now: t0,
+        socPct: soc,
+        speedKmh: 0,
+        efficiencyKwhPer100km: adaptCons,
+      );
+      expect(km, isNotNull);
+      // ±10% of envelope (DoD band ~286–350).
+      expect(km!, greaterThanOrEqualTo((envelope * 0.9).floor()));
+      expect(km, lessThanOrEqualTo((envelope * 1.1).ceil()));
+      expect(km, closeTo(envelope.round(), 2));
+      // Own window unchanged — Adapt must not seed the composite.
+      expect(e.weightedWhPerKm!, closeTo(353.21, 1));
+    });
+
+    test('0117 missing or weak Adapt Cons falls back to own window', () {
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      final t0 = DateTime.utc(2026, 9, 26, 18);
+
+      // Missing Cons → own projection (~218 @ 77%).
+      final noAdapt = e.ingest(now: t0, socPct: 77, speedKmh: 0);
+      expect(noAdapt, closeTo(218, 2));
+
+      // Valid but below honesty floor (<15) → own window, not Adapt.
+      final weak = e.ingest(
+        now: t0.add(const Duration(seconds: 1)),
+        socPct: 77,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 12.0,
+      );
+      expect(weak, closeTo(218, 2));
+
+      // Invalid sentinel → own window.
+      final bad = e.ingest(
+        now: t0.add(const Duration(seconds: 2)),
+        socPct: 77,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 0,
+      );
+      expect(bad, closeTo(218, 2));
+    });
+
+    test('0117 Adapt Cons honesty survives 0114 short-hop keep-open', () {
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      var t = DateTime.utc(2026, 9, 26, 19);
+      e.ingest(
+        now: t,
+        socPct: 78,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 24.2,
+      );
+
+      var soc = 78;
+      int? last;
+      for (var i = 0; i < 11; i++) {
+        t = t.add(const Duration(seconds: 15));
+        if (i == 1) soc = 77;
+        last = e.ingest(
+          now: t,
+          socPct: soc,
+          speedKmh: 60,
+          efficiencyKwhPer100km: 24.2,
+        );
+      }
+
+      expect(last, isNotNull);
+      const envelope = (77 / 24.2) * 100;
+      expect(last!, greaterThanOrEqualTo((envelope * 0.9).floor()));
+      expect(last, lessThanOrEqualTo((envelope * 1.1).ceil()));
+      // Anti-cliff still: weighted must not jump to the old ~445 wipe regime.
+      expect(e.weightedWhPerKm!, lessThan(400));
+    });
+
     test('persist round-trip keeps window across trips', () {
       final e = RangeEstimator();
       e.debugForceState(movingKm: 12, whPerKm: 190, lastShownKm: 200);
