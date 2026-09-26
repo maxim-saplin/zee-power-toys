@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: TBD
+tip: 2bf2a30
 labels: [hud, adapt, drive-mode, settings]
 created: 2026-09-26
 satisfies: Drive-mode accents match Maxim ECO blue → Comfort/standard green → Sport red; tip+config order matches
