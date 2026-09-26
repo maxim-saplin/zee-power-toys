@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0117** Own Est. range must track SoC% ÷ Adapt trip Cons (honesty) — `0117-own-range-adapt-cons-honesty.md`
 - [x] **0116** Overlay size slider max ≈ 5× — ACCEPT `74edf87` — `0116-overlay-size-slider-max-5x.md`
 - [x] **0115** Install auto-check Toys version on open — ACCEPT `77a8b76` — `0115-install-autocheck-toys-version.md`
 - [x] **0114** Own-range short-trip SoC quantum cliff — ACCEPT `9ad6c56` — `0114-own-range-short-trip-wipe-rca.md`
