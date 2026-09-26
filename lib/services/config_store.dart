@@ -472,6 +472,7 @@ class BatteryConfig {
     this.showTemp = true,
     this.showChargingStats = true,
     this.showOwnRangeEstimate = false,
+    this.showDriveModeCornerDot = false,
     this.sizeScale = 1.0,
     this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
@@ -496,6 +497,10 @@ class BatteryConfig {
   /// 0105/0107: show own estimated range beside battery %.
   /// Default **OFF**. When ON: ready → `N km`; pending → `… km` (always visible).
   final bool showOwnRangeEstimate;
+
+  /// 0110: persistent bottom-right drive-mode corner dot.
+  /// Default **OFF** (toast-only world from 0104/0109 unchanged).
+  final bool showDriveModeCornerDot;
 
   /// Multiplier applied to the base widget size (1.0 = default).
   final double sizeScale;
@@ -531,6 +536,7 @@ class BatteryConfig {
     bool? showTemp,
     bool? showChargingStats,
     bool? showOwnRangeEstimate,
+    bool? showDriveModeCornerDot,
     double? sizeScale,
     BatteryLook? look,
     BatteryContentMode? contentMode,
@@ -565,6 +571,8 @@ class BatteryConfig {
       showChargingStats: showChargingStats ?? this.showChargingStats,
       showOwnRangeEstimate:
           showOwnRangeEstimate ?? this.showOwnRangeEstimate,
+      showDriveModeCornerDot:
+          showDriveModeCornerDot ?? this.showDriveModeCornerDot,
       sizeScale: sizeScale ?? this.sizeScale,
       look: nextLook,
       contentMode: nextMode,
@@ -596,6 +604,7 @@ class BatteryConfig {
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'showOwnRangeEstimate': showOwnRangeEstimate,
+    'showDriveModeCornerDot': showDriveModeCornerDot,
     'sizeScale': sizeScale,
     'look': look.name,
     'contentMode': contentMode.name,
@@ -646,6 +655,8 @@ class BatteryConfig {
       showTemp: json['showTemp'] as bool? ?? true,
       showChargingStats: json['showChargingStats'] as bool? ?? true,
       showOwnRangeEstimate: json['showOwnRangeEstimate'] as bool? ?? false,
+      showDriveModeCornerDot:
+          json['showDriveModeCornerDot'] as bool? ?? false,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       look: look,
       contentMode: resolvedMode,
@@ -664,6 +675,7 @@ class BatteryConfig {
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
       other.showOwnRangeEstimate == showOwnRangeEstimate &&
+      other.showDriveModeCornerDot == showDriveModeCornerDot &&
       other.sizeScale == sizeScale &&
       other.look == look &&
       other.contentMode == contentMode &&
@@ -679,6 +691,7 @@ class BatteryConfig {
     showTemp,
     showChargingStats,
     showOwnRangeEstimate,
+    showDriveModeCornerDot,
     sizeScale,
     look,
     contentMode,

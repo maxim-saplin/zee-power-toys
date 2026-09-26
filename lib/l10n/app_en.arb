@@ -316,6 +316,14 @@
   "@showOwnRangeEstimateHint": {
     "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
   },
+  "showDriveModeCornerDot": "Show drive-mode corner dot",
+  "@showDriveModeCornerDot": {
+    "description": "0110: persistent BR drive-mode colored dot (default off)"
+  },
+  "showDriveModeCornerDotHint": "Small colored dot at the bottom-right of the HUD for the current drive mode (Comfort blue / ECO green / Sport yellow). Stays on while enabled; toast on mode change still works.",
+  "@showDriveModeCornerDotHint": {
+    "description": "0110: one-line help for persistent corner-dot toggle"
+  },
   "batteryContentMode": "Content",
   "@batteryContentMode": {
     "description": "Battery content mode label"

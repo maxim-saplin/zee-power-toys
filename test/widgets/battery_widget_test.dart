@@ -25,6 +25,7 @@ void main() {
       expect(cfg.showTemp, isTrue);
       expect(cfg.showChargingStats, isTrue);
       expect(cfg.showOwnRangeEstimate, isFalse);
+      expect(cfg.showDriveModeCornerDot, isFalse);
       expect(cfg.sizeScale, 1.0);
       expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);

@@ -471,6 +471,25 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              SettingsToggleRow(
+                label: l10n.showDriveModeCornerDot,
+                control: Switch(
+                  key: const ValueKey('battery-show-drive-mode-dot'),
+                  value: batteryCfg.showDriveModeCornerDot,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      battery: batteryCfg.copyWith(showDriveModeCornerDot: v),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: Insets.sm),
+                child: Text(
+                  l10n.showDriveModeCornerDotHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
               const SizedBox(height: Insets.md),
               Text(
                 l10n.batteryPlacement,

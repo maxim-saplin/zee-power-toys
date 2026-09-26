@@ -11,6 +11,7 @@ import 'battery_widget.dart';
 import 'blinker_widget.dart';
 import 'speedcam_radar_widget.dart';
 import 'drive_mode_toast.dart';
+import 'drive_mode_corner_dot.dart';
 import 'speedcam_crt_geometry.dart';
 import '../providers/guidance.dart';
 
@@ -248,6 +249,11 @@ class _HudSlots extends ConsumerWidget {
         // 0104/0109 drive-mode toast — top-centre (raised above speedo), clear of blinker / radar / battery.
         const Positioned.fill(
           child: IgnorePointer(child: DriveModeToastLayer()),
+        ),
+
+        // 0110 persistent drive-mode corner dot — bottom-right Safe Area (pad 14; clear of default rightTop battery).
+        const Positioned.fill(
+          child: IgnorePointer(child: DriveModeCornerDotLayer()),
         ),
       ],
     );

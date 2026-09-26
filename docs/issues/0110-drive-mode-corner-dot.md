@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: ready-for-qa
 labels: [hud, adapt, drive-mode, settings]
 created: 2026-09-26
 satisfies: foundation
@@ -40,13 +40,42 @@ Maxim 2026-09-26 ~09:33 Minsk: add a **settings toggle** that shows the **curren
 
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
-- [ ] Settings toggle OFF → no corner dot (toast still works if 0109 tip present).
-- [ ] Settings toggle ON + known mode → BR colored dot (Comfort blue / ECO green / Sport yellow).
-- [ ] Mode change updates the dot without requiring restart.
-- [ ] EN + RU strings for toggle + short help.
-- [ ] Persist in ConfigStore; survives process restart.
+- [x] Settings toggle OFF → no corner dot (toast still works if 0109 tip present).
+- [x] Settings toggle ON + known mode → BR colored dot (Comfort blue / ECO green / Sport yellow).
+- [x] Mode change updates the dot without requiring restart.
+- [x] EN + RU strings for toggle + short help.
+- [x] Persist in ConfigStore; survives process restart.
 - [ ] T2 Tablet dens320 evidence (OFF / ON×3 modes) + units if added.
 - [ ] QA FINDINGS + beta four-point + PDM ACCEPT. Soft: car T3.
+
+
+## Reconciliation
+
+**2026-09-26 tip:** Settings toggle for persistent BR drive-mode corner dot.
+**Tip SHA:** *(filled after tip)*
+
+### Changes
+1. **Config:** `BatteryConfig.showDriveModeCornerDot` (default **OFF**); JSON round-trip via ConfigStore / SharedPrefs — survives restart.
+2. **Settings:** HUD battery section toggle + one-line help — EN `showDriveModeCornerDot` / `showDriveModeCornerDotHint`, RU `Точка режима езды в углу` + help. Agent key `battery-show-drive-mode-dot`.
+3. **HUD:** `DriveModeCornerDotLayer` — bottom-right Safe Area, pad **14** logical from edges, filled circle **10** dp. Default battery placement is **rightTop** (top-right) → BR clear of battery/temp; shrink/pad rather than overlap.
+4. **Colors (persistent 0110):** Comfort **blue** `#3B82F6`, ECO **green** `#3DDC84`, Sport **yellow** `#FFCC00`. Other/unknown → hide.
+5. **Colors (toast 0109, unchanged):** Comfort blue / ECO green / Sport **red** `#FF3B30`. Documented both tables here.
+6. Live updates via `driveModeProvider` (Adapt or Simulated). No 5 s fade — persistent while ON+known. HUD Off tears down engine → no chrome. Preview/Simulated show toggle on T2.
+7. **No Live bump** (`1.1.0+22`). Soft: car T3.
+
+### Color tables
+
+| Mode | Toast accent (0109) | Persistent corner dot (0110) |
+|------|---------------------|------------------------------|
+| Comfort | blue `#3B82F6` | blue `#3B82F6` |
+| ECO | green `#3DDC84` | green `#3DDC84` |
+| Sport | **red** `#FF3B30` | **yellow** `#FFCC00` |
+| other / unknown | soft grey (toast) | **hide** |
+
+### Verification
+`flutter test` — `test/hud/drive_mode_corner_dot_test.dart` (+ toast accent / toast provider / BatteryConfig defaults) PASS. `dart analyze` clean on touched Dart.
+
+**Divergence:** None from scope. Soft: car T3 / dens320 pad confirm vs mid-right battery placement.
 
 ## Notes
 

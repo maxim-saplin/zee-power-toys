@@ -249,6 +249,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Берёт примерно последние 50 км поездки и сильнее учитывает недавние 10 км — особенно последние 3 км. Это наша оценка, не запас хода Adapt. Нужно несколько километров, прежде чем цифра появится рядом с % батареи.';
 
   @override
+  String get showDriveModeCornerDot => 'Точка режима езды в углу';
+
+  @override
+  String get showDriveModeCornerDotHint =>
+      'Маленькая цветная точка в правом нижнем углу HUD для текущего режима (Comfort — синяя, ECO — зелёная, Sport — жёлтая). Горит постоянно, пока включена; всплывающее уведомление при смене режима по-прежнему работает.';
+
+  @override
   String get batteryContentMode => 'Содержимое';
 
   @override

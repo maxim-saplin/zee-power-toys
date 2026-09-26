@@ -316,6 +316,14 @@
   "@showOwnRangeEstimateHint": {
     "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
   },
+  "showDriveModeCornerDot": "Точка режима езды в углу",
+  "@showDriveModeCornerDot": {
+    "description": "0110: persistent BR drive-mode colored dot (default off)"
+  },
+  "showDriveModeCornerDotHint": "Маленькая цветная точка в правом нижнем углу HUD для текущего режима (Comfort — синяя, ECO — зелёная, Sport — жёлтая). Горит постоянно, пока включена; всплывающее уведомление при смене режима по-прежнему работает.",
+  "@showDriveModeCornerDotHint": {
+    "description": "0110: one-line help for persistent corner-dot toggle"
+  },
   "batteryContentMode": "Содержимое",
   "@batteryContentMode": {
     "description": "Battery content mode label"

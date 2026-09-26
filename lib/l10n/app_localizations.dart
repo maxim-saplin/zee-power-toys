@@ -566,11 +566,23 @@ abstract class AppLocalizations {
   /// **'Show estimated range'**
   String get showOwnRangeEstimate;
 
-  /// 0105: plain-language how-calculated; OEM range not primary
+  /// 0108: ~50 km window, heavier last 10/3; not Adapt range
   ///
   /// In en, this message translates to:
-  /// **'From your recent Wh/km while moving — not the car’s range. Needs a few kilometres of driving before it shows beside the battery %.'**
+  /// **'Uses about the last 50 km of driving, with more weight on the most recent 10 km — especially the last 3 km. Our estimate, not the car’s Adapt range. Needs a few kilometres before it shows beside the battery %.'**
   String get showOwnRangeEstimateHint;
+
+  /// 0110: persistent BR drive-mode colored dot (default off)
+  ///
+  /// In en, this message translates to:
+  /// **'Show drive-mode corner dot'**
+  String get showDriveModeCornerDot;
+
+  /// 0110: one-line help for persistent corner-dot toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Small colored dot at the bottom-right of the HUD for the current drive mode (Comfort blue / ECO green / Sport yellow). Stays on while enabled; toast on mode change still works.'**
+  String get showDriveModeCornerDotHint;
 
   /// Battery content mode label
   ///
