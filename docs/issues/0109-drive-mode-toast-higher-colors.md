@@ -10,6 +10,7 @@ owner: zee-dev
 priority: now
 filed-by: zee-pdm
 gate: armed-2026-09-26
+tip: 67eccc5
 related: [0104]
 parent: [0104]
 ---
@@ -57,6 +58,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 ## Reconciliation
 
 **2026-09-26 tip:** Raise drive-mode toast above speedo; blue/green/red accents.
+**Tip SHA:** `67eccc5`
 
 ### Changes
 1. **Position:** `DriveModeToastLayer` Align `Alignment(0, -0.55)` → `Alignment(0, -0.82)` — higher in Safe Area top-centre so chrome clears the speedo cluster on Tablet dens320 / DHU geometry; still clear of blinkers / Alien radar / battery.
