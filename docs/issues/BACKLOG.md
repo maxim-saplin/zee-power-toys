@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [ ] **0113** Sport corner-dot pulsates; ECO/Comfort calm — tip `TBD` — `0113-sport-corner-dot-pulsate.md`
+- [ ] **0113** Sport corner-dot pulsates; ECO/Comfort calm — tip `b5d7074` — `0113-sport-corner-dot-pulsate.md`
 - [ ] **0112** Drive-mode colors ECO blue / Comfort green / Sport red — tip `2bf2a30` — `0112-drive-mode-colors-eco-blue-comfort-green-sport-red.md`
 - [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`
 - [x] **0110** Drive-mode persistent BR corner dot (settings toggle) — ACCEPT `36f2384` — `0110-drive-mode-corner-dot.md`

@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: TBD
+tip: b5d7074
 labels: [hud, adapt, drive-mode]
 created: 2026-09-26
 satisfies: Sport red corner-dot pulsates; ECO/Comfort stay calm
