@@ -1,6 +1,7 @@
 ---
-status: tip
+status: accepted
 tip: 7c9397b
+accepted: 2026-09-26
 labels: [hud, battery, range, honesty, window]
 created: 2026-09-26
 satisfies: Own Est. range window reshape — 3 bands (1× / 8× / mute last 1 km); no Adapt Cons seed
@@ -74,6 +75,6 @@ Distance from now inside the ~50 km window:
 
 `de2fc95` had projected Est from Adapt Cons ≥15 kWh/100 (±10% envelope). That path is removed; own window only.
 
-## Soft stand for ACCEPT
+## ACCEPT (PDM 2026-09-26)
 
-Leave ACCEPT to QA/PDM after T2 dens320 + units proof. Soft car T3 Maxim taste (envelope gap is soft RCA, not a hard fail).
+Tip `7c9397b` (DoD `506aef8`; tip-SHA stamp `101ab03`). Four-point PASS (soft). 3-band window **1× / 8× / mute last 1**; **0114** anti-cliff kept; Adapt Cons project **gone** (own window only). Soft: car T3 ~**2×** vs Adapt envelope (RCA soft, not hard fail). Live hold **1.1.0+24** until Maxim GO.
