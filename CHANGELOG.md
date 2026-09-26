@@ -7,6 +7,25 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+24] — 2026-09-26
+
+Live ship: afternoon queue **0112–0116** under docs seal `85b76b2`.
+
+### Fixed
+- **0114** Own-range short-trip SoC quantum — Est. no longer cliffs after short hop (`9ad6c56`).
+- **0112** Drive-mode accents — ECO blue / Comfort green / Sport red on toast + corner-dot (`2bf2a30`).
+
+### Added
+- **0113** Sport BR corner-dot gentle pulse; ECO/Comfort stay calm (`b5d7074`).
+- **0115** Install screen auto-check Toys version on open (`77a8b76`).
+
+### Changed
+- **0116** Overlay size slider max 1.6→8.0 (~5× prior) (`74edf87`).
+
+### Notes
+- Docs ACCEPT `85b76b2`. Code tips `2bf2a30` (0112) + `b5d7074` (0113) + `9ad6c56` (0114) + `77a8b76` (0115) + `74edf87` (0116). AOSP platform-signed via `release.yml` (same keystore as +23).
+- Soft: car T3 stay soft — not chased in this ship.
+
 ## [1.1.0+23] — 2026-09-26
 
 Live ship: **0109** drive-mode toast higher + colors + **0110** BR drive-mode corner-dot toggle.
