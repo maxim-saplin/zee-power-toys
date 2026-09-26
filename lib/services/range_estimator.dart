@@ -23,25 +23,22 @@ class DriveSegment {
   }
 }
 
-/// 0108 — Own estimated range from a weighted ~50 km moving-driving window
+/// 0108/0117 — Own estimated range from a weighted ~50 km moving-driving window
 /// (supersedes 0105 opaque EWMA). Not the Adapt OEM range.
 ///
 /// ```
 /// usablePackWh = 100000
 /// segmentWh = −ΔSoC/100 × usablePackWh
-/// bands (distance from now): 0..3 → 8×/km; 3..10 → 4×/km; 10..50 → 1×/km
+/// bands (distance from now): 0..1 → 0 (mute); 1..5 → 8×/km; 5..50 → 1×/km
 /// weightedWhPerKm = Σ(w·Wh) / Σ(w·km)
-/// rangeKm = (SoC/100)×usablePackWh / displayWhPerKm
+/// rangeKm = (SoC/100)×usablePackWh / weightedWhPerKm
 /// ```
 ///
-/// Display publishes ~every 1 km of moving distance on the own-window path.
-/// Ready at ≥~5 km window. Segments stay open while Wh/km exceeds
-/// [maxAbsWhPerKm] so a 1% SoC tick on a short hop cannot 8×-dominate (0114).
-///
-/// 0117 — When Adapt trip Cons is trustworthy (≥ [kMinAdaptConsKwhPer100ForHonesty]
-/// kWh/100), HUD Est projects from that Cons (Wh/km = Cons×10) so Est stays
-/// within ±10% of (SoC% ÷ Cons)×100. Adapt never seeds the composite window
-/// (0108); missing/invalid Cons falls back to weighted own Wh/km.
+/// Display publishes ~every 1 km of moving distance. Ready at ≥~5 km window.
+/// Segments stay open while Wh/km exceeds [maxAbsWhPerKm] so a 1% SoC tick on
+/// a short hop cannot peak-band dominate the window (0114). Adapt efficiency
+/// may be observed for diagnostics but never seeds or replaces the HUD primary
+/// (0108 / 0117 reshape — no Adapt Cons projection).
 class RangeEstimator {
   RangeEstimator({
     this.usablePackWh = kUsablePackWh,
@@ -52,10 +49,10 @@ class RangeEstimator {
     this.maxGapSeconds = kMaxGapSeconds,
     this.windowKm = kWindowKm,
     this.displayRefreshKm = kDisplayRefreshKm,
-    this.bandLatestKm = kBandLatestKm,
-    this.bandRecentKm = kBandRecentKm,
-    this.weightLatest = kWeightLatest,
-    this.weightRecent = kWeightRecent,
+    this.bandMuteKm = kBandMuteKm,
+    this.bandPeakKm = kBandPeakKm,
+    this.weightMute = kWeightMute,
+    this.weightPeak = kWeightPeak,
     this.weightOlder = kWeightOlder,
     this.minWhPerKmFloor = kMinWhPerKmFloor,
     this.maxAbsWhPerKm = kMaxAbsWhPerKm,
@@ -71,34 +68,26 @@ class RangeEstimator {
   static const double kMaxGapSeconds = 25.0;
   static const double kWindowKm = 50.0;
   static const double kDisplayRefreshKm = 1.0;
-  static const double kBandLatestKm = 3.0;
-  static const double kBandRecentKm = 10.0;
-  static const double kWeightLatest = 8.0;
-  static const double kWeightRecent = 4.0;
+  /// 0117 — last 1 km from now contributes zero weight (mute short-hop noise).
+  static const double kBandMuteKm = 1.0;
+  /// 0117 — 1..5 km peak band at 8×.
+  static const double kBandPeakKm = 5.0;
+  static const double kWeightMute = 0.0;
+  static const double kWeightPeak = 8.0;
   static const double kWeightOlder = 1.0;
   static const double kMinWhPerKmFloor = 20.0; // ~2 kWh/100km
   /// Hard ceiling for an accepted sample (Wh/km). Integer SoC is 1% = 1000 Wh
   /// on [kUsablePackWh]; with a looser cap (e.g. 2000) a 1% tick over 0.5 km
-  /// was accepted at 2000 Wh/km, then 8×-weighted in the last-3 km band — the
+  /// was accepted at 2000 Wh/km, then peak-weighted in the recent band — the
   /// 0114 short-trip cliff (218→173 after 2.7 km). ~50 kWh/100 is above real
   /// winter/spirited driving and still dilutes a 1% step over ≥2 km.
   static const double kMaxAbsWhPerKm = 500.0;
-
-  /// 0117 — Adapt trip Cons at/above this (kWh/100) is trusted for HUD Est
-  /// projection. Below it (or invalid/missing) → own weighted window only.
-  static const double kMinAdaptConsKwhPer100ForHonesty = 15.0;
 
   /// Adapt Energy Cons 1 (`0x00103100`) kWh/100km — reject sentinels.
   static bool isValidEfficiencyKwhPer100km(double? v) {
     if (v == null || v.isNaN || v.isInfinite) return false;
     if (v <= 0 || v >= 200) return false;
     return true;
-  }
-
-  /// 0117 — Valid Adapt Cons that is strong enough to drive HUD Est honesty.
-  static bool isTrustworthyAdaptCons(double? v) {
-    return isValidEfficiencyKwhPer100km(v) &&
-        v! >= kMinAdaptConsKwhPer100ForHonesty;
   }
 
   final double usablePackWh;
@@ -109,10 +98,10 @@ class RangeEstimator {
   final double maxGapSeconds;
   final double windowKm;
   final double displayRefreshKm;
-  final double bandLatestKm;
-  final double bandRecentKm;
-  final double weightLatest;
-  final double weightRecent;
+  final double bandMuteKm;
+  final double bandPeakKm;
+  final double weightMute;
+  final double weightPeak;
   final double weightOlder;
   final double minWhPerKmFloor;
   final double maxAbsWhPerKm;
@@ -128,8 +117,6 @@ class RangeEstimator {
   int? _lastShownKm;
   double _distanceAtLastPublish = 0;
   bool _hasPublished = false;
-  /// Latest trustworthy Adapt trip Cons for display projection (0117), or null.
-  double? _displayAdaptConsKwhPer100;
 
   double get movingKmAccum => _movingKmAccum;
   double get historyKm => _historyKm;
@@ -207,11 +194,10 @@ class RangeEstimator {
     }
   }
 
-  /// 0108: Adapt efficiency must not seed or replace the composite window.
+  /// 0108/0117: Adapt efficiency must not seed or replace the composite.
   /// Parameter retained so callers/tests stay source-compatible.
-  /// 0117 uses Adapt Cons at display time only (see [_displayRange]).
   void maybeSeedFromAdaptEfficiency(double? kwhPer100km) {
-    // Intentionally no-op — never write Adapt into the honesty window.
+    // Intentionally no-op.
   }
 
   /// Ingest one sample. Returns rounded km to show, or null if not ready.
@@ -223,11 +209,6 @@ class RangeEstimator {
     double? efficiencyKwhPer100km,
   }) {
     maybeSeedFromAdaptEfficiency(efficiencyKwhPer100km);
-    // 0117: observe Adapt trip Cons for display projection only.
-    _displayAdaptConsKwhPer100 =
-        isTrustworthyAdaptCons(efficiencyKwhPer100km)
-            ? efficiencyKwhPer100km
-            : null;
 
     final last = _lastTick;
     _lastTick = now;
@@ -333,8 +314,9 @@ class RangeEstimator {
   }
 
   double _weightAt(double distFromNow) {
-    if (distFromNow < bandLatestKm) return weightLatest;
-    if (distFromNow < bandRecentKm) return weightRecent;
+    // 0117 HARD: last 1 km mute; 1..5 peak 8×; 5..50 older 1×.
+    if (distFromNow < bandMuteKm) return weightMute;
+    if (distFromNow < bandPeakKm) return weightPeak;
     return weightOlder;
   }
 
@@ -356,10 +338,10 @@ class RangeEstimator {
       while (remaining > 1e-9) {
         // Distance to next band boundary from [distFromNow].
         double boundary;
-        if (distFromNow < bandLatestKm) {
-          boundary = bandLatestKm;
-        } else if (distFromNow < bandRecentKm) {
-          boundary = bandRecentKm;
+        if (distFromNow < bandMuteKm) {
+          boundary = bandMuteKm;
+        } else if (distFromNow < bandPeakKm) {
+          boundary = bandPeakKm;
         } else {
           boundary = windowKm + 1; // rest of older band
         }
@@ -390,13 +372,7 @@ class RangeEstimator {
 
   int? _displayRange(int? socPct) {
     if (!ready || socPct == null) return null;
-
-    // 0117: trustworthy Adapt trip Cons → project Est from Cons (Wh/km = ×10).
-    // Otherwise keep 0108 weighted own-window Wh/km.
-    final adapt = _displayAdaptConsKwhPer100;
-    final useAdapt = adapt != null;
-    final whPerKm = useAdapt ? adapt * 10.0 : _weightedWhPerKm!;
-
+    final whPerKm = _weightedWhPerKm!;
     final raw = (socPct / 100.0) * usablePackWh / whPerKm;
     if (raw.isNaN || raw.isInfinite || raw < 1) return null;
     final candidate = raw.round().clamp(1, 999);
@@ -408,11 +384,8 @@ class RangeEstimator {
       return candidate;
     }
 
-    // Adapt path tracks SoC/Cons directly (no 1 km hold) so a ready window
-    // with live Cons cannot sit ~2× under the envelope. Own-window path keeps
-    // the 0108 ~1 km refresh cadence.
-    if (useAdapt ||
-        _movingKmAccum - _distanceAtLastPublish >= displayRefreshKm) {
+    // Publish a new display value only after ~1 km of further moving distance.
+    if (_movingKmAccum - _distanceAtLastPublish >= displayRefreshKm) {
       _lastShownKm = candidate;
       _distanceAtLastPublish = _movingKmAccum;
     }

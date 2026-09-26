@@ -74,37 +74,66 @@ void main() {
       expect(e.historyKm, closeTo(50.0, 1e-6));
     });
 
-    test('recent 3 km and 10 km overweight vs older kilometres', () {
+    test('0117 bands: 1..5 km @ 8× overweight vs 5..50 @ 1×', () {
       final e = RangeEstimator();
-      // 40 km older @ 400 Wh/km + 7 km mid @ 100 + 3 km latest @ 100.
-      e.debugAddSegment(distanceKm: 40, energyWh: 40 * 400);
-      e.debugAddSegment(distanceKm: 7, energyWh: 7 * 100);
-      e.debugAddSegment(distanceKm: 3, energyWh: 3 * 100);
+      // 45 km older @ 400 Wh/km + 4 km peak (1..5) @ 100 + 1 km mute @ 100.
+      // From now: 0..1 mute, 1..5 peak 8×, 5..50 older 1×.
+      e.debugAddSegment(distanceKm: 45, energyWh: 45 * 400);
+      e.debugAddSegment(distanceKm: 4, energyWh: 4 * 100);
+      e.debugAddSegment(distanceKm: 1, energyWh: 1 * 100);
       expect(e.historyKm, closeTo(50.0, 1e-6));
       final weighted = e.weightedWhPerKm!;
-      // Unweighted mean = (40*400 + 10*100) / 50 = 340 Wh/km.
-      const unweighted = 340.0;
-      // Weighted: 40×1×400 + 7×4×100 + 3×8×100 over 40+28+24 = 230.43.
-      expect(weighted, lessThan(280));
+      // Unweighted = (45*400 + 5*100) / 50 = 370.
+      const unweighted = 370.0;
+      // Weighted: mute 0 + peak 4×8×100 + older 45×1×400 over (0+32+45)=77
+      // → (3200 + 18000) / 77 ≈ 275.3.
+      expect(weighted, lessThan(300));
       expect(weighted, lessThan(unweighted - 50));
-      expect(weighted, closeTo(230.4, 5.0));
+      expect(weighted, closeTo(275.3, 5.0));
     });
 
-    test('latest 3 km band is strongest within the recent 10', () {
+    test('0117 peak 1..5 band is stronger than flat older-only', () {
       final e = RangeEstimator();
-      // Flat older 40 @ 300, then 7 km mid @ 300, then 3 km latest @ 100.
-      e.debugAddSegment(distanceKm: 40, energyWh: 40 * 300);
-      e.debugAddSegment(distanceKm: 7, energyWh: 7 * 300);
-      e.debugAddSegment(distanceKm: 3, energyWh: 3 * 100);
-      final withLatest = e.weightedWhPerKm!;
+      // Flat older 45 @ 300, peak 4 @ 100, mute 1 @ 100.
+      e.debugAddSegment(distanceKm: 45, energyWh: 45 * 300);
+      e.debugAddSegment(distanceKm: 4, energyWh: 4 * 100);
+      e.debugAddSegment(distanceKm: 1, energyWh: 1 * 100);
+      final withPeak = e.weightedWhPerKm!;
 
       final eFlat = RangeEstimator();
-      eFlat.debugAddSegment(distanceKm: 40, energyWh: 40 * 300);
-      eFlat.debugAddSegment(distanceKm: 7, energyWh: 7 * 300);
-      eFlat.debugAddSegment(distanceKm: 3, energyWh: 3 * 300);
+      eFlat.debugAddSegment(distanceKm: 45, energyWh: 45 * 300);
+      eFlat.debugAddSegment(distanceKm: 4, energyWh: 4 * 300);
+      eFlat.debugAddSegment(distanceKm: 1, energyWh: 1 * 300);
       final allFlat = eFlat.weightedWhPerKm!;
 
-      expect(withLatest, lessThan(allFlat - 20));
+      expect(withPeak, lessThan(allFlat - 20));
+    });
+
+    test('0117 last 1 km mute: samples in 0..1 contribute zero weight', () {
+      final e = RangeEstimator();
+      // 49 km @ 200 + last 1 km @ 2000 (would dominate without mute).
+      e.debugAddSegment(distanceKm: 49, energyWh: 49 * 200);
+      e.debugAddSegment(distanceKm: 1, energyWh: 1 * 2000);
+      final weighted = e.weightedWhPerKm!;
+      // Mute drops the 2000 Wh/km km → weighted stays ~200.
+      expect(weighted, closeTo(200.0, 2.0));
+    });
+
+    test('0117 mute-only window → weighted null until peak/older exists', () {
+      final e = RangeEstimator();
+      // Only last-1 km samples → all weight 0 → no rate, not ready.
+      e.debugAddSegment(distanceKm: 0.8, energyWh: 0.8 * 250);
+      expect(e.historyKm, closeTo(0.8, 1e-6));
+      expect(e.weightedWhPerKm, isNull);
+      expect(e.ready, isFalse);
+      expect(
+        e.ingest(
+          now: DateTime.utc(2026, 9, 26, 15),
+          socPct: 80,
+          speedKmh: 0,
+        ),
+        isNull,
+      );
     });
 
     test('1 km refresh cadence — no display thrash between boundaries', () {
@@ -224,7 +253,7 @@ void main() {
 
       // 2.7 km @ 60 km/h in 15 s ticks (0.25 km). SoC 78→77 after ~0.5 km
       // (integer quantum) — the path that used to accept 2000 Wh/km and
-      // 8×-weight it into a ~45 km wipe.
+      // peak-weight it into a ~45 km wipe.
       var soc = 78;
       int? last = 218;
       for (var i = 0; i < 11; i++) {
@@ -298,87 +327,23 @@ void main() {
       expect(e.ready, isFalse);
     });
 
-    test('0117 Adapt Cons ≥15 projects Est within ±10% of SoC÷Cons envelope', () {
-      // Incident: persisted ~353 Wh/km → ~218 @ 77%; Adapt Cons 24.2 → ~318.
+    test('0117 Adapt Cons does not project or clamp display Est', () {
+      // Reshape: own window only — trustworthy Adapt Cons must not move Est
+      // toward (SoC% ÷ Cons)×100. Persisted ~353 Wh/km → ~218 @ 77%.
       final e = RangeEstimator();
       e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
       final t0 = DateTime.utc(2026, 9, 26, 18);
-      const soc = 77;
       const adaptCons = 24.2;
-      final envelope = (soc / adaptCons) * 100; // ≈318.18
       final km = e.ingest(
         now: t0,
-        socPct: soc,
+        socPct: 77,
         speedKmh: 0,
         efficiencyKwhPer100km: adaptCons,
       );
-      expect(km, isNotNull);
-      // ±10% of envelope (DoD band ~286–350).
-      expect(km!, greaterThanOrEqualTo((envelope * 0.9).floor()));
-      expect(km, lessThanOrEqualTo((envelope * 1.1).ceil()));
-      expect(km, closeTo(envelope.round(), 2));
-      // Own window unchanged — Adapt must not seed the composite.
+      expect(km, closeTo(218, 2));
       expect(e.weightedWhPerKm!, closeTo(353.21, 1));
-    });
-
-    test('0117 missing or weak Adapt Cons falls back to own window', () {
-      final e = RangeEstimator();
-      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
-      final t0 = DateTime.utc(2026, 9, 26, 18);
-
-      // Missing Cons → own projection (~218 @ 77%).
-      final noAdapt = e.ingest(now: t0, socPct: 77, speedKmh: 0);
-      expect(noAdapt, closeTo(218, 2));
-
-      // Valid but below honesty floor (<15) → own window, not Adapt.
-      final weak = e.ingest(
-        now: t0.add(const Duration(seconds: 1)),
-        socPct: 77,
-        speedKmh: 0,
-        efficiencyKwhPer100km: 12.0,
-      );
-      expect(weak, closeTo(218, 2));
-
-      // Invalid sentinel → own window.
-      final bad = e.ingest(
-        now: t0.add(const Duration(seconds: 2)),
-        socPct: 77,
-        speedKmh: 0,
-        efficiencyKwhPer100km: 0,
-      );
-      expect(bad, closeTo(218, 2));
-    });
-
-    test('0117 Adapt Cons honesty survives 0114 short-hop keep-open', () {
-      final e = RangeEstimator();
-      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
-      var t = DateTime.utc(2026, 9, 26, 19);
-      e.ingest(
-        now: t,
-        socPct: 78,
-        speedKmh: 0,
-        efficiencyKwhPer100km: 24.2,
-      );
-
-      var soc = 78;
-      int? last;
-      for (var i = 0; i < 11; i++) {
-        t = t.add(const Duration(seconds: 15));
-        if (i == 1) soc = 77;
-        last = e.ingest(
-          now: t,
-          socPct: soc,
-          speedKmh: 60,
-          efficiencyKwhPer100km: 24.2,
-        );
-      }
-
-      expect(last, isNotNull);
-      const envelope = (77 / 24.2) * 100;
-      expect(last!, greaterThanOrEqualTo((envelope * 0.9).floor()));
-      expect(last, lessThanOrEqualTo((envelope * 1.1).ceil()));
-      // Anti-cliff still: weighted must not jump to the old ~445 wipe regime.
-      expect(e.weightedWhPerKm!, lessThan(400));
+      // Must NOT jump to Adapt envelope (~318).
+      expect(km!, lessThan(250));
     });
 
     test('persist round-trip keeps window across trips', () {

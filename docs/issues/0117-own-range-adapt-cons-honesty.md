@@ -1,5 +1,6 @@
 ---
-status: ready-for-agent
+status: tip
+tip: d4ebf12
 labels: [hud, battery, range, honesty, window]
 created: 2026-09-26
 satisfies: Own Est. range window reshape — 3 bands (1× / 8× / mute last 1 km); no Adapt Cons seed
@@ -53,11 +54,11 @@ Distance from now inside the ~50 km window:
 
 ## DoD (product)
 
-- [ ] Window bands match HARD table: 50→5 **1×**, 5→1 **8×**, last 1 km **0** (mute).
-- [ ] **No Adapt Cons seed** / no Adapt±10% envelope force on display Est.
-- [ ] **0114 anti-cliff** preserved (`maxAbsWhPerKm` + keep-open).
-- [ ] **T2:** units prove new bands; short-hop last-1 mute; no cliff wipe.
-- [ ] Live stays **1.1.0+24** until Maxim GO.
+- [x] Window bands match HARD table: 50→5 **1×**, 5→1 **8×**, last 1 km **0** (mute).
+- [x] **No Adapt Cons seed** / no Adapt±10% envelope force on display Est.
+- [x] **0114 anti-cliff** preserved (`maxAbsWhPerKm` + keep-open).
+- [x] **T2:** units prove new bands; short-hop last-1 mute; no cliff wipe.
+- [x] Live stays **1.1.0+24** until Maxim GO.
 
 ## Soft / residuals
 
@@ -67,11 +68,11 @@ Distance from now inside the ~50 km window:
 
 ## Reconciliation
 
-**2026-09-26 docs reshape:** Product DoD rewritten away from Adapt±10% force → 3-band own-window weights. `de2fc95` noted for revert/park before reshape tip. Code tip TBD.
+**2026-09-26 tip:** Reverted/parked Adapt Cons display projection from `de2fc95` (`_displayAdaptConsKwhPer100`, Cons×10 in `_displayRange`, Adapt immediate refresh, Adapt±10% tests). Restored own-window display path; `maybeSeedFromAdaptEfficiency` remains intentional no-op. Reshaped weights to HARD 3 bands (50→5 **1×**, 5→1 **8×**, last 1 km **0** mute). Kept 0114 `kMaxAbsWhPerKm=500` + keep-open. Units green for new bands, last-1 mute, Adapt-no-project, and 0114 short-hop. Live still **1.1.0+24**. Soft: car T3 ~2× vs Adapt envelope not chased.
 
-### Prior tip (superseded — park/revert)
+### Prior tip (superseded — reverted in this tip)
 
-`de2fc95` had projected Est from Adapt Cons ≥15 kWh/100 (±10% envelope). That path is out of product scope for 0117 reshape.
+`de2fc95` had projected Est from Adapt Cons ≥15 kWh/100 (±10% envelope). That path is removed; own window only.
 
 ## Soft stand for ACCEPT
 
