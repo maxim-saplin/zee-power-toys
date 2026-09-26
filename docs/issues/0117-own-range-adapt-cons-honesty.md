@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: d4ebf12
+tip: 7c9397b
 labels: [hud, battery, range, honesty, window]
 created: 2026-09-26
 satisfies: Own Est. range window reshape — 3 bands (1× / 8× / mute last 1 km); no Adapt Cons seed
