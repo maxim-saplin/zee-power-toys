@@ -1,6 +1,8 @@
 ---
-status: tip
+status: accepted
 tip: 9ad6c56
+accepted: 2026-09-26
+evidence: tmp/qa/0114-cut-9ad6c56/
 labels: [hud, battery, range, honesty, adapt, rca]
 created: 2026-09-26
 satisfies: Own Est. range must not wipe ~45 km after a 2.7 km hop; RCA + fix
@@ -43,7 +45,8 @@ A ~**45 km** wipe on a **2.7 km** hop is nonsense vs observed distance / SoC / c
 - [x] RCA FINDINGS with root cause (code path + numbers)
 - [x] Tip fix + unit coverage for short-trip cliff
 - [x] T2 dens320: simulate ≈77% / short hop / ~24 kWh/100 → Est. moves plausibly vs prior 218 (no ~45 km wipe)
-- [ ] Soft: car T3 reconfirm on next drive
+- [x] Soft: car T3 reconfirm on next drive — soft stand (not a blocker).
+- [x] QA dens320 + four-point + PDM ACCEPT — PASS / ACCEPT `9ad6c56` (2026-09-26). Soft: car T3; Tablet hop inject unit-proven.
 
 ## FINDINGS (RCA)
 
@@ -71,3 +74,8 @@ A ~**45 km** wipe on a **2.7 km** hop is nonsense vs observed distance / SoC / c
 
 - Exact prior window contents unknown (yesterday 218 only); harness matches incident math.
 - Soft: car T3 reconfirm on next drive.
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `9ad6c56` (1.1.0+23; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0114-cut-9ad6c56/`); four-point PASS (soft); estimator units 19/19 (banked 73/73). Cap `kMaxAbsWhPerKm` 2000→**500** + keep-open on over-cap (pathological reset ≥15 km); 0108 window 50 / weights 8·4·1 / cadence 1 km kept. Cliff closed: prior 218 @ 77% + 2.7 km / 1% SoC → Est ≥200 / drop <25 (not 218→173). HUD seeded `77% · 218 km`. Soft: car T3; Tablet live hop inject needs odo (cliff unit-proven). Live still **1.1.0+23**.

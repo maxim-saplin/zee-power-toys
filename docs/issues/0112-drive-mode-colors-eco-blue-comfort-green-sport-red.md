@@ -1,6 +1,8 @@
 ---
-status: tip
+status: accepted
 tip: 2bf2a30
+accepted: 2026-09-26
+evidence: tmp/qa/0112-cut-2bf2a30/
 labels: [hud, adapt, drive-mode, settings]
 created: 2026-09-26
 satisfies: Drive-mode accents match Maxim ECO blue → Comfort/standard green → Sport red; tip+config order matches
@@ -42,8 +44,8 @@ This **supersedes** the 0109/0110 color tables:
 - [x] Corner-dot (0110 ON) same three colors; Sport ≠ yellow
 - [x] Tip + config + arb strings order/docs match ECO → Comfort → Sport
 - [x] Units / analyzer clean
-- [ ] Soft: car T3
-- [ ] QA dens320 pixel cut (post-tip)
+- [x] Soft: car T3 — soft stand (not a blocker).
+- [x] QA dens320 pixel cut + four-point + PDM ACCEPT — PASS / ACCEPT `2bf2a30` (2026-09-26). Soft: car T3.
 
 ## Soft / residuals
 
@@ -84,6 +86,12 @@ This **supersedes** the 0109/0110 color tables:
 `flutter test` — `test/hud/drive_mode_toast_accent_test.dart`, `test/hud/drive_mode_corner_dot_test.dart`, `test/providers/drive_mode_toast_test.dart`, `test/services/drive_mode_mapping_test.dart`. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope. Soft: car T3 dens clearance; dens320 QA pixel cut post-tip.
+
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `2bf2a30` (1.1.0+23; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0112-cut-2bf2a30/`); four-point PASS (soft); units 16/16. Shared `DriveModeAccents`: toast+dot ECO blue `#3B82F6` / Comfort green `#3DDC84` / Sport red `#FF3B30` (Sport yellow `#FFCC00` gone; pixel dist=0). Settings EN/RU ECO→Comfort→Sport. Soft: car T3 dens clearance (not a blocker). Live still **1.1.0+23**.
 
 ## Notes
 

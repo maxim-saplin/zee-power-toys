@@ -1,6 +1,8 @@
 ---
-status: tip
+status: accepted
 tip: 74edf87
+accepted: 2026-09-26
+evidence: tmp/qa/0116-cut-74edf87/
 labels: [hud, overlay, settings]
 created: 2026-09-26
 satisfies: Overlay size slider max grows ~5× so top end hits proper DHU dimensions
@@ -32,7 +34,8 @@ Maxim 2026-09-26 ~13:17 Minsk: after 0106, overlay size is **still too small** a
 
 - [x] Slider max visibly ~5× prior max footprint (measure HUD secondary / Flutter size)
 - [x] Mid and min still usable; prefs migrate sanely
-- [ ] Soft: car T3 confirm “proper dimensions” — Maxim taste gate
+- [x] Soft: car T3 confirm “proper dimensions” — soft stand (Tablet clip at 8.0; not a blocker).
+- [x] QA dens320 + four-point + PDM ACCEPT — PASS / ACCEPT `74edf87` (2026-09-26). Soft: car T3; Tablet clip 8.0→2560×1480.
 
 ## Soft / residuals
 
@@ -73,6 +76,12 @@ Constants: `kSpeedcamOverlaySizeScaleMin/Max` (Dart) ↔ `OVERLAY_SIZE_SCALE_MIN
 `flutter test` — geometry + overlay size scale + 0079 layout + 0116 migration. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope. Soft: car T3 Maxim taste may retune max.
+
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `74edf87` (1.1.0+23; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0116-cut-74edf87/`); four-point PASS (soft); units 17/17. Slider max **1.6→8.0** (5×): setLayout **336×246 / 896×657 / 4480×3285**; prefs 8.0 persist relaunch; 1.6 identity migrate (no remap); 0106 path intact. Soft: car T3 Maxim taste; Tablet canvas clips 8.0 to **2560×1480** (setLayout still 4480×3285). Live still **1.1.0+23**.
 
 ## Notes
 

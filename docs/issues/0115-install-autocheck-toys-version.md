@@ -1,6 +1,8 @@
 ---
-status: tip
+status: accepted
 tip: 77a8b76
+accepted: 2026-09-26
+evidence: tmp/qa/0115-cut-77a8b76/
 labels: [install, update, ux]
 created: 2026-09-26
 satisfies: Install screen auto-checks Toys version on open (no tap)
@@ -33,6 +35,7 @@ Maxim 2026-09-26 ~13:12 Minsk: when opening the **install** screen, **auto-check
 - [x] Open install screen → Toys version check starts without tap
 - [x] Other rows still behave as today
 - [x] Soft: offline path
+- [x] QA dens320 + four-point + PDM ACCEPT — PASS / ACCEPT `77a8b76` (2026-09-26). Soft: car T3 Checking…→result.
 
 ## Soft / residuals
 
@@ -71,3 +74,8 @@ Update / Reinstall wording and companion probe behaviour unchanged.
 `flutter test` — `install_screen_test` + `app_self_update_test`. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope.
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `77a8b76` (1.1.0+23; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0115-cut-77a8b76/`); four-point PASS (soft); units 31/31. Install open auto `_runCheck()` in `initState` — Checking…→latest/Reinstall without Check tap; manual Check kept; soft fail/15s timeout/last-known+error. 0103 Update/Reinstall wording untouched. Soft: car T3 visual Checking…→result on open. Live still **1.1.0+23**.

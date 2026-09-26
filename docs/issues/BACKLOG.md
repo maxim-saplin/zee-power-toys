@@ -1,9 +1,10 @@
 # Issues — the backlog & board
 
-- [ ] **0116** Overlay size slider max ≈ 5× — tip `74edf87` — `0116-overlay-size-slider-max-5x.md`
-- [ ] **0115** Install auto-check Toys version on open — tip `77a8b76` — `0115-install-autocheck-toys-version.md`
-- [ ] **0113** Sport corner-dot pulsates; ECO/Comfort calm — tip `b5d7074` — `0113-sport-corner-dot-pulsate.md`
-- [ ] **0112** Drive-mode colors ECO blue / Comfort green / Sport red — tip `2bf2a30` — `0112-drive-mode-colors-eco-blue-comfort-green-sport-red.md`
+- [x] **0116** Overlay size slider max ≈ 5× — ACCEPT `74edf87` — `0116-overlay-size-slider-max-5x.md`
+- [x] **0115** Install auto-check Toys version on open — ACCEPT `77a8b76` — `0115-install-autocheck-toys-version.md`
+- [x] **0114** Own-range short-trip SoC quantum cliff — ACCEPT `9ad6c56` — `0114-own-range-short-trip-wipe-rca.md`
+- [x] **0113** Sport corner-dot pulsates; ECO/Comfort calm — ACCEPT `b5d7074` — `0113-sport-corner-dot-pulsate.md`
+- [x] **0112** Drive-mode colors ECO blue / Comfort green / Sport red — ACCEPT `2bf2a30` — `0112-drive-mode-colors-eco-blue-comfort-green-sport-red.md`
 - [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`
 - [x] **0110** Drive-mode persistent BR corner dot (settings toggle) — ACCEPT `36f2384` — `0110-drive-mode-corner-dot.md`
 - [x] **0109** Drive-mode toast higher + blue/green/red — ACCEPT `67eccc5` — `0109-drive-mode-toast-higher-colors.md`
