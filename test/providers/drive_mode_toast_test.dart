@@ -99,6 +99,49 @@ void main() {
       expect(find.text('Sport'), findsOneWidget);
     });
 
+    testWidgets('0109 accents: Comfort blue → Sport red on toast chrome', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(800, 480));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 800, height: 480, child: HudRoot()),
+        signals: signals,
+        localizations: false,
+      ));
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HudRoot)),
+      );
+      container
+          .read(driveModeToastProvider.notifier)
+          .debugSetSeen(DriveMode.eco);
+      await tester.pump();
+
+      signals.emitDriveMode(DriveMode.comfort);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byKey(const ValueKey('drive-mode-toast')), findsOneWidget);
+      expect(find.text('Comfort'), findsOneWidget);
+      final comfortIcon = tester.widget<Icon>(find.byIcon(Icons.directions_car_outlined));
+      expect(comfortIcon.color, const Color(0xFF3B82F6));
+
+      signals.emitDriveMode(DriveMode.sport);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Sport'), findsOneWidget);
+      final sportIcon = tester.widget<Icon>(find.byIcon(Icons.speed));
+      expect(sportIcon.color, const Color(0xFFFF3B30));
+
+      signals.emitDriveMode(DriveMode.eco);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('ECO'), findsOneWidget);
+      final ecoIcon = tester.widget<Icon>(find.byIcon(Icons.eco_outlined));
+      expect(ecoIcon.color, const Color(0xFF3DDC84));
+    });
+
     testWidgets('ECO→Sport after known baseline shows Sport toast', (tester) async {
       final signals = FakeCarSignals();
       await tester.binding.setSurfaceSize(const Size(800, 480));

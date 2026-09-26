@@ -5,9 +5,10 @@ import '../providers/drive_mode_toast.dart';
 import '../services/car_signals.dart';
 import '../services/drive_mode_mapping.dart';
 
-/// 0104 — ephemeral HUD drive-mode toast (~5 s hold, then fade).
+/// 0104/0109 — ephemeral HUD drive-mode toast (~5 s hold, then fade).
 ///
-/// Top-centre Safe Area — clear of blinkers (edges), battery, Alien radar.
+/// Top-centre Safe Area — raised above the speedo cluster (0109), still clear
+/// of blinkers (edges), battery, Alien radar.
 class DriveModeToastLayer extends ConsumerStatefulWidget {
   const DriveModeToastLayer({super.key});
 
@@ -65,14 +66,15 @@ class _DriveModeToastLayerState extends ConsumerState<DriveModeToastLayer>
     final toast = _showing;
     if (toast == null) return const SizedBox.shrink();
 
-    final accent = _accent(toast.mode);
+    final accent = driveModeToastAccent(toast.mode);
     final label = DriveModeMapping.hudLabel(toast.mode);
     if (label.isEmpty) return const SizedBox.shrink();
 
     return FadeTransition(
       opacity: _fade,
       child: Align(
-        alignment: const Alignment(0, -0.55),
+        // 0109: raise from prior -0.55 so chrome clears the speedo on dens320.
+        alignment: const Alignment(0, -0.82),
         child: DecoratedBox(
           key: const ValueKey('drive-mode-toast'),
           decoration: BoxDecoration(
@@ -116,14 +118,6 @@ class _DriveModeToastLayerState extends ConsumerState<DriveModeToastLayer>
     );
   }
 
-  static Color _accent(DriveMode mode) => switch (mode) {
-        DriveMode.eco => const Color(0xFF5CDB7A),
-        DriveMode.comfort => const Color(0xFF7EC8FF),
-        DriveMode.sport => const Color(0xFFFF8A4C),
-        DriveMode.other => const Color(0xFFC8CDD8),
-        DriveMode.unknown => const Color(0xFFC8CDD8),
-      };
-
   static IconData _icon(DriveMode mode) => switch (mode) {
         DriveMode.eco => Icons.eco_outlined,
         DriveMode.comfort => Icons.directions_car_outlined,
@@ -132,3 +126,13 @@ class _DriveModeToastLayerState extends ConsumerState<DriveModeToastLayer>
         DriveMode.unknown => Icons.tune,
       };
 }
+
+/// 0109 toast accents: ECO=green, Comfort=blue, Sport=red; other/unknown soft grey.
+/// Drops the 0104 cyan/orange palette.
+Color driveModeToastAccent(DriveMode mode) => switch (mode) {
+      DriveMode.eco => const Color(0xFF3DDC84),
+      DriveMode.comfort => const Color(0xFF3B82F6),
+      DriveMode.sport => const Color(0xFFFF3B30),
+      DriveMode.other => const Color(0xFFC8CDD8),
+      DriveMode.unknown => const Color(0xFFC8CDD8),
+    };

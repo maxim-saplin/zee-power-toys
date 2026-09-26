@@ -245,7 +245,7 @@ class _HudSlots extends ConsumerWidget {
             child: const _MinimapGlyph(),
           ),
 
-        // 0104 drive-mode toast — top-centre, clear of blinker / radar / battery.
+        // 0104/0109 drive-mode toast — top-centre (raised above speedo), clear of blinker / radar / battery.
         const Positioned.fill(
           child: IgnorePointer(child: DriveModeToastLayer()),
         ),
