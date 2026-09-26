@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: d3e6c44
+tip: de2fc95
 labels: [hud, battery, range, honesty, adapt]
 created: 2026-09-26
 satisfies: Own Est. range must track SoC% ÷ Adapt trip kWh/100 (honesty vs envelope)
