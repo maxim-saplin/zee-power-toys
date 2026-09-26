@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: PENDING
+tip: 77a8b76
 labels: [install, update, ux]
 created: 2026-09-26
 satisfies: Install screen auto-checks Toys version on open (no tap)
