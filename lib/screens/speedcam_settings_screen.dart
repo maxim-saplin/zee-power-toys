@@ -412,10 +412,14 @@ class _SpeedcamSettingsScreenState
                 ),
                 Slider(
                   key: const ValueKey('speedcam-overlay-size'),
-                  value: sc.overlaySizeScale.clamp(0.6, 1.6),
-                  min: 0.6,
-                  max: 1.6,
-                  divisions: 10,
+                  value: sc.overlaySizeScale.clamp(
+                    kSpeedcamOverlaySizeScaleMin,
+                    kSpeedcamOverlaySizeScaleMax,
+                  ),
+                  min: kSpeedcamOverlaySizeScaleMin,
+                  max: kSpeedcamOverlaySizeScaleMax,
+                  // 0.2× steps over 0.6–8.0 (0116).
+                  divisions: 37,
                   label: '${sc.overlaySizeScale.toStringAsFixed(2)}×',
                   onChanged: (v) => _patchSpeedcam(
                     (c) => c.copyWith(overlaySizeScale: v),

@@ -15,8 +15,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('0106: Alien CRT fills overlay slot — content scales with window',
+  testWidgets('0106/0116: Alien CRT fills overlay slot — content scales with window',
       (tester) async {
+    // Room for dens1 @ scale 8.0 slot (2240×1643); default 800×600 would clamp.
+    await tester.binding.setSurfaceSize(const Size(2560, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final svc = FakeSpeedcamService();
     final store = SharedPrefsConfigStore();
     await store.load();
@@ -65,11 +68,16 @@ void main() {
 
     final small = await pumpSlot(const Size(168, 123));
     final large = await pumpSlot(const Size(448, 329));
+    // 0116: prior max footprint ×5 (dens1 @ scale 8.0 → 2240×1643).
+    final max5x = await pumpSlot(const Size(2240, 1643));
     expect(small.width, closeTo(168, 0.5));
     expect(small.height, closeTo(123, 0.5));
     expect(large.width, closeTo(448, 0.5));
     expect(large.height, closeTo(329, 0.5));
+    expect(max5x.width, closeTo(2240, 0.5));
+    expect(max5x.height, closeTo(1643, 0.5));
     expect(large.width / small.width, greaterThan(2.0));
+    expect(max5x.width / large.width, closeTo(5.0, 0.02));
     expect(small.width / small.height, closeTo(kSpeedcamCrtPlateAspect, 0.05));
     svc.dispose();
   });

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'minimap_viewport.dart' show hudPresetSizeFraction;
 import 'speedcam.dart' show SpeedcamPresenceMode;
-
+import '../hud/speedcam_crt_geometry.dart';
 
 /// jsonDecode nests are [Map<String, dynamic>], which fail `is Map<String, Object?>`.
 Map<String, Object?>? _asStringKeyedMap(Object? value) {
@@ -975,7 +975,9 @@ class SpeedcamConfig {
   /// 0073: TTL days for YNavi overlay points (not OSM pack). Default 7.
   final int ynaviPointTtlDays;
 
-  /// 0079: overlay window size multiplier (base ~280dp). Default 1.0.
+  /// 0079/0116: overlay window size multiplier (base ~280dp).
+  /// Range [kSpeedcamOverlaySizeScaleMin]–[kSpeedcamOverlaySizeScaleMax]
+  /// (0116 raised max 1.6→8.0 = 5× prior). Default 1.0.
   final double overlaySizeScale;
 
   /// 0079: overlay window corner. Default topEnd.
@@ -1095,7 +1097,10 @@ class SpeedcamConfig {
       ynaviAlertEnabled: json['ynaviAlertEnabled'] as bool? ?? true,
       alertLaneCams: json['alertLaneCams'] as bool? ?? false,
       ynaviPointTtlDays: (json['ynaviPointTtlDays'] as num?)?.toInt() ?? 7,
-      overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0).clamp(0.6, 1.6),
+      overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0).clamp(
+        kSpeedcamOverlaySizeScaleMin,
+        kSpeedcamOverlaySizeScaleMax,
+      ),
       overlayPlacement: SpeedcamOverlayPlacement.values.firstWhere(
         (e) => e.name == json['overlayPlacement'],
         orElse: () => SpeedcamOverlayPlacement.topEnd,

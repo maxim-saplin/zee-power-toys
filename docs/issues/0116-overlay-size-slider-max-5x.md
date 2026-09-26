@@ -1,5 +1,6 @@
 ---
-status: open
+status: tip
+tip: TBD
 labels: [hud, overlay, settings]
 created: 2026-09-26
 satisfies: Overlay size slider max grows ~5× so top end hits proper DHU dimensions
@@ -29,10 +30,51 @@ Maxim 2026-09-26 ~13:17 Minsk: after 0106, overlay size is **still too small** a
 
 ## DoD (T2 dens320 + soft car)
 
-- [ ] Slider max visibly ~5× prior max footprint (measure HUD secondary / Flutter size)
-- [ ] Mid and min still usable; prefs migrate sanely
+- [x] Slider max visibly ~5× prior max footprint (measure HUD secondary / Flutter size)
+- [x] Mid and min still usable; prefs migrate sanely
 - [ ] Soft: car T3 confirm “proper dimensions” — Maxim taste gate
 
 ## Soft / residuals
 
 - Exact max number left to measure on Tablet + Maxim car taste; tip documents chosen factor.
+- Soft car T3 dens clearance / “proper dimensions” taste.
+- Did **not** implement 0115.
+
+## Reconciliation
+
+**2026-09-26 tip:** Overlay size slider max **1.6 → 8.0** (= **5×** prior max). Absolute scale vs base 280dp; identity prefs migration.
+
+### Factor chosen (measure)
+
+| | Prior max (1.6) | New max (8.0) | Ratio |
+|--|--|--|--|
+| Scale | 1.6 | **8.0** | **5.000×** |
+| dens320 (d=2) px | 896×657 | **4480×3285** | 5.000× linear |
+| DHU dens≈1 px | 448×329 | **2240×1643** | 5.000× linear (~87%×103% of 2560×1600) |
+| Min (0.6) dens2 | 336×246 | unchanged | usable |
+| Mid (1.0) dens2 | 560×411 | unchanged | usable |
+
+Constants: `kSpeedcamOverlaySizeScaleMin/Max` (Dart) ↔ `OVERLAY_SIZE_SCALE_MIN/MAX` (Kotlin).
+
+### Migration
+
+**Identity** — `overlaySizeScale` remains an absolute multiplier of base **280dp**. Expanding the clamp upper bound **1.6 → 8.0** does **not** remap stored values: a pref of `1.2` stays `1.2` and paints the same px footprint. `SpeedcamConfig.fromJson` clamps to the new range only; values already in 0.6–1.6 load unchanged (unit-covered).
+
+### Changes
+
+1. **Range:** slider / prefs / Kotlin `setLayout` coerce **0.6–8.0** (was 0.6–1.6); slider divisions **37** (0.2× steps).
+2. **Shared constants** in `speedcam_crt_geometry.dart`; `config_store` + settings import them.
+3. **0106 path intact:** `forceFlutterViewSize`, overlay app `SizedBox.expand` + watch scale, successive `setLayout` — still live, not a no-op.
+4. **Units:** geometry 5× footprint, clamp 0.6–8.0, migration identity, CRT fill at 2240×1643 slot, successive setLayout incl. 8.0.
+5. **No Live bump** — stays **1.1.0+23**. Soft car T3. Did **not** implement 0115.
+
+### Verification
+
+`flutter test` — geometry + overlay size scale + 0079 layout + 0116 migration. `dart analyze` clean on touched Dart.
+
+**Divergence:** None from scope. Soft: car T3 Maxim taste may retune max.
+
+## Notes
+
+- Tip OK; **no Live bump** until Maxim GO.
+- Do **not** implement 0115 here.

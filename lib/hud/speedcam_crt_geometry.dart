@@ -32,16 +32,26 @@ const double kSpeedcamCrtPlateAspect = kSpeedcamCrtPlateW / kSpeedcamCrtPlateH;
   return speedcamCrtPlateSize(maxW: maxW, maxH: maxW / kSpeedcamCrtPlateAspect);
 }
 
+/// Overlay size slider / prefs range (0116).
+/// Prior max was 1.6; new max 8.0 = **5×** prior max (absolute vs base 280dp).
+const double kSpeedcamOverlaySizeScaleMin = 0.6;
+const double kSpeedcamOverlaySizeScaleMax = 8.0;
+const double kSpeedcamOverlayWidthDp = 280;
+
 /// Native overlay window size in px (mirrors Kotlin
 /// `OVERLAY_WIDTH_DP * sizeScale * density` + landscape CRT aspect).
-/// Base width 280dp; scale clamped to 0.6–1.6 (prefs / slider range).
+/// Base width [kSpeedcamOverlayWidthDp]; scale clamped to
+/// [kSpeedcamOverlaySizeScaleMin]–[kSpeedcamOverlaySizeScaleMax].
 ({int width, int height}) speedcamOverlayWindowSizePx({
   required double sizeScale,
   required double density,
-  double widthDp = 280,
+  double widthDp = kSpeedcamOverlayWidthDp,
 }) {
   assert(density > 0);
-  final scale = sizeScale.clamp(0.6, 1.6);
+  final scale = sizeScale.clamp(
+    kSpeedcamOverlaySizeScaleMin,
+    kSpeedcamOverlaySizeScaleMax,
+  );
   final width = (widthDp * scale * density).round().clamp(1, 1 << 30);
   final height = (width / kSpeedcamCrtPlateAspect).round().clamp(1, 1 << 30);
   return (width: width, height: height);

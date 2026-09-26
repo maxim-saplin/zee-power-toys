@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0116** Overlay size slider max ≈ 5× — tip `TBD` — `0116-overlay-size-slider-max-5x.md`
 - [ ] **0113** Sport corner-dot pulsates; ECO/Comfort calm — tip `b5d7074` — `0113-sport-corner-dot-pulsate.md`
 - [ ] **0112** Drive-mode colors ECO blue / Comfort green / Sport red — tip `2bf2a30` — `0112-drive-mode-colors-eco-blue-comfort-green-sport-red.md`
 - [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`

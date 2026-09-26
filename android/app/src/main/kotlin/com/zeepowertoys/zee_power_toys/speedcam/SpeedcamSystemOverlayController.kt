@@ -45,6 +45,9 @@ class SpeedcamSystemOverlayController(
         /** Overlay disk size (dp) — matches DHU settings preview ballpark. */
         /** Longer side (width) of landscape CRT plate; height = width / ASPECT. */
         private const val OVERLAY_WIDTH_DP = 280
+        /** 0116: slider/prefs max = 5× prior max 1.6 (must match Dart kSpeedcamOverlaySizeScaleMax). */
+        private const val OVERLAY_SIZE_SCALE_MIN = 0.6
+        private const val OVERLAY_SIZE_SCALE_MAX = 8.0
         /** 300∶220 landscape — must match Dart [kSpeedcamCrtPlateAspect]. */
         private const val OVERLAY_ASPECT = 300.0 / 220.0
     }
@@ -131,7 +134,7 @@ class SpeedcamSystemOverlayController(
                 }
                 "setLayout" -> {
                     val scale = (call.argument<Number>("sizeScale") ?: 1.0).toDouble()
-                        .coerceIn(0.6, 1.6)
+                        .coerceIn(OVERLAY_SIZE_SCALE_MIN, OVERLAY_SIZE_SCALE_MAX)
                     val place = call.argument<String>("placement") ?: "topEnd"
                     mainHandler.post {
                         sizeScale = scale

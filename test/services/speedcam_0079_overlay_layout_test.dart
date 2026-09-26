@@ -23,12 +23,14 @@ void main() {
     expect(o.lastPlacement, 'topStart');
   });
 
-  test('0106: successive setLayout scales are recorded (live slider)', () async {
+  test('0106/0116: successive setLayout scales are recorded (live slider)', () async {
     final o = FakeSpeedcamSystemOverlay();
     await o.setLayout(sizeScale: 0.6, placement: 'topEnd');
     expect(o.lastSizeScale, 0.6);
     await o.setLayout(sizeScale: 1.6, placement: 'topEnd');
     expect(o.lastSizeScale, 1.6);
+    await o.setLayout(sizeScale: 8.0, placement: 'topEnd');
+    expect(o.lastSizeScale, 8.0);
     await o.setLayout(sizeScale: 1.0, placement: 'bottomStart');
     expect(o.lastSizeScale, 1.0);
     expect(o.lastPlacement, 'bottomStart');
