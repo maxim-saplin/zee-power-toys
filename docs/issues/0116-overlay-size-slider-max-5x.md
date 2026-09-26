@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: TBD
+tip: 74edf87
 labels: [hud, overlay, settings]
 created: 2026-09-26
 satisfies: Overlay size slider max grows ~5× so top end hits proper DHU dimensions
