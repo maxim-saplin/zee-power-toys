@@ -1,8 +1,8 @@
 # Issues — the backlog & board
 
 - [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`
-- [ ] **0110** Drive-mode persistent BR corner dot (settings toggle) — `0110-drive-mode-corner-dot.md`
-- [ ] **0109** Drive-mode toast higher + blue/green/red — `0109-drive-mode-toast-higher-colors.md`
+- [x] **0110** Drive-mode persistent BR corner dot (settings toggle) — ACCEPT `36f2384` — `0110-drive-mode-corner-dot.md`
+- [x] **0109** Drive-mode toast higher + blue/green/red — ACCEPT `67eccc5` — `0109-drive-mode-toast-higher-colors.md`
 - [x] **0108** Own-range honesty window (~50 km, heavier recent 10/3 km) — ACCEPT `11ae3cd` — `0108-own-range-honesty-window.md`
 - [x] **0107** Own-range HUD polish (always-visible pending + typography/layout) — ACCEPT `e1c3419` — `0107-own-range-hud-polish.md`
 - [x] **0106** Overlay size slider scales window + CRT content — ACCEPT `488d7ec` — `0106-overlay-size-noop.md`

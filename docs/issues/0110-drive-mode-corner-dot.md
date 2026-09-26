@@ -1,6 +1,8 @@
 ---
-status: ready-for-qa
+status: accepted
 tip: 36f2384
+accepted: 2026-09-26
+evidence: tmp/qa/0110-cut-36f2384/
 labels: [hud, adapt, drive-mode, settings]
 created: 2026-09-26
 satisfies: foundation
@@ -46,8 +48,8 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 - [x] Mode change updates the dot without requiring restart.
 - [x] EN + RU strings for toggle + short help.
 - [x] Persist in ConfigStore; survives process restart.
-- [ ] T2 Tablet dens320 evidence (OFF / ON×3 modes) + units if added.
-- [ ] QA FINDINGS + beta four-point + PDM ACCEPT. Soft: car T3.
+- [x] T2 Tablet dens320 evidence (OFF / ON×3 modes) + units — PASS (`tmp/qa/0110-cut-36f2384/`).
+- [x] QA FINDINGS + beta four-point + PDM ACCEPT — PASS / ACCEPT `36f2384` (2026-09-26). Soft: car T3.
 
 
 ## Reconciliation
@@ -77,6 +79,11 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 `flutter test` — `test/hud/drive_mode_corner_dot_test.dart` (+ toast accent / toast provider / BatteryConfig defaults) PASS. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope. Soft: car T3 / dens320 pad confirm vs mid-right battery placement.
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `36f2384` (1.1.0+22; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0110-cut-36f2384/`); four-point PASS (soft); units 5/5. Default OFF → no BR corner dot; ON → Comfort blue `#3B82F6` / ECO green `#3DDC84` / Sport **yellow** `#FFCC00` (≠ toast Sport red `#FF3B30`); live update; unknown/other hide; prefs survive re-up; settings EN/RU key `battery-show-drive-mode-dot`. Color split intentional (toast red Sport vs persistent yellow Sport). Soft: car T3 dens clearance; pad soft ~20 px SA-edge→blob (code pad 14 + radius/glow). Neither soft is a blocker.
 
 ## Notes
 

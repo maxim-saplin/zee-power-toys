@@ -1,5 +1,5 @@
 ---
-status: ready-for-qa
+status: accepted
 labels: [hud, adapt, drive-mode, polish]
 created: 2026-09-26
 satisfies: foundation
@@ -11,6 +11,8 @@ priority: now
 filed-by: zee-pdm
 gate: armed-2026-09-26
 tip: 67eccc5
+accepted: 2026-09-26
+evidence: tmp/qa/0109-cut-67eccc5/
 related: [0104]
 parent: [0104]
 ---
@@ -52,7 +54,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 - [x] 0104 behaviour preserved: change-only; cold-open / first-known silent; ~5 s then fade; same-mode silent.
 - [x] Simulated Settings / inject still fires ECO / Comfort / Sport for T2 (untouched).
 - [x] Unit / widget fixtures for accent colors; `dart analyze` clean on touched Dart.
-- [ ] QA FINDINGS on tip + beta four-point + PDM ACCEPT after own-check. Soft: car T3.
+- [x] QA FINDINGS on tip + beta four-point + PDM ACCEPT — PASS / ACCEPT `67eccc5` (2026-09-26). Soft: car T3.
 
 
 ## Reconciliation
@@ -70,6 +72,11 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 `flutter test` — `test/hud/drive_mode_toast_accent_test.dart`, `test/providers/drive_mode_toast_test.dart` (incl. 0109 accent chrome widget), `test/services/drive_mode_mapping_test.dart` → 10/10 PASS. `dart analyze` clean on touched Dart.
 
 **Divergence:** None from scope; change-only. Soft: car T3 clearance confirm.
+
+
+## ACCEPT (PDM 2026-09-26)
+
+Tip `67eccc5` (1.1.0+22; Live not bumped). QA T2 dens320 PASS (`tmp/qa/0109-cut-67eccc5/`); four-point PASS (soft); units 10/10. Align `-0.55`→`-0.82` (−18 px topY vs 0104); accents ECO green `#3DDC84` / Comfort blue `#3B82F6` / Sport red `#FF3B30` (pixel dist=0; 0104 cyan/orange dropped). 0104 preserve: cold-open/first-known silent; known→known ~5 s fade; same-mode silent. No 0110 corner-dot on this tip. Soft: car T3 clearance vs real instrument speedo remains open (not a blocker).
 
 ## Notes
 
