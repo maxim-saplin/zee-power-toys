@@ -1,6 +1,7 @@
 ---
-status: tip-ready
+status: accepted
 tip: 9b0c0ba
+accepted: 2026-09-27
 labels: [hud, battery, range, honesty, adapt, float-soc, cons1]
 created: 2026-09-26
 satisfies: Dual range Est. — float SoC own-trip + Adapt Cons1; DHU picks primary
@@ -81,3 +82,7 @@ Keep **0117** three-band own-trip window and **0114** anti-cliff. Own Est. becom
 ## Reconciliation
 
 **2026-09-26 tip:** Native float SoC from `0x00404000` (no `toInt()`); Cons1 `0x00103100` → Dart `efficiencyKwhPer100km` (sentinels rejected). Own Est. uses float SoC + 0117 bands + 0114 anti-cliff (own-window-only, no Cons seed). Cons Est. = `(soc/100)×packWh/(cons×10)` with soft Cons lag (≥0.5 kWh/100 or ~1 km). DHU settings: primary mode picker (own vs Adapt-Cons) + both values near own-range toggle. Invalid Cons1 → Cons Est. hidden; Own still works. Live stays **1.1.0+25**. Soft: car T3 taste; Cons2 unused.
+
+## ACCEPT (PDM 2026-09-27)
+
+Tip `9b0c0ba` (docs stamp `98ac833`). T2 dens320 + early + four-point PASS (soft). Float SoC (no `toInt`) + Cons1 dual Est.; Own = **0117** bands + **0114** anti-cliff; Cons Est. from Cons1; DHU primary picker + both values near own-range toggle. Soft: car T3 / Cons lag / Cons2 unused. Live hold **1.1.0+25** until Maxim GO.
