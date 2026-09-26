@@ -1,6 +1,6 @@
 ---
 status: tip-ready
-tip: 40e8af8
+tip: 9b0c0ba
 labels: [hud, battery, range, honesty, adapt, float-soc, cons1]
 created: 2026-09-26
 satisfies: Dual range Est. — float SoC own-trip + Adapt Cons1; DHU picks primary
