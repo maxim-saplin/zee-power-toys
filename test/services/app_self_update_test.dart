@@ -151,6 +151,20 @@ void main() {
       final check = await AppSelfUpdate(client: client, installedCode: 1).check();
       expect(check, isA<AppUpdateCheckFailed>());
     });
+
+    test('hang soft-fails via timeout budget', () async {
+      final client = MockClient((request) async {
+        await Future<void>.delayed(const Duration(seconds: 5));
+        return http.Response('[]', 200);
+      });
+      final check = await AppSelfUpdate(
+        client: client,
+        installedCode: 1,
+        timeout: const Duration(milliseconds: 50),
+      ).check();
+      expect(check, isA<AppUpdateCheckFailed>());
+      expect(kAppSelfUpdateTimeout, const Duration(seconds: 15));
+    });
   });
 
   test('GithubAsset directUrl wins', () {

@@ -21,6 +21,7 @@ class InstallScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final installer = ref.read(installerProvider);
     final packages = ref.read(packageStatusProvider);
+    final updateChecker = ref.read(appUpdateCheckerProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.installTitle)),
@@ -30,6 +31,7 @@ class InstallScreen extends ConsumerWidget {
           _SelfUpdateCard(
             key: const ValueKey('card-self-update'),
             installer: installer,
+            updateChecker: updateChecker,
           ),
           const SizedBox(height: Insets.md),
           _InstallCard(
@@ -113,9 +115,14 @@ String releaseActionButtonLabel(AppLocalizations l10n, ReleaseActionKind kind) {
 // ---------------------------------------------------------------------------
 
 class _SelfUpdateCard extends StatefulWidget {
-  const _SelfUpdateCard({super.key, required this.installer});
+  const _SelfUpdateCard({
+    super.key,
+    required this.installer,
+    required this.updateChecker,
+  });
 
   final Installer installer;
+  final AppUpdateChecker updateChecker;
 
   @override
   State<_SelfUpdateCard> createState() => _SelfUpdateCardState();
@@ -124,6 +131,8 @@ class _SelfUpdateCard extends StatefulWidget {
 class _SelfUpdateCardState extends State<_SelfUpdateCard> {
   AppUpdateCheck? _check;
   bool _checking = false;
+  /// Soft-fail detail when [_check] retains a prior good result (0115).
+  String? _lastError;
   StreamSubscription<InstallProgress>? _sub;
   InstallProgress? _progress;
 
@@ -141,6 +150,13 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // 0115: auto-check on open / resume (parity with companion _refreshProbe).
+    _runCheck();
+  }
+
+  @override
   void dispose() {
     _sub?.cancel();
     super.dispose();
@@ -148,15 +164,28 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
 
   Future<void> _runCheck() async {
     if (_checking || _busyInstall) return;
+    final previous = _check;
     setState(() {
       _checking = true;
-      _check = null;
+      // Keep last known visible under "Checking…" until result arrives (soft).
+      if (previous is AppUpdateCheckFailed) {
+        _check = null;
+      }
     });
-    final result = await AppSelfUpdate().check();
+    final result = await widget.updateChecker();
     if (!mounted) return;
     setState(() {
       _checking = false;
-      _check = result;
+      // Soft fail: keep last good result when GH/offline fails.
+      if (result is AppUpdateCheckFailed &&
+          previous != null &&
+          previous is! AppUpdateCheckFailed) {
+        _check = previous;
+        _lastError = result.message;
+      } else {
+        _check = result;
+        _lastError = result is AppUpdateCheckFailed ? result.message : null;
+      }
     });
   }
 
@@ -258,12 +287,12 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
                   ),
               ],
             ),
-            if (_checking || _check != null) ...[
+            if (_checking || _check != null || _lastError != null) ...[
               const SizedBox(height: Insets.md),
               Text(
                 _statusLabel(l10n),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _check is AppUpdateCheckFailed
+                  color: (_check is AppUpdateCheckFailed || _lastError != null)
                       ? cs.error
                       : cs.onSurfaceVariant,
                 ),
@@ -299,19 +328,32 @@ class _SelfUpdateCardState extends State<_SelfUpdateCard> {
 
   String _statusLabel(AppLocalizations l10n) {
     if (_checking) return l10n.updateStatusChecking;
+    final err = _lastError;
     final c = _check;
     if (c is AppUpdateAvailable) {
-      return l10n.updateStatusAvailable(c.remoteLabel);
+      final base = l10n.updateStatusAvailable(c.remoteLabel);
+      return err != null ? '$base — ${l10n.updateStatusFailed(err)}' : base;
     }
-    if (c is AppUpdateReinstall) return l10n.updateStatusUpToDate;
+    if (c is AppUpdateReinstall) {
+      final base = l10n.updateStatusUpToDate;
+      return err != null ? '$base — ${l10n.updateStatusFailed(err)}' : base;
+    }
     if (c is AppUpdateTipAhead) {
-      return l10n.updateStatusTipAhead(c.remoteLabel);
+      final base = l10n.updateStatusTipAhead(c.remoteLabel);
+      return err != null ? '$base — ${l10n.updateStatusFailed(err)}' : base;
     }
-    if (c is AppUpdateUpToDate) return l10n.updateStatusUpToDate;
-    if (c is AppUpdateNonePublished) return l10n.updateStatusNone;
+    if (c is AppUpdateUpToDate) {
+      final base = l10n.updateStatusUpToDate;
+      return err != null ? '$base — ${l10n.updateStatusFailed(err)}' : base;
+    }
+    if (c is AppUpdateNonePublished) {
+      final base = l10n.updateStatusNone;
+      return err != null ? '$base — ${l10n.updateStatusFailed(err)}' : base;
+    }
     if (c is AppUpdateCheckFailed) {
       return l10n.updateStatusFailed(c.message);
     }
+    if (err != null) return l10n.updateStatusFailed(err);
     return '';
   }
 

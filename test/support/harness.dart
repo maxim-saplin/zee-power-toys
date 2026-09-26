@@ -24,6 +24,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/l10n/app_localizations.dart';
 import 'package:zee_power_toys/providers/services.dart';
+import 'package:zee_power_toys/services/app_self_update.dart';
 import 'package:zee_power_toys/providers/usb_mode.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
@@ -95,6 +96,7 @@ Widget wrapWithProviders(
   PackageStatus? packageStatus,
   SystemConfig? systemConfig,
   UsbModePort? usbMode,
+  AppUpdateChecker? appUpdateChecker,
   List? extraOverrides,
 }) {
   final effectiveStore = store ?? SharedPrefsConfigStore();
@@ -113,6 +115,10 @@ Widget wrapWithProviders(
       hudHostProvider.overrideWithValue(FakeHudHost()),
       installerProvider.overrideWithValue(installer ?? FakeInstaller()),
       packageStatusProvider.overrideWithValue(packageStatus ?? FakePackageStatus()),
+      appUpdateCheckerProvider.overrideWithValue(
+        appUpdateChecker ??
+            (() async => const AppUpdateNonePublished()),
+      ),
       speedcamServiceProvider.overrideWithValue(FakeSpeedcamService()),
       speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
       speedcamPackStoreProvider.overrideWithValue(FakeSpeedcamPackStore()),

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/screens/install_screen.dart';
+import 'package:zee_power_toys/services/app_self_update.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/installer.dart';
@@ -306,6 +308,79 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('0115: Toys version check starts on open without tap', (tester) async {
+      final (store, installer) = await _makeFixture();
+      var checks = 0;
+      final gate = Completer<AppUpdateCheck>();
+      Future<AppUpdateCheck> checker() {
+        checks++;
+        return gate.future;
+      }
+
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          appUpdateChecker: checker,
+        ),
+      );
+      await tester.pump(); // initState kicked _runCheck — still in flight
+      expect(checks, 1);
+      expect(find.text('Checking…'), findsOneWidget);
+      // No tap required — auto path only
+      expect(find.byKey(const ValueKey('update-check')), findsOneWidget);
+
+      gate.complete(const AppUpdateNonePublished());
+      await tester.pumpAndSettle();
+      expect(find.text('Checking…'), findsNothing);
+      expect(find.byKey(const ValueKey('update-check')), findsOneWidget);
+    });
+
+    testWidgets('0115: soft fail keeps last known + shows error', (tester) async {
+      final (store, installer) = await _makeFixture();
+      var n = 0;
+      Future<AppUpdateCheck> checker() async {
+        n++;
+        if (n == 1) return const AppUpdateNonePublished();
+        return const AppUpdateCheckFailed('GitHub HTTP 403');
+      }
+
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          appUpdateChecker: checker,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(n, 1);
+      // Manual refresh still available
+      await tester.tap(find.byKey(const ValueKey('update-check')));
+      await tester.pumpAndSettle();
+      expect(n, 2);
+      // Last known (none published) retained + error surfaced
+      expect(find.textContaining('403'), findsOneWidget);
+      expect(find.byKey(const ValueKey('update-check')), findsOneWidget);
+    });
+
+    testWidgets('0115: offline soft fail shows error without hang', (tester) async {
+      final (store, installer) = await _makeFixture();
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          appUpdateChecker: () async =>
+              const AppUpdateCheckFailed('GitHub HTTP 403'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('403'), findsOneWidget);
+      expect(find.byKey(const ValueKey('update-check')), findsOneWidget);
     });
 
     testWidgets('0103: companion Install when missing', (tester) async {

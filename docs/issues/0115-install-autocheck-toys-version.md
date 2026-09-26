@@ -1,5 +1,6 @@
 ---
-status: open
+status: tip
+tip: PENDING
 labels: [install, update, ux]
 created: 2026-09-26
 satisfies: Install screen auto-checks Toys version on open (no tap)
@@ -29,10 +30,44 @@ Maxim 2026-09-26 ~13:12 Minsk: when opening the **install** screen, **auto-check
 
 ## DoD (T2)
 
-- [ ] Open install screen → Toys version check starts without tap
-- [ ] Other rows still behave as today
-- [ ] Soft: offline path
+- [x] Open install screen → Toys version check starts without tap
+- [x] Other rows still behave as today
+- [x] Soft: offline path
 
 ## Soft / residuals
 
 - YNavi / Launcher already auto? Match their cadence; don’t regress 0103 Update vs Reinstall wording.
+- Soft: car T2/T3 visual confirm of Checking… → result on open.
+
+## Reconciliation
+
+**2026-09-26 tip:** Install self-update card auto-checks on open (parity with companion `_refreshProbe` in `initState`).
+
+### Trigger
+
+`_SelfUpdateCardState.initState` → `_runCheck()` (same cadence as Launcher/YNavi package probe). Screen is pushed via Navigator from Home, so re-open = new State = check again (“resume”).
+
+### Soft fail
+
+- `AppSelfUpdate.check` catches HTTP/parse errors → `AppUpdateCheckFailed`.
+- **15s** network timeout (`kAppSelfUpdateTimeout`) so offline/GH hang does not block forever.
+- Re-check soft path: if a prior **good** result exists and the new probe fails, keep last known status/action and append the error line (existing EN/RU `updateStatusFailed`).
+- Manual **Check for updates** remains when no Update/Reinstall asset is shown.
+
+### 0103
+
+Update / Reinstall wording and companion probe behaviour unchanged.
+
+### Changes
+
+1. `appUpdateCheckerProvider` + injectable `AppUpdateChecker` (tests stub; prod → `AppSelfUpdate().check()`).
+2. `_SelfUpdateCard` takes checker; auto `_runCheck` on `initState`.
+3. Harness defaults to `AppUpdateNonePublished` so widget tests never hit GitHub.
+4. Units: auto-check without tap, soft fail + last known, offline error, hang→timeout.
+5. **No Live bump** — stays **1.1.0+23**.
+
+### Verification
+
+`flutter test` — `install_screen_test` + `app_self_update_test`. `dart analyze` clean on touched Dart.
+
+**Divergence:** None from scope.

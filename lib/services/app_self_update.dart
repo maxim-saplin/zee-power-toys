@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -137,12 +138,19 @@ class _LatestRelease {
 }
 
 /// Fetches public releases and returns Update / Reinstall / tip-ahead.
+/// Soft network budget for GH Releases probe (0115 — don't hang forever).
+const Duration kAppSelfUpdateTimeout = Duration(seconds: 15);
+
+/// Injectable Toys version check (0115 auto on Install open; tests stub this).
+typedef AppUpdateChecker = Future<AppUpdateCheck> Function();
+
 class AppSelfUpdate {
   AppSelfUpdate({
     http.Client? client,
     this.repo = kSelfUpdateRepo,
     int? installedCode,
     this.apiBase = 'https://api.github.com',
+    this.timeout = kAppSelfUpdateTimeout,
   })  : _installedCodeOverride = installedCode,
         _client = client ?? http.Client();
 
@@ -150,6 +158,7 @@ class AppSelfUpdate {
   final String repo;
   final int? _installedCodeOverride;
   final String apiBase;
+  final Duration timeout;
 
   Future<int> _installedCode() async {
     final override = _installedCodeOverride;
@@ -162,13 +171,15 @@ class AppSelfUpdate {
     final installedCode = await _installedCode();
     final uri = Uri.parse('$apiBase/repos/$repo/releases?per_page=10');
     try {
-      final res = await _client.get(
-        uri,
-        headers: const {
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      );
+      final res = await _client
+          .get(
+            uri,
+            headers: const {
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+          )
+          .timeout(timeout);
       if (res.statusCode != 200) {
         return AppUpdateCheckFailed('GitHub HTTP ${res.statusCode}');
       }

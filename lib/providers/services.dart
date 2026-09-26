@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/hud_host.dart';
+import '../services/app_self_update.dart';
 import '../services/installer.dart';
 import '../services/package_status.dart';
 import '../services/speedcam.dart';
@@ -63,5 +64,10 @@ final speedcamSystemOverlayProvider = Provider<SpeedcamSystemOverlay>((ref) {
 /// Android-only live GPS bridge (0050). Null on T1 desktop / web.
 final speedcamLocationProvider = Provider<NativeSpeedcamLocation?>((ref) {
   return null;
+});
+
+/// Toys self-update probe (0115). Default hits GitHub; tests override.
+final appUpdateCheckerProvider = Provider<AppUpdateChecker>((ref) {
+  return () => AppSelfUpdate().check();
 });
 
