@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0118** Float SoC + Cons1 dual Est. (own vs Adapt-Cons) — `0118-float-soc-cons1-dual-est.md`
 - [x] **0117** Own Est. window reshape (3 bands 1×/8×/0) — ACCEPT `7c9397b` — `0117-own-range-adapt-cons-honesty.md`
 - [x] **0116** Overlay size slider max ≈ 5× — ACCEPT `74edf87` — `0116-overlay-size-slider-max-5x.md`
 - [x] **0115** Install auto-check Toys version on open — ACCEPT `77a8b76` — `0115-install-autocheck-toys-version.md`
