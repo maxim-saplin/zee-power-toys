@@ -1,5 +1,6 @@
 ---
-status: open
+status: tip
+tip: e00bd55
 labels: [hud, battery, range, honesty, adapt, rca]
 created: 2026-09-26
 satisfies: Own Est. range must not wipe ~45 km after a 2.7 km hop; RCA + fix
@@ -39,11 +40,34 @@ A ~**45 km** wipe on a **2.7 km** hop is nonsense vs observed distance / SoC / c
 
 ## DoD
 
-- [ ] RCA FINDINGS with root cause (code path + numbers)
-- [ ] Tip fix + unit coverage for short-trip cliff
-- [ ] T2 dens320: simulate ≈77% / short hop / ~24 kWh/100 → Est. moves plausibly vs prior 218 (no ~45 km wipe)
+- [x] RCA FINDINGS with root cause (code path + numbers)
+- [x] Tip fix + unit coverage for short-trip cliff
+- [x] T2 dens320: simulate ≈77% / short hop / ~24 kWh/100 → Est. moves plausibly vs prior 218 (no ~45 km wipe)
 - [ ] Soft: car T3 reconfirm on next drive
+
+## FINDINGS (RCA)
+
+**Root cause:** Integer SoC (1% = **1000 Wh** on the 100 kWh pack constant) can close a drive segment as soon as `minSegmentKm` (0.25 km) and `|ΔSoC| ≥ 0.4`. With `maxAbsWhPerKm = 2000`, a 1% tick over **0.5 km** was accepted at **2000 Wh/km** (and ~1.0 km at **1000 Wh/km**). That sample lands in the **8× last-3 km** band of the 0108 weighted window, so a ~2.7 km hop after a persisted ~**353 Wh/km** window (Est **218 @ 77%**) shoves weighted Wh/km toward ~**445** → Est **173** (~45 km wipe) despite Adapt trip **24.2 kWh/100** (honest ballpark ~318 km at 77%). Secondary bug: when a sample exceeded the cap (e.g. 1% over 0.25 km = 4000 Wh/km), `_tryCloseSegment` **reset** the segment to the new SoC and **discarded** the energy instead of waiting for more distance to dilute the quantum.
+
+**Not the cause:** Adapt optimistic seed (already no-op after 0108), display refresh gate alone (refresh only republishes; wipe requires Wh/km jump), settings hint copy, Live version math.
+
+**Repro numbers (pre-fix):** prior window 47.3 km @ 353 Wh/km + 1% SoC after 0.5 km → weighted **426.6** → display **181**; + 2% over 2.7 km → weighted **~443** → **~173**.
+
+## Reconciliation
+
+**2026-09-26 tip:** Keep 0108 window/weights/cadence; stop short-hop SoC quanta from 8×-dominating.
+
+### Changes
+1. **`kMaxAbsWhPerKm`:** 2000 → **500** (~50 kWh/100) — above real winter/spirited driving; a 1% SoC step needs ≥2 km before acceptance.
+2. **Keep-open on over-cap:** if `sample > maxAbs`, leave the segment open (do not reset SoC anchor) until distance dilutes Wh/km under the cap; reset only after ≥15 km pathological glitch.
+3. **Units:** three cliff/keep-open/Adapt-like hop tests in `range_estimator_test.dart`.
+4. **Settings hint:** unchanged (still honest ~50 km / last 10/3 / not Adapt).
+5. **No Live bump** — stays **1.1.0+23**. Soft car T3. Did **not** implement 0112/0113/0115/0116.
+
+### Verification
+`flutter test` — `test/services/range_estimator_test.dart` (19), `test/widgets/battery_widget_test.dart`, `test/hud/battery_geometry_test.dart`. Analyzer clean on touched files.
 
 ## Soft / residuals
 
-- Exact prior window contents unknown (yesterday 218 only); use inject harness + logs.
+- Exact prior window contents unknown (yesterday 218 only); harness matches incident math.
+- Soft: car T3 reconfirm on next drive.

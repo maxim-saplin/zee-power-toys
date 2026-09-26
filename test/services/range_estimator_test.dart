@@ -215,6 +215,73 @@ void main() {
       expect(e.ready, isFalse);
     });
 
+    test('0114 short-trip cliff: 2.7 km + 1% SoC must not wipe ~45 km Est', () {
+      // Prior honesty window ≈353 Wh/km → 218 km at 77% (incident prior).
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      var t = DateTime.utc(2026, 9, 26, 10);
+      e.ingest(now: t, socPct: 78, speedKmh: 0);
+
+      // 2.7 km @ 60 km/h in 15 s ticks (0.25 km). SoC 78→77 after ~0.5 km
+      // (integer quantum) — the path that used to accept 2000 Wh/km and
+      // 8×-weight it into a ~45 km wipe.
+      var soc = 78;
+      int? last = 218;
+      for (var i = 0; i < 11; i++) {
+        t = t.add(const Duration(seconds: 15));
+        if (i == 1) soc = 77;
+        last = e.ingest(now: t, socPct: soc, speedKmh: 60);
+      }
+
+      expect(e.movingKmAccum - 47.3, closeTo(2.75, 0.05));
+      expect(last, isNotNull);
+      final shown = last!;
+      // Must stay near prior — no ~45 km nonsense wipe (incident was 173).
+      expect(shown, greaterThanOrEqualTo(200));
+      expect(218 - shown, lessThan(25));
+      // Weighted must not jump to the ~445 Wh/km that produced 173.
+      expect(e.weightedWhPerKm!, lessThan(400));
+    });
+
+    test('0114 keep-open: 1% SoC on short km dilutes instead of discarding', () {
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 20, whPerKm: 250, lastShownKm: 300);
+      var t = DateTime.utc(2026, 9, 26, 11);
+      e.ingest(now: t, socPct: 80, speedKmh: 0);
+
+      // First 0.25 km tick drops SoC 1% — sample would be 4000 Wh/km.
+      // Old code reset and lost the energy; new code keeps segment open.
+      t = t.add(const Duration(seconds: 15));
+      e.ingest(now: t, socPct: 79, speedKmh: 60);
+      expect(e.history.length, 1); // only the seeded segment so far
+
+      // Keep driving until 1000 Wh / 500 Wh/km = 2.0 km dilutes under cap.
+      for (var i = 0; i < 8; i++) {
+        t = t.add(const Duration(seconds: 15));
+        e.ingest(now: t, socPct: 79, speedKmh: 60);
+      }
+      // Seeded 20 km + new diluted segment (≥2 km) in history.
+      expect(e.history.length, 2);
+      final newest = e.history.last;
+      expect(newest.distanceKm, closeTo(2.0, 0.3));
+      expect(newest.energyWh / newest.distanceKm, lessThanOrEqualTo(500.0 + 1e-6));
+    });
+
+    test('0114 Adapt-like 24 kWh/100 short hop does not cliff prior Est', () {
+      // Simulate ≈77% / 2.7 km / ~24 kWh/100 against a prior 218 window.
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      // Inject the hop as one honest segment at Adapt ballpark (242 Wh/km).
+      e.debugAddSegment(distanceKm: 2.7, energyWh: 2.7 * 242);
+      final t0 = DateTime.utc(2026, 9, 26, 12);
+      final km = e.ingest(now: t0, socPct: 77, speedKmh: 0);
+      expect(km, isNotNull);
+      // Heavier recent band at *lower* Wh/km should not erase tens of km;
+      // if anything Est rises slightly. Never a ~45 km wipe.
+      expect(km!, greaterThanOrEqualTo(200));
+      expect((km - 218).abs(), lessThan(40));
+    });
+
     test('Adapt efficiency does not seed the composite', () {
       final e = RangeEstimator();
       final t0 = DateTime.utc(2026, 9, 25, 12);

@@ -35,8 +35,9 @@ class DriveSegment {
 /// ```
 ///
 /// Display publishes ~every 1 km of moving distance. Ready at ≥~5 km window.
-/// Adapt efficiency may be observed for diagnostics but never seeds or replaces
-/// the HUD primary.
+/// Segments stay open while Wh/km exceeds [maxAbsWhPerKm] so a 1% SoC tick on
+/// a short hop cannot 8×-dominate the window (0114). Adapt efficiency may be
+/// observed for diagnostics but never seeds or replaces the HUD primary.
 class RangeEstimator {
   RangeEstimator({
     this.usablePackWh = kUsablePackWh,
@@ -72,7 +73,12 @@ class RangeEstimator {
   static const double kWeightRecent = 4.0;
   static const double kWeightOlder = 1.0;
   static const double kMinWhPerKmFloor = 20.0; // ~2 kWh/100km
-  static const double kMaxAbsWhPerKm = 2000.0;
+  /// Hard ceiling for an accepted sample (Wh/km). Integer SoC is 1% = 1000 Wh
+  /// on [kUsablePackWh]; with a looser cap (e.g. 2000) a 1% tick over 0.5 km
+  /// was accepted at 2000 Wh/km, then 8×-weighted in the last-3 km band — the
+  /// 0114 short-trip cliff (218→173 after 2.7 km). ~50 kWh/100 is above real
+  /// winter/spirited driving and still dilutes a 1% step over ≥2 km.
+  static const double kMaxAbsWhPerKm = 500.0;
 
   /// Adapt Energy Cons 1 (`0x00103100`) kWh/100km — reject sentinels.
   static bool isValidEfficiencyKwhPer100km(double? v) {
@@ -259,9 +265,18 @@ class RangeEstimator {
 
     final energyWh = socDelta / 100.0 * usablePackWh;
     final sample = energyWh / _segmentKm;
-    // Reject absurd samples (sensor glitches / near-zero distance blow-ups).
-    if (sample.isNaN || sample.isInfinite || sample.abs() > maxAbsWhPerKm) {
+    if (sample.isNaN || sample.isInfinite) {
       _resetSegment(socPct);
+      return;
+    }
+    // 0114: SoC is integer % — a 1% step is 1000 Wh. Closing at minSegmentKm
+    // made Wh/km blow up, and resetting here discarded the energy forever.
+    // Keep the segment open until distance dilutes the sample under the cap
+    // (then close normally). Bail only on pathological multi-km glitches.
+    if (sample.abs() > maxAbsWhPerKm) {
+      if (_segmentKm >= 15.0) {
+        _resetSegment(socPct);
+      }
       return;
     }
 
