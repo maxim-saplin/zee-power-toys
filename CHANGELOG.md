@@ -7,6 +7,17 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+26] — 2026-09-27
+
+Live ship: ACCEPTed **0118** Float SoC + Cons1 dual Est. under docs seal `d6f9a24`.
+
+### Changed
+- **0118** Float SoC (no `toInt()`) + Cons1 dual Est.; keep **0117** bands + **0114** anti-cliff; DHU picker + both near toggle (`9b0c0ba`).
+
+### Notes
+- Docs ACCEPT `d6f9a24` (tip `9b0c0ba`). Bump past Live **1.1.0+25**. AOSP platform-signed via `release.yml`.
+- Soft: car T3 / Cons lag / Cons2.
+
 ## [1.1.0+25] — 2026-09-26
 
 Live ship: **0117** Own Est. window reshape under docs seal `a84dd2d`.
