@@ -7,6 +7,20 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+23] — 2026-09-26
+
+Live ship: **0109** drive-mode toast higher + colors + **0110** BR drive-mode corner-dot toggle.
+
+### Fixed
+- **0109** Drive-mode toast raise — Align −0.82 (above speedo); accents ECO green / Comfort blue / Sport red (`67eccc5`).
+
+### Added
+- **0110** BR drive-mode corner-dot settings toggle — default OFF; Comfort blue / ECO green / Sport yellow (`36f2384`).
+
+### Notes
+- Docs ACCEPT `811f384`. Code tips `67eccc5` (0109) + `36f2384` (0110). AOSP platform-signed via `release.yml` (same keystore as +22).
+- Soft: car T3 stay soft — not chased in this ship.
+
 ## [1.1.0+22] — 2026-09-25
 
 Live ship: **0106** overlay size slider scales window + CRT + **0107** own-range HUD polish + **0108** own-range weighted 50 km window.
