@@ -7,6 +7,17 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+25] — 2026-09-26
+
+Live ship: **0117** Own Est. window reshape under docs seal `a84dd2d`.
+
+### Changed
+- **0117** Own-range 3-band window — 1× / 8× / mute last 1 km; keep 0114 SoC quantum; no Adapt seed (`7c9397b`).
+
+### Notes
+- Docs ACCEPT `a84dd2d` (tip-SHA stamp `101ab03`). Code tip `7c9397b` (0117). AOSP platform-signed via `release.yml` (same keystore as +24).
+- Soft: car T3 ~2× vs Adapt — not chased in this ship.
+
 ## [1.1.0+24] — 2026-09-26
 
 Live ship: afternoon queue **0112–0116** under docs seal `85b76b2`.
