@@ -244,6 +244,16 @@ From `CAR_API.md:221-232`:
 | Power Flow HEV | `0x24010200` | Always 255 |
 | Blinker Hazard | `0x21050F00` | Always 255 |
 
+### Instant traction power magnitude (drive / regen bar) — UNAVAILABLE
+
+Spike **0111** (2026-09-26) re-checked prior on-car dumps (`zee_hud_2` 2026-02-23 PowerMagnitude campaign + reports `30_1`…`30_8`). Conclusion:
+
+- **No live Adapt ID** for instant discharge/regen **kW** or cluster-bar **%** while driving.
+- Named candidates remain sentinel: Discharge Power Actual `0x00103600`, Discharge Limit `0x00103500`, Regen Bar A/B `0x24215C00` / `0x241E5000` (always 255; zero sensor callbacks on discharge_*).
+- Charge power `0x2420C000` is live **only while charging** — not a drive proxy.
+- **Proxies:** pack I×V and motor RPM×torque are not exposed while driving; SoC / trip energy are too slow; accel%×speed is only an uncalibrated directional estimate (not validated ±20% vs cluster).
+- Product: keep **Power Flow state** `0x24010100` only; park magnitude HUD. Details: `docs/spikes/instant-power-magnitude/FINDINGS.md`.
+
 **All AAOS CarProperty IDs** (`CarApiCatalog.kt:97-108`) return frozen/stale values. `PERF_VEHICLE_SPEED (0x11600207) = 0.0`, `EV_BATTERY_LEVEL (0x11600309) = 150000.0`. These are confirmed non-functional.
 
 ---
