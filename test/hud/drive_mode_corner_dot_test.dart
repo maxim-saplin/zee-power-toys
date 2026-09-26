@@ -23,20 +23,20 @@ Future<void> _emitMode(WidgetTester tester, FakeCarSignals signals, DriveMode mo
 void main() {
   setUp(useMockPrefs);
 
-  test('0110 corner-dot accents: Comfort blue / ECO green / Sport yellow', () {
-    expect(driveModeCornerDotColor(DriveMode.eco), const Color(0xFF3DDC84));
+  test('0112 corner-dot accents: ECO blue / Comfort green / Sport red', () {
+    expect(driveModeCornerDotColor(DriveMode.eco), const Color(0xFF3B82F6));
     expect(
       driveModeCornerDotColor(DriveMode.comfort),
-      const Color(0xFF3B82F6),
+      const Color(0xFF3DDC84),
     );
-    expect(driveModeCornerDotColor(DriveMode.sport), const Color(0xFFFFCC00));
+    expect(driveModeCornerDotColor(DriveMode.sport), const Color(0xFFFF3B30));
     expect(driveModeCornerDotColor(DriveMode.other), isNull);
     expect(driveModeCornerDotColor(DriveMode.unknown), isNull);
 
-    // Sport persistent ≠ toast Sport red (0109).
+    // Sport persistent == toast Sport red (0112); yellow dropped.
     expect(
       driveModeCornerDotColor(DriveMode.sport),
-      isNot(const Color(0xFFFF3B30)),
+      isNot(const Color(0xFFFFCC00)),
     );
   });
 
@@ -95,27 +95,28 @@ void main() {
       await tester.pump();
 
       // Cold unknown → hide.
-      expect(_dot(DriveMode.comfort), findsNothing);
+      expect(_dot(DriveMode.eco), findsNothing);
 
-      await _emitMode(tester, signals, DriveMode.comfort);
-      expect(_dot(DriveMode.comfort), findsOneWidget);
-      final comfortDeco =
-          tester.widget<DecoratedBox>(_dot(DriveMode.comfort)).decoration as BoxDecoration;
-      expect(comfortDeco.color, const Color(0xFF3B82F6));
-      expect(comfortDeco.shape, BoxShape.circle);
-
+      // ECO → Comfort → Sport order (0112).
       await _emitMode(tester, signals, DriveMode.eco);
-      expect(_dot(DriveMode.comfort), findsNothing);
       expect(_dot(DriveMode.eco), findsOneWidget);
       final ecoDeco =
           tester.widget<DecoratedBox>(_dot(DriveMode.eco)).decoration as BoxDecoration;
-      expect(ecoDeco.color, const Color(0xFF3DDC84));
+      expect(ecoDeco.color, const Color(0xFF3B82F6));
+      expect(ecoDeco.shape, BoxShape.circle);
+
+      await _emitMode(tester, signals, DriveMode.comfort);
+      expect(_dot(DriveMode.eco), findsNothing);
+      expect(_dot(DriveMode.comfort), findsOneWidget);
+      final comfortDeco =
+          tester.widget<DecoratedBox>(_dot(DriveMode.comfort)).decoration as BoxDecoration;
+      expect(comfortDeco.color, const Color(0xFF3DDC84));
 
       await _emitMode(tester, signals, DriveMode.sport);
       expect(_dot(DriveMode.sport), findsOneWidget);
       final sportDeco =
           tester.widget<DecoratedBox>(_dot(DriveMode.sport)).decoration as BoxDecoration;
-      expect(sportDeco.color, const Color(0xFFFFCC00));
+      expect(sportDeco.color, const Color(0xFFFF3B30));
 
       await _emitMode(tester, signals, DriveMode.unknown);
       expect(_dot(DriveMode.sport), findsNothing);

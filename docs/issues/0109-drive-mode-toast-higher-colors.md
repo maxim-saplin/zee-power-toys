@@ -65,6 +65,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 ### Changes
 1. **Position:** `DriveModeToastLayer` Align `Alignment(0, -0.55)` → `Alignment(0, -0.82)` — higher in Safe Area top-centre so chrome clears the speedo cluster on Tablet dens320 / DHU geometry; still clear of blinkers / Alien radar / battery.
 2. **Accents (0109):** ECO=`#3DDC84` green, Comfort=`#3B82F6` blue, Sport=`#FF3B30` red; other/unknown soft grey `#C8CDD8`. Drops 0104 cyan (`#7EC8FF`) / orange (`#FF8A4C`) palette. Exposed as `driveModeToastAccent`.
+   > **Superseded by 0112:** toast (and corner-dot) are now ECO blue `#3B82F6` / Comfort green `#3DDC84` / Sport red `#FF3B30`.
 3. **0104 preserved:** change-only; cold-open / first-known silent; ~5 s hold + ~450 ms fade; same-mode silent. Labels / Adapt `0x22010100` mapping unchanged. Simulate ECO/Comfort/Sport untouched.
 4. **0110 not touched** (no persistent corner dot). No Live bump (`1.1.0+22`). Soft: car T3.
 

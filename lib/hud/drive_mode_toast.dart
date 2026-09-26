@@ -5,6 +5,8 @@ import '../providers/drive_mode_toast.dart';
 import '../services/car_signals.dart';
 import '../services/drive_mode_mapping.dart';
 
+import 'drive_mode_accents.dart';
+
 /// 0104/0109 — ephemeral HUD drive-mode toast (~5 s hold, then fade).
 ///
 /// Top-centre Safe Area — raised above the speedo cluster (0109), still clear
@@ -127,12 +129,6 @@ class _DriveModeToastLayerState extends ConsumerState<DriveModeToastLayer>
       };
 }
 
-/// 0109 toast accents: ECO=green, Comfort=blue, Sport=red; other/unknown soft grey.
-/// Drops the 0104 cyan/orange palette.
-Color driveModeToastAccent(DriveMode mode) => switch (mode) {
-      DriveMode.eco => const Color(0xFF3DDC84),
-      DriveMode.comfort => const Color(0xFF3B82F6),
-      DriveMode.sport => const Color(0xFFFF3B30),
-      DriveMode.other => const Color(0xFFC8CDD8),
-      DriveMode.unknown => const Color(0xFFC8CDD8),
-    };
+/// 0112 toast accents: ECO blue / Comfort green / Sport red; other/unknown soft grey.
+/// Same palette as [driveModeCornerDotColor]. See [DriveModeAccents].
+Color driveModeToastAccent(DriveMode mode) => DriveModeAccents.toast(mode);

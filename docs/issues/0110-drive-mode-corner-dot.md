@@ -75,6 +75,8 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 | Sport | **red** `#FF3B30` | **yellow** `#FFCC00` |
 | other / unknown | soft grey (toast) | **hide** |
 
+> **Superseded by 0112:** toast **and** corner-dot share ECO blue `#3B82F6` / Comfort green `#3DDC84` / Sport red `#FF3B30` (Sport yellow `#FFCC00` dropped). Tables above are historical.
+
 ### Verification
 `flutter test` — `test/hud/drive_mode_corner_dot_test.dart` (+ toast accent / toast provider / BatteryConfig defaults) PASS. `dart analyze` clean on touched Dart.
 

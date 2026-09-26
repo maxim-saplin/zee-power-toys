@@ -253,7 +253,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showDriveModeCornerDotHint =>
-      'Small colored dot at the bottom-right of the HUD for the current drive mode (Comfort blue / ECO green / Sport yellow). Stays on while enabled; toast on mode change still works.';
+      'Small colored dot at the bottom-right of the HUD for the current drive mode (ECO blue / Comfort green / Sport red). Stays on while enabled; toast on mode change still works.';
 
   @override
   String get batteryContentMode => 'Content';

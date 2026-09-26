@@ -498,8 +498,10 @@ class BatteryConfig {
   /// Default **OFF**. When ON: ready → `N km`; pending → `… km` (always visible).
   final bool showOwnRangeEstimate;
 
-  /// 0110: persistent bottom-right drive-mode corner dot.
+  /// 0110/0112: persistent bottom-right drive-mode corner dot.
   /// Default **OFF** (toast-only world from 0104/0109 unchanged).
+  /// When ON, colors follow 0112 palette in **ECO → Comfort → Sport** order
+  /// (blue `#3B82F6` / green `#3DDC84` / red `#FF3B30`) — same as toast.
   final bool showDriveModeCornerDot;
 
   /// Multiplier applied to the base widget size (1.0 = default).

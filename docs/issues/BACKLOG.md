@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0112** Drive-mode colors ECO blue / Comfort green / Sport red — tip TBD — `0112-drive-mode-colors-eco-blue-comfort-green-sport-red.md`
 - [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`
 - [x] **0110** Drive-mode persistent BR corner dot (settings toggle) — ACCEPT `36f2384` — `0110-drive-mode-corner-dot.md`
 - [x] **0109** Drive-mode toast higher + blue/green/red — ACCEPT `67eccc5` — `0109-drive-mode-toast-higher-colors.md`

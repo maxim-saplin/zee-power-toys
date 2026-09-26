@@ -581,7 +581,7 @@ abstract class AppLocalizations {
   /// 0110: one-line help for persistent corner-dot toggle
   ///
   /// In en, this message translates to:
-  /// **'Small colored dot at the bottom-right of the HUD for the current drive mode (Comfort blue / ECO green / Sport yellow). Stays on while enabled; toast on mode change still works.'**
+  /// **'Small colored dot at the bottom-right of the HUD for the current drive mode (ECO blue / Comfort green / Sport red). Stays on while enabled; toast on mode change still works.'**
   String get showDriveModeCornerDotHint;
 
   /// Battery content mode label

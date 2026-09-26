@@ -5,12 +5,14 @@ import '../providers/car_signals.dart';
 import '../providers/config.dart';
 import '../services/car_signals.dart';
 
-/// 0110 — persistent bottom-right drive-mode corner dot (settings-gated).
+import 'drive_mode_accents.dart';
+
+/// 0110/0112 — persistent bottom-right drive-mode corner dot (settings-gated).
 ///
 /// Shown only when [BatteryConfig.showDriveModeCornerDot] is ON and the
-/// current mode is a known three-mode chip (ECO / Comfort / Sport). Other /
-/// unknown → hide. No fade — stays while ON+known. Toast accents (0109) stay
-/// blue/green/**red**; Sport **dot** is yellow.
+/// current mode is a known three-mode chip (**ECO → Comfort → Sport**). Other /
+/// unknown → hide. No fade — stays while ON+known. Accents match toast (0112):
+/// ECO blue / Comfort green / Sport red (no yellow).
 class DriveModeCornerDotLayer extends ConsumerWidget {
   const DriveModeCornerDotLayer({super.key});
 
@@ -54,12 +56,6 @@ class DriveModeCornerDotLayer extends ConsumerWidget {
   }
 }
 
-/// Persistent corner-dot accents (0110): Comfort blue / ECO green / Sport
-/// **yellow**. Returns null for other/unknown → caller hides the dot.
-Color? driveModeCornerDotColor(DriveMode mode) => switch (mode) {
-      DriveMode.eco => const Color(0xFF3DDC84),
-      DriveMode.comfort => const Color(0xFF3B82F6),
-      DriveMode.sport => const Color(0xFFFFCC00),
-      DriveMode.other => null,
-      DriveMode.unknown => null,
-    };
+/// Persistent corner-dot accents (0112): same as toast — ECO blue / Comfort
+/// green / Sport red. Returns null for other/unknown → caller hides the dot.
+Color? driveModeCornerDotColor(DriveMode mode) => DriveModeAccents.known(mode);
