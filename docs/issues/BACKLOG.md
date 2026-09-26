@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0111** Spike: instant drive/regen power magnitude (cluster bar) — `0111-instant-power-magnitude-spike.md`
 - [ ] **0110** Drive-mode persistent BR corner dot (settings toggle) — `0110-drive-mode-corner-dot.md`
 - [ ] **0109** Drive-mode toast higher + blue/green/red — `0109-drive-mode-toast-higher-colors.md`
 - [x] **0108** Own-range honesty window (~50 km, heavier recent 10/3 km) — ACCEPT `11ae3cd` — `0108-own-range-honesty-window.md`
