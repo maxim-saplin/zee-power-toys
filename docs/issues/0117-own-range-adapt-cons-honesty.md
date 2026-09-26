@@ -1,86 +1,78 @@
 ---
-status: tip
-tip: de2fc95
-labels: [hud, battery, range, honesty, adapt]
+status: ready-for-agent
+labels: [hud, battery, range, honesty, window]
 created: 2026-09-26
-satisfies: Own Est. range must track SoC% ÷ Adapt trip kWh/100 (honesty vs envelope)
+satisfies: Own Est. range window reshape — 3 bands (1× / 8× / mute last 1 km); no Adapt Cons seed
 tier: T2
 owner: zee-dev
 blocked-by: []
 modules: [RangeEstimator, RangeEstimateService, BatteryWidget]
 priority: now
 filed-by: zee-pdm
-related: [0105, 0107, 0108]
+related: [0105, 0107, 0108, 0114]
 parent: [0114]
 gate: armed-2026-09-26
 ---
 
-# 0117 — Own Est. range must track SoC% ÷ Adapt trip Cons (honesty)
+# 0117 — Own Est. window reshape (3 bands)
 
 ## Block scope
 
-Maxim 2026-09-26 evening product honesty gap on Live **1.1.0+24** (0114 shipped):
+Maxim 2026-09-26 **HARD** product reshape of the own-range honesty window. Drop the prior Adapt±10% envelope force; reshape the ~50 km weighted window into **three bands** and keep own Est. as an own-window estimate (no Adapt Cons seed/projection).
 
 | Field | Value |
 |-------|-------|
-| Live | **1.1.0+24** (0114 Wh/km abs cap 500) |
-| SoC | **≈77%** |
-| Adapt trip Cons | **≈24.2 kWh/100** |
-| Envelope (SoC ÷ Cons × 100) | **≈318 km** |
-| HUD own Est. | still ~**2× lower** (persisted ~353 Wh/km → ~218 km class) |
+| Live | **1.1.0+24** — hold until Maxim GO |
+| Prior tip on main | `de2fc95` — Adapt Cons ±10% display projection (**park/revert before reshape tip**) |
+| Prior window (0108) | 0..3 → 8×; 3..10 → 4×; 10..50 → 1× |
+| New bands (HARD) | see Weights below |
 
-0114 fixed the short-trip SoC-quantum cliff (218→173 after 2.7 km). It does **not** force Adapt trip Cons honesty: HUD Est. can remain unreasonably low vs the back-of-envelope `(batteryPct / Adapt_kWh_per_100) * 100`.
+### Pre-reshape note for zee-dev
 
-## RCA (code @ tip `8d23842`)
+Tip **`de2fc95`** (`fix(0117): Adapt Cons honesty for own Est (±10% envelope)`) is on `main`. It projects HUD Est from Adapt trip Cons when ≥15 kWh/100. That product direction is **superseded**. Before landing the reshape tip: **revert or park** `de2fc95` (restore own-window display path; keep `maybeSeedFromAdaptEfficiency` a no-op). Then implement the 3-band weights below on top of 0114 anti-cliff.
 
-- `lib/services/range_estimator.dart`: `Est = (socPct/100)*100000 Wh / weightedWhPerKm`; ~50 km window; last 3 km **8×**, last 10 km **4×**.
-- `maybeSeedFromAdaptEfficiency` is an intentional **no-op** since 0108 (Adapt must not optimistic-seed the composite).
-- Envelope match needs Wh/km ≈ Adapt trip Cons (e.g. 24.2 kWh/100 = **242 Wh/km** → 77% → ~**318 km**). Persisted ~**353 Wh/km** explains **218 vs 318** — own window alone, no Adapt Cons projection/clamp.
+## Weights (HARD — Maxim 2026-09-26)
+
+Distance from now inside the ~50 km window:
+
+| Band | Weight |
+|------|--------|
+| **50 → 5 km** | **1×** |
+| **5 → 1 km** | **8×** |
+| **last 1 km** | **0** (mute) |
+
+- Mute last 1 km: samples in 0..1 km from now contribute **zero** weight (short-hop noise / SoC quantum must not dominate).
+- Composite still ~50 km; drop the old 3 km / 10 km / 4× middle band.
 
 ## Product rules
 
-1. When Adapt trip Cons (`efficiencyKwhPer100km` / signal) is **valid**, HUD own Est. must read close to the envelope `(batteryPct / Adapt_kWh_per_100) * 100`.
-2. Prefer projecting from Adapt trip Cons (or blend/clamp weighted SoC Wh/km **toward** Adapt) over an opaque own-only window when Cons is trustworthy.
-3. Keep **0114 anti-cliff** (short SoC quantum must not wipe Est.).
-4. Toggle ON always shows a value; no silent same-as-OFF (0107).
-5. Keep 0108 window/weights/cadence intent unless a documented Divergence replaces them for honesty.
-6. **No Live bump** until Maxim GO.
+1. **Own window only** — Est = SoC% ÷ `weightedWhPerKm` from the 3-band window. **No Adapt Cons seed**, no display projection/clamp toward Adapt trip Cons.
+2. Keep **0114 anti-cliff** (`kMaxAbsWhPerKm` / keep-open on over-cap); short-hop must not wipe Est.
+3. Toggle ON always shows a value; no silent same-as-OFF (0107).
+4. **Live hold +24** until Maxim GO (no version bump in this Block).
 
 ## DoD (product)
 
-- [x] When Adapt trip Cons is valid and **≥ 15 kWh/100**, HUD Est. is within **±10% of the envelope** `(batteryPct / Adapt_kWh_per_100) * 100` (testable band; e.g. 77% / 24.2 → envelope ~318 → Est in **~286–350 km**).
-- [x] Implementation prefers Adapt trip Cons projection or blend/clamp of weighted SoC Wh/km toward Adapt over opaque own-only window when Cons valid.
-- [x] 0114 anti-cliff preserved (units + short-hop fixtures still pass).
-- [x] Toggle ON always shows a value; no silent same-as-OFF.
-- [ ] Units + T2 dens320 Tablet proof; soft car T3 Maxim taste on same stretch — HUD ≈ envelope.
-- [x] Live bump only after Maxim GO.
+- [ ] Window bands match HARD table: 50→5 **1×**, 5→1 **8×**, last 1 km **0** (mute).
+- [ ] **No Adapt Cons seed** / no Adapt±10% envelope force on display Est.
+- [ ] **0114 anti-cliff** preserved (`maxAbsWhPerKm` + keep-open).
+- [ ] **T2:** units prove new bands; short-hop last-1 mute; no cliff wipe.
+- [ ] Live stays **1.1.0+24** until Maxim GO.
 
 ## Soft / residuals
 
-- Exact band may tighten after T3 taste (±15 km alternate only if ±10% proves noisy at low Cons — prefer ±10% when Cons ≥15).
-- Invalid / missing Adapt Cons: fall back to own window (do not invent Cons).
-- Soft: car T3 Maxim taste later — do not chase T3.
+- Soft: car **T3** — may or may not close the ~2× gap vs Adapt envelope; if still low, pair **Adapt Cons vs `weightedWhPerKm`** for RCA (do not chase T3 in this Block).
+- Invalid / missing Adapt Cons: irrelevant for display (own window only).
 - Did **not** implement other open Blocks here.
 
 ## Reconciliation
 
-**2026-09-26 tip:** Project HUD Est from Adapt trip Cons when trustworthy; keep 0108 window + 0114 anti-cliff.
+**2026-09-26 docs reshape:** Product DoD rewritten away from Adapt±10% force → 3-band own-window weights. `de2fc95` noted for revert/park before reshape tip. Code tip TBD.
 
-### Changes
+### Prior tip (superseded — park/revert)
 
-1. **Display projection (0117):** when Adapt Cons is valid and **≥ 15 kWh/100**, `_displayRange` uses `Wh/km = Cons × 10` so Est = `(SoC%/Cons)×100` (rounding). Tracks SoC/Cons directly (no 1 km hold on this path).
-2. **Composite untouched (0108):** `maybeSeedFromAdaptEfficiency` stays a no-op — Adapt never writes into the ~50 km weighted window.
-3. **Fallback:** missing / invalid / Cons **< 15** → own weighted Wh/km + 0108 ~1 km refresh cadence.
-4. **0114 kept:** `kMaxAbsWhPerKm = 500` + keep-open on over-cap; short-hop fixtures still pass.
-5. **Units:** ±10% envelope, fallback, and Adapt+short-hop honesty tests in `range_estimator_test.dart`.
-6. **No Live bump** — stays **1.1.0+24**.
-
-### Verification
-
-`flutter test` — `test/services/range_estimator_test.dart` (22), `test/widgets/battery_widget_test.dart`, `test/hud/battery_geometry_test.dart`. Analyzer clean on touched Dart.
-
-**Divergence from 0108:** Adapt Cons now drives **display** Est when ≥15 kWh/100. Still does **not** seed or replace the composite window. Own-window weights/cadence unchanged when Cons untrusted.
+`de2fc95` had projected Est from Adapt Cons ≥15 kWh/100 (±10% envelope). That path is out of product scope for 0117 reshape.
 
 ## Soft stand for ACCEPT
 
-Leave ACCEPT to QA/PDM after T2 dens320 proof. Soft car T3 Maxim taste.
+Leave ACCEPT to QA/PDM after T2 dens320 + units proof. Soft car T3 Maxim taste (envelope gap is soft RCA, not a hard fail).
