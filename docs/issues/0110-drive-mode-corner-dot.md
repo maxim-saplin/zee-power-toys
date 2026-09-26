@@ -1,5 +1,6 @@
 ---
 status: ready-for-qa
+tip: 36f2384
 labels: [hud, adapt, drive-mode, settings]
 created: 2026-09-26
 satisfies: foundation
@@ -52,7 +53,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 ## Reconciliation
 
 **2026-09-26 tip:** Settings toggle for persistent BR drive-mode corner dot.
-**Tip SHA:** *(filled after tip)*
+**Tip SHA:** `36f2384`
 
 ### Changes
 1. **Config:** `BatteryConfig.showDriveModeCornerDot` (default **OFF**); JSON round-trip via ConfigStore / SharedPrefs — survives restart.
