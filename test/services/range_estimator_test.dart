@@ -48,7 +48,7 @@ void main() {
         if (i > 0 && i % 8 == 0) soc -= 0.5;
         last = e.ingest(
           now: t,
-          socPct: soc.round(),
+          socPct: soc,
           speedKmh: 60,
           charging: false,
         );
@@ -198,14 +198,14 @@ void main() {
       for (var i = 0; i < 48; i++) {
         t = t.add(const Duration(seconds: 15));
         if (i > 0 && i % 8 == 0) soc -= 0.5;
-        e.ingest(now: t, socPct: soc.round(), speedKmh: 50, charging: false);
+        e.ingest(now: t, socPct: soc, speedKmh: 50, charging: false);
       }
       final before = e.weightedWhPerKm;
       expect(before, isNotNull);
       for (var i = 0; i < 16; i++) {
         t = t.add(const Duration(seconds: 15));
         if (i > 0 && i % 8 == 0) soc += 0.6;
-        e.ingest(now: t, socPct: soc.round(), speedKmh: 40, charging: false);
+        e.ingest(now: t, socPct: soc, speedKmh: 40, charging: false);
       }
       expect(e.weightedWhPerKm, isNotNull);
       expect(e.weightedWhPerKm!, lessThanOrEqualTo(before! + 1));
@@ -219,7 +219,7 @@ void main() {
         t = t.add(const Duration(seconds: 10));
         e.ingest(
           now: t,
-          socPct: 40 + i,
+          socPct: (40 + i).toDouble(),
           speedKmh: 0,
           charging: true,
         );
@@ -254,11 +254,11 @@ void main() {
       // 2.7 km @ 60 km/h in 15 s ticks (0.25 km). SoC 78→77 after ~0.5 km
       // (integer quantum) — the path that used to accept 2000 Wh/km and
       // peak-weight it into a ~45 km wipe.
-      var soc = 78;
+      var soc = 78.0;
       int? last = 218;
       for (var i = 0; i < 11; i++) {
         t = t.add(const Duration(seconds: 15));
-        if (i == 1) soc = 77;
+        if (i == 1) soc = 77.0;
         last = e.ingest(now: t, socPct: soc, speedKmh: 60);
       }
 
@@ -372,10 +372,96 @@ void main() {
     });
   });
 
+
+    test('0118 float SoC: 0.1% ticks feed own Est without int truncation', () {
+      final e = RangeEstimator();
+      // Plant ready window @ 200 Wh/km → 100% = 500 km.
+      e.debugForceState(movingKm: 10, whPerKm: 200, lastShownKm: null);
+      final t0 = DateTime.utc(2026, 9, 26, 20);
+      // 85.7% float → 428.5 → 429 km (int trunc would have been 85% → 425).
+      final km = e.ingest(now: t0, socPct: 85.7, speedKmh: 0);
+      expect(km, 429);
+      expect(e.ingest(now: t0.add(const Duration(seconds: 1)), socPct: 85.8, speedKmh: 0), 429);
+    });
+
+    test('0118 Cons Est math: (soc/100)×pack / (cons×10)', () {
+      expect(
+        RangeEstimator.consEstKm(socPct: 80, consKwhPer100: 20),
+        400,
+      );
+      expect(
+        RangeEstimator.consEstKm(socPct: 85.7, consKwhPer100: 24.2),
+        closeTo(354, 1),
+      );
+      expect(RangeEstimator.consEstKm(socPct: 80, consKwhPer100: 0), isNull);
+      expect(RangeEstimator.consEstKm(socPct: 80, consKwhPer100: 250), isNull);
+    });
+
+    test('0118 Cons Est via ingest: valid Cons1 publishes; sentinel hides', () {
+      final e = RangeEstimator();
+      final t0 = DateTime.utc(2026, 9, 26, 21);
+      e.ingest(
+        now: t0,
+        socPct: 80,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 20,
+      );
+      expect(e.lastShownConsKm, 400);
+
+      // Sentinel → Cons Est unavailable; own path unaffected.
+      e.ingest(
+        now: t0.add(const Duration(seconds: 2)),
+        socPct: 80,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 0,
+      );
+      expect(e.lastShownConsKm, isNull);
+    });
+
+    test('0118 Cons soft lag: tiny Cons ticks do not thrash display', () {
+      final e = RangeEstimator();
+      final t0 = DateTime.utc(2026, 9, 26, 22);
+      e.ingest(now: t0, socPct: 80, speedKmh: 0, efficiencyKwhPer100km: 20.0);
+      expect(e.lastShownConsKm, 400);
+      // Tiny Cons drift 20.0 → 20.1 while idle — hold 400.
+      e.ingest(
+        now: t0.add(const Duration(seconds: 5)),
+        socPct: 80,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 20.1,
+      );
+      expect(e.lastShownConsKm, 400);
+      // Jump ≥0.5 kWh/100 → refresh.
+      e.ingest(
+        now: t0.add(const Duration(seconds: 10)),
+        socPct: 80,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 20.6,
+      );
+      expect(e.lastShownConsKm, isNot(400));
+    });
+
+    test('0118 own path still ignores Adapt Cons seed/project', () {
+      final e = RangeEstimator();
+      e.debugForceState(movingKm: 47.3, whPerKm: 353.21, lastShownKm: 218);
+      final t0 = DateTime.utc(2026, 9, 26, 23);
+      final km = e.ingest(
+        now: t0,
+        socPct: 77,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 24.2,
+      );
+      expect(km, closeTo(218, 2));
+      // Cons Est is separate and available.
+      expect(e.lastShownConsKm, isNotNull);
+      expect(e.lastShownConsKm, closeTo(318, 5));
+    });
+
   group('BatteryConfig.showOwnRangeEstimate', () {
     test('defaults false and persists', () {
       const c = BatteryConfig();
       expect(c.showOwnRangeEstimate, isFalse);
+      expect(c.rangePrimaryMode, RangePrimaryMode.own);
       final on = c.copyWith(showOwnRangeEstimate: true);
       expect(on.showOwnRangeEstimate, isTrue);
       expect(
@@ -385,6 +471,19 @@ void main() {
       expect(
         BatteryConfig.fromJson(const {}).showOwnRangeEstimate,
         isFalse,
+      );
+    });
+
+    test('0118 rangePrimaryMode persists', () {
+      const c = BatteryConfig(rangePrimaryMode: RangePrimaryMode.adaptCons);
+      expect(c.rangePrimaryMode, RangePrimaryMode.adaptCons);
+      expect(
+        BatteryConfig.fromJson(c.toJson()).rangePrimaryMode,
+        RangePrimaryMode.adaptCons,
+      );
+      expect(
+        BatteryConfig.fromJson(const {}).rangePrimaryMode,
+        RangePrimaryMode.own,
       );
     });
   });

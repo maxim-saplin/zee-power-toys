@@ -5,6 +5,17 @@ import 'range_estimator.dart';
 
 const String kRangeEstimatePrefKey = 'zee.range_estimate';
 
+/// Dual range estimates (0118): own-trip window + Adapt Cons1-derived.
+class DualRangeEstimate {
+  const DualRangeEstimate({this.ownKm, this.consKm});
+
+  /// Own Est. from weighted SoCΔ÷distance window (0117 bands + 0114 anti-cliff).
+  final int? ownKm;
+
+  /// Cons Est. from float SoC + Cons1; null when Cons1 invalid/missing.
+  final int? consKm;
+}
+
 /// Owns [RangeEstimator], persists the ~50 km honesty window across trips /
 /// process death (0105 prefs path; 0108 composite).
 class RangeEstimateService {
@@ -14,9 +25,14 @@ class RangeEstimateService {
   final RangeEstimator _estimator;
   bool _loaded = false;
   int? _currentKm;
+  int? _currentConsKm;
 
   RangeEstimator get estimator => _estimator;
   int? get currentKm => _currentKm;
+  int? get currentConsKm => _currentConsKm;
+
+  DualRangeEstimate get dual =>
+      DualRangeEstimate(ownKm: _currentKm, consKm: _currentConsKm);
 
   Future<void> ensureLoaded() async {
     if (_loaded) return;
@@ -30,7 +46,7 @@ class RangeEstimateService {
     await prefs.setString(kRangeEstimatePrefKey, _estimator.encodePersist());
   }
 
-  /// Feed latest car snapshot; returns km to show (null if not ready).
+  /// Feed latest car snapshot; returns own-Est km (null if not ready).
   int? tick(CarSnapshot snap, {DateTime? now}) {
     final km = _estimator.ingest(
       now: now ?? DateTime.now(),
@@ -39,8 +55,11 @@ class RangeEstimateService {
       charging: snap.charging,
       efficiencyKwhPer100km: snap.efficiencyKwhPer100km,
     );
-    if (km != _currentKm) {
-      _currentKm = km;
+    final consKm = _estimator.lastShownConsKm;
+    final changed = km != _currentKm || consKm != _currentConsKm;
+    _currentKm = km;
+    _currentConsKm = consKm;
+    if (changed) {
       // Fire-and-forget persist (window / display).
       _save();
     }

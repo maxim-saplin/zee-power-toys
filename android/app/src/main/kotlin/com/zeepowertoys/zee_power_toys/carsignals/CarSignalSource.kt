@@ -23,7 +23,10 @@ sealed class SignalEvent {
         val amps: Double?,
         val kw: Double?,
     ) : SignalEvent()
-    data class Battery(val levelPct: Int, val tempC: Double) : SignalEvent()
+    /** Float SoC % (0.1% resolution) — 0118; HUD may still show int. */
+    data class Battery(val levelPct: Double, val tempC: Double) : SignalEvent()
     data class PowerFlow(val flow: String) : SignalEvent()   // unknown|drive|regen|standstill
     data class DriveMode(val mode: String) : SignalEvent()   // unknown|eco|comfort|sport|other
+    /** Adapt Energy Cons 1 kWh/100km — 0118. */
+    data class Efficiency(val kwhPer100km: Double) : SignalEvent()
 }

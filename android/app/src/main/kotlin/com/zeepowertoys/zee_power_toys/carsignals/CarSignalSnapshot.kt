@@ -15,10 +15,13 @@ data class CarSignalSnapshot(
     val chargeVolts: Double? = null,
     val chargeAmps: Double? = null,
     val chargeKw: Double? = null,
-    val batteryPct: Int? = null,
+    /** Float SoC % from TYPE_EV_BATTERY_PERCENTAGE (0.1% ticks) — 0118. */
+    val batteryPct: Double? = null,
     val batteryTempC: Double? = null,
     val powerFlow: String = "unknown",
     val driveMode: String = "unknown", // unknown|eco|comfort|sport|other
+    /** Adapt Energy Cons 1 (`0x00103100`) kWh/100km when non-sentinel — 0118. */
+    val efficiencyKwhPer100km: Double? = null,
     val source: String = "unknown",   // adaptapi | simulated | unknown
 ) {
     fun toMap(): Map<String, Any?> = mutableMapOf(
@@ -32,6 +35,7 @@ data class CarSignalSnapshot(
         "batteryTempC" to batteryTempC,
         "powerFlow" to powerFlow,
         "driveMode" to driveMode,
+        "efficiencyKwhPer100km" to efficiencyKwhPer100km,
         "source" to source,
     )
 
@@ -47,6 +51,7 @@ data class CarSignalSnapshot(
         append("\"batteryTempC\":${batteryTempC ?: "null"},")
         append("\"powerFlow\":\"$powerFlow\",")
         append("\"driveMode\":\"$driveMode\",")
+        append("\"efficiencyKwhPer100km\":${efficiencyKwhPer100km ?: "null"},")
         append("\"source\":\"$source\"")
         append("}")
     }

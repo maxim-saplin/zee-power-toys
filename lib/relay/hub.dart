@@ -211,6 +211,10 @@ Map<String, Object?> _carSignalToJson(CarSignalEvent event) {
       },
     PowerFlowEvent(:final flow) => {'type': 'powerFlow', 'flow': flow.name},
     DriveModeEvent(:final mode) => {'type': 'driveMode', 'mode': mode.name},
+    EfficiencyEvent(:final kwhPer100km) => {
+        'type': 'efficiency',
+        'kwhPer100km': kwhPer100km,
+      },
   };
 }
 
@@ -228,7 +232,7 @@ CarSignalEvent? _carSignalFromJson(Map<String, Object?> j) {
         kw: (j['kw'] as num?)?.toDouble(),
       ),
     'battery' => BatteryEvent(
-        levelPct: j['levelPct'] as int,
+        levelPct: (j['levelPct'] as num).toDouble(),
         tempC: (j['tempC'] as num).toDouble(),
       ),
     'powerFlow' => PowerFlowEvent(
@@ -236,6 +240,9 @@ CarSignalEvent? _carSignalFromJson(Map<String, Object?> j) {
       ),
     'driveMode' => DriveModeEvent(
         DriveMode.values.byName(j['mode'] as String),
+      ),
+    'efficiency' => EfficiencyEvent(
+        (j['kwhPer100km'] as num).toDouble(),
       ),
     _ => null,
   };

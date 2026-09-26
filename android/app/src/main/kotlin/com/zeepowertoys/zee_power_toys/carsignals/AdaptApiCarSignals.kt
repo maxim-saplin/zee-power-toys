@@ -21,6 +21,7 @@ import java.lang.reflect.Proxy
 // Signal IDs are ported verbatim from car-signals-adaptapi.md:
 //   SPEED=0x00100100  BLINKER_L=0x21051100  BLINKER_R=0x21051200
 //   CHARGE_STATE=0x00201500  BATTERY_SOC=0x00404000  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
+//   ENERGY_CONS1=0x00103100
 //   CHARGE_V=0x24140100  CHARGE_A=0x24140200  CHARGE_KW=0x2420C000
 //   POWER_FLOW=0x24010100  DRIVE_MODE=0x22010100  ZONE_GLOBAL=0x80000000
 class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
@@ -38,6 +39,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private val BATTERY_SOC   = 0x00404000  // TYPE_EV_BATTERY_PERCENTAGE % float
     private val BATTERY_LEVEL = 0x00100A00  // SENSOR_TYPE_EV_BATTERY_LEVEL % float
     private val BATTERY_TEMP  = 0x00102A00  // °C float
+    private val ENERGY_CONS1  = 0x00103100  // DYN_EGY_CONS1 kWh/100km float
     private val BATTERY_POLL_MS = 2000L
     private val CHARGE_VOLTS  = 0x24140100
     private val CHARGE_AMPS   = 0x24140200
@@ -198,7 +200,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                             emitter?.invoke(SignalEvent.Speed(kmh))
                         }
                         BATTERY_SOC, BATTERY_LEVEL -> {
-                            publishBatteryPct(value.toInt().coerceIn(0, 100))
+                            publishBatteryPct(value.toDouble().coerceIn(0.0, 100.0))
+                        }
+                        ENERGY_CONS1 -> {
+                            publishEfficiency(value.toDouble())
                         }
                         BATTERY_TEMP -> {
                             publishBatteryTemp(value.toDouble())
@@ -223,7 +228,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
             sensorHandler,
         )
         // Try 3-arg form (with rate) first; fall back to 2-arg
-        val sensorIds = intArrayOf(SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP, CHARGE_STATE)
+        val sensorIds = intArrayOf(SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP, ENERGY_CONS1, CHARGE_STATE)
         for (sid in sensorIds) {
             val r3 = ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid, 0)
             if (!r3.invoked || r3.error != null) {
@@ -357,12 +362,15 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private fun seedBatteryFromLatest() {
         val soc = readSensorFloat(BATTERY_SOC) ?: readSensorFloat(BATTERY_LEVEL)
         val temp = readSensorFloat(BATTERY_TEMP)
-        if (soc != null) publishBatteryPct(soc.toInt().coerceIn(0, 100))
+        if (soc != null) publishBatteryPct(soc.toDouble().coerceIn(0.0, 100.0))
         if (temp != null) publishBatteryTemp(temp.toDouble())
+        val cons1 = readSensorFloat(ENERGY_CONS1)
+        if (cons1 != null) publishEfficiency(cons1.toDouble())
         Log.i(
             TAG,
             "Battery seed: soc=${soc ?: "null"} temp=${temp ?: "null"} " +
-                "pct=${lastSnapshot.batteryPct} tempC=${lastSnapshot.batteryTempC}",
+                "pct=${lastSnapshot.batteryPct} tempC=${lastSnapshot.batteryTempC} " +
+                "cons1=${lastSnapshot.efficiencyKwhPer100km}",
         )
     }
 
@@ -446,10 +454,22 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         )
     }
 
-    private fun publishBatteryPct(pct: Int) {
+    private fun publishBatteryPct(pct: Double) {
         val tempC = lastSnapshot.batteryTempC ?: 25.0
         lastSnapshot = lastSnapshot.copy(batteryPct = pct)
         emitter?.invoke(SignalEvent.Battery(pct, tempC))
+    }
+
+    /** Cons1 kWh/100km — reject Adapt sentinels and out-of-band values (0118). */
+    private fun publishEfficiency(raw: Double) {
+        if (raw.isNaN() || raw.isInfinite()) return
+        if (raw <= 0.0 || raw >= 200.0) return
+        if (lastSnapshot.efficiencyKwhPer100km == raw) {
+            // Still keep snapshot fresh; skip duplicate event spam.
+            return
+        }
+        lastSnapshot = lastSnapshot.copy(efficiencyKwhPer100km = raw)
+        emitter?.invoke(SignalEvent.Efficiency(raw))
     }
 
     private fun publishBatteryTemp(tempC: Double) {
@@ -472,9 +492,11 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                 val v = readCustomizeFloat(CHARGE_VOLTS)
                 val a = readCustomizeFloat(CHARGE_AMPS)
                 val kw = readCustomizeFloat(CHARGE_KW)
+                val cons1 = readSensorFloat(ENERGY_CONS1)
                 Handler(Looper.getMainLooper()).post {
-                    if (soc != null) publishBatteryPct(soc.toInt().coerceIn(0, 100))
+                    if (soc != null) publishBatteryPct(soc.toDouble().coerceIn(0.0, 100.0))
                     if (temp != null) publishBatteryTemp(temp.toDouble())
+                    if (cons1 != null) publishEfficiency(cons1.toDouble())
                     if (v != null || a != null || kw != null) {
                         lastSnapshot = lastSnapshot.copy(
                             chargeVolts = v?.toDouble() ?: lastSnapshot.chargeVolts,

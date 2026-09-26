@@ -61,7 +61,7 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
     if (snap.batteryPct != null && snap.batteryTempC != null) return;
     ref.read(carSignalsProvider).simulate(
           BatteryEvent(
-            levelPct: _batteryPct.round(),
+            levelPct: _batteryPct,
             tempC: _batteryTemp,
           ),
         );
@@ -292,7 +292,7 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
                 onChanged: (v) {
                   setState(() => _batteryPct = v);
                   carSignals.simulate(
-                    BatteryEvent(levelPct: v.round(), tempC: _batteryTemp),
+                    BatteryEvent(levelPct: v, tempC: _batteryTemp),
                   );
                 },
               ),
@@ -310,7 +310,7 @@ class _SimulateScreenState extends ConsumerState<SimulateScreen> {
                 onChanged: (v) {
                   setState(() => _batteryTemp = v);
                   carSignals.simulate(
-                    BatteryEvent(levelPct: _batteryPct.round(), tempC: v),
+                    BatteryEvent(levelPct: _batteryPct, tempC: v),
                   );
                 },
               ),

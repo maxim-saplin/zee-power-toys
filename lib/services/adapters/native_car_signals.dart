@@ -58,9 +58,10 @@ class NativeCarSignals implements CarSignals {
           if (raw != null) {
             final charging = raw['charging'] as bool? ?? false;
             final kw = _asDouble(raw['chargeKw']);
-            final pct = _asInt(raw['batteryPct']);
+            final pct = _asDouble(raw['batteryPct']);
             final tempC = _asDouble(raw['batteryTempC']);
             final speed = _asInt(raw['speedKmh']);
+            final eff = _asDouble(raw['efficiencyKwhPer100km']);
             final driveModeName = raw['driveMode'] as String?;
             DriveMode? driveMode;
             if (driveModeName != null) {
@@ -77,6 +78,7 @@ class NativeCarSignals implements CarSignals {
               batteryTempC: tempC,
               speedKmh: speed,
               driveMode: driveMode,
+              efficiencyKwhPer100km: eff,
             );
           }
         })
@@ -120,6 +122,10 @@ class NativeCarSignals implements CarSignals {
       ),
       PowerFlowEvent(:final flow) => ('powerFlow', flow.name),
       DriveModeEvent(:final mode) => ('driveMode', mode.name),
+      EfficiencyEvent(:final kwhPer100km) => (
+        'efficiency',
+        '$kwhPer100km',
+      ),
     };
     return _methodCh.invokeMethod<void>('simulate', <String, String>{
       'kind': kind,
@@ -162,10 +168,17 @@ class NativeCarSignals implements CarSignals {
           );
 
         case 'battery':
-          final pct = _asInt(m['levelPct']) ?? 0;
+          final pct = _asDouble(m['levelPct']) ?? 0.0;
           final tempC = _asDouble(m['tempC']) ?? 0.0;
           _snapshot = _snapshot.copyWith(batteryPct: pct, batteryTempC: tempC);
           _ctrl.add(BatteryEvent(levelPct: pct, tempC: tempC));
+
+        case 'efficiency':
+          final kwh = _asDouble(m['kwhPer100km']);
+          if (kwh != null) {
+            _snapshot = _snapshot.copyWith(efficiencyKwhPer100km: kwh);
+            _ctrl.add(EfficiencyEvent(kwh));
+          }
 
         case 'powerFlow':
           final flow = PowerFlow.values.byName(

@@ -640,7 +640,7 @@ void registerZeeExtensions({
               amps: amps,
             );
           case 'battery':
-            final levelPct = int.parse(params['levelPct'] ?? '0');
+            final levelPct = double.parse(params['levelPct'] ?? '0');
             final tempC = double.parse(params['tempC'] ?? '0');
             fake.emitBattery(levelPct: levelPct, tempC: tempC);
           case 'powerFlow':

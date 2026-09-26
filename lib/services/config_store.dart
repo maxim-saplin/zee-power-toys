@@ -466,12 +466,21 @@ enum BatteryPlacement {
 /// automatically when the car reports charging and is hidden otherwise (app
 /// policy per ADR 0003); showChargingStats merely lets the user suppress the
 /// panel entirely if they prefer.
+/// 0118 — which dual Est. drives the primary HUD range number.
+enum RangePrimaryMode {
+  /// Own-trip weighted window (0117 bands).
+  own,
+  /// Adapt Cons1-derived: (soc/100)×packWh / (cons×10).
+  adaptCons,
+}
+
 class BatteryConfig {
   const BatteryConfig({
     this.showBattery = true,
     this.showTemp = true,
     this.showChargingStats = true,
     this.showOwnRangeEstimate = false,
+    this.rangePrimaryMode = RangePrimaryMode.own,
     this.showDriveModeCornerDot = false,
     this.sizeScale = 1.0,
     this.look = BatteryLook.batteryText,
@@ -494,9 +503,13 @@ class BatteryConfig {
   /// hidden; when true it auto-shows/hides with the charging flag.
   final bool showChargingStats;
 
-  /// 0105/0107: show own estimated range beside battery %.
+  /// 0105/0107/0118: show estimated range beside battery %.
   /// Default **OFF**. When ON: ready → `N km`; pending → `… km` (always visible).
+  /// Primary figure follows [rangePrimaryMode]; settings also show both Ests.
   final bool showOwnRangeEstimate;
+
+  /// 0118: which Est. drives the primary HUD range (own-trip vs Adapt-Cons).
+  final RangePrimaryMode rangePrimaryMode;
 
   /// 0110/0112: persistent bottom-right drive-mode corner dot.
   /// Default **OFF** (toast-only world from 0104/0109 unchanged).
@@ -538,6 +551,7 @@ class BatteryConfig {
     bool? showTemp,
     bool? showChargingStats,
     bool? showOwnRangeEstimate,
+    RangePrimaryMode? rangePrimaryMode,
     bool? showDriveModeCornerDot,
     double? sizeScale,
     BatteryLook? look,
@@ -573,6 +587,7 @@ class BatteryConfig {
       showChargingStats: showChargingStats ?? this.showChargingStats,
       showOwnRangeEstimate:
           showOwnRangeEstimate ?? this.showOwnRangeEstimate,
+      rangePrimaryMode: rangePrimaryMode ?? this.rangePrimaryMode,
       showDriveModeCornerDot:
           showDriveModeCornerDot ?? this.showDriveModeCornerDot,
       sizeScale: sizeScale ?? this.sizeScale,
@@ -606,6 +621,7 @@ class BatteryConfig {
     'showTemp': showTemp,
     'showChargingStats': showChargingStats,
     'showOwnRangeEstimate': showOwnRangeEstimate,
+    'rangePrimaryMode': rangePrimaryMode.name,
     'showDriveModeCornerDot': showDriveModeCornerDot,
     'sizeScale': sizeScale,
     'look': look.name,
@@ -657,6 +673,14 @@ class BatteryConfig {
       showTemp: json['showTemp'] as bool? ?? true,
       showChargingStats: json['showChargingStats'] as bool? ?? true,
       showOwnRangeEstimate: json['showOwnRangeEstimate'] as bool? ?? false,
+      rangePrimaryMode: () {
+        final name = json['rangePrimaryMode'] as String?;
+        if (name == null) return RangePrimaryMode.own;
+        return RangePrimaryMode.values.firstWhere(
+          (e) => e.name == name,
+          orElse: () => RangePrimaryMode.own,
+        );
+      }(),
       showDriveModeCornerDot:
           json['showDriveModeCornerDot'] as bool? ?? false,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
@@ -677,6 +701,7 @@ class BatteryConfig {
       other.showTemp == showTemp &&
       other.showChargingStats == showChargingStats &&
       other.showOwnRangeEstimate == showOwnRangeEstimate &&
+      other.rangePrimaryMode == rangePrimaryMode &&
       other.showDriveModeCornerDot == showDriveModeCornerDot &&
       other.sizeScale == sizeScale &&
       other.look == look &&
@@ -693,6 +718,7 @@ class BatteryConfig {
     showTemp,
     showChargingStats,
     showOwnRangeEstimate,
+    rangePrimaryMode,
     showDriveModeCornerDot,
     sizeScale,
     look,

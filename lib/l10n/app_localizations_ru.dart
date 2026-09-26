@@ -246,7 +246,21 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get showOwnRangeEstimateHint =>
-      'Берёт примерно последние 50 км поездки и сильнее учитывает недавние 10 км — особенно последние 3 км. Это наша оценка, не запас хода Adapt. Нужно несколько километров, прежде чем цифра появится рядом с % батареи.';
+      'Две оценки: своя (≈50 км поездки, сильнее 5→1 км) и Adapt Cons (кВт·ч/100). Выберите, какая ведёт основную цифру на HUD. Для своей нужны несколько километров; Cons — живой Cons1.';
+
+  @override
+  String get rangePrimaryMode => 'Основная оценка запаса хода';
+
+  @override
+  String get rangePrimaryOwn => 'Своя поездка';
+
+  @override
+  String get rangePrimaryAdaptCons => 'Adapt Cons';
+
+  @override
+  String rangeEstimatesBoth(String own, String cons) {
+    return 'Своя: $own · Cons: $cons';
+  }
 
   @override
   String get showDriveModeCornerDot => 'Точка режима езды в углу';

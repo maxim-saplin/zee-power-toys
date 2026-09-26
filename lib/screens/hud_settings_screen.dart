@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
+import '../providers/range_estimate.dart';
 import '../providers/services.dart';
 import '../services/config_store.dart';
 import '../theme/app_theme.dart';
@@ -471,6 +472,54 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              if (batteryCfg.showOwnRangeEstimate) ...<Widget>[
+                Text(
+                  l10n.rangePrimaryMode,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: Insets.sm),
+                SegmentedButton<RangePrimaryMode>(
+                  key: const ValueKey('battery-range-primary-mode'),
+                  segments: <ButtonSegment<RangePrimaryMode>>[
+                    ButtonSegment(
+                      value: RangePrimaryMode.own,
+                      label: Text(l10n.rangePrimaryOwn),
+                    ),
+                    ButtonSegment(
+                      value: RangePrimaryMode.adaptCons,
+                      label: Text(l10n.rangePrimaryAdaptCons),
+                    ),
+                  ],
+                  selected: <RangePrimaryMode>{batteryCfg.rangePrimaryMode},
+                  onSelectionChanged: (Set<RangePrimaryMode> sel) {
+                    if (sel.isEmpty) return;
+                    store.setConfig(
+                      store.value.copyWith(
+                        battery: batteryCfg.copyWith(
+                          rangePrimaryMode: sel.first,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: Insets.sm),
+                Builder(
+                  builder: (context) {
+                    final ownKm = ref.watch(ownEstimatedRangeKmProvider);
+                    final consKm = ref.watch(consEstimatedRangeKmProvider);
+                    final ownTxt = ownKm != null ? '$ownKm km' : '—';
+                    final consTxt = consKm != null ? '$consKm km' : '—';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: Insets.sm),
+                      child: Text(
+                        l10n.rangeEstimatesBoth(ownTxt, consTxt),
+                        key: const ValueKey('battery-range-both'),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    );
+                  },
+                ),
+              ],
               SettingsToggleRow(
                 label: l10n.showDriveModeCornerDot,
                 control: Switch(

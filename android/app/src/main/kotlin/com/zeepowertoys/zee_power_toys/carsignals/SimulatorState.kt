@@ -14,10 +14,11 @@ object SimulatorState {
     @Volatile var chargeVolts: Double? = null
     @Volatile var chargeAmps: Double? = null
     @Volatile var chargeKw: Double? = null
-    @Volatile var batteryPct: Int? = null
+    @Volatile var batteryPct: Double? = null
     @Volatile var batteryTempC: Double? = null
     @Volatile var powerFlow: String = "unknown"
     @Volatile var driveMode: String = "unknown"
+    @Volatile var efficiencyKwhPer100km: Double? = null
 
     fun snapshot() = CarSignalSnapshot(
         speedKmh = speedKmh,
@@ -30,6 +31,7 @@ object SimulatorState {
         batteryTempC = batteryTempC,
         powerFlow = powerFlow,
         driveMode = driveMode,
+        efficiencyKwhPer100km = efficiencyKwhPer100km,
     )
 
     // Apply a kind/value pair from the SIMULATE broadcast.
@@ -65,13 +67,18 @@ object SimulatorState {
                 SignalEvent.Charge(ch, chargeVolts, chargeAmps, chargeKw)
             }
             "battery" -> {
-                // value format: "<pct>:<tempC>"
+                // value format: "<pct>:<tempC>" — pct may be float (0118)
                 val parts = value.split(":")
-                val pct = parts.getOrNull(0)?.toIntOrNull() ?: return null
+                val pct = parts.getOrNull(0)?.toDoubleOrNull() ?: return null
                 val temp = parts.getOrNull(1)?.toDoubleOrNull() ?: 25.0
                 batteryPct = pct
                 batteryTempC = temp
                 SignalEvent.Battery(pct, temp)
+            }
+            "efficiency" -> {
+                val v = value.toDoubleOrNull() ?: return null
+                efficiencyKwhPer100km = v
+                SignalEvent.Efficiency(v)
             }
             "powerflow" -> {
                 val flow = when (value.lowercase()) {

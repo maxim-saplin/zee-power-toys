@@ -103,6 +103,23 @@ void main() {
       expect(sut.snapshot.batteryTempC, closeTo(27.5, 0.001));
     });
 
+
+    test('0118 battery: float levelPct preserved', () async {
+      sut.onNativeEvent({'type': 'battery', 'levelPct': 85.7, 'tempC': 27.5});
+      await Future<void>.value();
+      final e = received.first as BatteryEvent;
+      expect(e.levelPct, closeTo(85.7, 1e-9));
+      expect(sut.snapshot.batteryPct, closeTo(85.7, 1e-9));
+    });
+
+    test('0118 efficiency: Cons1 kwhPer100km', () async {
+      sut.onNativeEvent({'type': 'efficiency', 'kwhPer100km': 24.2});
+      await Future<void>.value();
+      final e = received.first as EfficiencyEvent;
+      expect(e.kwhPer100km, closeTo(24.2, 1e-9));
+      expect(sut.snapshot.efficiencyKwhPer100km, closeTo(24.2, 1e-9));
+    });
+
     test('powerFlow drive', () async {
       sut.onNativeEvent({'type': 'powerFlow', 'flow': 'drive'});
       await Future<void>.value();

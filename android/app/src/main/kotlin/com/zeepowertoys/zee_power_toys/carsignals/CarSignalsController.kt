@@ -171,6 +171,7 @@ class CarSignalsController(
         if (pct != null) {
             emitEvent(SignalEvent.Battery(pct, snap.batteryTempC ?: 25.0))
         }
+        snap.efficiencyKwhPer100km?.let { emitEvent(SignalEvent.Efficiency(it)) }
         snap.speedKmh?.let { emitEvent(SignalEvent.Speed(it)) }
         emitEvent(SignalEvent.Blinker(snap.blinker))
     }
@@ -200,6 +201,10 @@ class CarSignalsController(
             )
             is SignalEvent.PowerFlow -> mutableMapOf("type" to "powerFlow", "flow" to event.flow)
             is SignalEvent.DriveMode -> mutableMapOf("type" to "driveMode", "mode" to event.mode)
+            is SignalEvent.Efficiency -> mutableMapOf(
+                "type" to "efficiency",
+                "kwhPer100km" to event.kwhPer100km,
+            )
         }
         mainHandler.post {
             try {

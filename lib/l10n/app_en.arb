@@ -312,9 +312,29 @@
   "@showOwnRangeEstimate": {
     "description": "0105: own Wh/km range beside battery % (default off)"
   },
-  "showOwnRangeEstimateHint": "Uses about the last 50 km of driving, with more weight on the most recent 10 km — especially the last 3 km. Our estimate, not the car’s Adapt range. Needs a few kilometres before it shows beside the battery %.",
+  "showOwnRangeEstimateHint": "Two estimates: Own (last ~50 km trip, heavier on recent 5→1 km) and Adapt Cons (trip kWh/100). Pick which drives the HUD primary. Needs a few kilometres for Own; Cons needs a live Cons1 reading.",
   "@showOwnRangeEstimateHint": {
-    "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
+    "description": "0118: dual Est. own vs Adapt-Cons"
+  },
+  "rangePrimaryMode": "Primary range estimate",
+  "@rangePrimaryMode": {
+    "description": "0118: which Est. drives HUD primary range"
+  },
+  "rangePrimaryOwn": "Own trip",
+  "@rangePrimaryOwn": {
+    "description": "0118: primary = own-trip window Est."
+  },
+  "rangePrimaryAdaptCons": "Adapt Cons",
+  "@rangePrimaryAdaptCons": {
+    "description": "0118: primary = Cons1-derived Est."
+  },
+  "rangeEstimatesBoth": "Own: {own} · Cons: {cons}",
+  "@rangeEstimatesBoth": {
+    "description": "0118: dual Est. readout near own-range toggle",
+    "placeholders": {
+      "own": {"type": "String"},
+      "cons": {"type": "String"}
+    }
   },
   "showDriveModeCornerDot": "Show drive-mode corner dot",
   "@showDriveModeCornerDot": {

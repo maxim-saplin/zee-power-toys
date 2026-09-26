@@ -54,9 +54,14 @@ class FakeCarSignals implements CarSignals {
     );
   }
 
-  void emitBattery({required int levelPct, required double tempC}) {
+  void emitBattery({required double levelPct, required double tempC}) {
     _snapshot = _snapshot.copyWith(batteryPct: levelPct, batteryTempC: tempC);
     _ctrl.add(BatteryEvent(levelPct: levelPct, tempC: tempC));
+  }
+
+  void emitEfficiency(double kwhPer100km) {
+    _snapshot = _snapshot.copyWith(efficiencyKwhPer100km: kwhPer100km);
+    _ctrl.add(EfficiencyEvent(kwhPer100km));
   }
 
   void emitPowerFlow(PowerFlow flow) {
@@ -87,6 +92,8 @@ class FakeCarSignals implements CarSignals {
         _snapshot = _snapshot.copyWith(powerFlow: flow);
       case DriveModeEvent(:final mode):
         _snapshot = _snapshot.copyWith(driveMode: mode);
+      case EfficiencyEvent(:final kwhPer100km):
+        _snapshot = _snapshot.copyWith(efficiencyKwhPer100km: kwhPer100km);
     }
     _ctrl.add(event);
   }

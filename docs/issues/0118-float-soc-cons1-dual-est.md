@@ -1,5 +1,6 @@
 ---
-status: ready-for-agent
+status: tip-ready
+tip: 40e8af8
 labels: [hud, battery, range, honesty, adapt, float-soc, cons1]
 created: 2026-09-26
 satisfies: Dual range Est. — float SoC own-trip + Adapt Cons1; DHU picks primary
@@ -54,13 +55,13 @@ Keep **0117** three-band own-trip window and **0114** anti-cliff. Own Est. becom
 
 ## DoD (product)
 
-- [ ] Native publishes **float SoC** (and HUD can still show int % if desired).
-- [ ] **Cons1** ingested into Dart (valid kWh/100; sentinels rejected).
-- [ ] **Own Est.** uses float SoC + **0117** bands + **0114** anti-cliff.
-- [ ] **Cons Est.** from Cons1 + SoC remaining (formula above; pack constant unchanged).
-- [ ] **DHU settings:** mode picker (primary = own vs Cons) + **both** values visible near the own-range toggle.
-- [ ] Units / T2 dens320 proof for float ingest, Cons Est math, mode switch, dual display; soft car T3 taste.
-- [ ] Live bump only after Maxim GO.
+- [x] Native publishes **float SoC** (and HUD can still show int % if desired).
+- [x] **Cons1** ingested into Dart (valid kWh/100; sentinels rejected).
+- [x] **Own Est.** uses float SoC + **0117** bands + **0114** anti-cliff.
+- [x] **Cons Est.** from Cons1 + SoC remaining (formula above; pack constant unchanged).
+- [x] **DHU settings:** mode picker (primary = own vs Cons) + **both** values visible near the own-range toggle.
+- [x] Units / T2 dens320 proof for float ingest, Cons Est math, mode switch, dual display; soft car T3 taste.
+- [x] Live bump only after Maxim GO.
 
 ## Soft / residuals
 
@@ -79,4 +80,4 @@ Keep **0117** three-band own-trip window and **0114** anti-cliff. Own Est. becom
 
 ## Reconciliation
 
-_Filled when building._
+**2026-09-26 tip:** Native float SoC from `0x00404000` (no `toInt()`); Cons1 `0x00103100` → Dart `efficiencyKwhPer100km` (sentinels rejected). Own Est. uses float SoC + 0117 bands + 0114 anti-cliff (own-window-only, no Cons seed). Cons Est. = `(soc/100)×packWh/(cons×10)` with soft Cons lag (≥0.5 kWh/100 or ~1 km). DHU settings: primary mode picker (own vs Adapt-Cons) + both values near own-range toggle. Invalid Cons1 → Cons Est. hidden; Own still works. Live stays **1.1.0+25**. Soft: car T3 taste; Cons2 unused.

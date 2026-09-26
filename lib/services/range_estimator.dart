@@ -35,10 +35,10 @@ class DriveSegment {
 /// ```
 ///
 /// Display publishes ~every 1 km of moving distance. Ready at ≥~5 km window.
-/// Segments stay open while Wh/km exceeds [maxAbsWhPerKm] so a 1% SoC tick on
-/// a short hop cannot peak-band dominate the window (0114). Adapt efficiency
-/// may be observed for diagnostics but never seeds or replaces the HUD primary
-/// (0108 / 0117 reshape — no Adapt Cons projection).
+/// Segments stay open while Wh/km exceeds [maxAbsWhPerKm] so a SoC tick on
+/// a short hop cannot peak-band dominate the window (0114). Own Est. uses
+/// float SoC (0118); Adapt Cons1 never seeds the own-window path — Cons Est.
+/// is a separate figure (0118 dual Est.).
 class RangeEstimator {
   RangeEstimator({
     this.usablePackWh = kUsablePackWh,
@@ -76,12 +76,16 @@ class RangeEstimator {
   static const double kWeightPeak = 8.0;
   static const double kWeightOlder = 1.0;
   static const double kMinWhPerKmFloor = 20.0; // ~2 kWh/100km
-  /// Hard ceiling for an accepted sample (Wh/km). Integer SoC is 1% = 1000 Wh
+  /// Hard ceiling for an accepted sample (Wh/km). A 1% SoC step is 1000 Wh
   /// on [kUsablePackWh]; with a looser cap (e.g. 2000) a 1% tick over 0.5 km
   /// was accepted at 2000 Wh/km, then peak-weighted in the recent band — the
   /// 0114 short-trip cliff (218→173 after 2.7 km). ~50 kWh/100 is above real
   /// winter/spirited driving and still dilutes a 1% step over ≥2 km.
+  /// Float SoC (0118) softens quantum noise but the cap stays.
   static const double kMaxAbsWhPerKm = 500.0;
+
+  /// Soft Cons Est. refresh — same ~1 km cadence as own (don't thrash on Cons ticks).
+  static const double kConsDisplayRefreshKm = 1.0;
 
   /// Adapt Energy Cons 1 (`0x00103100`) kWh/100km — reject sentinels.
   static bool isValidEfficiencyKwhPer100km(double? v) {
@@ -107,7 +111,7 @@ class RangeEstimator {
   final double maxAbsWhPerKm;
 
   DateTime? _lastTick;
-  int? _lastSocPct;
+  double? _lastSocPct;
   double _segmentKm = 0;
   double? _segmentSocStart;
   double _movingKmAccum = 0;
@@ -117,6 +121,10 @@ class RangeEstimator {
   int? _lastShownKm;
   double _distanceAtLastPublish = 0;
   bool _hasPublished = false;
+  int? _lastShownConsKm;
+  double _distanceAtLastConsPublish = 0;
+  bool _hasPublishedCons = false;
+  double? _lastConsUsedForDisplay;
 
   double get movingKmAccum => _movingKmAccum;
   double get historyKm => _historyKm;
@@ -127,6 +135,9 @@ class RangeEstimator {
       _weightedWhPerKm != null &&
       _weightedWhPerKm! > 0 &&
       _historyKm >= minMovingKmBeforeShow;
+
+  /// Last published Cons Est. km (null if Cons1 invalid/missing).
+  int? get lastShownConsKm => _hasPublishedCons ? _lastShownConsKm : null;
 
   /// Persistable state (prefs JSON).
   Map<String, Object?> toPersistJson() => <String, Object?>{
@@ -200,10 +211,11 @@ class RangeEstimator {
     // Intentionally no-op.
   }
 
-  /// Ingest one sample. Returns rounded km to show, or null if not ready.
+  /// Ingest one sample. Returns own-Est rounded km, or null if not ready.
+  /// Also updates Cons Est. (soft-lagged) via [lastShownConsKm].
   int? ingest({
     required DateTime now,
-    int? socPct,
+    double? socPct,
     int? speedKmh,
     bool charging = false,
     double? efficiencyKwhPer100km,
@@ -215,19 +227,24 @@ class RangeEstimator {
 
     if (socPct != null) {
       _lastSocPct ??= socPct;
-      _segmentSocStart ??= socPct.toDouble();
+      _segmentSocStart ??= socPct;
     }
 
     if (last == null) {
+      _updateConsEst(socPct, efficiencyKwhPer100km);
       return _displayRange(socPct);
     }
 
     final dtSec = now.difference(last).inMilliseconds / 1000.0;
-    if (dtSec <= 0) return _displayRange(socPct);
+    if (dtSec <= 0) {
+      _updateConsEst(socPct, efficiencyKwhPer100km);
+      return _displayRange(socPct);
+    }
 
     // Large gap → drop interval (no distance, no sample).
     if (dtSec > maxGapSeconds) {
       _resetSegment(socPct);
+      _updateConsEst(socPct, efficiencyKwhPer100km);
       return _displayRange(socPct);
     }
 
@@ -248,15 +265,16 @@ class RangeEstimator {
     }
 
     if (socPct != null) _lastSocPct = socPct;
+    _updateConsEst(socPct, efficiencyKwhPer100km);
     return _displayRange(socPct);
   }
 
-  void _resetSegment(int? socPct) {
+  void _resetSegment(double? socPct) {
     _segmentKm = 0;
-    _segmentSocStart = socPct?.toDouble() ?? _lastSocPct?.toDouble();
+    _segmentSocStart = socPct ?? _lastSocPct;
   }
 
-  void _tryCloseSegment(int? socPct) {
+  void _tryCloseSegment(double? socPct) {
     if (socPct == null || _segmentSocStart == null) return;
     if (_segmentKm < minSegmentKm) return;
 
@@ -272,10 +290,9 @@ class RangeEstimator {
       _resetSegment(socPct);
       return;
     }
-    // 0114: SoC is integer % — a 1% step is 1000 Wh. Closing at minSegmentKm
-    // made Wh/km blow up, and resetting here discarded the energy forever.
-    // Keep the segment open until distance dilutes the sample under the cap
-    // (then close normally). Bail only on pathological multi-km glitches.
+    // 0114: a 1% SoC step is 1000 Wh. Closing at minSegmentKm made Wh/km blow
+    // up, and resetting discarded the energy forever. Keep the segment open
+    // until distance dilutes under the cap. Bail only on multi-km glitches.
     if (sample.abs() > maxAbsWhPerKm) {
       if (_segmentKm >= 15.0) {
         _resetSegment(socPct);
@@ -293,7 +310,7 @@ class RangeEstimator {
     _recomputeWeighted();
 
     _segmentKm = 0;
-    _segmentSocStart = socPct.toDouble();
+    _segmentSocStart = socPct;
   }
 
   void _trimToWindow() {
@@ -370,7 +387,7 @@ class RangeEstimator {
     _weightedWhPerKm = math.max(minWhPerKmFloor, ratio);
   }
 
-  int? _displayRange(int? socPct) {
+  int? _displayRange(double? socPct) {
     if (!ready || socPct == null) return null;
     final whPerKm = _weightedWhPerKm!;
     final raw = (socPct / 100.0) * usablePackWh / whPerKm;
@@ -390,6 +407,60 @@ class RangeEstimator {
       _distanceAtLastPublish = _movingKmAccum;
     }
     return _lastShownKm;
+  }
+
+  /// Cons Est. ≈ (soc/100)×packWh / (cons_kWh_per_100 × 10). Soft Cons lag.
+  void _updateConsEst(double? socPct, double? consKwhPer100) {
+    if (socPct == null || !isValidEfficiencyKwhPer100km(consKwhPer100)) {
+      // Invalid/missing Cons1 → Cons Est. hidden/unavailable.
+      if (!isValidEfficiencyKwhPer100km(consKwhPer100)) {
+        _lastShownConsKm = null;
+        _hasPublishedCons = false;
+        _lastConsUsedForDisplay = null;
+      }
+      return;
+    }
+    final cons = consKwhPer100!;
+    final raw = (socPct / 100.0) * usablePackWh / (cons * 10.0);
+    if (raw.isNaN || raw.isInfinite || raw < 1) {
+      _lastShownConsKm = null;
+      _hasPublishedCons = false;
+      _lastConsUsedForDisplay = null;
+      return;
+    }
+    final candidate = raw.round().clamp(1, 999);
+    if (!_hasPublishedCons) {
+      _lastShownConsKm = candidate;
+      _distanceAtLastConsPublish = _movingKmAccum;
+      _lastConsUsedForDisplay = cons;
+      _hasPublishedCons = true;
+      return;
+    }
+    final consMoved = _lastConsUsedForDisplay == null ||
+        (cons - _lastConsUsedForDisplay!).abs() >= 0.5;
+    final distOk =
+        _movingKmAccum - _distanceAtLastConsPublish >= kConsDisplayRefreshKm;
+    // Soft Cons lag: don't thrash on every Cons tick. Refresh when:
+    //  • ~1 km moving distance advanced, or
+    //  • Cons itself jumped ≥0.5 kWh/100 (real trip-average step).
+    // SoC-only drift between those gates is held (same cadence as own Est.).
+    if (distOk || consMoved) {
+      _lastShownConsKm = candidate;
+      _distanceAtLastConsPublish = _movingKmAccum;
+      _lastConsUsedForDisplay = cons;
+    }
+  }
+
+  /// Pure Cons Est. math (no soft lag) — for units / settings preview.
+  static int? consEstKm({
+    required double socPct,
+    required double consKwhPer100,
+    double packWh = kUsablePackWh,
+  }) {
+    if (!isValidEfficiencyKwhPer100km(consKwhPer100)) return null;
+    final raw = (socPct / 100.0) * packWh / (consKwhPer100 * 10.0);
+    if (raw.isNaN || raw.isInfinite || raw < 1) return null;
+    return raw.round().clamp(1, 999);
   }
 
   /// Test helper: plant a ready window without a real trip.

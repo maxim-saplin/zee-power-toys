@@ -312,9 +312,29 @@
   "@showOwnRangeEstimate": {
     "description": "0105: own Wh/km range beside battery % (default off)"
   },
-  "showOwnRangeEstimateHint": "Берёт примерно последние 50 км поездки и сильнее учитывает недавние 10 км — особенно последние 3 км. Это наша оценка, не запас хода Adapt. Нужно несколько километров, прежде чем цифра появится рядом с % батареи.",
+    "showOwnRangeEstimateHint": "Две оценки: своя (≈50 км поездки, сильнее 5→1 км) и Adapt Cons (кВт·ч/100). Выберите, какая ведёт основную цифру на HUD. Для своей нужны несколько километров; Cons — живой Cons1.",
   "@showOwnRangeEstimateHint": {
-    "description": "0108: ~50 km window, heavier last 10/3; not Adapt range"
+    "description": "0118: dual Est. own vs Adapt-Cons"
+  },
+  "rangePrimaryMode": "Основная оценка запаса хода",
+  "@rangePrimaryMode": {
+    "description": "0118: which Est. drives HUD primary range"
+  },
+  "rangePrimaryOwn": "Своя поездка",
+  "@rangePrimaryOwn": {
+    "description": "0118: primary = own-trip window Est."
+  },
+  "rangePrimaryAdaptCons": "Adapt Cons",
+  "@rangePrimaryAdaptCons": {
+    "description": "0118: primary = Cons1-derived Est."
+  },
+  "rangeEstimatesBoth": "Своя: {own} · Cons: {cons}",
+  "@rangeEstimatesBoth": {
+    "description": "0118: dual Est. readout near own-range toggle",
+    "placeholders": {
+      "own": {"type": "String"},
+      "cons": {"type": "String"}
+    }
   },
   "showDriveModeCornerDot": "Точка режима езды в углу",
   "@showDriveModeCornerDot": {

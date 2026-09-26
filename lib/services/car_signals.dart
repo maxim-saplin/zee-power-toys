@@ -55,8 +55,15 @@ class ChargeEvent extends CarSignalEvent {
 
 class BatteryEvent extends CarSignalEvent {
   const BatteryEvent({required this.levelPct, required this.tempC});
-  final int levelPct;
+  /// Float SoC % (0.1% resolution from Adapt) — 0118.
+  final double levelPct;
   final double tempC;
+}
+
+class EfficiencyEvent extends CarSignalEvent {
+  const EfficiencyEvent(this.kwhPer100km);
+  /// Adapt Energy Cons 1 (`0x00103100`) kWh/100km — 0118.
+  final double kwhPer100km;
 }
 
 class PowerFlowEvent extends CarSignalEvent {
@@ -105,15 +112,16 @@ class CarSnapshot {
   /// Always true/false — unknown/absent AdaptAPI state coalesces to false.
   final bool charging;
   final double? chargeKw;
-  final int? batteryPct;
+  /// Float SoC % (0.1% ticks) — HUD may round for display; estimator uses float.
+  final double? batteryPct;
   final double? batteryTempC;
   final PowerFlow powerFlow;
 
   /// Adapt drive mode (`0x22010100`) — see [DriveModeMapping].
   final DriveMode driveMode;
 
-  /// Adapt Energy Cons 1 (`0x00103100`) when non-sentinel — **seed only** for
-  /// 0105 own-range EWMA. Never HUD primary (OEM range IDs unused on HUD).
+  /// Adapt Energy Cons 1 (`0x00103100`) when non-sentinel — 0118 Cons Est.
+  /// Own Est. path stays own-window-only (no seed toward Cons).
   final double? efficiencyKwhPer100km;
 
   CarSnapshot copyWith({
@@ -121,7 +129,7 @@ class CarSnapshot {
     BlinkerState? blinker,
     bool? charging,
     double? chargeKw,
-    int? batteryPct,
+    double? batteryPct,
     double? batteryTempC,
     PowerFlow? powerFlow,
     DriveMode? driveMode,

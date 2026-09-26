@@ -41,10 +41,24 @@ final chargeKwProvider = Provider<double?>((ref) {
   return ref.watch(carSignalsProvider).snapshot.chargeKw;
 });
 
-/// Battery level in percent; null until known.
+/// Battery level in percent for HUD display (rounded); null until known.
+/// Estimator uses float [CarSnapshot.batteryPct] directly (0118).
 final batteryPctProvider = Provider<int?>((ref) {
   _touchEvents(ref);
+  final v = ref.watch(carSignalsProvider).snapshot.batteryPct;
+  return v?.round();
+});
+
+/// Float SoC % (0.1% ticks) — 0118.
+final batteryPctFloatProvider = Provider<double?>((ref) {
+  _touchEvents(ref);
   return ref.watch(carSignalsProvider).snapshot.batteryPct;
+});
+
+/// Adapt Cons1 kWh/100km when valid; null if missing/sentinel — 0118.
+final efficiencyKwhPer100kmProvider = Provider<double?>((ref) {
+  _touchEvents(ref);
+  return ref.watch(carSignalsProvider).snapshot.efficiencyKwhPer100km;
 });
 
 /// Battery temperature in °C; null until known.

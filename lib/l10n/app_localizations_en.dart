@@ -246,7 +246,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showOwnRangeEstimateHint =>
-      'Uses about the last 50 km of driving, with more weight on the most recent 10 km — especially the last 3 km. Our estimate, not the car’s Adapt range. Needs a few kilometres before it shows beside the battery %.';
+      'Two estimates: Own (last ~50 km trip, heavier on recent 5→1 km) and Adapt Cons (trip kWh/100). Pick which drives the HUD primary. Needs a few kilometres for Own; Cons needs a live Cons1 reading.';
+
+  @override
+  String get rangePrimaryMode => 'Primary range estimate';
+
+  @override
+  String get rangePrimaryOwn => 'Own trip';
+
+  @override
+  String get rangePrimaryAdaptCons => 'Adapt Cons';
+
+  @override
+  String rangeEstimatesBoth(String own, String cons) {
+    return 'Own: $own · Cons: $cons';
+  }
 
   @override
   String get showDriveModeCornerDot => 'Show drive-mode corner dot';
