@@ -1,6 +1,6 @@
 ---
 status: tip
-tip: e00bd55
+tip: 9ad6c56
 labels: [hud, battery, range, honesty, adapt, rca]
 created: 2026-09-26
 satisfies: Own Est. range must not wipe ~45 km after a 2.7 km hop; RCA + fix
