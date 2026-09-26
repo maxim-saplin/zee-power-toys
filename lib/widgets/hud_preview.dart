@@ -362,11 +362,15 @@ class _PreviewBadge extends StatelessWidget {
 /// hazard shows both left and right marks simultaneously so shape/size/side-
 /// padding edits are checkable on both sides at once. Charging is forced on
 /// with a plausible reading so the charging-stats panel (only ever shown
-/// while charging, ADR 0003) is checkable here too.
+/// while charging, ADR 0003) is checkable here too. Drive mode is Sport so
+/// the 0113 pulsating red corner-dot is visible when the settings toggle is ON.
 final _demoSignalOverrides = [
   blinkerProvider.overrideWithValue(BlinkerState.hazard),
   chargingProvider.overrideWithValue(true),
   chargeKwProvider.overrideWithValue(7.4),
   batteryPctProvider.overrideWithValue(72),
   batteryTempCProvider.overrideWithValue(24.0),
+  // 0113: Sport so Config Preview shows the pulsating red corner-dot when
+  // BatteryConfig.showDriveModeCornerDot is ON (toggle checkable on T2).
+  driveModeProvider.overrideWithValue(DriveMode.sport),
 ];
