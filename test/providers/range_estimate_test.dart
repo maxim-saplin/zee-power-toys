@@ -34,7 +34,7 @@ void main() {
     );
     addTearDown(container.dispose);
     addTearDown(fake.dispose);
-    container.listen(carSignalEventsProvider, (_, __) {});
+    container.listen(carSignalEventsProvider, (prev, next) {});
 
     fake.emitBattery(levelPct: 71, tempC: 17);
     fake.emitEfficiency(24.5);
