@@ -160,3 +160,32 @@ class CarSnapshot {
     'efficiencyKwhPer100km': efficiencyKwhPer100km,
   };
 }
+
+
+/// Events to re-push on hudReady / HUD recreate so the HUD isolate matches
+/// [CarSignals.snapshot] (live ticks can be missed while the relay arms).
+///
+/// 0119: includes [EfficiencyEvent] when Cons1 is present — Kotlin
+/// `publishEfficiency` skips duplicate Cons1 values, so without a reseed the
+/// HUD Cons Est stays null → dashes.
+List<CarSignalEvent> carSignalHudSeedEvents(CarSnapshot s) {
+  final out = <CarSignalEvent>[
+    ChargeEvent(charging: s.charging, kw: s.chargeKw),
+  ];
+  final pct = s.batteryPct;
+  if (pct != null) {
+    out.add(BatteryEvent(levelPct: pct, tempC: s.batteryTempC ?? 25.0));
+  }
+  final speed = s.speedKmh;
+  if (speed != null) {
+    out.add(SpeedEvent(speed));
+  }
+  out.add(BlinkerEvent(s.blinker));
+  out.add(PowerFlowEvent(s.powerFlow));
+  out.add(DriveModeEvent(s.driveMode));
+  final eff = s.efficiencyKwhPer100km;
+  if (eff != null) {
+    out.add(EfficiencyEvent(eff));
+  }
+  return out;
+}

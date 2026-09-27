@@ -312,7 +312,7 @@
   "@showOwnRangeEstimate": {
     "description": "0105: own Wh/km range beside battery % (default off)"
   },
-  "showOwnRangeEstimateHint": "Two estimates: Own (last ~50 km trip, heavier on recent 5→1 km) and Adapt Cons (trip kWh/100). Pick which drives the HUD primary. Needs a few kilometres for Own; Cons needs a live Cons1 reading.",
+  "showOwnRangeEstimateHint": "Adapt-Cons range from trip kWh/100 (Cons1) beside battery %. Needs a live Cons1 reading; pending shows … km until Cons1 is available.",
   "@showOwnRangeEstimateHint": {
     "description": "0118: dual Est. own vs Adapt-Cons"
   },
@@ -330,9 +330,16 @@
   },
   "rangeEstimatesBoth": "Own: {own} · Cons: {cons}",
   "@rangeEstimatesBoth": {
-    "description": "0118: dual Est. readout near own-range toggle",
+    "description": "0118: dual Est. readout near own-range toggle (unused on HUD after 0119)",
     "placeholders": {
       "own": {"type": "String"},
+      "cons": {"type": "String"}
+    }
+  },
+  "rangeEstimateCons": "Cons Est: {cons}",
+  "@rangeEstimateCons": {
+    "description": "0119: Cons-only Est. readout near range toggle",
+    "placeholders": {
       "cons": {"type": "String"}
     }
   },

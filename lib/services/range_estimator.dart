@@ -468,6 +468,7 @@ class RangeEstimator {
     required double movingKm,
     required double whPerKm,
     int? lastShownKm,
+    int? lastShownConsKm,
     List<DriveSegment>? history,
   }) {
     _movingKmAccum = movingKm;
@@ -489,6 +490,11 @@ class RangeEstimator {
     _lastShownKm = lastShownKm;
     _hasPublished = lastShownKm != null;
     _distanceAtLastPublish = _movingKmAccum;
+    if (lastShownConsKm != null) {
+      _lastShownConsKm = lastShownConsKm;
+      _hasPublishedCons = true;
+      _distanceAtLastConsPublish = _movingKmAccum;
+    }
   }
 
   /// Test helper: append a closed segment without going through ingest ticks.

@@ -246,7 +246,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get showOwnRangeEstimateHint =>
-      'Две оценки: своя (≈50 км поездки, сильнее 5→1 км) и Adapt Cons (кВт·ч/100). Выберите, какая ведёт основную цифру на HUD. Для своей нужны несколько километров; Cons — живой Cons1.';
+      'Запас хода Adapt-Cons по Cons1 (кВт·ч/100) рядом с %. Нужен живой Cons1; пока нет — … km.';
 
   @override
   String get rangePrimaryMode => 'Основная оценка запаса хода';
@@ -260,6 +260,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String rangeEstimatesBoth(String own, String cons) {
     return 'Своя: $own · Cons: $cons';
+  }
+
+  @override
+  String rangeEstimateCons(String cons) {
+    return 'Cons Est: $cons';
   }
 
   @override

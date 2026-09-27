@@ -71,13 +71,18 @@ class RangeEstimateService {
     double movingKm = 6,
     double whPerKm = 200,
     int? shownKm,
+    int? shownConsKm,
   }) {
     _estimator.debugForceState(
       movingKm: movingKm,
       whPerKm: whPerKm,
       lastShownKm: shownKm,
+      lastShownConsKm: shownConsKm,
     );
     _currentKm = shownKm ??
         ((100 / 100.0) * RangeEstimator.kUsablePackWh / whPerKm).round();
+    if (shownConsKm != null) {
+      _currentConsKm = shownConsKm;
+    }
   }
 }

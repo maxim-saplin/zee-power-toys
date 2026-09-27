@@ -473,47 +473,16 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                 ),
               ),
               if (batteryCfg.showOwnRangeEstimate) ...<Widget>[
-                Text(
-                  l10n.rangePrimaryMode,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: Insets.sm),
-                SegmentedButton<RangePrimaryMode>(
-                  key: const ValueKey('battery-range-primary-mode'),
-                  segments: <ButtonSegment<RangePrimaryMode>>[
-                    ButtonSegment(
-                      value: RangePrimaryMode.own,
-                      label: Text(l10n.rangePrimaryOwn),
-                    ),
-                    ButtonSegment(
-                      value: RangePrimaryMode.adaptCons,
-                      label: Text(l10n.rangePrimaryAdaptCons),
-                    ),
-                  ],
-                  selected: <RangePrimaryMode>{batteryCfg.rangePrimaryMode},
-                  onSelectionChanged: (Set<RangePrimaryMode> sel) {
-                    if (sel.isEmpty) return;
-                    store.setConfig(
-                      store.value.copyWith(
-                        battery: batteryCfg.copyWith(
-                          rangePrimaryMode: sel.first,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: Insets.sm),
+                // 0119: Cons-only HUD — no Own-vs-Cons primary picker / Own digits.
                 Builder(
                   builder: (context) {
-                    final ownKm = ref.watch(ownEstimatedRangeKmProvider);
                     final consKm = ref.watch(consEstimatedRangeKmProvider);
-                    final ownTxt = ownKm != null ? '$ownKm km' : '—';
                     final consTxt = consKm != null ? '$consKm km' : '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: Insets.sm),
                       child: Text(
-                        l10n.rangeEstimatesBoth(ownTxt, consTxt),
-                        key: const ValueKey('battery-range-both'),
+                        l10n.rangeEstimateCons(consTxt),
+                        key: const ValueKey('battery-range-cons'),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     );

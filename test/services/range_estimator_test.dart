@@ -461,7 +461,7 @@ void main() {
     test('defaults false and persists', () {
       const c = BatteryConfig();
       expect(c.showOwnRangeEstimate, isFalse);
-      expect(c.rangePrimaryMode, RangePrimaryMode.own);
+      expect(c.rangePrimaryMode, RangePrimaryMode.adaptCons);
       final on = c.copyWith(showOwnRangeEstimate: true);
       expect(on.showOwnRangeEstimate, isTrue);
       expect(
@@ -483,7 +483,7 @@ void main() {
       );
       expect(
         BatteryConfig.fromJson(const {}).rangePrimaryMode,
-        RangePrimaryMode.own,
+        RangePrimaryMode.adaptCons,
       );
     });
   });
@@ -498,6 +498,49 @@ void main() {
         const CarSnapshot(batteryPct: 72, speedKmh: 0, charging: false),
       );
       expect(km, isNotNull);
+    });
+  });
+
+  group('0119 Cons Est HUD seed + Cons-only primary', () {
+    test('carSignalHudSeedEvents includes EfficiencyEvent when Cons1 set', () {
+      const snap = CarSnapshot(
+        batteryPct: 71.0,
+        batteryTempC: 17.0,
+        efficiencyKwhPer100km: 7.8,
+        speedKmh: 40,
+      );
+      final events = carSignalHudSeedEvents(snap);
+      expect(events.whereType<EfficiencyEvent>(), hasLength(1));
+      expect(
+        events.whereType<EfficiencyEvent>().single.kwhPer100km,
+        closeTo(7.8, 1e-9),
+      );
+      expect(events.whereType<BatteryEvent>(), hasLength(1));
+      expect(events.whereType<SpeedEvent>(), hasLength(1));
+    });
+
+    test('carSignalHudSeedEvents omits EfficiencyEvent when Cons1 null', () {
+      const snap = CarSnapshot(batteryPct: 71.0, batteryTempC: 17.0);
+      final events = carSignalHudSeedEvents(snap);
+      expect(events.whereType<EfficiencyEvent>(), isEmpty);
+    });
+
+    test('Cons Est shows with valid Cons1 (car evidence shape)', () {
+      final e = RangeEstimator();
+      final t0 = DateTime.utc(2026, 9, 27, 17);
+      // Cons1=7.8 live, SoC≈71 → Cons Est ≈ (0.71)*100000/(7.8*10) ≈ 910 km
+      final own = e.ingest(
+        now: t0,
+        socPct: 71.0,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 7.8,
+      );
+      expect(own, isNull); // no own-trip window yet
+      expect(e.lastShownConsKm, isNotNull);
+      expect(
+        e.lastShownConsKm,
+        RangeEstimator.consEstKm(socPct: 71.0, consKwhPer100: 7.8),
+      );
     });
   });
 }

@@ -424,21 +424,9 @@ void speedcamOverlayMain() {
 /// Call on hudReady / after HUD recreate — live ticks otherwise drop while the
 /// HUD isolate is still arming [listenForRelay].
 Future<void> seedHudFromCarSignals(CarSignals cs) async {
-  final s = cs.snapshot;
-  await pushCarSignalToHud(ChargeEvent(charging: s.charging, kw: s.chargeKw));
-  final pct = s.batteryPct;
-  if (pct != null) {
-    await pushCarSignalToHud(
-      BatteryEvent(levelPct: pct, tempC: s.batteryTempC ?? 25.0),
-    );
+  for (final e in carSignalHudSeedEvents(cs.snapshot)) {
+    await pushCarSignalToHud(e);
   }
-  final speed = s.speedKmh;
-  if (speed != null) {
-    await pushCarSignalToHud(SpeedEvent(speed));
-  }
-  await pushCarSignalToHud(BlinkerEvent(s.blinker));
-  await pushCarSignalToHud(PowerFlowEvent(s.powerFlow));
-  await pushCarSignalToHud(DriveModeEvent(s.driveMode));
 }
 
 // ---------------------------------------------------------------------------

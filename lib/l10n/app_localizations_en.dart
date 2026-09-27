@@ -246,7 +246,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showOwnRangeEstimateHint =>
-      'Two estimates: Own (last ~50 km trip, heavier on recent 5→1 km) and Adapt Cons (trip kWh/100). Pick which drives the HUD primary. Needs a few kilometres for Own; Cons needs a live Cons1 reading.';
+      'Adapt-Cons range from trip kWh/100 (Cons1) beside battery %. Needs a live Cons1 reading; pending shows … km until Cons1 is available.';
 
   @override
   String get rangePrimaryMode => 'Primary range estimate';
@@ -260,6 +260,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String rangeEstimatesBoth(String own, String cons) {
     return 'Own: $own · Cons: $cons';
+  }
+
+  @override
+  String rangeEstimateCons(String cons) {
+    return 'Cons Est: $cons';
   }
 
   @override

@@ -466,7 +466,7 @@ enum BatteryPlacement {
 /// automatically when the car reports charging and is hidden otherwise (app
 /// policy per ADR 0003); showChargingStats merely lets the user suppress the
 /// panel entirely if they prefer.
-/// 0118 — which dual Est. drives the primary HUD range number.
+/// 0118/0119 — legacy dual Est. mode (HUD forced Cons-only in 0119).
 enum RangePrimaryMode {
   /// Own-trip weighted window (0117 bands).
   own,
@@ -480,7 +480,7 @@ class BatteryConfig {
     this.showTemp = true,
     this.showChargingStats = true,
     this.showOwnRangeEstimate = false,
-    this.rangePrimaryMode = RangePrimaryMode.own,
+    this.rangePrimaryMode = RangePrimaryMode.adaptCons,
     this.showDriveModeCornerDot = false,
     this.sizeScale = 1.0,
     this.look = BatteryLook.batteryText,
@@ -503,12 +503,14 @@ class BatteryConfig {
   /// hidden; when true it auto-shows/hides with the charging flag.
   final bool showChargingStats;
 
-  /// 0105/0107/0118: show estimated range beside battery %.
+  /// 0105/0107/0118/0119: show estimated range beside battery %.
   /// Default **OFF**. When ON: ready → `N km`; pending → `… km` (always visible).
-  /// Primary figure follows [rangePrimaryMode]; settings also show both Ests.
+  /// HUD primary is **Adapt-Cons only** (0119); [rangePrimaryMode] kept for
+  /// prefs compat / later Own path — does not drive HUD digits.
   final bool showOwnRangeEstimate;
 
-  /// 0118: which Est. drives the primary HUD range (own-trip vs Adapt-Cons).
+  /// 0118/0119: legacy dual-mode field. HUD ignores this (Cons-only); default
+  /// [RangePrimaryMode.adaptCons]. Own Est. code may remain for later.
   final RangePrimaryMode rangePrimaryMode;
 
   /// 0110/0112: persistent bottom-right drive-mode corner dot.
@@ -675,10 +677,10 @@ class BatteryConfig {
       showOwnRangeEstimate: json['showOwnRangeEstimate'] as bool? ?? false,
       rangePrimaryMode: () {
         final name = json['rangePrimaryMode'] as String?;
-        if (name == null) return RangePrimaryMode.own;
+        if (name == null) return RangePrimaryMode.adaptCons;
         return RangePrimaryMode.values.firstWhere(
           (e) => e.name == name,
-          orElse: () => RangePrimaryMode.own,
+          orElse: () => RangePrimaryMode.adaptCons,
         );
       }(),
       showDriveModeCornerDot:

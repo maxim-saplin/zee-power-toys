@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// 0118: dual Est. own vs Adapt-Cons
   ///
   /// In en, this message translates to:
-  /// **'Two estimates: Own (last ~50 km trip, heavier on recent 5→1 km) and Adapt Cons (trip kWh/100). Pick which drives the HUD primary. Needs a few kilometres for Own; Cons needs a live Cons1 reading.'**
+  /// **'Adapt-Cons range from trip kWh/100 (Cons1) beside battery %. Needs a live Cons1 reading; pending shows … km until Cons1 is available.'**
   String get showOwnRangeEstimateHint;
 
   /// 0118: which Est. drives HUD primary range
@@ -590,11 +590,17 @@ abstract class AppLocalizations {
   /// **'Adapt Cons'**
   String get rangePrimaryAdaptCons;
 
-  /// 0118: dual Est. readout near own-range toggle
+  /// 0118: dual Est. readout near own-range toggle (unused on HUD after 0119)
   ///
   /// In en, this message translates to:
   /// **'Own: {own} · Cons: {cons}'**
   String rangeEstimatesBoth(String own, String cons);
+
+  /// 0119: Cons-only Est. readout near range toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Cons Est: {cons}'**
+  String rangeEstimateCons(String cons);
 
   /// 0110: persistent BR drive-mode colored dot (default off)
   ///

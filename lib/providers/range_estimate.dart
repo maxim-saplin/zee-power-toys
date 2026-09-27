@@ -1,6 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../services/config_store.dart';
 import '../services/range_estimate_service.dart';
 import 'car_signals.dart';
 import 'config.dart';
@@ -40,17 +39,14 @@ final consEstimatedRangeKmProvider = Provider<int?>((ref) {
   return _tickDual(ref).consKm;
 });
 
-/// Primary HUD range km — driven by [BatteryConfig.rangePrimaryMode] (0118).
+/// Primary HUD range km — **Adapt-Cons only** (0119).
 ///
-/// Default toggle OFF. When ON, null until the selected Est. is ready — HUD
-/// still shows a pending `… km` marker (0107); this provider only supplies digits.
+/// Own Est. remains available via [ownEstimatedRangeKmProvider] for later /
+/// settings, but must not drive the HUD. Default toggle OFF. When ON, null
+/// until Cons1 yields a Cons Est. — HUD still shows pending `… km` (0107).
 final estimatedRangeKmProvider = Provider<int?>((ref) {
   final cfg = ref.watch(batteryConfigProvider);
   if (!cfg.showOwnRangeEstimate) return null;
   _touch(ref);
-  final dual = _tickDual(ref);
-  return switch (cfg.rangePrimaryMode) {
-    RangePrimaryMode.own => dual.ownKm,
-    RangePrimaryMode.adaptCons => dual.consKm,
-  };
+  return _tickDual(ref).consKm;
 });
