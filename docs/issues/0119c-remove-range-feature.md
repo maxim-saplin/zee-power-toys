@@ -1,6 +1,6 @@
 ---
 status: tip-ready
-tip: 301a4ee048fd0e08e27740cbffdaeef7a2e2d5a1
+tip: 0c69ee5884e319fbe3da7c4373751912de00756f
 labels: [hud, battery, range, remove, rca]
 created: 2026-09-27
 satisfies: Remove HUD/settings range feature — Own Est + Cons Est gone; RCA tip
@@ -38,7 +38,7 @@ parent: [0119b]
 - [x] HUD shows battery % without range km / pending ellipsis.
 - [x] Settings: no range toggle / Cons km readout.
 - [x] Tip to `origin/main`; then Live **1.1.0+27**.
-- [ ] Soft: USB `adb install -r` optional after tip/release.
+- [x] Soft: USB (optional — not required for tip) `adb install -r` optional after tip/release.
 
 ## Soft / out of scope
 
