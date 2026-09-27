@@ -542,5 +542,37 @@ void main() {
         RangeEstimator.consEstKm(socPct: 71.0, consKwhPer100: 7.8),
       );
     });
+
+    // 0119b: FW returns ~650 on classic 0x00103100 (aux-like). Dart must keep
+    // rejecting it as kWh/100; native binds alt 0x00103300 (~7.8) instead.
+    test('0119b rejects classic-ID junk 650 as Cons1; 7.8 still valid', () {
+      expect(RangeEstimator.isValidEfficiencyKwhPer100km(650.7), isFalse);
+      expect(RangeEstimator.isValidEfficiencyKwhPer100km(651.2), isFalse);
+      expect(RangeEstimator.isValidEfficiencyKwhPer100km(7.8), isTrue);
+      expect(RangeEstimator.isValidEfficiencyKwhPer100km(16.6), isTrue);
+      expect(
+        RangeEstimator.consEstKm(socPct: 70.0, consKwhPer100: 650.7),
+        isNull,
+      );
+      expect(
+        RangeEstimator.consEstKm(socPct: 70.0, consKwhPer100: 7.8),
+        isNotNull,
+      );
+      final e = RangeEstimator();
+      e.ingest(
+        now: DateTime.utc(2026, 9, 27, 18),
+        socPct: 70.0,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 650.7,
+      );
+      expect(e.lastShownConsKm, isNull);
+      e.ingest(
+        now: DateTime.utc(2026, 9, 27, 18, 0, 1),
+        socPct: 70.0,
+        speedKmh: 0,
+        efficiencyKwhPer100km: 7.8,
+      );
+      expect(e.lastShownConsKm, isNotNull);
+    });
   });
 }

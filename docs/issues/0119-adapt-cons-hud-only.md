@@ -1,5 +1,5 @@
 ---
-status: tip-ready
+status: superseded-by-0119b
 tip:
 labels: [hud, battery, range, adapt-cons, seed]
 created: 2026-09-27
@@ -46,3 +46,7 @@ Car evidence 2026-09-27 (`tmp/qa/car-2026-09-27-range-power/SUMMARY.md`): Cons1 
 
 ### Soft / out of scope
 Pack Wh hardcode; instant power magnitude.
+
+## 0119b follow-up (2026-09-27)
+
+Seed alone was insufficient. Real RCA: classic Cons1 ID returns ~650 on 20260318 FW (rejected); trip cons ~7.8 is on `0x00103300`. See `0119b-cons1-fw-id-remap.md`.
