@@ -21,7 +21,7 @@ import java.lang.reflect.Proxy
 // Signal IDs are ported verbatim from car-signals-adaptapi.md:
 //   SPEED=0x00100100  BLINKER_L=0x21051100  BLINKER_R=0x21051200
 //   CHARGE_STATE=0x00201500  BATTERY_SOC=0x00404000  BATTERY_LEVEL=0x00100A00  BATTERY_TEMP=0x00102A00
-//   ENERGY_CONS1=0x00103100  ENERGY_CONS1_ALT=0x00103300 (0119b FW remap)
+//   ENERGY_CONS1=0x00103100 (0119c: no 03300 DCDC alt — range feature removed)
 //   CHARGE_V=0x24140100  CHARGE_A=0x24140200  CHARGE_KW=0x2420C000
 //   POWER_FLOW=0x24010100  DRIVE_MODE=0x22010100  ZONE_GLOBAL=0x80000000
 class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
@@ -39,11 +39,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
     private val BATTERY_SOC   = 0x00404000  // TYPE_EV_BATTERY_PERCENTAGE % float
     private val BATTERY_LEVEL = 0x00100A00  // SENSOR_TYPE_EV_BATTERY_LEVEL % float
     private val BATTERY_TEMP  = 0x00102A00  // °C float
-    private val ENERGY_CONS1  = 0x00103100  // classic DYN_EGY_CONS1 kWh/100km float
-    // 20260318 FW (T3 2026-09-27): getSensorLatestValue(0x00103100) returns ~650
-    // (aux-like, rejected as kWh/100); trip cons ~7.8 lives on 0x00103300 (classic
-    // Aux DCDC). Prefer classic ID when in-band; else alt. Keep rejecting ≥200.
-    private val ENERGY_CONS1_ALT = 0x00103300
+    private val ENERGY_CONS1  = 0x00103100  // DYN_EGY_CONS1 — keep ingest; HUD range removed (0119c)
     private val BATTERY_POLL_MS = 2000L
     private val CHARGE_VOLTS  = 0x24140100
     private val CHARGE_AMPS   = 0x24140200
@@ -206,7 +202,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                         BATTERY_SOC, BATTERY_LEVEL -> {
                             publishBatteryPct(value.toDouble().coerceIn(0.0, 100.0))
                         }
-                        ENERGY_CONS1, ENERGY_CONS1_ALT -> {
+                        ENERGY_CONS1 -> {
                             publishEfficiency(value.toDouble())
                         }
                         BATTERY_TEMP -> {
@@ -234,7 +230,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         // Try 3-arg form (with rate) first; fall back to 2-arg
         val sensorIds = intArrayOf(
             SPEED, BATTERY_SOC, BATTERY_LEVEL, BATTERY_TEMP,
-            ENERGY_CONS1, ENERGY_CONS1_ALT, CHARGE_STATE,
+            ENERGY_CONS1, CHARGE_STATE,
         )
         for (sid in sensorIds) {
             val r3 = ReflectionUtils.callInstanceResult(sm, "registerListener", sensorListenerProxy, sid, 0)
@@ -472,28 +468,18 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         !raw.isNaN() && !raw.isInfinite() && raw > 0.0 && raw < 200.0
 
     /**
-     * Read trip Cons1. Classic ID `0x00103100` first; on 20260318 FW that
-     * returns ~650 (rejected). Fall back to `0x00103300` which carries ~7.8.
+     * Read Cons1 (`0x00103100`) when in-band. 0119c: do **not** fall back to
+     * `0x00103300` (DCDC ~7.8 ≠ dash trip Cons). Reject ≥200 junk (~652).
+     * HUD range feature removed — value kept for diagnostics / future only.
      */
     private fun readCons1KwhPer100(): Float? {
-        val primary = readSensorFloat(ENERGY_CONS1)
-        if (primary != null && isValidConsKwhPer100(primary.toDouble())) {
-            return primary
-        }
-        if (primary != null) {
-            Log.i(TAG, "Cons1 primary 0x00103100 out-of-band raw=$primary — trying alt 0x00103300")
-        }
-        val alt = readSensorFloat(ENERGY_CONS1_ALT)
-        if (alt != null && isValidConsKwhPer100(alt.toDouble())) {
-            return alt
-        }
-        if (alt != null) {
-            Log.w(TAG, "Cons1 alt 0x00103300 also out-of-band raw=$alt")
-        }
+        val primary = readSensorFloat(ENERGY_CONS1) ?: return null
+        if (isValidConsKwhPer100(primary.toDouble())) return primary
+        Log.i(TAG, "Cons1 0x00103100 out-of-band raw=$primary — no DCDC alt (0119c)")
         return null
     }
 
-    /** Cons1 kWh/100km — reject Adapt sentinels and out-of-band values (0118/0119b). */
+    /** Cons1 kWh/100km — reject Adapt sentinels and out-of-band values (0118/0119c). */
     private fun publishEfficiency(raw: Double) {
         if (!isValidConsKwhPer100(raw)) {
             Log.w(TAG, "publishEfficiency reject out-of-band raw=$raw")

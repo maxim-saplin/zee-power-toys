@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/config.dart';
-import '../providers/range_estimate.dart';
 import '../providers/services.dart';
 import '../services/config_store.dart';
 import '../theme/app_theme.dart';
@@ -453,42 +452,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   ),
                 ),
               ),
-              SettingsToggleRow(
-                label: l10n.showOwnRangeEstimate,
-                control: Switch(
-                  key: const ValueKey('battery-show-own-range'),
-                  value: batteryCfg.showOwnRangeEstimate,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(showOwnRangeEstimate: v),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: Insets.sm),
-                child: Text(
-                  l10n.showOwnRangeEstimateHint,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              if (batteryCfg.showOwnRangeEstimate) ...<Widget>[
-                // 0119: Cons-only HUD — no Own-vs-Cons primary picker / Own digits.
-                Builder(
-                  builder: (context) {
-                    final consKm = ref.watch(consEstimatedRangeKmProvider);
-                    final consTxt = consKm != null ? '$consKm km' : '—';
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: Insets.sm),
-                      child: Text(
-                        l10n.rangeEstimateCons(consTxt),
-                        key: const ValueKey('battery-range-cons'),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    );
-                  },
-                ),
-              ],
+              // 0119c: range toggle + Cons Est readout removed.
               SettingsToggleRow(
                 label: l10n.showDriveModeCornerDot,
                 control: Switch(

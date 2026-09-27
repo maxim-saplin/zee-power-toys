@@ -175,7 +175,7 @@ class _HudSlots extends ConsumerWidget {
     final slotFracs = batteryClusterSlotFracs(
       chargingStatsVisible: chargingStatsVisible,
       sizeScale: batteryCfg.sizeScale,
-      ownRangeEstimate: batteryCfg.showOwnRangeEstimate,
+      ownRangeEstimate: false, // 0119c: range feature removed
     );
     final batteryRect = batteryClusterRect(
       saW: saWidth,

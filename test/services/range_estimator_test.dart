@@ -543,9 +543,9 @@ void main() {
       );
     });
 
-    // 0119b: FW returns ~650 on classic 0x00103100 (aux-like). Dart must keep
-    // rejecting it as kWh/100; native binds alt 0x00103300 (~7.8) instead.
-    test('0119b rejects classic-ID junk 650 as Cons1; 7.8 still valid', () {
+    // 0119c: classic ~650 remains invalid kWh/100; 03300/7.8 is DCDC not Cons.
+    // Validator still rejects ≥200 junk (native no longer alt-binds DCDC).
+    test('0119c rejects classic-ID junk 650 as Cons1', () {
       expect(RangeEstimator.isValidEfficiencyKwhPer100km(650.7), isFalse);
       expect(RangeEstimator.isValidEfficiencyKwhPer100km(651.2), isFalse);
       expect(RangeEstimator.isValidEfficiencyKwhPer100km(7.8), isTrue);

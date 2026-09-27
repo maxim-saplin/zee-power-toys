@@ -607,13 +607,12 @@ void main() {
   });
 
 
-  group('0105/0107 own range beside %', () {
-    String pctPlain(Finder f) {
-      final text = f.evaluate().single.widget as Text;
-      return text.data ?? text.textSpan!.toPlainText();
-    }
 
-    testWidgets('default OFF: pct without km even if service seeded', (tester) async {
+  // -------------------------------------------------------------------------
+  // 0119c — range feature removed (no km / pending ellipsis on HUD)
+  // -------------------------------------------------------------------------
+  group('0119c range feature removed', () {
+    testWidgets('default: % only, no km', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
@@ -626,20 +625,21 @@ void main() {
         signals: signals,
         scaffold: true,
         localizations: false,
-        config: const AppConfig(), // showOwnRangeEstimate false
+        config: const AppConfig(),
         extraOverrides: [
           rangeEstimateServiceProvider.overrideWithValue(svc),
         ],
       ));
       signals.emitBattery(levelPct: 72, tempC: 25);
+      signals.emitEfficiency(20.0);
       await tester.pump();
-      expect(find.text('72%'), findsNWidgets(2)); // dual-color stroke + fill
       expect(find.textContaining('km'), findsNothing);
-      expect(find.textContaining('~'), findsNothing);
       expect(find.textContaining('…'), findsNothing);
+      expect(find.textContaining('360'), findsNothing);
     });
 
-    testWidgets('ON + ready: 72% · 360 km (no tilde), below pack', (tester) async {
+    testWidgets('legacy showOwnRangeEstimate true still % only (no range chrome)',
+        (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
       final svc = RangeEstimateService();
@@ -660,44 +660,16 @@ void main() {
         ],
       ));
       signals.emitBattery(levelPct: 72, tempC: 25);
-      signals.emitEfficiency(20.0); // Cons Est = 360 @ 72% / 100 kWh pack
+      signals.emitEfficiency(20.0);
       await tester.pump();
-      final label = find.byKey(const ValueKey('battery-pct-text'));
-      expect(label, findsOneWidget);
-      expect(pctPlain(label), '72% · 360 km');
-      expect(find.textContaining('~'), findsNothing);
-      // Range chrome lives below pack — not dual-color inside.
-      expect(find.byKey(const ValueKey('battery-inline-pct')), findsNothing);
+      expect(find.textContaining('km'), findsNothing);
+      expect(find.textContaining('…'), findsNothing);
+      expect(find.textContaining(' · '), findsNothing);
     });
 
-    testWidgets('ON + no history: pending … km (not identical to OFF)', (tester) async {
+    testWidgets('justText: plain 72% only', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final signals = FakeCarSignals();
-      await tester.binding.setSurfaceSize(const Size(200, 200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(
-        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
-        signals: signals,
-        scaffold: true,
-        localizations: false,
-        config: const AppConfig(
-          battery: BatteryConfig(showOwnRangeEstimate: true),
-        ),
-      ));
-      signals.emitBattery(levelPct: 55, tempC: 22);
-      await tester.pump();
-      final label = find.byKey(const ValueKey('battery-pct-text'));
-      expect(label, findsOneWidget);
-      expect(pctPlain(label), '55% · … km');
-      expect(find.textContaining('~'), findsNothing);
-    });
-
-    testWidgets('justText ON + ready: one-line 72% · 360 km', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final signals = FakeCarSignals();
-      final svc = RangeEstimateService();
-      svc.debugSeedReady(movingKm: 8, whPerKm: 200, shownKm: 360, shownConsKm: 360);
       await tester.binding.setSurfaceSize(const Size(320, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -710,96 +682,15 @@ void main() {
           battery: const BatteryConfig(showOwnRangeEstimate: true)
               .withLook(BatteryLook.justText),
         ),
-        extraOverrides: [
-          rangeEstimateServiceProvider.overrideWithValue(svc),
-        ],
       ));
       signals.emitBattery(levelPct: 72, tempC: 25);
-      signals.emitEfficiency(20.0); // Cons Est = 360
+      signals.emitEfficiency(20.0);
       await tester.pump();
       final label = find.byKey(const ValueKey('battery-pct-text'));
       expect(label, findsOneWidget);
-      expect(pctPlain(label), '72% · 360 km');
       final text = tester.widget<Text>(label);
-      expect(text.softWrap, isFalse);
-      expect(text.maxLines, 1);
-      // km unit smaller than range digits; % slightly smaller than digits.
-      final root = text.textSpan! as TextSpan;
-      final spans = root.children!.cast<TextSpan>();
-      final rangeSpan = spans.firstWhere((s) => s.text == '360');
-      final kmSpan = spans.firstWhere((s) => s.text == ' km');
-      expect(kmSpan.style!.fontSize!, lessThan(rangeSpan.style!.fontSize!));
-      final pctSpan = spans.firstWhere((s) => s.text == '72');
-      expect(pctSpan.style!.fontSize!, lessThan(rangeSpan.style!.fontSize!));
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // 0119 Adapt-Cons HUD only (Own must not drive primary digits)
-  // -------------------------------------------------------------------------
-  group('0119 Cons-only HUD range', () {
-    String pctPlain(Finder f) {
-      final text = f.evaluate().single.widget as Text;
-      return text.data ?? text.textSpan!.toPlainText();
-    }
-
-    testWidgets('valid Cons1 → Cons Est digits (not Own)', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final signals = FakeCarSignals();
-      await tester.binding.setSurfaceSize(const Size(200, 200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(
-        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
-        signals: signals,
-        scaffold: true,
-        localizations: false,
-        config: const AppConfig(
-          battery: BatteryConfig(
-            showOwnRangeEstimate: true,
-            rangePrimaryMode: RangePrimaryMode.own, // ignored by HUD
-          ),
-        ),
-      ));
-      signals.emitBattery(levelPct: 72, tempC: 25);
-      signals.emitEfficiency(20.0); // Cons Est = (0.72)*100000/(20*10) = 360
-      await tester.pump();
-      final label = find.byKey(const ValueKey('battery-pct-text'));
-      expect(label, findsOneWidget);
-      expect(pctPlain(label), '72% · 360 km');
-    });
-
-    testWidgets('Own ready + Cons missing → pending … km (no Own digits)',
-        (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final signals = FakeCarSignals();
-      final svc = RangeEstimateService();
-      svc.debugSeedReady(movingKm: 8, whPerKm: 200, shownKm: 150);
-      await tester.binding.setSurfaceSize(const Size(200, 200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(wrapWithProviders(
-        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
-        signals: signals,
-        scaffold: true,
-        localizations: false,
-        config: const AppConfig(
-          battery: BatteryConfig(
-            showOwnRangeEstimate: true,
-            rangePrimaryMode: RangePrimaryMode.own,
-          ),
-        ),
-        extraOverrides: [
-          rangeEstimateServiceProvider.overrideWithValue(svc),
-        ],
-      ));
-      signals.emitBattery(levelPct: 72, tempC: 25);
-      // No EfficiencyEvent → Cons null; Own 150 must NOT appear.
-      await tester.pump();
-      final label = find.byKey(const ValueKey('battery-pct-text'));
-      expect(label, findsOneWidget);
-      expect(pctPlain(label), '72% · … km');
-      expect(find.textContaining('150'), findsNothing);
+      expect(text.data, '72%');
+      expect(find.textContaining('km'), findsNothing);
     });
   });
 

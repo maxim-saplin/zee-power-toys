@@ -1,5 +1,5 @@
 ---
-status: tip-ready
+status: superseded-by-0119c — 03300/7.8 WRONG (DCDC ≠ dash Cons)
 tip:
 labels: [hud, battery, range, adapt-cons, cons1, firmware]
 created: 2026-09-27
@@ -46,3 +46,7 @@ The session claim "Cons1=7.8 LIVE" was an **AdaptL dump mislabel**:
 ## Soft
 
 Pack 100 vs AAOS ~150; instant power; Cons lag — unchanged.
+
+## Superseded (2026-09-27)
+
+Maxim HARD FAIL: alt `0x00103300` ~7.8 is DCDC, not trip Cons (dash ~24.5). See `0119c-remove-range-feature.md` — range feature removed entirely.

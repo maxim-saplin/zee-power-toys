@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
-import '../providers/range_estimate.dart';
 import '../services/config_store.dart';
 import 'battery_geometry.dart';
 
@@ -71,7 +70,6 @@ class BatteryWidget extends ConsumerWidget {
     final tempC = ref.watch(batteryTempCProvider); // double? °C
     final charging = ref.watch(chargingProvider);
     final kw = ref.watch(chargeKwProvider); // double?
-    final rangeKm = ref.watch(estimatedRangeKmProvider); // 0105/0107 own estimate
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
@@ -105,13 +103,8 @@ class BatteryWidget extends ConsumerWidget {
 
     final showStats = isCharging && cfg.showChargingStats;
     final showIcon = cfg.contentMode != BatteryContentMode.textOnly;
-    final showOwnRange = cfg.showOwnRangeEstimate;
-    // Separate % below the pack: shown for both/textOnly, but suppressed when
-    // pctInside paints the % inside the pack and the icon is visible (avoid
-    // duplicating the label). 0107: when own-range toggle is ON, keep the
-    // combined SoC+range line below the pack (never cram `N% · N km` inside).
-    final pctInsidePack =
-        showIcon && cfg.style == BatteryStyle.pctInside && !showOwnRange;
+    // 0119c: range feature removed — % only (no `N% · N km` / pending ellipsis).
+    final pctInsidePack = showIcon && cfg.style == BatteryStyle.pctInside;
     final showPctBelow = cfg.contentMode != BatteryContentMode.iconOnly &&
         !pctInsidePack;
 
@@ -201,10 +194,9 @@ class BatteryWidget extends ConsumerWidget {
             // ---- Percentage text (below pack, when not painted inside) ----
             if (showPctBelow) ...<Widget>[
               if (showIcon) SizedBox(height: base * 0.12),
-              _SocRangeLabel(
-                pct: pct,
-                rangeKm: rangeKm,
-                showOwnRange: showOwnRange,
+              Text(
+                key: const ValueKey('battery-pct-text'),
+                pct != null ? '$pct%' : '--%',
                 style: labelStyle,
               ),
             ],
@@ -387,63 +379,6 @@ class _BatteryPainter extends CustomPainter {
 // SoC (+ optional own-range) label — 0105/0107.
 // ---------------------------------------------------------------------------
 
-/// Battery % alone, or `N% · N km` / pending `N% · … km` when own-range is ON.
-///
-/// Typography (0107): `%` slightly smaller than the prior single-size label;
-/// range digits at full [style] size; `km` smaller than the digits; no `~`.
-class _SocRangeLabel extends StatelessWidget {
-  const _SocRangeLabel({
-    required this.pct,
-    required this.rangeKm,
-    required this.showOwnRange,
-    required this.style,
-  });
-
-  final int? pct;
-  final int? rangeKm;
-  final bool showOwnRange;
-  final TextStyle style;
-
-  static const Key _key = ValueKey<String>('battery-pct-text');
-
-  @override
-  Widget build(BuildContext context) {
-    final soc = pct != null ? '$pct' : '--';
-    if (!showOwnRange) {
-      return Text(
-        '$soc%',
-        key: _key,
-        style: style,
-        maxLines: 1,
-        softWrap: false,
-      );
-    }
-
-    final baseSize = style.fontSize ?? 12.0;
-    final pctStyle = style.copyWith(fontSize: baseSize * 0.90);
-    final numStyle = style;
-    final unitStyle = style.copyWith(
-      fontSize: baseSize * 0.70,
-      fontWeight: FontWeight.w500,
-    );
-    final rangeText = rangeKm != null ? '$rangeKm' : '…';
-
-    return Text.rich(
-      TextSpan(
-        children: <InlineSpan>[
-          TextSpan(text: soc, style: pctStyle),
-          TextSpan(text: '%', style: pctStyle),
-          TextSpan(text: ' · ', style: pctStyle),
-          TextSpan(text: rangeText, style: numStyle),
-          TextSpan(text: ' km', style: unitStyle),
-        ],
-      ),
-      key: _key,
-      maxLines: 1,
-      softWrap: false,
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Dual-color % inside pack (0062) — black on fill, white on empty, clipped.
