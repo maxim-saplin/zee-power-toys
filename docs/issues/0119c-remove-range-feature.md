@@ -1,6 +1,7 @@
 ---
-status: tip-ready
-tip: 0c69ee5884e319fbe3da7c4373751912de00756f
+status: accepted
+tip: 0c69ee5
+accepted: 2026-09-27
 labels: [hud, battery, range, remove, rca]
 created: 2026-09-27
 satisfies: Remove HUD/settings range feature — Own Est + Cons Est gone; RCA tip
@@ -45,3 +46,7 @@ parent: [0119b]
 - Re-binding Adapt Cons / trip-card Cons for a future range Block.
 - Instant power magnitude.
 - Pack Wh hardcode cleanup beyond range removal.
+
+## ACCEPT (PDM 2026-09-27)
+
+Tip `0c69ee5` (0120 / 0119c remove-range). Live **1.1.0+27** tip `0066daf` APK sha256 `4d140b402415d32a4434e9bcbaf4b58a9562217aa25e3309c43a4acf6009c72a`. HUD SoC % only; settings range toggle + Cons Est gone; Cons DCDC alt bind dropped. Soft: prefs/l10n leftover (`showOwnRangeEstimate` keys), SHARED_USER keep-data `adb install -r`, car T3. No version bump in this seal.

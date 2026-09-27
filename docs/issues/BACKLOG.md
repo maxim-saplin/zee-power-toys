@@ -1,7 +1,8 @@
 # Issues — the backlog & board
 
-- [ ] **0119b** Cons1 FW ID remap (dashes RCA) — tip-ready — `0119b-cons1-fw-id-remap.md`
-- [x] **0119** Adapt-Cons HUD only — seed Cons1 + drop Own Est — tip `a73fd73` (superseded dashes RCA → 0119b) — `0119-adapt-cons-hud-only.md`
+- [x] **0119c** / **0120** Remove range feature (RCA Own/Cons dead) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
+- [x] **0119b** Cons1 FW ID remap (dashes RCA) — superseded by 0119c (03300/7.8 DCDC ≠ dash Cons) — `0119b-cons1-fw-id-remap.md`
+- [x] **0119** Adapt-Cons HUD only — seed Cons1 + drop Own Est — tip `a73fd73` (superseded → 0119b → 0119c) — `0119-adapt-cons-hud-only.md`
 - [x] **0118** Float SoC + Cons1 dual Est. (own vs Adapt-Cons) — ACCEPT `9b0c0ba` — `0118-float-soc-cons1-dual-est.md`
 - [x] **0117** Own Est. window reshape (3 bands 1×/8×/0) — ACCEPT `7c9397b` — `0117-own-range-adapt-cons-honesty.md`
 - [x] **0116** Overlay size slider max ≈ 5× — ACCEPT `74edf87` — `0116-overlay-size-slider-max-5x.md`
