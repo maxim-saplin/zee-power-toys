@@ -52,8 +52,9 @@ const double kBatterySlotWidthFracOwnRange = 0.18;
   bool ownRangeEstimate = false,
 }) {
   final scale = sizeScale.clamp(0.5, 2.5);
-  var baseW =
-      chargingStatsVisible ? kBatterySlotWidthFracCharging : kBatterySlotWidthFrac;
+  var baseW = chargingStatsVisible
+      ? kBatterySlotWidthFracCharging
+      : kBatterySlotWidthFrac;
   if (mediaChromeVisible && baseW < kBatterySlotWidthFracMedia) {
     baseW = kBatterySlotWidthFracMedia;
   }
@@ -132,8 +133,9 @@ Rect batteryClusterRect({
 double batteryPackStrokeW(double bodyH) => bodyH * 0.08;
 
 /// Inner padding from outline stroke to continuous-fill rect.
+/// 0123 follow-up: tighter fill↔outline gap (was bodyH*0.08 extra).
 double batteryPackInnerPad(double bodyH) =>
-    batteryPackStrokeW(bodyH) + bodyH * 0.08;
+    batteryPackStrokeW(bodyH) + bodyH * 0.04;
 
 /// Height of the continuous-fill / inner pack area (0063: % glyph target).
 double batteryPackInnerH(double bodyH) =>
@@ -154,4 +156,3 @@ double batteryPackFillEdgeX({
   final f = fillFrac.clamp(0.0, 1.0);
   return innerPad + innerW * f;
 }
-

@@ -78,7 +78,10 @@ void main() {
     });
 
     test('rightBottom anchorsBottom; rightTop does not', () {
-      expect(batteryPlacementAnchorsBottom(BatteryPlacement.rightBottom), isTrue);
+      expect(
+        batteryPlacementAnchorsBottom(BatteryPlacement.rightBottom),
+        isTrue,
+      );
       expect(batteryPlacementAnchorsBottom(BatteryPlacement.rightTop), isFalse);
       expect(batteryPlacementAnchorsBottom(BatteryPlacement.right), isFalse);
       expect(batteryPlacementAnchorsBottom(BatteryPlacement.left), isFalse);
@@ -181,7 +184,6 @@ void main() {
     });
   });
 
-
   group('batteryPackFillEdgeX (0062 dual-color clip)', () {
     test('0% → left inner pad; 100% → right inner pad edge', () {
       const bodyW = 40.0;
@@ -222,8 +224,22 @@ void main() {
     });
   });
 
-
   group('batteryPackStrokeW / innerH (0063 polish)', () {
+    test(
+      'inner pad fill↔outline tighter than pre-0123 (stroke + bodyH*0.04)',
+      () {
+        const bodyH = 20.0;
+        expect(
+          batteryPackInnerPad(bodyH),
+          closeTo(batteryPackStrokeW(bodyH) + bodyH * 0.04, 1e-9),
+        );
+        expect(
+          batteryPackInnerPad(bodyH),
+          lessThan(batteryPackStrokeW(bodyH) + bodyH * 0.08),
+        );
+      },
+    );
+
     test('stroke is thinner than 0056 bold (bodyH*0.14)', () {
       const bodyH = 20.0;
       expect(batteryPackStrokeW(bodyH), lessThan(bodyH * 0.14));
@@ -322,7 +338,6 @@ void main() {
     });
   });
 
-
   group('batteryClusterSlotFracs — 0107 own-range width', () {
     test('own-range widens idle slot past baseline', () {
       final off = batteryClusterSlotFracs(chargingStatsVisible: false);
@@ -348,7 +363,6 @@ void main() {
     });
   });
 
-
   group('batteryClusterSlotFracs — 0123 media grow', () {
     test('media chrome widens and heightens slot', () {
       final off = batteryClusterSlotFracs(chargingStatsVisible: false);
@@ -371,5 +385,4 @@ void main() {
       expect(both.heightFrac, kBatterySlotHeightFracMedia);
     });
   });
-
 }

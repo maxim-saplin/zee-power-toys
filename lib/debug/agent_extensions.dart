@@ -453,7 +453,6 @@ void registerZeeExtensions({
       );
     }
 
-
     // Media chrome (0123): mediaShow / mediaIcon / mediaArtistSong /
     // mediaProgress / mediaBarOnly = true|false.
     final rawMediaShow = params['mediaShow'];
@@ -471,10 +470,12 @@ void registerZeeExtensions({
         media: m.copyWith(
           showMedia: rawMediaShow != null ? rawMediaShow == 'true' : null,
           showIcon: rawMediaIcon != null ? rawMediaIcon == 'true' : null,
-          showArtistSong:
-              rawMediaArtistSong != null ? rawMediaArtistSong == 'true' : null,
-          showProgressBar:
-              rawMediaProgress != null ? rawMediaProgress == 'true' : null,
+          showArtistSong: rawMediaArtistSong != null
+              ? rawMediaArtistSong == 'true'
+              : null,
+          showProgressBar: rawMediaProgress != null
+              ? rawMediaProgress == 'true'
+              : null,
           barOnly: rawMediaBarOnly != null ? rawMediaBarOnly == 'true' : null,
         ),
       );
@@ -725,51 +726,6 @@ void registerZeeExtensions({
         jsonEncode(fake!.snapshot.toJson()..['surface'] = surface),
       );
     }); // end ext.zee.inject
-
-  // 0123: media inject on every surface that owns a MediaNowPlayingSource
-  // (HUD needs this for dens320 chrome proof; DHU also via kind=media above).
-  if (mediaNowPlaying != null && surface != 'dhu') {
-    developer.registerExtension('ext.zee.inject', (method, params) async {
-      final kind = params['kind'];
-      if (kind != 'media') {
-        return _extError(
-          'ext.zee.inject on $surface only supports kind=media '
-          '(car signals inject on surface=dhu)',
-        );
-      }
-      try {
-        final clear = (params['clear'] ?? 'false') == 'true';
-        if (clear) {
-          mediaNowPlaying.setNowPlaying(null);
-        } else {
-          final artist = params['artist'] ?? 'Artist';
-          final title = params['title'] ?? 'Song';
-          final progress =
-              double.tryParse(params['progress'] ?? '0.35') ?? 0.35;
-          final playing = (params['playing'] ?? 'true') == 'true';
-          mediaNowPlaying.setNowPlaying(
-            MediaNowPlaying(
-              artist: artist,
-              title: title,
-              progress: progress.clamp(0.0, 1.0),
-              isPlaying: playing,
-            ),
-          );
-        }
-      } catch (e) {
-        return _extError('media inject error: $e');
-      }
-      final cur = mediaNowPlaying.current;
-      return developer.ServiceExtensionResponse.result(
-        jsonEncode(<String, Object?>{
-          'ok': true,
-          'surface': surface,
-          'media': cur?.toJson(),
-        }),
-      );
-    });
-  }
-
 
     // Speedcam (0030): set host pose / approach a sample cam / enable.
     // T1 Fake only until pack+native land.
@@ -1065,8 +1021,11 @@ void registerZeeExtensions({
                 }),
               );
             }
-            final clearOthers = params['clear'] != 'false' && params['clear'] != '0';
-            final maxspeed = int.tryParse(params['maxspeed'] ?? params['speedLimit'] ?? '');
+            final clearOthers =
+                params['clear'] != 'false' && params['clear'] != '0';
+            final maxspeed = int.tryParse(
+              params['maxspeed'] ?? params['speedLimit'] ?? '',
+            );
             final lastSeen = int.tryParse(
               params['lastSeenEpochMs'] ?? params['lastSeen'] ?? '',
             );
@@ -1115,7 +1074,9 @@ void registerZeeExtensions({
                   'ynaviEnrichEnabled': def.ynaviEnrichEnabled,
                 },
                 'speedcam': def.snapshot.toJson(),
-                'camsForAlert': def.camsForAlert.map((c) => c.toJson()).toList(),
+                'camsForAlert': def.camsForAlert
+                    .map((c) => c.toJson())
+                    .toList(),
               }),
             );
           case 'fixtureClear':
@@ -1153,6 +1114,50 @@ void registerZeeExtensions({
       }
     });
   } // end if (surface == 'dhu')
+
+  // 0123: media inject on every surface that owns a MediaNowPlayingSource
+  // (HUD needs this for dens320 chrome proof; DHU also via kind=media above).
+  if (mediaNowPlaying != null && surface != 'dhu') {
+    developer.registerExtension('ext.zee.inject', (method, params) async {
+      final kind = params['kind'];
+      if (kind != 'media') {
+        return _extError(
+          'ext.zee.inject on $surface only supports kind=media '
+          '(car signals inject on surface=dhu)',
+        );
+      }
+      try {
+        final clear = (params['clear'] ?? 'false') == 'true';
+        if (clear) {
+          mediaNowPlaying.setNowPlaying(null);
+        } else {
+          final artist = params['artist'] ?? 'Artist';
+          final title = params['title'] ?? 'Song';
+          final progress =
+              double.tryParse(params['progress'] ?? '0.35') ?? 0.35;
+          final playing = (params['playing'] ?? 'true') == 'true';
+          mediaNowPlaying.setNowPlaying(
+            MediaNowPlaying(
+              artist: artist,
+              title: title,
+              progress: progress.clamp(0.0, 1.0),
+              isPlaying: playing,
+            ),
+          );
+        }
+      } catch (e) {
+        return _extError('media inject error: $e');
+      }
+      final cur = mediaNowPlaying.current;
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'ok': true,
+          'surface': surface,
+          'media': cur?.toJson(),
+        }),
+      );
+    });
+  }
 
   // tapByKey — synthetic-tap a widget identified by ValueKey<String>.
   // Ported from the flutter-debug skill's nothingness AgentService pattern.
