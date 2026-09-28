@@ -1,5 +1,6 @@
 ---
 status: tip-ready
+tip: e06a1ac
 labels: [hud, battery, defaults, charging]
 created: 2026-09-28
 satisfies: HUD-on battery defaults — % + temp bottom-right; charging row stacks above without moving bottom
@@ -38,6 +39,6 @@ When HUD is enabled, fresh/default battery presentation:
 
 - Defaults: `BatteryLook.batteryText` + `showTemp` + **`BatteryPlacement.rightBottom`** (bottom-anchor; charging grows up).
 - Column: charging stats **above** pack/%; Align bottom on rightBottom.
-- Evidence: `tmp/qa/0120-cut-dev/` — idle `10-idle-defaults.png` (72%+31°C BR); charging `20-charging-stack.png` (11 kW above); `pixel-bbox.txt` bottom_delta=0.
+- Evidence: `tmp/qa/0120-cut-e06a1ac/` — idle `10-idle-defaults.png` (72%+31°C BR); charging `20-charging-stack.png` (11 kW above); `pixel-bbox.txt` bottom_delta=0.
 - Soft: range gone (0119c); Live hold **1.1.0+27**.
 - Who-next: **@zee-qa**.
