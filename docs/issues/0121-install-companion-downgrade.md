@@ -1,6 +1,6 @@
 ---
 status: tip-ready
-tip: PENDING
+tip: e63ae16
 labels: [install, companion, downgrade, ynavi]
 created: 2026-09-28
 satisfies: Install APKs screen — uninstall/replace newer companion so older can install (YNavi 27 after 30)
