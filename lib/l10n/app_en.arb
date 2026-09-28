@@ -956,6 +956,14 @@
   "@installYnaviOs7Desc": {
     "description": "Install card desc OS7 YNavi"
   },
+  "installYnaviV30BetaName": "YNavi mod v30.8.1 (beta / stretch)",
+  "@installYnaviV30BetaName": {
+    "description": "Install card — YNavi v30 beta (non-default)"
+  },
+  "installYnaviV30BetaDesc": "Beta Zee stretch from Release ynavi-zeekr-v30 (0122 parity). Not default — prefer v27.0.2 above. Same package; use Replace older if downgrading.",
+  "@installYnaviV30BetaDesc": {
+    "description": "Install card desc YNavi v30 beta"
+  },
   "updateCardName": "Zee Power Toys",
   "@updateCardName": {
     "description": "Self-update card title"

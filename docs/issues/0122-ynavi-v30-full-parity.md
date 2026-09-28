@@ -139,3 +139,8 @@ PASS*). No code or Live Toys bump; no inherit from rescinded `a1a90227`.
 
 **Soft leftovers (stay soft):** G1 / M4 / P9 / T1 / Deepal / OS7. Do not chase
 in this seal. No green inheritance from rescinded asset `a1a90227`.
+
+## Live ship (2026-09-28) — Install UI beta
+
+Toys **1.1.0+28**: Install screen adds **v30 beta** card (non-default) → Release `ynavi-zeekr-v30` / tip `45fada46` / sha256 `a000a77f…`. **v27 remains default**. Home companions still v27-only.
+

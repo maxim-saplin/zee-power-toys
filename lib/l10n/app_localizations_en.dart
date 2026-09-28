@@ -738,6 +738,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.';
 
   @override
+  String get installYnaviV30BetaName => 'YNavi mod v30.8.1 (beta / stretch)';
+
+  @override
+  String get installYnaviV30BetaDesc =>
+      'Beta Zee stretch from Release ynavi-zeekr-v30 (0122 parity). Not default — prefer v27.0.2 above. Same package; use Replace older if downgrading.';
+
+  @override
   String get updateCardName => 'Zee Power Toys';
 
   @override

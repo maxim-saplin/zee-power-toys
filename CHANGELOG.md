@@ -7,6 +7,18 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+28] — 2026-09-28
+
+Live ship: Install screen **v30 beta** companion (non-default) + ACCEPTed **0120** HUD battery defaults / **0121** Replace older / **0122** Zee v30 parity tip.
+
+### Added
+- **Install** YNavi **v30.8.1 beta** card → Release `ynavi-zeekr-v30` asset `ynavi_30.8.1_zeekr_arm64_signed.apk` (tip `45fada46` / sha256 `a000a77f…`). **v27.0.2 remains the default** Install path (margined + OS7).
+
+### Notes
+- Docs: 0120/0121/0122 ACCEPTed on tip under Live **1.1.0+27** hold; this bump publishes them for car T3 / Install UI.
+- AOSP platform-signed via `release.yml`.
+
+
 ## [1.1.0+26] — 2026-09-27
 
 Live ship: ACCEPTed **0118** Float SoC + Cons1 dual Est. under docs seal `d6f9a24`.

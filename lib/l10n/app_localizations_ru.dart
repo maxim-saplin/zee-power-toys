@@ -739,6 +739,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Тот же HUD-мод без левого letterbox — для панели Zeekr OS7+.';
 
   @override
+  String get installYnaviV30BetaName => 'YNavi мод v30.8.1 (бета / stretch)';
+
+  @override
+  String get installYnaviV30BetaDesc =>
+      'Бета Zee stretch из Release ynavi-zeekr-v30 (паритет 0122). Не по умолчанию — предпочтите v27.0.2 выше. Тот же пакет; для отката — «Заменить на старую».';
+
+  @override
   String get updateCardName => 'Zee Power Toys';
 
   @override

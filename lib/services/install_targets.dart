@@ -52,6 +52,24 @@ const GithubAsset kYnaviOs7Asset = GithubAsset(
   releaseTag: kYnaviReleaseTag,
 );
 
+/// YNavi v30 stretch — **beta / non-default** (0122 Zee parity tip).
+/// Same package as v27; Install UI keeps v27 as the day-to-day default.
+const String kYnaviV30UpstreamVersionName = '30.8.1';
+const String kYnaviV30UpstreamVersionCode = '739652660';
+const String kYnaviV30UpstreamVersionBuild =
+    '$kYnaviV30UpstreamVersionName+$kYnaviV30UpstreamVersionCode';
+const int kYnaviV30ReleaseVersionCode = 739652660;
+const String kYnaviV30ReleaseTag = 'ynavi-zeekr-v30';
+
+/// YNavi v30 Zee arm64 — Release `ynavi-zeekr-v30` (pre-release; beta Install card).
+/// Tip `45fada46` / asset sha256 `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e`.
+const GithubAsset kYnaviV30Asset = GithubAsset(
+  repo: 'maxim-saplin/ynavi-zee',
+  branch: 'main',
+  path: 'ynavi_30.8.1_zeekr_arm64_signed.apk',
+  releaseTag: kYnaviV30ReleaseTag,
+);
+
 /// Zeekr Launcher mod (Yandex Navi as default) — **zeekr_apk_mod** only.
 const GithubAsset kLauncherAsset = GithubAsset(
   repo: 'maxim-saplin/zeekr_apk_mod',

@@ -1508,6 +1508,18 @@ abstract class AppLocalizations {
   /// **'Same HUD mod with left letterbox disabled for Zeekr OS7+ panel layout.'**
   String get installYnaviOs7Desc;
 
+  /// Install card — YNavi v30 beta (non-default)
+  ///
+  /// In en, this message translates to:
+  /// **'YNavi mod v30.8.1 (beta / stretch)'**
+  String get installYnaviV30BetaName;
+
+  /// Install card desc YNavi v30 beta
+  ///
+  /// In en, this message translates to:
+  /// **'Beta Zee stretch from Release ynavi-zeekr-v30 (0122 parity). Not default — prefer v27.0.2 above. Same package; use Replace older if downgrading.'**
+  String get installYnaviV30BetaDesc;
+
   /// Self-update card title
   ///
   /// In en, this message translates to:

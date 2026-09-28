@@ -53,7 +53,7 @@ class _ScriptedInstaller implements Installer {
 
 void main() {
   group('InstallScreen', () {
-    testWidgets('renders self-update + three companion cards', (tester) async {
+    testWidgets('renders self-update + four companion cards', (tester) async {
       final (store, installer) = await _makeFixture();
 
       await tester.pumpWidget(_wrap(const InstallScreen(), store, installer));
@@ -64,9 +64,16 @@ void main() {
       expect(find.byKey(const ValueKey('card-launcher')), findsOneWidget);
       expect(find.byKey(const ValueKey('card-ynavi')), findsOneWidget);
       expect(find.byKey(const ValueKey('card-ynavi-os7')), findsOneWidget);
+      // v30 beta is below the fold in the default test viewport.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('card-ynavi-v30-beta')),
+        200,
+      );
+      await tester.pump();
+      expect(find.byKey(const ValueKey('card-ynavi-v30-beta')), findsOneWidget);
     });
 
-    testWidgets('Install buttons for launcher + both YNavi variants', (tester) async {
+    testWidgets('Install buttons for launcher + v27 + v30 beta', (tester) async {
       final (store, installer) = await _makeFixture();
 
       await tester.pumpWidget(_wrap(const InstallScreen(), store, installer));
@@ -75,6 +82,12 @@ void main() {
       expect(find.byKey(const ValueKey('install-launcher')), findsOneWidget);
       expect(find.byKey(const ValueKey('install-ynavi')), findsOneWidget);
       expect(find.byKey(const ValueKey('install-ynavi-os7')), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('install-ynavi-v30-beta')),
+        200,
+      );
+      await tester.pump();
+      expect(find.byKey(const ValueKey('install-ynavi-v30-beta')), findsOneWidget);
     });
 
     testWidgets(
