@@ -1,6 +1,6 @@
 ---
 status: accepted  # scale soft-rescind then restored — see SOFT-RESCIND below
-tip: ce50781
+tip: 7851432
 accepted: 2026-09-28
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
@@ -43,9 +43,9 @@ Stumbling on many more after those is **not acceptable**. Expect Zee v30 to beha
 - Toys Live bump unless install-screen (0121) ships in the same grind and Maxim GOs.
 - New features beyond restoring Zee v27 parity.
 
-## ACCEPT (PDM 2026-09-28)
+## PRIOR ACCEPT (PDM 2026-09-28) — scale soft-rescinded
 
-**PDM ACCEPT 2026-09-28:** T2 dens320 full Zee **PASS**.
+**PDM ACCEPT 2026-09-28:** T2 dens320 full Zee **PASS**. The ZeeUiScale portion was later soft-rescinded because the shipped asset had baked scaling resources but no live `wrapBaseContext` callers after R8.
 
 | Stamp | Value |
 |-------|--------|
@@ -77,3 +77,26 @@ callers after R8 (`v63` / `q`). See `tmp/qa/0122-scale-rca/RCA.md`.
 Own-check dens320 Override 160: `map_activity_root` **L=840 T=123**.
 Release asset sha `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e`.
 Live Toys still **1.1.0+27** (no bump). Soft: Deepal/OS7 recut; full 0097 matrix @zee-qa.
+
+## ACCEPT (PDM 2026-09-28) — scale re-ACCEPT
+
+The prior ACCEPT on ynavi `e9fbe330` / asset
+`a1a902270252fb9ec4982e6f3214b7476ea0f3ed9f666be95ba53fae9bcf2348` is
+soft-rescinded for scale. Re-ACCEPT is stamped against the restored live hooks:
+
+| Stamp | Value |
+|-------|-------|
+| ynavi tip | `45fada46` |
+| Release asset sha256 | `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e` |
+| Toys docs tip | `7851432` |
+| Evidence | `tmp/qa/0122-scale-cut-45fada46/` |
+| DoD | **ZeeUiScale LIVE** — `map_root` **L=840 T=123**; chrome **H=84 px** (=48×1.75) |
+| Live Toys | **1.1.0+27** (no bump) |
+
+**Governing:** `wrapBaseContext` is required; baked scaling XML or
+letterbox-only patches are not sufficient. The accepted asset has the `v63`
+reflection hook, Application `q` direct hook, and MapActivity
+`applyToConfiguration` before `super`.
+
+**Soft / non-blocking:** Deepal / OS7 recut later; full 0097 matrix remains
+with @zee-qa.

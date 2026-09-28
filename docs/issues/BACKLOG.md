@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [x] **0122** YNavi Zee v30≡Zee v27 full parity — ACCEPT ynavi `e9fbe330` / asset `a1a90227…` toys docs `65ffdd5e` Live **1.1.0+27** (no bump) — `0122-ynavi-v30-full-parity.md`
+- [x] **0122** YNavi Zee v30≡Zee v27 full parity — re-ACCEPT ynavi `45fada46` / asset `a000a77f…` / toys docs `7851432` Live **1.1.0+27** (no bump) — `0122-ynavi-v30-full-parity.md`
 - [x] **0121** Install companion downgrade (v30→v27) — ACCEPT tip `7f3f836` / docs `4ea3518` Live **1.1.0+27** hold — `0121-install-companion-downgrade.md`
 - [x] **0120** HUD battery defaults (%+temp BR; charging stack above, bottom-anchor) — ACCEPT tip `e06a1ac` / docs `dc4c772` Live **1.1.0+27** hold — `0120-hud-battery-defaults.md`
 - [x] **0119c** Remove range feature (RCA Own/Cons dead; historical alias was also called “0120”) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
@@ -34,7 +34,7 @@ Most rows are one-line **stubs**; a stub becomes a full `NNNN-slug.md` (copy [TE
 See also: [PRINCIPLES.md](../PRINCIPLES.md) (Definition of Done) · [ADR 0007](../adr/0007-block-by-block-agentic-delivery.md) (delivery model).
 
 ## Discipline
-- [x] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap) — ACCEPT ynavi `e9fbe330` / asset `a1a90227…` / toys docs `65ffdd5e` — `0122-ynavi-v30-full-parity.md`
+- [x] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap+scale) — re-ACCEPT ynavi `45fada46` / asset `a000a77f…` / toys docs `7851432` — `0122-ynavi-v30-full-parity.md`
 
 
 1. **One Block in-progress at a time.** Foundation first; the **walking skeleton (0001) before anything else**.
