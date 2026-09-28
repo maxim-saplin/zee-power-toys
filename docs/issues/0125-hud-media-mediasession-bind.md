@@ -1,6 +1,6 @@
 ---
 status: in-progress
-tip: f6a4998
+tip: 2161990
 labels: [hud, media, mediasession]
 created: 2026-09-28
 satisfies: HUD utility info — now-playing from native MediaSession
@@ -30,7 +30,7 @@ Close Soft FakeMediaOnly (0123 FAIL-open):
 - [x] Dart `NativeMediaNowPlaying` on Android DHU; HUD Fake + `pushMediaToHud` / `onMedia`.
 - [x] Unit tests green (`native_media_now_playing_test`, `media_relay_test`, media chrome).
 - [x] dens320 prove path documented (real session preferred; inject alternate).
-- [ ] Tip to `origin/main` (`f6a4998`). Live still **1.1.0+29**. Soft FakeMediaOnly closed.
+- [ ] Tip to `origin/main` (`2161990`). Live still **1.1.0+29**. Soft FakeMediaOnly closed.
 
 ## dens320 prove (QA)
 
@@ -70,7 +70,7 @@ Same native bind on DHU + hub relay to HUD Presentation. No ynavi-zee change req
 
 ## DEV tip (2026-09-28 Europe/Minsk)
 
-**Tip SHA:** `f6a4998`
+**Tip SHA:** `2161990`
 
 - Native `MediaSessionController` (`zee/media` + events) on DHU; `MEDIA_CONTENT_CONTROL`.
 - Dart `NativeMediaNowPlaying` on Android DHU; `pushMediaToHud` / HUD Fake sink.
