@@ -1,10 +1,9 @@
 import 'dart:ui' show Rect;
 // Tests for lib/hud/battery_geometry.dart — BATTERY cluster placement (0051).
 //
-// Relationship assertions on pure rect math: default rightTop matches today's
-// hard-coded top-right; left mirrors; fine adjust (vert / sidePad / bias)
-// moves the slot. Temp + charging ride inside BatteryWidget, so they move
-// with the cluster without separate placement.
+// Relationship assertions on pure rect math: rightTop = prior top-right;
+// 0120 default rightBottom anchors bottom (charging grows up); left mirrors;
+// fine adjust moves the slot. Temp + charging ride inside BatteryWidget.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/hud/battery_geometry.dart';
@@ -32,12 +31,13 @@ void main() {
       expect(batteryPlacementIsLeft(BatteryPlacement.rightTop), isFalse);
     });
 
-    test('BatteryConfig defaults match rightTop geometry', () {
+    test('BatteryConfig defaults match rightBottom geometry (0120)', () {
       const cfg = BatteryConfig();
-      expect(cfg.placement, BatteryPlacement.rightTop);
+      expect(cfg.placement, BatteryPlacement.rightBottom);
       expect(cfg.vertFrac, 0.010);
       expect(cfg.sidePadFrac, 0.04);
       expect(cfg.horizBiasFrac, 0.0);
+      expect(batteryPlacementAnchorsBottom(cfg.placement), isTrue);
       final rect = batteryClusterRect(
         saW: saW,
         saH: saH,
@@ -47,6 +47,41 @@ void main() {
         horizBiasFrac: cfg.horizBiasFrac,
       );
       expect(rect.left, closeTo(saW - saW * 0.04 - saW * 0.12, 0.01));
+      // Bottom edge near SA bottom (1% pad).
+      expect(rect.bottom, closeTo(saH - saH * 0.010, 0.01));
+    });
+  });
+
+  group('batteryClusterRect — rightBottom bottom-anchor (0120)', () {
+    test('idle bottom stays put when charging height grows', () {
+      final defaults = batteryPlacementDefaults(BatteryPlacement.rightBottom);
+      final idle = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.rightBottom,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+      );
+      final charging = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.rightBottom,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+        widthFrac: kBatterySlotWidthFracCharging,
+        heightFrac: kBatterySlotHeightFracCharging,
+      );
+      expect(charging.height, greaterThan(idle.height));
+      // Bottom edge unchanged (anchor bottom, grow up).
+      expect(charging.bottom, closeTo(idle.bottom, 0.01));
+      expect(charging.top, lessThan(idle.top));
+    });
+
+    test('rightBottom anchorsBottom; rightTop does not', () {
+      expect(batteryPlacementAnchorsBottom(BatteryPlacement.rightBottom), isTrue);
+      expect(batteryPlacementAnchorsBottom(BatteryPlacement.rightTop), isFalse);
+      expect(batteryPlacementAnchorsBottom(BatteryPlacement.right), isFalse);
+      expect(batteryPlacementAnchorsBottom(BatteryPlacement.left), isFalse);
     });
   });
 

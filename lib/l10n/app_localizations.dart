@@ -716,6 +716,12 @@ abstract class AppLocalizations {
   /// **'Right top'**
   String get batteryPlacementRightTop;
 
+  /// Battery placement preset — bottom-right corner (0120 default)
+  ///
+  /// In en, this message translates to:
+  /// **'Right bottom'**
+  String get batteryPlacementRightBottom;
+
   /// Battery vertical position slider label
   ///
   /// In en, this message translates to:

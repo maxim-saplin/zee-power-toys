@@ -486,6 +486,11 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                     icon: const Icon(Icons.align_horizontal_left),
                   ),
                   ButtonSegment(
+                    value: BatteryPlacement.rightBottom,
+                    label: Text(l10n.batteryPlacementRightBottom),
+                    icon: const Icon(Icons.vertical_align_bottom),
+                  ),
+                  ButtonSegment(
                     value: BatteryPlacement.right,
                     label: Text(l10n.batteryPlacementRight),
                     icon: const Icon(Icons.align_horizontal_right),
@@ -538,6 +543,17 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                         store.value.copyWith(
                           battery: batteryCfg.withPlacement(
                             BatteryPlacement.rightTop,
+                          ),
+                        ),
+                      ),
+                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    GestureDetector(
+                      key: const ValueKey('battery-placement-right-bottom'),
+                      onTap: () => store.setConfig(
+                        store.value.copyWith(
+                          battery: batteryCfg.withPlacement(
+                            BatteryPlacement.rightBottom,
                           ),
                         ),
                       ),

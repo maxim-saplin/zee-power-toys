@@ -419,6 +419,11 @@
   "@batteryPlacementRightTop": {
     "description": "Battery placement preset: right top (default)"
   },
+  "batteryPlacementRightBottom": "Right bottom",
+  "@batteryPlacementRightBottom": {
+    "description": "Battery placement preset — bottom-right corner (0120 default)"
+  },
+
   "batteryVerticalPosition": "Vertical position",
   "@batteryVerticalPosition": {
     "description": "Battery vertical position slider label"

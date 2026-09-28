@@ -1,6 +1,7 @@
 import 'dart:ui' show Rect;
 
-import '../services/config_store.dart' show BatteryPlacement;
+import '../services/config_store.dart'
+    show BatteryPlacement, batteryPlacementAnchorsBottom;
 
 // ---------------------------------------------------------------------------
 // Battery cluster geometry — pure functions for HudRoot placement.
@@ -66,7 +67,14 @@ bool batteryPlacementIsLeft(BatteryPlacement placement) =>
 /// Computes the on-screen rect for the BATTERY cluster slot inside a Safe
 /// Area of size [saW] × [saH].
 ///
-/// [vertFrac] is the top edge of the slot as a fraction of [saH] (0 = top).
+/// For top-anchored presets ([BatteryPlacement.left] / [right] / [rightTop]):
+/// [vertFrac] is the **top** edge of the slot as a fraction of [saH] (0 = top).
+/// Growing [heightFrac] pushes the bottom edge down.
+///
+/// For bottom-anchored presets ([BatteryPlacement.rightBottom], 0120):
+/// [vertFrac] is the pad from the Safe Area **bottom** to the slot bottom.
+/// Growing [heightFrac] moves the top edge up — bottom edge stays put.
+///
 /// [sidePadFrac] is the inward padding from the active edge (left for
 /// [BatteryPlacement.left], right otherwise), as a fraction of [saW].
 /// [horizBiasFrac] shifts both edges toward the right when positive (same
@@ -84,8 +92,19 @@ Rect batteryClusterRect({
   if (saW <= 0 || saH <= 0) return Rect.zero;
 
   final w = (saW * widthFrac).clamp(0.0, saW);
-  final top = (saH * vertFrac).clamp(0.0, saH);
-  final h = (saH * heightFrac).clamp(0.0, saH - top);
+  final hWanted = (saH * heightFrac).clamp(0.0, saH);
+  final double top;
+  final double h;
+  if (batteryPlacementAnchorsBottom(placement)) {
+    // Bottom edge fixed; grow upward when heightFrac increases (0120).
+    final bottomPad = (saH * vertFrac).clamp(0.0, saH);
+    final bottom = (saH - bottomPad).clamp(0.0, saH);
+    h = hWanted.clamp(0.0, bottom);
+    top = (bottom - h).clamp(0.0, saH);
+  } else {
+    top = (saH * vertFrac).clamp(0.0, saH);
+    h = hWanted.clamp(0.0, saH - top);
+  }
   final isLeft = batteryPlacementIsLeft(placement);
   final bias = saW * horizBiasFrac;
   final pad = isLeft

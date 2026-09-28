@@ -24,12 +24,20 @@ When HUD is enabled, fresh/default battery presentation:
 
 ## DoD
 
-- [ ] New / reset HUD-on defaults: % + temp, bottom-right.
-- [ ] Charging: power/stats row stacks **above** %; bottom of block stays put.
-- [ ] T2 dens320 Tablet shots (idle + charging inject) prove layout.
-- [ ] Tip to `origin/main`.
+- [x] New / reset HUD-on defaults: % + temp, bottom-right.
+- [x] Charging: power/stats row stacks **above** %; bottom of block stays put.
+- [x] T2 dens320 Tablet shots (idle + charging inject) prove layout.
+- [x] Tip to `origin/main`.
 
 ## Soft / out of scope
 
 - Range Est (removed 0119c).
-- Live bump only if product needs it after tip (Maxim GO).
+- Live bump only Maxim GO — hold **1.1.0+27**.
+
+## DEV tip (2026-09-28 Europe/Minsk)
+
+- Defaults: `BatteryLook.batteryText` + `showTemp` + **`BatteryPlacement.rightBottom`** (bottom-anchor; charging grows up).
+- Column: charging stats **above** pack/%; Align bottom on rightBottom.
+- Evidence: `tmp/qa/0120-cut-dev/` — idle `10-idle-defaults.png` (72%+31°C BR); charging `20-charging-stack.png` (11 kW above); `pixel-bbox.txt` bottom_delta=0.
+- Soft: range gone (0119c); Live hold **1.1.0+27**.
+- Who-next: **@zee-qa**.

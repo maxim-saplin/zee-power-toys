@@ -166,8 +166,8 @@ class _HudSlots extends ConsumerWidget {
       sizeFraction: minimapCfg.resolvedSizeFraction,
     );
 
-    // Battery cluster placement — presets (left / right / rightTop) + fine
-    // adjust. Default rightTop matches today's hard-coded top-right.
+    // Battery cluster placement — presets (left / right / rightTop /
+    // rightBottom) + fine adjust. Default rightBottom (0120 HUD-on).
     final batteryCfg = ref.watch(batteryConfigProvider);
     // 0067: grow slot when charging stats are shown (3 lines vs 2).
     final chargingStatsVisible =
@@ -203,7 +203,7 @@ class _HudSlots extends ConsumerWidget {
         ),
 
         // BATTERY — freely placeable cluster (icon + % + temp + charging kW).
-        // Geometry from batteryClusterRect; default = prior top-right look.
+        // Geometry from batteryClusterRect; default = bottom-right (0120).
         Positioned(
           key: const ValueKey('hud-battery-slot'),
           left: batteryRect.left,
@@ -251,7 +251,7 @@ class _HudSlots extends ConsumerWidget {
           child: IgnorePointer(child: DriveModeToastLayer()),
         ),
 
-        // 0110 persistent drive-mode corner dot — bottom-right Safe Area (pad 14; clear of default rightTop battery).
+        // 0110 persistent drive-mode corner dot — bottom-right Safe Area (pad 14). Soft: may overlap 0120 default rightBottom battery when both on.
         const Positioned.fill(
           child: IgnorePointer(child: DriveModeCornerDotLayer()),
         ),

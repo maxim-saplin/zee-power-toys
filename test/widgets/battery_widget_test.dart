@@ -19,7 +19,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0, batteryText look, rightTop', () {
+    test('defaults are all-on, sizeScale 1.0, batteryText look, rightBottom', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
@@ -30,7 +30,7 @@ void main() {
       expect(cfg.look, BatteryLook.batteryText);
       expect(cfg.contentMode, BatteryContentMode.both);
       expect(cfg.style, BatteryStyle.pctInside);
-      expect(cfg.placement, BatteryPlacement.rightTop);
+      expect(cfg.placement, BatteryPlacement.rightBottom);
       expect(cfg.vertFrac, 0.010);
       expect(cfg.sidePadFrac, 0.04);
       expect(cfg.horizBiasFrac, 0.0);
@@ -553,7 +553,7 @@ void main() {
   //
   // The `battery-size` slider in hud_settings_screen.dart is labelled
   // 0.5×–2.5×. Before this Block, the whole panel (icon+pct in a Row, temp
-  // and charging-stats below) was wide enough that its natural size already
+  // and charging-stats above %) was wide enough that its natural size already
   // exceeded the fixed BATTERY slot by sizeScale≈1.07 — so FittedBox's
   // scaleDown was silently absorbing roughly the top three-quarters of the
   // slider's labelled range: dragging the slider past its first quarter
@@ -691,6 +691,37 @@ void main() {
       final text = tester.widget<Text>(label);
       expect(text.data, '72%');
       expect(find.textContaining('km'), findsNothing);
+    });
+  });
+
+
+  // -------------------------------------------------------------------------
+  // 0120 — charging row stacks above % (bottom edge stays put on BR default)
+  // -------------------------------------------------------------------------
+  group('0120 charging stacks above %', () {
+    testWidgets('charging-stats is above battery-icon', (tester) async {
+      final signals = FakeCarSignals();
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(wrapWithProviders(
+        const SizedBox(width: 200, height: 200, child: BatteryWidget()),
+        signals: signals,
+        scaffold: true,
+        localizations: false,
+        config: const AppConfig(), // default rightBottom + batteryText + temp
+      ));
+      signals.emitBattery(levelPct: 72, tempC: 31.0);
+      signals.emitCharge(charging: true, kw: 11.0);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-temp-text')), findsOneWidget);
+      final statsTop = tester.getTopLeft(find.byKey(const ValueKey('charging-stats')));
+      final iconTop = tester.getTopLeft(find.byKey(const ValueKey('battery-icon')));
+      expect(statsTop.dy, lessThan(iconTop.dy),
+          reason: 'power/stats row must stack above the pack/%');
     });
   });
 

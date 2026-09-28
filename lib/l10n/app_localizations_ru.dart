@@ -326,6 +326,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get batteryPlacementRightTop => 'Справа сверху';
 
   @override
+  String get batteryPlacementRightBottom => 'Справа снизу';
+
+  @override
   String get batteryVerticalPosition => 'Вертикальное положение';
 
   @override

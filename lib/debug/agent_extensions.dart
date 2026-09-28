@@ -296,7 +296,7 @@ void registerZeeExtensions({
     // batteryLook=battery|batteryText|batteryBars|justText (0056 PDM),
     // batteryContentMode=both|iconOnly|textOnly + batteryStyle=outline|filled|pctInside
     // (legacy aliases; also contentMode/style),
-    // batteryPlacement=left|right|rightTop, batteryVert / batterySidePad /
+    // batteryPlacement=left|right|rightTop|rightBottom, batteryVert / batterySidePad /
     // batteryHorizBias=<double>.
     final rawBatteryShow = params['batteryShow'];
     final rawTempShow = params['tempShow'];

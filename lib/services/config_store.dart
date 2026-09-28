@@ -432,7 +432,8 @@ BatteryLook batteryLookFromParts(
 /// the preset's side. Selecting a preset in the DHU resets the fine knobs to
 /// that preset's defaults (see `batteryPlacementDefaults`).
 ///
-/// `rightTop` is today's hard-coded top-right look and the config default.
+/// 0120: default is [rightBottom] (bottom-right + temp; charging grows up).
+/// [rightTop] remains the prior hard-coded top-right look.
 enum BatteryPlacement {
   /// Left Safe-Area edge, top (mirror of [rightTop]).
   left,
@@ -440,8 +441,11 @@ enum BatteryPlacement {
   /// Right Safe-Area edge, mid-upper (below [rightTop]).
   right,
 
-  /// Right Safe-Area edge, top — default / prior hard-coded placement.
+  /// Right Safe-Area edge, top — prior hard-coded placement.
   rightTop,
+
+  /// Right Safe-Area edge, bottom — 0120 HUD-on default (anchor bottom, grow up).
+  rightBottom,
 }
 
 /// Default fine-adjust knobs for a named [BatteryPlacement] preset.
@@ -455,17 +459,25 @@ enum BatteryPlacement {
       BatteryPlacement.left => (vertFrac: 0.010, sidePadFrac: 0.04),
       BatteryPlacement.right => (vertFrac: 0.35, sidePadFrac: 0.04),
       BatteryPlacement.rightTop => (vertFrac: 0.010, sidePadFrac: 0.04),
+      // Bottom-anchored: vertFrac = pad from Safe Area bottom to slot bottom.
+      BatteryPlacement.rightBottom => (vertFrac: 0.010, sidePadFrac: 0.04),
     };
+
+/// Whether [placement] anchors the cluster on the Safe Area bottom edge
+/// (slot grows upward when height increases — 0120 charging stack).
+bool batteryPlacementAnchorsBottom(BatteryPlacement placement) =>
+    placement == BatteryPlacement.rightBottom;
 
 /// Battery widget appearance + placement config.
 ///
-/// Defaults: everything shown (showBattery/showTemp/showChargingStats = true),
-/// look = batteryText (PDM "Battery + text", % inside pack), sizeScale = 1.0, placement =
-/// rightTop with vertFrac/sidePadFrac matching today's hard-coded top-right
-/// slot. The charging stats panel is show-while-charging — it appears
-/// automatically when the car reports charging and is hidden otherwise (app
-/// policy per ADR 0003); showChargingStats merely lets the user suppress the
-/// panel entirely if they prefer.
+/// Defaults (0120 HUD-on): everything shown (showBattery/showTemp/
+/// showChargingStats = true), look = batteryText (PDM "Battery + text", %
+/// visible — not bars-only / not just-text), sizeScale = 1.0, placement =
+/// rightBottom (bottom-right + temp; charging row stacks above, bottom
+/// edge stays put). The charging stats panel is show-while-charging — it
+/// appears automatically when the car reports charging and is hidden
+/// otherwise (app policy per ADR 0003); showChargingStats merely lets the
+/// user suppress the panel entirely if they prefer.
 /// 0118/0119 — legacy dual Est. mode (HUD forced Cons-only in 0119).
 enum RangePrimaryMode {
   /// Own-trip weighted window (0117 bands).
@@ -486,7 +498,7 @@ class BatteryConfig {
     this.look = BatteryLook.batteryText,
     this.contentMode = BatteryContentMode.both,
     this.style = BatteryStyle.pctInside,
-    this.placement = BatteryPlacement.rightTop,
+    this.placement = BatteryPlacement.rightBottom,
     this.vertFrac = 0.010,
     this.sidePadFrac = 0.04,
     this.horizBiasFrac = 0.0,
@@ -607,7 +619,7 @@ class BatteryConfig {
   BatteryConfig withLook(BatteryLook look) => copyWith(look: look);
 
   /// Apply a named [placement] and reset fine-adjust knobs to that preset's
-  /// defaults (left / right / rightTop).
+  /// defaults (left / right / rightTop / rightBottom).
   BatteryConfig withPlacement(BatteryPlacement placement) {
     final defaults = batteryPlacementDefaults(placement);
     return copyWith(
@@ -667,9 +679,9 @@ class BatteryConfig {
     final placement = placementName != null
         ? BatteryPlacement.values.firstWhere(
             (e) => e.name == placementName,
-            orElse: () => BatteryPlacement.rightTop,
+            orElse: () => BatteryPlacement.rightBottom,
           )
-        : BatteryPlacement.rightTop;
+        : BatteryPlacement.rightBottom;
     return BatteryConfig(
       showBattery: json['showBattery'] as bool? ?? true,
       showTemp: json['showTemp'] as bool? ?? true,

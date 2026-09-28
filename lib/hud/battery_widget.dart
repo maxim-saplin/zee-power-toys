@@ -23,9 +23,10 @@ import 'battery_geometry.dart';
 ///   < 15 %  → [_kFillRed]     (red critical)
 ///
 /// Charging panel: when [chargingProvider] is true AND
-/// [BatteryConfig.showChargingStats], a secondary row shows the kW value
-/// prominently.  Hidden when not charging (ADR 0003 show-while-charging rule
-/// — this is app policy enforced here, not toggled by the user).
+/// [BatteryConfig.showChargingStats], a kW row stacks **above** the %
+/// (0120 — bottom edge of the cluster stays put on bottom-anchored
+/// placements). Hidden when not charging (ADR 0003 show-while-charging
+/// rule — app policy enforced here, not toggled by the user).
 ///
 /// Emissive palette: bright marks on black.  No light backgrounds, cards, or
 /// panels — only the marks themselves emit light.  Scaled by [BatteryConfig.sizeScale].
@@ -125,9 +126,16 @@ class BatteryWidget extends ConsumerWidget {
     // Align the cluster toward the active edge so left placement mirrors
     // right without changing pack/styles (0051). Temp + charging stay in
     // this Column, so they move with the battery.
+    // 0120: bottom-anchored presets pin content to the slot bottom so the
+    // charging row can stack above % without moving the bottom edge.
     final alignEnd = cfg.placement != BatteryPlacement.left;
-    final clusterAlign =
-        alignEnd ? Alignment.topRight : Alignment.topLeft;
+    final anchorBottom = batteryPlacementAnchorsBottom(cfg.placement);
+    final Alignment clusterAlign;
+    if (anchorBottom) {
+      clusterAlign = alignEnd ? Alignment.bottomRight : Alignment.bottomLeft;
+    } else {
+      clusterAlign = alignEnd ? Alignment.topRight : Alignment.topLeft;
+    }
     final clusterCross =
         alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
@@ -144,6 +152,19 @@ class BatteryWidget extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: clusterCross,
           children: <Widget>[
+            // ---- Charging stats (0120: stack ABOVE %; bottom edge stays) ----
+            if (showStats) ...<Widget>[
+              _ChargingStats(
+                key: const ValueKey('charging-stats'),
+                kw: kw,
+                base: base,
+                kwColor: _kKwColor,
+                secondaryColor: _kTextSecondary,
+                crossAxisAlignment: clusterCross,
+              ),
+              SizedBox(height: base * 0.30),
+            ],
+
             // ---- Battery icon (pack) ----
             if (showIcon)
               SizedBox(
@@ -166,7 +187,7 @@ class BatteryWidget extends ConsumerWidget {
                         style: cfg.style,
                         // Charging bolt is gated on raw isCharging state alone,
                         // not on showChargingStats: the bolt communicates
-                        // *that* the car is charging; the stats panel below is
+                        // *that* the car is charging; the stats panel is
                         // supplementary detail the user may suppress.
                         showBolt: isCharging,
                       ),
@@ -208,19 +229,6 @@ class BatteryWidget extends ConsumerWidget {
                 tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
                 key: const ValueKey('battery-temp-text'),
                 style: tempStyle,
-              ),
-            ],
-
-            // ---- Charging stats panel (show-while-charging) ----
-            if (showStats) ...<Widget>[
-              SizedBox(height: base * 0.30),
-              _ChargingStats(
-                key: const ValueKey('charging-stats'),
-                kw: kw,
-                base: base,
-                kwColor: _kKwColor,
-                secondaryColor: _kTextSecondary,
-                crossAxisAlignment: clusterCross,
               ),
             ],
           ],

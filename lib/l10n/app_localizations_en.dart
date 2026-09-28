@@ -326,6 +326,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get batteryPlacementRightTop => 'Right top';
 
   @override
+  String get batteryPlacementRightBottom => 'Right bottom';
+
+  @override
   String get batteryVerticalPosition => 'Vertical position';
 
   @override
