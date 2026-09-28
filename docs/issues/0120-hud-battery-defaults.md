@@ -58,3 +58,8 @@ Governing: `batteryText` + temperature at `rightBottom`; charging kW stacks abov
 - Evidence: `tmp/qa/0120-cut-e06a1ac/` — idle `10-idle-defaults.png` (72%+31°C BR); charging `20-charging-stack.png` (11 kW above); `pixel-bbox.txt` bottom_delta=0.
 - Soft: range gone (0119c); Live hold **1.1.0+27**.
 - Who-next: **@zee-qa**.
+
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+28
+
+Shipped under Live **1.1.0+28** tip `b5c3ca8` APK sha256 `693eebdf…`. Evidence `tmp/qa/1.1.0+28-ship/`. Soft: SHARED_USER / Deepal/OS7 / car T3.
+

@@ -58,3 +58,8 @@ Install screen must let the user get an **older** companion APK onto the device 
 | Live Toys | **1.1.0+27** hold (no bump) |
 
 Governing: tipAhead Replace → DELETE → auto-install same-second. Soft: Done-on-commit ≠ pm present; Live hold **1.1.0+27**. Cancel → still tipAhead PASS.
+
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+28
+
+Shipped under Live **1.1.0+28** tip `b5c3ca8` APK sha256 `693eebdf…`. Install screen: **v27.0.2 default** · **v30.8.1 beta non-default**. Evidence `tmp/qa/1.1.0+28-ship/`. Soft: SHARED_USER / Deepal/OS7 / car T3.
+

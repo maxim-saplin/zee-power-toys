@@ -140,7 +140,7 @@ PASS*). No code or Live Toys bump; no inherit from rescinded `a1a90227`.
 **Soft leftovers (stay soft):** G1 / M4 / P9 / T1 / Deepal / OS7. Do not chase
 in this seal. No green inheritance from rescinded asset `a1a90227`.
 
-## Live ship (2026-09-28) — Install UI beta
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+28 ship-gate
 
-Toys **1.1.0+28**: Install screen adds **v30 beta** card (non-default) → Release `ynavi-zeekr-v30` / tip `45fada46` / sha256 `a000a77f…`. **v27 remains default**. Home companions still v27-only.
+**PDM ACCEPT** dens320 ship-gate. Live tip `b5c3ca8` / tag `1.1.0+28` / APK sha256 `693eebdfbe48c1e2c51dc544339cc4bfe542e2e0a5fc75ff3e9cb65eb8001124`. Install UI: **default = YNavi v27.0.2** · **v30.8.1 = beta non-default** (“Not default — prefer v27”). YNavi tip stays `45fada46` / asset `a000a77f…`. Evidence `tmp/qa/1.1.0+28-ship/` (FINDINGS · FOURPOINT PASS soft). Soft: SHARED_USER Live Tablet · Deepal/OS7 · car T3 later (Maxim). No pubspec bump in this seal.
 

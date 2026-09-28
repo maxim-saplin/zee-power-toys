@@ -15,7 +15,8 @@ Live ship: Install screen **v30 beta** companion (non-default) + ACCEPTed **0120
 - **Install** YNavi **v30.8.1 beta** card → Release `ynavi-zeekr-v30` asset `ynavi_30.8.1_zeekr_arm64_signed.apk` (tip `45fada46` / sha256 `a000a77f…`). **v27.0.2 remains the default** Install path (margined + OS7).
 
 ### Notes
-- Docs: 0120/0121/0122 ACCEPTed on tip under Live **1.1.0+27** hold; this bump publishes them for car T3 / Install UI.
+- **PDM ACCEPT** dens320 ship-gate — tip `b5c3ca8` / APK sha256 `693eebdfbe48c1e2c51dc544339cc4bfe542e2e0a5fc75ff3e9cb65eb8001124` / tag `1.1.0+28` GH Latest. Install UI: **default = v27.0.2** · **v30.8.1 = beta non-default** (“Not default — prefer v27”). Evidence `tmp/qa/1.1.0+28-ship/` (FINDINGS · FOURPOINT PASS soft).
+- Soft: SHARED_USER Live Tablet sideload · Deepal/OS7 · car T3 later (Maxim).
 - AOSP platform-signed via `release.yml`.
 
 
