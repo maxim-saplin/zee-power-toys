@@ -7,8 +7,18 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+30] — 2026-09-28
+
+Live ship: ACCEPTed **0125** MediaSession bind (Soft FakeMediaOnly closed) + prior **0123**/**0124** ancestry from +29.
+
 ### Changed
-- **0125** HUD media chrome binds native Android **MediaSession** now-playing (DHU `zee/media` + hub relay); Soft FakeMediaOnly closed. `ext.zee.inject kind=media` remains debug fallback. Live hold **1.1.0+29** (no bump on this tip).
+- **0125** HUD media chrome binds native Android **MediaSession** now-playing (DHU `zee/media` + hub relay); Soft FakeMediaOnly closed. `ext.zee.inject kind=media` remains debug fallback (`2161990`).
+
+### Notes
+- Docs: 0125 ACCEPTed soft on tip under Live **1.1.0+29** hold; this bump publishes it for car T3 / dens320 QA.
+- Soft Preferred real-session FAIL soft on debug Tablet (`MEDIA_CONTENT_CONTROL`) — platform Live/car leftover OK. Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**.
+- AOSP platform-signed via `release.yml`.
+
 
 ## [1.1.0+29] — 2026-09-28
 
