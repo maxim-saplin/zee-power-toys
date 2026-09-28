@@ -754,8 +754,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installActionInstall => 'Install';
 
   @override
+  String get installReplaceOlderButton => 'Replace with older';
+
+  @override
+  String get installReplaceOlderTitle => 'Install older companion?';
+
+  @override
+  String installReplaceOlderBody(String name, String label) {
+    return 'A newer build of $name is installed. Android will not replace it with Release $label silently.\n\nNext: system uninstall sheet → confirm removal → this app installs Release $label.\n\nIf uninstall is blocked (signing / SHARED_USER), you will see a clear error — never a silent no-op.';
+  }
+
+  @override
+  String get installReplaceOlderConfirm => 'Uninstall newer';
+
+  @override
+  String get installReplaceOlderCancel => 'Cancel';
+
+  @override
+  String installReplaceWaitingUninstall(String name, String label) {
+    return 'Confirm uninstall in the system sheet. When $name is removed, Release $label install starts automatically.';
+  }
+
+  @override
+  String installReplaceStillInstalled(String name, String label) {
+    return 'Newer $name is still installed — uninstall cancelled or blocked. Cannot install older Release $label while the newer build remains (signing / SHARED_USER may block removal).';
+  }
+
+  @override
+  String installReplaceUninstallFailed(String message) {
+    return 'Could not open uninstall UI: $message';
+  }
+
+  @override
+  String get installReplaceUnsupported =>
+      'This platform cannot uninstall companions. Use an Android device / emulator.';
+
+  @override
   String updateStatusTipAhead(String label) {
-    return 'Installed build is ahead of Release $label. Reinstall to match published.';
+    return 'Newer build installed (ahead of Release $label). Android blocks silent downgrade — tap Replace to uninstall, then install Release.';
   }
 
   @override

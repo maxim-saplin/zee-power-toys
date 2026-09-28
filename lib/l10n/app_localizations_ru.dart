@@ -755,8 +755,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get installActionInstall => 'Установить';
 
   @override
+  String get installReplaceOlderButton => 'Заменить на старую';
+
+  @override
+  String get installReplaceOlderTitle => 'Установить более старый companion?';
+
+  @override
+  String installReplaceOlderBody(String name, String label) {
+    return 'Установлена более новая сборка $name. Android не заменит её релизом $label молча.\n\nДальше: системный экран удаления → подтвердите → приложение установит релиз $label.\n\nЕсли удаление заблокировано (подпись / SHARED_USER), будет явная ошибка — без тихого no-op.';
+  }
+
+  @override
+  String get installReplaceOlderConfirm => 'Удалить новую';
+
+  @override
+  String get installReplaceOlderCancel => 'Отмена';
+
+  @override
+  String installReplaceWaitingUninstall(String name, String label) {
+    return 'Подтвердите удаление в системном окне. Когда $name снимется, установка релиза $label начнётся сама.';
+  }
+
+  @override
+  String installReplaceStillInstalled(String name, String label) {
+    return 'Новая сборка $name всё ещё установлена — удаление отменено или заблокировано. Нельзя поставить старый релиз $label, пока новая остаётся (подпись / SHARED_USER могут мешать).';
+  }
+
+  @override
+  String installReplaceUninstallFailed(String message) {
+    return 'Не удалось открыть удаление: $message';
+  }
+
+  @override
+  String get installReplaceUnsupported =>
+      'Эта платформа не умеет удалять companions. Нужен Android / эмулятор.';
+
+  @override
   String updateStatusTipAhead(String label) {
-    return 'Установленная сборка новее релиза $label. Переустановите, чтобы совпасть с опубликованной.';
+    return 'Установлена более новая сборка (новее релиза $label). Android не даёт тихий даунгрейд — нажмите «Заменить», чтобы удалить, затем установить релиз.';
   }
 
   @override

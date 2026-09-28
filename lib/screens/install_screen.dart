@@ -105,8 +105,10 @@ String releaseActionButtonLabel(AppLocalizations l10n, ReleaseActionKind kind) {
     case ReleaseActionKind.update:
       return l10n.updateInstallButton;
     case ReleaseActionKind.reinstall:
-    case ReleaseActionKind.tipAhead:
       return l10n.updateReinstallButton;
+    case ReleaseActionKind.tipAhead:
+      // 0121: newer companion present — explicit uninstall→install older path
+      return l10n.installReplaceOlderButton;
   }
 }
 
@@ -409,16 +411,25 @@ class _InstallCard extends StatefulWidget {
   State<_InstallCard> createState() => _InstallCardState();
 }
 
-class _InstallCardState extends State<_InstallCard> {
+class _InstallCardState extends State<_InstallCard>
+    with WidgetsBindingObserver {
   StreamSubscription<InstallProgress>? _sub;
   InstallProgress? _progress;
   PackageProbe? _probe;
   bool _probing = true;
 
+  /// 0121: waiting for system uninstall UI before installing older Release.
+  bool _awaitingUninstall = false;
+  /// True after we actually left the app for the system uninstall sheet.
+  /// Ignores spurious resumed events that fire before the sheet pauses us.
+  bool _sawPauseWhileAwaiting = false;
+  String? _replaceStatus;
+
   bool get _busy =>
-      _progress != null &&
-      _progress!.phase != InstallPhase.done &&
-      _progress!.phase != InstallPhase.failed;
+      _awaitingUninstall ||
+      (_progress != null &&
+          _progress!.phase != InstallPhase.done &&
+          _progress!.phase != InstallPhase.failed);
 
   ReleaseActionKind get _action {
     final p = _probe;
@@ -433,13 +444,29 @@ class _InstallCardState extends State<_InstallCard> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refreshProbe();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_awaitingUninstall) return;
+    // Require paused (another Activity on top). Dialog routes only flip
+    // inactive/resumed and must NOT count as uninstall round-trip.
+    if (state == AppLifecycleState.paused) {
+      _sawPauseWhileAwaiting = true;
+      return;
+    }
+    if (state == AppLifecycleState.resumed && _sawPauseWhileAwaiting) {
+      _completeReplaceAfterUninstall();
+    }
   }
 
   Future<void> _refreshProbe() async {
@@ -452,8 +479,164 @@ class _InstallCardState extends State<_InstallCard> {
     });
   }
 
+  void _onPrimaryAction() {
+    if (_busy) return;
+    if (_action == ReleaseActionKind.tipAhead) {
+      _startReplaceOlder();
+    } else {
+      _startInstall();
+    }
+  }
+
+  Future<void> _startReplaceOlder() async {
+    final l10n = AppLocalizations.of(context);
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        key: const ValueKey('replace-older-dialog'),
+        title: Text(l10n.installReplaceOlderTitle),
+        content: Text(
+          l10n.installReplaceOlderBody(widget.name, widget.releaseLabel),
+        ),
+        actions: <Widget>[
+          TextButton(
+            key: const ValueKey('replace-older-cancel'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.installReplaceOlderCancel),
+          ),
+          ElevatedButton(
+            key: const ValueKey('replace-older-confirm'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.installReplaceOlderConfirm),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+
+    // Let the confirm dialog finish popping before opening the system sheet.
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+
+    // Arm BEFORE startActivity — UninstallerActivity often pauses us during
+    // the native call; resetting sawPause after would drop that pause.
+    setState(() {
+      _awaitingUninstall = true;
+      _sawPauseWhileAwaiting = false;
+      _progress = null;
+      _replaceStatus = l10n.installReplaceWaitingUninstall(
+        widget.name,
+        widget.releaseLabel,
+      );
+    });
+
+    final result = await widget.packages.requestUninstall(widget.packageName);
+    if (!mounted) return;
+    switch (result) {
+      case UninstallLaunchResult.unsupported:
+        setState(() {
+          _awaitingUninstall = false;
+          _sawPauseWhileAwaiting = false;
+          _replaceStatus = null;
+          _progress = InstallProgress(
+            phase: InstallPhase.failed,
+            fraction: 0.0,
+            message: l10n.installReplaceUnsupported,
+          );
+        });
+      case UninstallLaunchResult.failed:
+        final detail = widget.packages.lastUninstallError ?? 'unknown';
+        setState(() {
+          _awaitingUninstall = false;
+          _sawPauseWhileAwaiting = false;
+          _replaceStatus = null;
+          _progress = InstallProgress(
+            phase: InstallPhase.failed,
+            fraction: 0.0,
+            message: l10n.installReplaceUninstallFailed(detail),
+          );
+        });
+      case UninstallLaunchResult.launched:
+        // If pause already happened inside startActivity, arm the flag now.
+        final life = WidgetsBinding.instance.lifecycleState;
+        if (life == AppLifecycleState.paused ||
+            life == AppLifecycleState.hidden) {
+          _sawPauseWhileAwaiting = true;
+        }
+        // T1 fakes flip to missing in requestUninstall — finish now.
+        // On device, wait for paused→resumed after user confirms.
+        final early = await widget.packages.probe(widget.packageName);
+        if (!mounted) return;
+        if (early.state == PackageInstallState.missing) {
+          await _completeReplaceAfterUninstall(forceFailIfPresent: true);
+        }
+    }
+  }
+
+  Future<void> _completeReplaceAfterUninstall({
+    bool forceFailIfPresent = true,
+  }) async {
+    if (!_awaitingUninstall) return;
+    final l10n = AppLocalizations.of(context);
+    // Uninstall commit can finish a beat after resume — retry briefly.
+    PackageProbe probe = await widget.packages.probe(widget.packageName);
+    if (probe.state != PackageInstallState.missing && forceFailIfPresent) {
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        if (!mounted || !_awaitingUninstall) return;
+        probe = await widget.packages.probe(widget.packageName);
+        if (probe.state == PackageInstallState.missing) break;
+      }
+    }
+    if (!mounted) return;
+    if (probe.state == PackageInstallState.missing) {
+      setState(() {
+        _awaitingUninstall = false;
+        _sawPauseWhileAwaiting = false;
+        _replaceStatus = null;
+        _probe = probe;
+      });
+      _startInstall();
+      return;
+    }
+    if (!forceFailIfPresent) {
+      // Still waiting on system sheet — keep awaiting status.
+      return;
+    }
+    // Still installed (or unknown) after user returned — clear, never silent.
+    setState(() {
+      _awaitingUninstall = false;
+      _sawPauseWhileAwaiting = false;
+      _replaceStatus = null;
+      _probe = probe;
+      _progress = InstallProgress(
+        phase: InstallPhase.failed,
+        fraction: 0.0,
+        message: l10n.installReplaceStillInstalled(
+          widget.name,
+          widget.releaseLabel,
+        ),
+      );
+    });
+  }
+
   void _startInstall() {
     if (_busy) return;
+    // 0121 guard: never silently attempt PackageInstaller downgrade.
+    if (_action == ReleaseActionKind.tipAhead) {
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _progress = InstallProgress(
+          phase: InstallPhase.failed,
+          fraction: 0.0,
+          message: l10n.installReplaceStillInstalled(
+            widget.name,
+            widget.releaseLabel,
+          ),
+        );
+      });
+      return;
+    }
     setState(
       () => _progress = const InstallProgress(
         phase: InstallPhase.downloading,
@@ -537,7 +720,7 @@ class _InstallCardState extends State<_InstallCard> {
                 const SizedBox(width: Insets.md),
                 ElevatedButton(
                   key: widget.installKey,
-                  onPressed: _busy ? null : _startInstall,
+                  onPressed: _busy ? null : _onPrimaryAction,
                   child: Text(buttonLabel),
                 ),
               ],
@@ -549,6 +732,18 @@ class _InstallCardState extends State<_InstallCard> {
                 key: ValueKey('install-status-${widget.packageName}-${widget.asset.path}'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: cs.onSurfaceVariant,
+                ),
+              ),
+            ],
+            if (_replaceStatus != null) ...[
+              const SizedBox(height: Insets.md),
+              Text(
+                _replaceStatus!,
+                key: ValueKey(
+                  'install-replace-wait-${widget.packageName}-${widget.asset.path}',
+                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.primary,
                 ),
               ),
             ],

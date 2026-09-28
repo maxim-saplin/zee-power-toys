@@ -407,5 +407,157 @@ void main() {
         findsOneWidget,
       );
     });
+    testWidgets('0121: tipAhead shows Replace with older (not silent Reinstall)',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(probes: {
+        CompanionPackages.ynavi: const PackageProbe(
+          state: PackageInstallState.installed,
+          versionCode: 739652660,
+          versionName: '30.8.1',
+        ),
+      });
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-ynavi')),
+          matching: find.text('Replace with older'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Android blocks silent downgrade'), findsWidgets);
+    });
+
+    testWidgets('0121: Replace → uninstall → install older (never silent)',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(
+        probes: {
+          CompanionPackages.ynavi: const PackageProbe(
+            state: PackageInstallState.installed,
+            versionCode: 739652660,
+            versionName: '30.8.1',
+          ),
+        },
+        uninstallResult: UninstallLaunchResult.launched,
+        autoMarkMissingOnUninstall: true,
+      );
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('install-ynavi')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('replace-older-dialog')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('replace-older-confirm')));
+      await tester.pump(); // close dialog
+      await tester.pump(const Duration(milliseconds: 150)); // 0121 post-dialog delay
+
+      expect(packages.uninstallRequests, contains(CompanionPackages.ynavi));
+      expect(find.text('Downloading…'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets('0121: still-installed after uninstall attempt → clear FAIL',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(
+        probes: {
+          CompanionPackages.ynavi: const PackageProbe(
+            state: PackageInstallState.installed,
+            versionCode: 739652660,
+            versionName: '30.8.1',
+          ),
+        },
+        uninstallResult: UninstallLaunchResult.launched,
+        autoMarkMissingOnUninstall: false,
+      );
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('install-ynavi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('replace-older-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(find.textContaining('Confirm uninstall'), findsOneWidget);
+
+      // Dialog-style inactive/resume must NOT fail-early.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(find.textContaining('still installed'), findsNothing);
+      expect(find.textContaining('Confirm uninstall'), findsOneWidget);
+
+      // Real round-trip: paused (system sheet) → resumed (still installed).
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      // 0121: resume probes retry ~6×250ms before clear FAIL
+      await tester.pump(const Duration(milliseconds: 1600));
+
+      expect(find.textContaining('still installed'), findsOneWidget);
+      expect(find.text('Downloading…'), findsNothing);
+    });
+
+    testWidgets('0121: uninstall UI failed → clear message', (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(
+        probes: {
+          CompanionPackages.ynavi: const PackageProbe(
+            state: PackageInstallState.installed,
+            versionCode: 739652660,
+          ),
+        },
+        uninstallResult: UninstallLaunchResult.failed,
+        uninstallError: 'No system uninstall activity',
+      );
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('install-ynavi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('replace-older-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.textContaining('Could not open uninstall UI'), findsOneWidget);
+      expect(find.textContaining('No system uninstall activity'), findsOneWidget);
+    });
   });
 }

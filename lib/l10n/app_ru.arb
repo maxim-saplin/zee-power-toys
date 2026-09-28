@@ -975,9 +975,58 @@
   "@installActionInstall": {
     "description": "0103: First install when companion package missing"
   },
-  "updateStatusTipAhead": "Установленная сборка новее релиза {label}. Переустановите, чтобы совпасть с опубликованной.",
+  "installReplaceOlderButton": "Заменить на старую",
+  "@installReplaceOlderButton": {
+    "description": "0121: uninstall newer companion then install Release pin"
+  },
+  "installReplaceOlderTitle": "Установить более старый companion?",
+  "@installReplaceOlderTitle": {
+    "description": "0121 confirm dialog title"
+  },
+  "installReplaceOlderBody": "Установлена более новая сборка {name}. Android не заменит её релизом {label} молча.\n\nДальше: системный экран удаления → подтвердите → приложение установит релиз {label}.\n\nЕсли удаление заблокировано (подпись / SHARED_USER), будет явная ошибка — без тихого no-op.",
+  "@installReplaceOlderBody": {
+    "description": "0121 confirm dialog body",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceOlderConfirm": "Удалить новую",
+  "@installReplaceOlderConfirm": {
+    "description": "0121 confirm dialog primary"
+  },
+  "installReplaceOlderCancel": "Отмена",
+  "@installReplaceOlderCancel": {
+    "description": "0121 confirm dialog cancel"
+  },
+  "installReplaceWaitingUninstall": "Подтвердите удаление в системном окне. Когда {name} снимется, установка релиза {label} начнётся сама.",
+  "@installReplaceWaitingUninstall": {
+    "description": "0121 status while system uninstall UI is open",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceStillInstalled": "Новая сборка {name} всё ещё установлена — удаление отменено или заблокировано. Нельзя поставить старый релиз {label}, пока новая остаётся (подпись / SHARED_USER могут мешать).",
+  "@installReplaceStillInstalled": {
+    "description": "0121 clear failure when package still present after uninstall attempt",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceUninstallFailed": "Не удалось открыть удаление: {message}",
+  "@installReplaceUninstallFailed": {
+    "description": "0121 clear failure when ACTION_DELETE cannot start",
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "installReplaceUnsupported": "Эта платформа не умеет удалять companions. Нужен Android / эмулятор.",
+  "@installReplaceUnsupported": {
+    "description": "0121 T1/desktop honest unsupported"
+  },
+  "updateStatusTipAhead": "Установлена более новая сборка (новее релиза {label}). Android не даёт тихий даунгрейд — нажмите «Заменить», чтобы удалить, затем установить релиз.",
   "@updateStatusTipAhead": {
-    "description": "0103: lab tip ahead of published Release",
+    "description": "0121: newer companion installed; must uninstall before older Release",
     "placeholders": {"label": {"type": "String"}}
   },
   "updateStatusChecking": "Проверка…",

@@ -975,9 +975,58 @@
   "@installActionInstall": {
     "description": "0103: First install when companion package missing"
   },
-  "updateStatusTipAhead": "Installed build is ahead of Release {label}. Reinstall to match published.",
+  "installReplaceOlderButton": "Replace with older",
+  "@installReplaceOlderButton": {
+    "description": "0121: uninstall newer companion then install Release pin"
+  },
+  "installReplaceOlderTitle": "Install older companion?",
+  "@installReplaceOlderTitle": {
+    "description": "0121 confirm dialog title"
+  },
+  "installReplaceOlderBody": "A newer build of {name} is installed. Android will not replace it with Release {label} silently.\n\nNext: system uninstall sheet → confirm removal → this app installs Release {label}.\n\nIf uninstall is blocked (signing / SHARED_USER), you will see a clear error — never a silent no-op.",
+  "@installReplaceOlderBody": {
+    "description": "0121 confirm dialog body",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceOlderConfirm": "Uninstall newer",
+  "@installReplaceOlderConfirm": {
+    "description": "0121 confirm dialog primary"
+  },
+  "installReplaceOlderCancel": "Cancel",
+  "@installReplaceOlderCancel": {
+    "description": "0121 confirm dialog cancel"
+  },
+  "installReplaceWaitingUninstall": "Confirm uninstall in the system sheet. When {name} is removed, Release {label} install starts automatically.",
+  "@installReplaceWaitingUninstall": {
+    "description": "0121 status while system uninstall UI is open",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceStillInstalled": "Newer {name} is still installed — uninstall cancelled or blocked. Cannot install older Release {label} while the newer build remains (signing / SHARED_USER may block removal).",
+  "@installReplaceStillInstalled": {
+    "description": "0121 clear failure when package still present after uninstall attempt",
+    "placeholders": {
+      "name": {"type": "String"},
+      "label": {"type": "String"}
+    }
+  },
+  "installReplaceUninstallFailed": "Could not open uninstall UI: {message}",
+  "@installReplaceUninstallFailed": {
+    "description": "0121 clear failure when ACTION_DELETE cannot start",
+    "placeholders": {"message": {"type": "String"}}
+  },
+  "installReplaceUnsupported": "This platform cannot uninstall companions. Use an Android device / emulator.",
+  "@installReplaceUnsupported": {
+    "description": "0121 T1/desktop honest unsupported"
+  },
+  "updateStatusTipAhead": "Newer build installed (ahead of Release {label}). Android blocks silent downgrade — tap Replace to uninstall, then install Release.",
   "@updateStatusTipAhead": {
-    "description": "0103: lab tip ahead of published Release",
+    "description": "0121: newer companion installed; must uninstall before older Release",
     "placeholders": {"label": {"type": "String"}}
   },
   "updateStatusChecking": "Checking…",

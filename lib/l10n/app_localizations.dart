@@ -1538,10 +1538,64 @@ abstract class AppLocalizations {
   /// **'Install'**
   String get installActionInstall;
 
-  /// 0103: lab tip ahead of published Release
+  /// 0121: uninstall newer companion then install Release pin
   ///
   /// In en, this message translates to:
-  /// **'Installed build is ahead of Release {label}. Reinstall to match published.'**
+  /// **'Replace with older'**
+  String get installReplaceOlderButton;
+
+  /// 0121 confirm dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Install older companion?'**
+  String get installReplaceOlderTitle;
+
+  /// 0121 confirm dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'A newer build of {name} is installed. Android will not replace it with Release {label} silently.\n\nNext: system uninstall sheet → confirm removal → this app installs Release {label}.\n\nIf uninstall is blocked (signing / SHARED_USER), you will see a clear error — never a silent no-op.'**
+  String installReplaceOlderBody(String name, String label);
+
+  /// 0121 confirm dialog primary
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall newer'**
+  String get installReplaceOlderConfirm;
+
+  /// 0121 confirm dialog cancel
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get installReplaceOlderCancel;
+
+  /// 0121 status while system uninstall UI is open
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm uninstall in the system sheet. When {name} is removed, Release {label} install starts automatically.'**
+  String installReplaceWaitingUninstall(String name, String label);
+
+  /// 0121 clear failure when package still present after uninstall attempt
+  ///
+  /// In en, this message translates to:
+  /// **'Newer {name} is still installed — uninstall cancelled or blocked. Cannot install older Release {label} while the newer build remains (signing / SHARED_USER may block removal).'**
+  String installReplaceStillInstalled(String name, String label);
+
+  /// 0121 clear failure when ACTION_DELETE cannot start
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open uninstall UI: {message}'**
+  String installReplaceUninstallFailed(String message);
+
+  /// 0121 T1/desktop honest unsupported
+  ///
+  /// In en, this message translates to:
+  /// **'This platform cannot uninstall companions. Use an Android device / emulator.'**
+  String get installReplaceUnsupported;
+
+  /// 0121: newer companion installed; must uninstall before older Release
+  ///
+  /// In en, this message translates to:
+  /// **'Newer build installed (ahead of Release {label}). Android blocks silent downgrade — tap Replace to uninstall, then install Release.'**
   String updateStatusTipAhead(String label);
 
   /// Self-update checking status

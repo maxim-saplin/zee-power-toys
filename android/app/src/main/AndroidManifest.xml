@@ -19,6 +19,8 @@
          source are remembered.  On emulators without this setting the system
          will show the dialog; the download itself always completes. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 0121: open system uninstall sheet for companion downgrade -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- Silent YNavi restart (phase0 BootActions.restartYNavi) — system/signature on DHU. -->
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />

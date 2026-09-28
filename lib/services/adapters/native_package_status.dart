@@ -9,6 +9,10 @@ class NativePackageStatus implements PackageStatus {
       : _channel = channel ?? const MethodChannel('zee/packages');
 
   final MethodChannel _channel;
+  String? _lastUninstallError;
+
+  @override
+  String? get lastUninstallError => _lastUninstallError;
 
   @override
   Future<PackageInstallState> statusFor(String packageName) async {
@@ -39,6 +43,42 @@ class NativePackageStatus implements PackageStatus {
       return PackageProbe(state: _stateFromRaw(legacy));
     } catch (_) {
       return const PackageProbe(state: PackageInstallState.unknown);
+    }
+  }
+
+  @override
+  Future<UninstallLaunchResult> requestUninstall(String packageName) async {
+    _lastUninstallError = null;
+    if (kIsWeb) return UninstallLaunchResult.unsupported;
+    try {
+      final raw = await _channel.invokeMethod<dynamic>('requestUninstall', {
+        'packageName': packageName,
+      });
+      if (raw is Map) {
+        final map = Map<Object?, Object?>.from(raw);
+        final status = map['status'] as String?;
+        final message = map['message'] as String?;
+        switch (status) {
+          case 'launched':
+            return UninstallLaunchResult.launched;
+          case 'unsupported':
+            return UninstallLaunchResult.unsupported;
+          case 'failed':
+            _lastUninstallError = message ?? 'Uninstall UI failed to open';
+            return UninstallLaunchResult.failed;
+          default:
+            _lastUninstallError = message ?? 'Unexpected uninstall reply: $status';
+            return UninstallLaunchResult.failed;
+        }
+      }
+      _lastUninstallError = 'Unexpected uninstall reply';
+      return UninstallLaunchResult.failed;
+    } on PlatformException catch (e) {
+      _lastUninstallError = e.message ?? e.code;
+      return UninstallLaunchResult.failed;
+    } catch (e) {
+      _lastUninstallError = e.toString();
+      return UninstallLaunchResult.failed;
     }
   }
 
