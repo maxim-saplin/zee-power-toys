@@ -98,3 +98,7 @@ Shipped under Live **1.1.0+30** tip `b9ddade` / tag `1.1.0+30` / APK sha256 `ef6
 - Soft FakeMediaOnly **closed**; `ext.zee.inject kind=media` = debug fallback only.
 - Live hold **1.1.0+29** (no bump). After dens320 PASS + PDM ACCEPT → publish **1.1.0+30**.
 - Who-next: **@zee-qa** dens320 cut (real MediaSession preferred; inject alternate in issue).
+
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+30
+
+**PDM ACCEPT soft** dens320 ship-gate Live **1.1.0+30** tip `b9ddade` / docs `590438f` · APK sha256 `ef6c5e473481ea32543b5b7f60158d32fb336a2c5206b9e56d2f536a998a6722` **MATCH**. Evidence `tmp/qa/1.1.0+30-ship/`. Governing: Soft FakeMediaOnly **closed** · DHU `mediaSource=mediasession` armed · Alternate inject B·compact PASS · Just-text default · Install v27 default / v30 beta. **Preferred** real-session FAIL soft (platform Live/car). Soft: SHARED_USER Live sideload · Deepal/OS7 · car T3.

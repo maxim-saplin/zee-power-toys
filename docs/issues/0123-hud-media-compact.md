@@ -93,3 +93,7 @@ Shipped under Live **1.1.0+29** tip `6e8a907` / tag `1.1.0+29` / APK sha256 `ec5
 ## Live ACCEPT (PDM 2026-09-28) — 1.1.0+29
 
 **PDM ACCEPT** dens320 ship-gate Live **1.1.0+29** tip `6e8a907` / docs `df6c101` · APK sha256 `ec5f25d55ead44349278e01e8cb3bb9688efaa998d7f62d513ae8b2242e4d7db` **MATCH**. Evidence `tmp/qa/1.1.0+29-ship/`. Governing: Just-text idle + Media B larger title. Soft: SHARED_USER Live sideload · FakeMediaOnly (closes on 0125) · Deepal/OS7 · car T3.
+
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+30
+
+**PDM ACCEPT soft** dens320 ship-gate Live **1.1.0+30** tip `b9ddade` / docs `590438f` · APK sha256 `ef6c5e473481ea32543b5b7f60158d32fb336a2c5206b9e56d2f536a998a6722` **MATCH**. Evidence `tmp/qa/1.1.0+30-ship/`. Ships 0125 MediaSession (+ 0123/0124 ancestry). Soft Preferred = car/platform leftover.
