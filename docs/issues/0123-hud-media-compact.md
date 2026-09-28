@@ -1,6 +1,6 @@
 ---
-status: in-progress
-tip:
+status: ready-for-qa
+tip: c0947d3
 labels: [hud, media, battery]
 created: 2026-09-28
 satisfies: HUD · utility info — now-playing chrome in BATTERY slot
@@ -29,7 +29,7 @@ First cook — **B · compact** default:
 - [ ] Compact media chrome paints above bat/temp in BATTERY slot (bottom-anchored grow-up).
 - [ ] Prefs: showMedia / icon / artist—song / progress / barOnly.
 - [ ] T1 unit + widget green; dens320 Tablet can prove layout (inject `kind=media` on **HUD** surface).
-- [ ] Tip to `origin/main`. No release.yml / no version bump.
+- [x] Tip to `origin/main` (`c0947d3`). No release.yml / no version bump.
 
 ## Soft / FAIL-open
 
@@ -42,6 +42,8 @@ First cook — **B · compact** default:
 - Config Preview demo seeds Artist — Song @ 42% so settings toggles are checkable without inject.
 
 ## DEV tip (2026-09-28 Europe/Minsk)
+
+**Tip SHA:** `c0947d3`
 
 - B · compact default in BATTERY slot: icon · `artist — song` · bar (no times), stacked above bat/temp (grow-up).
 - Prefs: `MediaConfig` showMedia/icon/artistSong/progress/barOnly + HUD Settings section.
