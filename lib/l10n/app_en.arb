@@ -1138,5 +1138,30 @@
   "speedcamOverlayTopStart": "TL",
   "speedcamOverlayTopEnd": "TR",
   "speedcamOverlayBottomStart": "BL",
-  "speedcamOverlayBottomEnd": "BR"
+  "speedcamOverlayBottomEnd": "BR",
+
+  "mediaSection": "Media (HUD)",
+  "@mediaSection": {
+    "description": "0123 HUD media chrome section title"
+  },
+  "showMedia": "Show now playing",
+  "@showMedia": {
+    "description": "0123 master media chrome toggle"
+  },
+  "showMediaIcon": "Music icon",
+  "@showMediaIcon": {
+    "description": "0123 media icon piece toggle"
+  },
+  "showMediaArtistSong": "Artist — song",
+  "@showMediaArtistSong": {
+    "description": "0123 artist—song piece toggle"
+  },
+  "showMediaProgress": "Progress bar",
+  "@showMediaProgress": {
+    "description": "0123 progress bar piece toggle (no times)"
+  },
+  "mediaBarOnly": "Bar only (minimal)",
+  "@mediaBarOnly": {
+    "description": "0123 bar-only minimal mode"
+  }
 }

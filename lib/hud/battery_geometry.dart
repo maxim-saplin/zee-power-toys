@@ -9,9 +9,9 @@ import '../services/config_store.dart'
 // Mirrors blinker_geometry / minimap_viewport: sizing/placement math lives
 // here so relationship tests can assert rects without pumping the widget tree.
 // The BATTERY slot is a tall-narrow box; BatteryWidget fits its cluster
-// (icon + % + temp + charging kW) inside it. While charging the slot grows
-// (0067) so three lines stay readable. Temp and charging move with
-// the cluster because they are children of BatteryWidget, not separate slots.
+// (icon + % + temp + charging kW + media chrome) inside it. While charging
+// the slot grows (0067); media chrome (0123) also grows the slot upward.
+// Temp/charging/media move with the cluster (children of BatteryWidget).
 // ---------------------------------------------------------------------------
 
 /// Slot width as a fraction of Safe Area width (today's hard-coded 12%).
@@ -28,6 +28,12 @@ const double kBatterySlotHeightFracCharging = 0.82;
 /// Slightly wider while charging so kW digits are not clipped.
 const double kBatterySlotWidthFracCharging = 0.15;
 
+/// Wider when media chrome is shown (artist — song + bar above pack, 0123).
+const double kBatterySlotWidthFracMedia = 0.22;
+
+/// Taller when media chrome stacks above bat/temp (0123 grow-up).
+const double kBatterySlotHeightFracMedia = 0.88;
+
 /// Wider when own-range estimate toggle is ON so `N% · N km` stays one line
 /// (0107 — Tablet dens320 / justText + default pack).
 const double kBatterySlotWidthFracOwnRange = 0.18;
@@ -41,18 +47,25 @@ const double kBatterySlotWidthFracOwnRange = 0.18;
 /// [kBatterySlotWidthFracOwnRange] so SoC+range does not wrap.
 ({double widthFrac, double heightFrac}) batteryClusterSlotFracs({
   required bool chargingStatsVisible,
+  bool mediaChromeVisible = false,
   double sizeScale = 1.0,
   bool ownRangeEstimate = false,
 }) {
   final scale = sizeScale.clamp(0.5, 2.5);
   var baseW =
       chargingStatsVisible ? kBatterySlotWidthFracCharging : kBatterySlotWidthFrac;
+  if (mediaChromeVisible && baseW < kBatterySlotWidthFracMedia) {
+    baseW = kBatterySlotWidthFracMedia;
+  }
   if (ownRangeEstimate && baseW < kBatterySlotWidthFracOwnRange) {
     baseW = kBatterySlotWidthFracOwnRange;
   }
-  final baseH = chargingStatsVisible
+  var baseH = chargingStatsVisible
       ? kBatterySlotHeightFracCharging
       : kBatterySlotHeightFrac;
+  if (mediaChromeVisible && baseH < kBatterySlotHeightFracMedia) {
+    baseH = kBatterySlotHeightFracMedia;
+  }
   // Cap so we never overflow Safe Area (width ≤ 0.28, height ≤ 0.95).
   return (
     widthFrac: (baseW * scale).clamp(0.08, 0.28),

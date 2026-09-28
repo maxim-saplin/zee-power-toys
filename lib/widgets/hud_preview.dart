@@ -5,7 +5,9 @@ import '../hud/hud_root.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
+import '../providers/media_now_playing.dart';
 import '../services/car_signals.dart';
+import '../services/media_now_playing.dart';
 
 /// The physical HUD backing display's pixel size at Zeekr S2 nominal geometry
 /// — 1024×576 @ 213dpi (CONTEXT.md's Minimap glossary entry, and the basis of
@@ -373,4 +375,13 @@ final _demoSignalOverrides = [
   // 0113: Sport so Config Preview shows the pulsating red corner-dot when
   // BatteryConfig.showDriveModeCornerDot is ON (toggle checkable on T2).
   driveModeProvider.overrideWithValue(DriveMode.sport),
+  // 0123 B · compact: demo now-playing so media chrome is checkable above bat.
+  mediaNowPlayingProvider.overrideWithValue(
+    const MediaNowPlaying(
+      artist: 'Artist',
+      title: 'Song',
+      progress: 0.42,
+      isPlaying: true,
+    ),
+  ),
 ];

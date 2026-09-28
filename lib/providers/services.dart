@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../services/car_signals.dart';
+import '../services/media_now_playing.dart';
 import '../services/config_store.dart';
 import '../services/hud_host.dart';
 import '../services/app_self_update.dart';
@@ -22,6 +23,11 @@ final configStoreProvider = Provider<ConfigStore>((ref) {
 });
 
 final carSignalsProvider = Provider<CarSignals>((ref) {
+  throw UnimplementedError('inject via ProviderScope.overrides');
+});
+
+/// Now-playing source (0123). T1 Fake; native MediaSession soft/deferred.
+final mediaNowPlayingSourceProvider = Provider<MediaNowPlayingSource>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });
 

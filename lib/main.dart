@@ -29,6 +29,7 @@ import 'services/adapters/native_system_config.dart';
 import 'services/adapters/native_usb_mode.dart';
 import 'services/car_signals.dart';
 import 'services/fakes/fake_car_signals.dart';
+import 'services/media_now_playing.dart';
 import 'services/fakes/fake_hud_host.dart';
 import 'services/fakes/fake_installer.dart';
 import 'services/fakes/fake_package_status.dart';
@@ -194,6 +195,9 @@ Future<void> dhuMain(List<String> args) async {
       ? NativeHudHost()
       : FakeHudHost();
 
+  // 0123: T1 Fake now-playing until MediaSession bind (soft).
+  final mediaNowPlayingRaw = FakeMediaNowPlaying();
+
   // Explicit ProviderContainer (rather than a bare declarative ProviderScope)
   // so hudGeometryProvider can be updated from the onHudReady stream listener
   // below, which fires outside the widget tree/build phase — a plain
@@ -202,6 +206,7 @@ Future<void> dhuMain(List<String> args) async {
     overrides: [
       configStoreProvider.overrideWithValue(store),
       carSignalsProvider.overrideWithValue(carSignalsRaw),
+      mediaNowPlayingSourceProvider.overrideWithValue(mediaNowPlayingRaw),
       minimapHostProvider.overrideWithValue(minimapHostRaw),
       hudHostProvider.overrideWithValue(hudHostRaw),
       installerProvider.overrideWithValue(installerRaw),
@@ -335,6 +340,7 @@ Future<void> dhuMain(List<String> args) async {
     store: store,
     shotKey: dhuShotKey,
     carSignals: carSignalsRaw,
+    mediaNowPlaying: mediaNowPlayingRaw,
     minimapHost: minimapHostRaw,
     installer: installerRaw,
     systemConfig: systemConfigRaw,
@@ -402,6 +408,7 @@ void speedcamOverlayMain() {
       overrides: [
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(FakeCarSignals()),
+        mediaNowPlayingSourceProvider.overrideWithValue(FakeMediaNowPlaying()),
         minimapHostProvider.overrideWithValue(FakeMinimapHost()),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),
@@ -438,6 +445,8 @@ void hudMain(List<String> args) {
   // ADR 0003: each isolate has its own FakeCarSignals; the DHU one is the source.
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
+  // 0123: HUD-local Fake until MediaSession+relay (soft FAIL-open).
+  final mediaNowPlaying = FakeMediaNowPlaying();
   // HUD Speedcam is a relay sink — pack+pose live on DHU (ADR 0003).
   final speedcam = FakeSpeedcamService();
   final speedcamPack = FakeSpeedcamPackStore();
@@ -452,6 +461,7 @@ void hudMain(List<String> args) {
     store: store,
     shotKey: hudShotKey,
     carSignals: carSignals,
+    mediaNowPlaying: mediaNowPlaying,
     speedcam: speedcam,
     speedcamPack: speedcamPack,
   );
@@ -478,6 +488,7 @@ void hudMain(List<String> args) {
       overrides: [
         configStoreProvider.overrideWithValue(store),
         carSignalsProvider.overrideWithValue(carSignals),
+        mediaNowPlayingSourceProvider.overrideWithValue(mediaNowPlaying),
         minimapHostProvider.overrideWithValue(minimapHost),
         hudHostProvider.overrideWithValue(FakeHudHost()),
         installerProvider.overrideWithValue(FakeInstaller()),

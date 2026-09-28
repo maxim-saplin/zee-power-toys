@@ -1203,6 +1203,90 @@ SpeedcamPresenceMode _presenceModeFromJson(
   return defaultMode;
 }
 
+
+/// HUD media chrome prefs (0123 — Maxim lock B · compact).
+///
+/// Default **B · compact**: music icon + `artist — song` + progress bar under
+/// texts (**no times**). Stacks above battery/temp in the BATTERY slot
+/// (grow upward like charging). [barOnly] is the minimal mode (progress bar
+/// only). Per-piece toggles gate icon / text / bar when not bar-only.
+///
+/// Chrome paints only while a now-playing session is active (T1 fake inject
+/// or future MediaSession bind — soft until native binding lands).
+class MediaConfig {
+  const MediaConfig({
+    this.showMedia = true,
+    this.showIcon = true,
+    this.showArtistSong = true,
+    this.showProgressBar = true,
+    this.barOnly = false,
+  });
+
+  /// Master: hide all media chrome when false.
+  final bool showMedia;
+
+  /// Music note / media icon (ignored when [barOnly]).
+  final bool showIcon;
+
+  /// `artist — song` line (ignored when [barOnly]).
+  final bool showArtistSong;
+
+  /// Progress bar under texts (no elapsed/remaining times).
+  final bool showProgressBar;
+
+  /// Minimal mode: progress bar only (hides icon + text).
+  final bool barOnly;
+
+  MediaConfig copyWith({
+    bool? showMedia,
+    bool? showIcon,
+    bool? showArtistSong,
+    bool? showProgressBar,
+    bool? barOnly,
+  }) =>
+      MediaConfig(
+        showMedia: showMedia ?? this.showMedia,
+        showIcon: showIcon ?? this.showIcon,
+        showArtistSong: showArtistSong ?? this.showArtistSong,
+        showProgressBar: showProgressBar ?? this.showProgressBar,
+        barOnly: barOnly ?? this.barOnly,
+      );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'showMedia': showMedia,
+        'showIcon': showIcon,
+        'showArtistSong': showArtistSong,
+        'showProgressBar': showProgressBar,
+        'barOnly': barOnly,
+      };
+
+  factory MediaConfig.fromJson(Map<String, Object?> json) => MediaConfig(
+        showMedia: json['showMedia'] as bool? ?? true,
+        showIcon: json['showIcon'] as bool? ?? true,
+        showArtistSong: json['showArtistSong'] as bool? ?? true,
+        showProgressBar: json['showProgressBar'] as bool? ?? true,
+        barOnly: json['barOnly'] as bool? ?? false,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is MediaConfig &&
+      other.showMedia == showMedia &&
+      other.showIcon == showIcon &&
+      other.showArtistSong == showArtistSong &&
+      other.showProgressBar == showProgressBar &&
+      other.barOnly == barOnly;
+
+  @override
+  int get hashCode => Object.hash(
+        showMedia,
+        showIcon,
+        showArtistSong,
+        showProgressBar,
+        barOnly,
+      );
+}
+
 /// Minimal app configuration.
 /// Plain JSON serialization so the native boot shim can read it.
 class AppConfig {
@@ -1211,6 +1295,7 @@ class AppConfig {
     this.safeArea = const HudSafeArea(),
     this.blinker = const BlinkerConfig(),
     this.battery = const BatteryConfig(),
+    this.media = const MediaConfig(),
     this.minimap = const MinimapConfig(),
     this.speedcam = const SpeedcamConfig(),
     this.locale,
@@ -1233,6 +1318,9 @@ class AppConfig {
 
   /// Battery widget appearance (show/hide elements, size).
   final BatteryConfig battery;
+
+  /// HUD media chrome (0123 B · compact) — icon / artist—song / bar prefs.
+  final MediaConfig media;
 
   /// YNavi minimap configuration (enable, preset, theme-follow, advanced dims).
   final MinimapConfig minimap;
@@ -1269,6 +1357,7 @@ class AppConfig {
     HudSafeArea? safeArea,
     BlinkerConfig? blinker,
     BatteryConfig? battery,
+    MediaConfig? media,
     MinimapConfig? minimap,
     SpeedcamConfig? speedcam,
     // Use a sentinel to distinguish "set to null" from "leave unchanged".
@@ -1280,6 +1369,7 @@ class AppConfig {
     safeArea: safeArea ?? this.safeArea,
     blinker: blinker ?? this.blinker,
     battery: battery ?? this.battery,
+    media: media ?? this.media,
     minimap: minimap ?? this.minimap,
     speedcam: speedcam ?? this.speedcam,
     locale: identical(locale, _unset) ? this.locale : locale as String?,
@@ -1292,6 +1382,7 @@ class AppConfig {
     'safeArea': safeArea.toJson(),
     'blinker': blinker.toJson(),
     'battery': battery.toJson(),
+    'media': media.toJson(),
     'minimap': minimap.toJson(),
     'speedcam': speedcam.toJson(),
     if (locale != null) 'locale': locale,
@@ -1303,6 +1394,7 @@ class AppConfig {
     final safeArea = _asStringKeyedMap(json['safeArea']);
     final blinker = _asStringKeyedMap(json['blinker']);
     final battery = _asStringKeyedMap(json['battery']);
+    final media = _asStringKeyedMap(json['media']);
     final minimap = _asStringKeyedMap(json['minimap']);
     final speedcam = _asStringKeyedMap(json['speedcam']);
     return AppConfig(
@@ -1316,6 +1408,9 @@ class AppConfig {
       battery: battery != null
           ? BatteryConfig.fromJson(battery)
           : const BatteryConfig(),
+      media: media != null
+          ? MediaConfig.fromJson(media)
+          : const MediaConfig(),
       minimap: minimap != null
           ? MinimapConfig.fromJson(minimap)
           : const MinimapConfig(),
@@ -1339,6 +1434,7 @@ class AppConfig {
       other.safeArea == safeArea &&
       other.blinker == blinker &&
       other.battery == battery &&
+      other.media == media &&
       other.minimap == minimap &&
       other.speedcam == speedcam &&
       other.locale == locale &&
@@ -1351,6 +1447,7 @@ class AppConfig {
     safeArea,
     blinker,
     battery,
+    media,
     minimap,
     speedcam,
     locale,

@@ -28,6 +28,7 @@ import 'package:zee_power_toys/services/app_self_update.dart';
 import 'package:zee_power_toys/providers/usb_mode.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
+import 'package:zee_power_toys/services/media_now_playing.dart';
 import 'package:zee_power_toys/services/fakes/fake_hud_host.dart';
 import 'package:zee_power_toys/services/fakes/fake_installer.dart';
 import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
@@ -89,6 +90,7 @@ Widget wrapWithProviders(
   Widget child, {
   AppConfig? config,
   FakeCarSignals? signals,
+  MediaNowPlayingSource? media,
   ConfigStore? store,
   bool localizations = true,
   bool scaffold = false,
@@ -111,6 +113,8 @@ Widget wrapWithProviders(
     overrides: [
       configStoreProvider.overrideWithValue(effectiveStore),
       carSignalsProvider.overrideWithValue(signals ?? FakeCarSignals()),
+      mediaNowPlayingSourceProvider.overrideWithValue(
+          media ?? FakeMediaNowPlaying()),
       minimapHostProvider.overrideWithValue(FakeMinimapHost()),
       hudHostProvider.overrideWithValue(FakeHudHost()),
       installerProvider.overrideWithValue(installer ?? FakeInstaller()),

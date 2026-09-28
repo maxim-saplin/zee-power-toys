@@ -349,4 +349,27 @@ void main() {
   });
 
 
+  group('batteryClusterSlotFracs — 0123 media grow', () {
+    test('media chrome widens and heightens slot', () {
+      final off = batteryClusterSlotFracs(chargingStatsVisible: false);
+      final on = batteryClusterSlotFracs(
+        chargingStatsVisible: false,
+        mediaChromeVisible: true,
+      );
+      expect(on.widthFrac, greaterThan(off.widthFrac));
+      expect(on.heightFrac, greaterThan(off.heightFrac));
+      expect(on.widthFrac, kBatterySlotWidthFracMedia);
+      expect(on.heightFrac, kBatterySlotHeightFracMedia);
+    });
+
+    test('media + charging takes the larger fracs', () {
+      final both = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        mediaChromeVisible: true,
+      );
+      expect(both.widthFrac, kBatterySlotWidthFracMedia);
+      expect(both.heightFrac, kBatterySlotHeightFracMedia);
+    });
+  });
+
 }

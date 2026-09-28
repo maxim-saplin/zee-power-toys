@@ -40,6 +40,16 @@ final batteryConfigProvider = Provider<BatteryConfig>((ref) {
   );
 });
 
+/// HUD media chrome prefs (0123 B · compact).
+final mediaConfigProvider = Provider<MediaConfig>((ref) {
+  final async = ref.watch(appConfigProvider);
+  return async.when(
+    data: (cfg) => cfg.media,
+    loading: () => ref.watch(configStoreProvider).value.media,
+    error: (e, _) => ref.watch(configStoreProvider).value.media,
+  );
+});
+
 /// Current minimap config, updated whenever the config changes.
 final minimapConfigProvider = Provider<MinimapConfig>((ref) {
   final async = ref.watch(appConfigProvider);

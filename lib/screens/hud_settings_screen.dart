@@ -38,6 +38,7 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
     final safeArea = ref.watch(safeAreaProvider);
     final blinkerCfg = ref.watch(blinkerConfigProvider);
     final batteryCfg = ref.watch(batteryConfigProvider);
+    final mediaCfg = ref.watch(mediaConfigProvider);
     final store = ref.read(configStoreProvider);
 
     // Uniform inset: use the average of left/top insets as the slider value.
@@ -282,6 +283,82 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                     ),
                   );
                 },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: Insets.xl),
+
+
+          // ----------------------------------------------------------------
+          // Media section (0123 B · compact)
+          // ----------------------------------------------------------------
+          SettingsSection(
+            title: l10n.mediaSection,
+            children: <Widget>[
+              SettingsToggleRow(
+                label: l10n.showMedia,
+                control: Switch(
+                  key: const ValueKey('media-show-media'),
+                  value: mediaCfg.showMedia,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      media: mediaCfg.copyWith(showMedia: v),
+                    ),
+                  ),
+                ),
+              ),
+              SettingsToggleRow(
+                label: l10n.showMediaIcon,
+                control: Switch(
+                  key: const ValueKey('media-show-icon'),
+                  value: mediaCfg.showIcon,
+                  onChanged: mediaCfg.barOnly
+                      ? null
+                      : (v) => store.setConfig(
+                            store.value.copyWith(
+                              media: mediaCfg.copyWith(showIcon: v),
+                            ),
+                          ),
+                ),
+              ),
+              SettingsToggleRow(
+                label: l10n.showMediaArtistSong,
+                control: Switch(
+                  key: const ValueKey('media-show-artist-song'),
+                  value: mediaCfg.showArtistSong,
+                  onChanged: mediaCfg.barOnly
+                      ? null
+                      : (v) => store.setConfig(
+                            store.value.copyWith(
+                              media: mediaCfg.copyWith(showArtistSong: v),
+                            ),
+                          ),
+                ),
+              ),
+              SettingsToggleRow(
+                label: l10n.showMediaProgress,
+                control: Switch(
+                  key: const ValueKey('media-show-progress'),
+                  value: mediaCfg.showProgressBar,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      media: mediaCfg.copyWith(showProgressBar: v),
+                    ),
+                  ),
+                ),
+              ),
+              SettingsToggleRow(
+                label: l10n.mediaBarOnly,
+                control: Switch(
+                  key: const ValueKey('media-bar-only'),
+                  value: mediaCfg.barOnly,
+                  onChanged: (v) => store.setConfig(
+                    store.value.copyWith(
+                      media: mediaCfg.copyWith(barOnly: v),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

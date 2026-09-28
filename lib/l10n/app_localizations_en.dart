@@ -903,4 +903,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speedcamOverlayBottomEnd => 'BR';
+
+  @override
+  String get mediaSection => 'Media (HUD)';
+
+  @override
+  String get showMedia => 'Show now playing';
+
+  @override
+  String get showMediaIcon => 'Music icon';
+
+  @override
+  String get showMediaArtistSong => 'Artist — song';
+
+  @override
+  String get showMediaProgress => 'Progress bar';
+
+  @override
+  String get mediaBarOnly => 'Bar only (minimal)';
 }

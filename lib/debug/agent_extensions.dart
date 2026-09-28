@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/fakes/fake_car_signals.dart';
+import '../services/media_now_playing.dart';
 import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/speedcam.dart';
@@ -55,6 +56,7 @@ void registerZeeExtensions({
   required ConfigStore store,
   required GlobalKey shotKey,
   CarSignals? carSignals,
+  MediaNowPlayingSource? mediaNowPlaying,
   Future<void> Function(AppConfig)? onSetConfig,
   MinimapHost? minimapHost,
   Future<Map<String, Object?>> Function()? getBootState,
@@ -154,6 +156,7 @@ void registerZeeExtensions({
           'pct': snap?.batteryPct,
           'tempC': snap?.batteryTempC,
           'charging': snap?.charging,
+          'media': mediaNowPlaying?.current?.toJson(),
           'kw': snap?.chargeKw,
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
@@ -450,6 +453,33 @@ void registerZeeExtensions({
       );
     }
 
+
+    // Media chrome (0123): mediaShow / mediaIcon / mediaArtistSong /
+    // mediaProgress / mediaBarOnly = true|false.
+    final rawMediaShow = params['mediaShow'];
+    final rawMediaIcon = params['mediaIcon'];
+    final rawMediaArtistSong = params['mediaArtistSong'];
+    final rawMediaProgress = params['mediaProgress'];
+    final rawMediaBarOnly = params['mediaBarOnly'];
+    if (rawMediaShow != null ||
+        rawMediaIcon != null ||
+        rawMediaArtistSong != null ||
+        rawMediaProgress != null ||
+        rawMediaBarOnly != null) {
+      final m = next.media;
+      next = next.copyWith(
+        media: m.copyWith(
+          showMedia: rawMediaShow != null ? rawMediaShow == 'true' : null,
+          showIcon: rawMediaIcon != null ? rawMediaIcon == 'true' : null,
+          showArtistSong:
+              rawMediaArtistSong != null ? rawMediaArtistSong == 'true' : null,
+          showProgressBar:
+              rawMediaProgress != null ? rawMediaProgress == 'true' : null,
+          barOnly: rawMediaBarOnly != null ? rawMediaBarOnly == 'true' : null,
+        ),
+      );
+    }
+
     // Minimap config: minimapEnabled=true|false,
     // minimapOnlyWhileGuidance=true|false (0057),
     // guidanceOverlay / etaBar (0055 Zee HUD 2),
@@ -613,27 +643,29 @@ void registerZeeExtensions({
   if (surface == 'dhu') {
     developer.registerExtension('ext.zee.inject', (method, params) async {
       final fake = carSignals is FakeCarSignals ? carSignals : null;
-      if (fake == null) {
+      final kind = params['kind'];
+      // 0123: media inject works with FakeMediaNowPlaying even on T2 when
+      // CarSignals is native (no Fake). Other kinds still need Fake or ADB.
+      if (kind != 'media' && fake == null) {
         return _extError(
           'ext.zee.inject not available on this surface '
           '(use ADB broadcast on T2: adb shell am broadcast -a com.zeepowertoys.SIMULATE)',
         );
       }
-      final kind = params['kind'];
       try {
         switch (kind) {
           case 'speed':
             final kmh = int.parse(params['value'] ?? '0');
-            fake.emitSpeed(kmh);
+            fake!.emitSpeed(kmh);
           case 'blinker':
             final state = BlinkerState.values.byName(params['value'] ?? 'off');
-            fake.emitBlinker(state);
+            fake!.emitBlinker(state);
           case 'charge':
             final charging = (params['charging'] ?? 'false') == 'true';
             final kw = double.tryParse(params['kw'] ?? '');
             final volts = double.tryParse(params['volts'] ?? '');
             final amps = double.tryParse(params['amps'] ?? '');
-            fake.emitCharge(
+            fake!.emitCharge(
               charging: charging,
               kw: kw,
               volts: volts,
@@ -642,25 +674,102 @@ void registerZeeExtensions({
           case 'battery':
             final levelPct = double.parse(params['levelPct'] ?? '0');
             final tempC = double.parse(params['tempC'] ?? '0');
-            fake.emitBattery(levelPct: levelPct, tempC: tempC);
+            fake!.emitBattery(levelPct: levelPct, tempC: tempC);
           case 'powerFlow':
             final flow = PowerFlow.values.byName(params['value'] ?? 'unknown');
-            fake.emitPowerFlow(flow);
+            fake!.emitPowerFlow(flow);
           case 'driveMode':
             final mode = DriveMode.values.byName(params['value'] ?? 'unknown');
-            fake.emitDriveMode(mode);
+            fake!.emitDriveMode(mode);
+          case 'media':
+            // Handled below via mediaNowPlaying; keep fake path for parity.
+            if (mediaNowPlaying == null) {
+              return _extError('media inject: no MediaNowPlayingSource');
+            }
+            final clear = (params['clear'] ?? 'false') == 'true';
+            if (clear) {
+              mediaNowPlaying.setNowPlaying(null);
+            } else {
+              final artist = params['artist'] ?? 'Artist';
+              final title = params['title'] ?? 'Song';
+              final progress =
+                  double.tryParse(params['progress'] ?? '0.35') ?? 0.35;
+              final playing = (params['playing'] ?? 'true') == 'true';
+              mediaNowPlaying.setNowPlaying(
+                MediaNowPlaying(
+                  artist: artist,
+                  title: title,
+                  progress: progress.clamp(0.0, 1.0),
+                  isPlaying: playing,
+                ),
+              );
+            }
           default:
             return _extError(
-              'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow|driveMode',
+              'unknown kind "$kind"; expected speed|blinker|charge|battery|powerFlow|driveMode|media',
             );
         }
       } catch (e) {
         return _extError('inject error: $e');
       }
+      if (kind == 'media') {
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode(<String, Object?>{
+            'ok': true,
+            'surface': surface,
+            'media': mediaNowPlaying?.current?.toJson(),
+          }),
+        );
+      }
       return developer.ServiceExtensionResponse.result(
-        jsonEncode(fake.snapshot.toJson()..['surface'] = surface),
+        jsonEncode(fake!.snapshot.toJson()..['surface'] = surface),
       );
     }); // end ext.zee.inject
+
+  // 0123: media inject on every surface that owns a MediaNowPlayingSource
+  // (HUD needs this for dens320 chrome proof; DHU also via kind=media above).
+  if (mediaNowPlaying != null && surface != 'dhu') {
+    developer.registerExtension('ext.zee.inject', (method, params) async {
+      final kind = params['kind'];
+      if (kind != 'media') {
+        return _extError(
+          'ext.zee.inject on $surface only supports kind=media '
+          '(car signals inject on surface=dhu)',
+        );
+      }
+      try {
+        final clear = (params['clear'] ?? 'false') == 'true';
+        if (clear) {
+          mediaNowPlaying.setNowPlaying(null);
+        } else {
+          final artist = params['artist'] ?? 'Artist';
+          final title = params['title'] ?? 'Song';
+          final progress =
+              double.tryParse(params['progress'] ?? '0.35') ?? 0.35;
+          final playing = (params['playing'] ?? 'true') == 'true';
+          mediaNowPlaying.setNowPlaying(
+            MediaNowPlaying(
+              artist: artist,
+              title: title,
+              progress: progress.clamp(0.0, 1.0),
+              isPlaying: playing,
+            ),
+          );
+        }
+      } catch (e) {
+        return _extError('media inject error: $e');
+      }
+      final cur = mediaNowPlaying.current;
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode(<String, Object?>{
+          'ok': true,
+          'surface': surface,
+          'media': cur?.toJson(),
+        }),
+      );
+    });
+  }
+
 
     // Speedcam (0030): set host pose / approach a sample cam / enable.
     // T1 Fake only until pack+native land.

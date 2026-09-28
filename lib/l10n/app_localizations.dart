@@ -1789,6 +1789,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'BR'**
   String get speedcamOverlayBottomEnd;
+
+  /// 0123 HUD media chrome section title
+  ///
+  /// In en, this message translates to:
+  /// **'Media (HUD)'**
+  String get mediaSection;
+
+  /// 0123 master media chrome toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show now playing'**
+  String get showMedia;
+
+  /// 0123 media icon piece toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Music icon'**
+  String get showMediaIcon;
+
+  /// 0123 artist—song piece toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Artist — song'**
+  String get showMediaArtistSong;
+
+  /// 0123 progress bar piece toggle (no times)
+  ///
+  /// In en, this message translates to:
+  /// **'Progress bar'**
+  String get showMediaProgress;
+
+  /// 0123 bar-only minimal mode
+  ///
+  /// In en, this message translates to:
+  /// **'Bar only (minimal)'**
+  String get mediaBarOnly;
 }
 
 class _AppLocalizationsDelegate

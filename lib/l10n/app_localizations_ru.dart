@@ -904,4 +904,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get speedcamOverlayBottomEnd => 'НП';
+
+  @override
+  String get mediaSection => 'Медиа (HUD)';
+
+  @override
+  String get showMedia => 'Показывать сейчас играет';
+
+  @override
+  String get showMediaIcon => 'Иконка музыки';
+
+  @override
+  String get showMediaArtistSong => 'Исполнитель — трек';
+
+  @override
+  String get showMediaProgress => 'Полоса прогресса';
+
+  @override
+  String get mediaBarOnly => 'Только полоса (минимум)';
 }

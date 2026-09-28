@@ -3,7 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
+import '../providers/media_now_playing.dart';
 import '../services/config_store.dart';
+import '../services/media_now_playing.dart';
 import 'battery_geometry.dart';
 
 /// Emissive HUD battery indicator for the BATTERY slot.
@@ -27,6 +29,12 @@ import 'battery_geometry.dart';
 /// (0120 — bottom edge of the cluster stays put on bottom-anchored
 /// placements). Hidden when not charging (ADR 0003 show-while-charging
 /// rule — app policy enforced here, not toggled by the user).
+///
+/// Media chrome (0123 Maxim lock **B · compact**): music icon ·
+/// `artist — song` · progress bar under texts (**no times**). Stacks
+/// **above** charging/battery/temp (grow upward). Prefs via [MediaConfig]
+/// (per-piece toggles + [MediaConfig.barOnly] minimal mode). Paints only
+/// while [mediaNowPlayingProvider] reports an active session.
 ///
 /// Emissive palette: bright marks on black.  No light backgrounds, cards, or
 /// panels — only the marks themselves emit light.  Scaled by [BatteryConfig.sizeScale].
@@ -63,9 +71,14 @@ class BatteryWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cfg = ref.watch(batteryConfigProvider);
+    final mediaCfg = ref.watch(mediaConfigProvider);
+    final nowPlaying = ref.watch(mediaNowPlayingProvider);
 
-    // showBattery=false → render absolutely nothing (0 pixels).
-    if (!cfg.showBattery) return const SizedBox.shrink();
+    final mediaChrome = _mediaChromeVisible(mediaCfg, nowPlaying);
+
+    // showBattery=false → render absolutely nothing (0 pixels), unless media
+    // chrome alone is on (media may show above an empty battery hide).
+    if (!cfg.showBattery && !mediaChrome) return const SizedBox.shrink();
 
     final pct = ref.watch(batteryPctProvider); // int? 0-100
     final tempC = ref.watch(batteryTempCProvider); // double? °C
@@ -74,11 +87,14 @@ class BatteryWidget extends ConsumerWidget {
 
     // F2: idle live HUD must stay black — do not paint empty chrome (`--%` /
     // `--°C`) when no battery/charge signal has arrived yet. Empty black is
-    // fine; a hollow outline that looks broken is not.
+    // fine; a hollow outline that looks broken is not. Media chrome alone
+    // may still paint when a session is active.
     final isCharging = charging;
-    if (pct == null && tempC == null && !isCharging) {
+    final batteryIdleEmpty = pct == null && tempC == null && !isCharging;
+    if (batteryIdleEmpty && !mediaChrome) {
       return const SizedBox.shrink();
     }
+    final showBatteryCluster = cfg.showBattery && !batteryIdleEmpty;
 
     // Base unit: everything scales from this.
     // At sizeScale=1.0 the icon is 40×20 logical pixels — compact for the
@@ -102,12 +118,16 @@ class BatteryWidget extends ConsumerWidget {
       fillColor = _kFillRed;
     }
 
-    final showStats = isCharging && cfg.showChargingStats;
-    final showIcon = cfg.contentMode != BatteryContentMode.textOnly;
+    final showStats =
+        showBatteryCluster && isCharging && cfg.showChargingStats;
+    final showIcon =
+        showBatteryCluster && cfg.contentMode != BatteryContentMode.textOnly;
     // 0119c: range feature removed — % only (no `N% · N km` / pending ellipsis).
     final pctInsidePack = showIcon && cfg.style == BatteryStyle.pctInside;
-    final showPctBelow = cfg.contentMode != BatteryContentMode.iconOnly &&
+    final showPctBelow = showBatteryCluster &&
+        cfg.contentMode != BatteryContentMode.iconOnly &&
         !pctInsidePack;
+    final showTempRow = showBatteryCluster && cfg.showTemp;
 
     final labelStyle = TextStyle(
       color: _kTextPrimary,
@@ -152,6 +172,18 @@ class BatteryWidget extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: clusterCross,
           children: <Widget>[
+            // ---- Media chrome (0123 B · compact: stack ABOVE bat/temp) ----
+            if (mediaChrome) ...<Widget>[
+              _MediaChrome(
+                key: const ValueKey('hud-media-chrome'),
+                nowPlaying: nowPlaying!,
+                cfg: mediaCfg,
+                base: base,
+                crossAxisAlignment: clusterCross,
+              ),
+              SizedBox(height: base * 0.28),
+            ],
+
             // ---- Charging stats (0120: stack ABOVE %; bottom edge stays) ----
             if (showStats) ...<Widget>[
               _ChargingStats(
@@ -223,7 +255,7 @@ class BatteryWidget extends ConsumerWidget {
             ],
 
             // ---- Temperature row (optional) ----
-            if (cfg.showTemp) ...<Widget>[
+            if (showTempRow) ...<Widget>[
               SizedBox(height: base * 0.18),
               Text(
                 tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
@@ -235,6 +267,110 @@ class BatteryWidget extends ConsumerWidget {
         ),
         ),
       ),
+    );
+  }
+}
+
+
+bool _mediaChromeVisible(MediaConfig cfg, MediaNowPlaying? np) {
+  if (!cfg.showMedia) return false;
+  if (np == null || !np.isPlaying) return false;
+  if (cfg.barOnly) return cfg.showProgressBar;
+  return cfg.showIcon || cfg.showArtistSong || cfg.showProgressBar;
+}
+
+/// 0123 B · compact media chrome — icon · artist — song · bar (no times).
+class _MediaChrome extends StatelessWidget {
+  const _MediaChrome({
+    super.key,
+    required this.nowPlaying,
+    required this.cfg,
+    required this.base,
+    required this.crossAxisAlignment,
+  });
+
+  final MediaNowPlaying nowPlaying;
+  final MediaConfig cfg;
+  final double base;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  static const Color _kText = Color(0xFFEEEEEE);
+  static const Color _kBarTrack = Color(0xFF444444);
+  static const Color _kBarFill = Color(0xFF67E8F9);
+  static const Color _kIcon = Color(0xFFEEEEEE);
+
+  @override
+  Widget build(BuildContext context) {
+    final barOnly = cfg.barOnly;
+    final showIcon = !barOnly && cfg.showIcon;
+    final showText = !barOnly && cfg.showArtistSong;
+    final showBar = cfg.showProgressBar || barOnly;
+    final label = nowPlaying.artistSongLabel;
+    final progress = nowPlaying.progress.clamp(0.0, 1.0);
+    final textStyle = TextStyle(
+      color: _kText,
+      fontSize: base * 0.42,
+      fontWeight: FontWeight.w500,
+      height: 1.05,
+    );
+    final barW = base * 4.2;
+    final barH = base * 0.14;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: crossAxisAlignment,
+      children: <Widget>[
+        if (showIcon || showText)
+          Row(
+            key: const ValueKey('hud-media-row'),
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (showIcon) ...<Widget>[
+                Icon(
+                  Icons.music_note,
+                  key: const ValueKey('hud-media-icon'),
+                  size: base * 0.55,
+                  color: _kIcon,
+                ),
+                if (showText) SizedBox(width: base * 0.15),
+              ],
+              if (showText && label.isNotEmpty)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: base * 4.0),
+                  child: Text(
+                    label,
+                    key: const ValueKey('hud-media-artist-song'),
+                    style: textStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                ),
+            ],
+          ),
+        if (showBar) ...<Widget>[
+          if (showIcon || showText) SizedBox(height: base * 0.14),
+          SizedBox(
+            key: const ValueKey('hud-media-progress'),
+            width: barW,
+            height: barH,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(barH),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  const ColoredBox(color: _kBarTrack),
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    alignment: Alignment.centerLeft,
+                    child: const ColoredBox(color: _kBarFill),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
