@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [x] **0122** YNavi Zee v30≡Zee v27 full parity — ACCEPT ynavi `e9fbe330` / asset `a1a90227…` toys docs `65ffdd5e` Live **1.1.0+27** (no bump) — `0122-ynavi-v30-full-parity.md`
 - [x] **0119c** / **0120** Remove range feature (RCA Own/Cons dead) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
 - [x] **0119b** Cons1 FW ID remap (dashes RCA) — superseded by 0119c (03300/7.8 DCDC ≠ dash Cons) — `0119b-cons1-fw-id-remap.md`
 - [x] **0119** Adapt-Cons HUD only — seed Cons1 + drop Own Est — tip `a73fd73` (superseded → 0119b → 0119c) — `0119-adapt-cons-hud-only.md`
@@ -31,7 +32,7 @@ Most rows are one-line **stubs**; a stub becomes a full `NNNN-slug.md` (copy [TE
 See also: [PRINCIPLES.md](../PRINCIPLES.md) (Definition of Done) · [ADR 0007](../adr/0007-block-by-block-agentic-delivery.md) (delivery model).
 
 ## Discipline
-- [ ] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap) — DEV tip `e9fbe3308` / asset `a1a90227…` — see `0122-ynavi-v30-full-parity.md` → @zee-qa
+- [x] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap) — ACCEPT ynavi `e9fbe330` / asset `a1a90227…` / toys docs `65ffdd5e` — `0122-ynavi-v30-full-parity.md`
 
 
 1. **One Block in-progress at a time.** Foundation first; the **walking skeleton (0001) before anything else**.

@@ -1,5 +1,7 @@
 ---
-status: ready-for-qa
+status: accepted
+tip: 65ffdd5
+accepted: 2026-09-28
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
 satisfies: YNavi Zee v30 full complete parity with Zee v27 — T2 enough; Deepal is a different flavor
@@ -29,11 +31,11 @@ Stumbling on many more after those is **not acceptable**. Expect Zee v30 to beha
 
 ## DoD
 
-- [ ] Zee v30 letterbox / chrome placement matches Zee v27 (not bottom-only strip when v27 puts it left).
-- [ ] Minimap works on Zee v30 as on Zee v27.
-- [ ] **Parity sweep**: T2 matrix covering the same YNavi/Zee behaviors proven on Zee v27 (mods matrix / 0097-era bar) — Zee v30 must not regress any of them.
-- [ ] Evidence bank under `tmp/qa/` with Zee v27 vs Zee v30 side-by-side where layout differs.
-- [ ] Tip to `origin/main`.
+- [x] Zee v30 letterbox / chrome placement matches Zee v27 (not bottom-only strip when v27 puts it left).
+- [x] Minimap works on Zee v30 as on Zee v27.
+- [x] **Parity sweep**: T2 matrix covering the same YNavi/Zee behaviors proven on Zee v27 (mods matrix / 0097-era bar) — Zee v30 must not regress any of them.
+- [x] Evidence bank under `tmp/qa/` with Zee v27 vs Zee v30 side-by-side where layout differs.
+- [x] Tip to `origin/main`.
 
 ## Soft / out of scope
 
@@ -41,7 +43,22 @@ Stumbling on many more after those is **not acceptable**. Expect Zee v30 to beha
 - Toys Live bump unless install-screen (0121) ships in the same grind and Maxim GOs.
 - New features beyond restoring Zee v27 parity.
 
-## DEV tip (2026-09-28 Europe/Minsk) — **not PASS/ACCEPT**
+## ACCEPT (PDM 2026-09-28)
+
+**PDM ACCEPT 2026-09-28:** T2 dens320 full Zee **PASS**.
+
+| Stamp | Value |
+|-------|--------|
+| ynavi tip | `e9fbe330` |
+| Release asset sha | `a1a902270252fb9ec4982e6f3214b7476ea0f3ed9f666be95ba53fae9bcf2348` |
+| toys tip (docs ready-for-qa) | `65ffdd5e` |
+| Evidence | `tmp/qa/0122-cut-e9fbe330/FINDINGS.md` |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** · ZeeUiScale **175/130** |
+| Live Toys | still **1.1.0+27** (no Live bump) |
+
+Hard Zee matrix green (letterbox left SoT 70/10/480, minimap CarApp handshake SUCCESS, L4/K1, 0 FATAL). Soft SKIP **P9/G1/T1/M4** OK. Soft note: v27 letterbox L=**840** vs v30 L=**480** under same SoT (ZeeUiScale×letterbox on v27) — **not FAIL**.
+
+## DEV tip (2026-09-28 Europe/Minsk) — superseded by ACCEPT
 
 - **ynavi-zee** `e9fbe3308` — `config.env.example` → Zee 70/10/480; `docs/0122-v30-zee-parity.md`
 - **Release** `ynavi-zeekr-v30` asset recut sha `a1a90227…` (letterbox + MINIMAP P1–P4)
