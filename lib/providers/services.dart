@@ -26,7 +26,7 @@ final carSignalsProvider = Provider<CarSignals>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });
 
-/// Now-playing source (0123). T1 Fake; native MediaSession soft/deferred.
+/// Now-playing source (0125). Android DHU: NativeMediaSession; else Fake/inject.
 final mediaNowPlayingSourceProvider = Provider<MediaNowPlayingSource>((ref) {
   throw UnimplementedError('inject via ProviderScope.overrides');
 });

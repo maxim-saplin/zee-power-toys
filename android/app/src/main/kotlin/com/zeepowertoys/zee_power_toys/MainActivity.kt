@@ -32,6 +32,7 @@ import com.zeepowertoys.zee_power_toys.carapp.GuidanceOverlayView
 import com.zeepowertoys.zee_power_toys.carapp.YNaviCarAppHost
 import com.zeepowertoys.zee_power_toys.location.AndroidGpsLocationSource
 import com.zeepowertoys.zee_power_toys.carsignals.CarSignalsController
+import com.zeepowertoys.zee_power_toys.media.MediaSessionController
 import com.zeepowertoys.zee_power_toys.carsignals.SimulateReceiver
 import com.zeepowertoys.zee_power_toys.install.InstallerController
 import com.zeepowertoys.zee_power_toys.speedcam.SpeedcamSystemOverlayController
@@ -120,6 +121,7 @@ class MainActivity : FlutterActivity() {
 
     // CarSignals native bridge — DHU engine only.
     private var carSignalsController: CarSignalsController? = null
+    private var mediaSessionController: MediaSessionController? = null
 
     // Installer native bridge — DHU engine only (Block 0014).
     private var installerController: InstallerController? = null
@@ -391,6 +393,11 @@ class MainActivity : FlutterActivity() {
         carSignalsController = ctrl
         // Expose to SimulateReceiver so ADB broadcasts reach the live source.
         SimulateReceiver.controllerRef = ctrl
+
+        // 0125: MediaSession now-playing → zee/media EventChannel (DHU only;
+        // HUD chrome via zee/hub relay). Soft FakeMediaOnly closed.
+        mediaSessionController = MediaSessionController(
+            this, flutterEngine.dartExecutor.binaryMessenger)
 
         // Construct InstallerController on the DHU engine messenger (Block 0014).
         // Registers zee/installer MethodChannel and zee/installer/events EventChannel.

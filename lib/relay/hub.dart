@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 import '../services/minimap_host.dart';
+import '../services/media_now_playing.dart';
 import '../services/speedcam.dart';
 
 /// The cross-engine relay abstraction.
@@ -125,6 +126,15 @@ Future<void> pushNavActiveToHud(bool active) async {
   await _push('navActive', jsonEncode(<String, Object?>{'navActive': active}));
 }
 
+/// Push now-playing to the HUD isolate (0125 MediaSession bind).
+/// Null clears chrome (inactive / inject clear).
+Future<void> pushMediaToHud(MediaNowPlaying? np) async {
+  final payload = np == null
+      ? <String, Object?>{'clear': true}
+      : np.toJson();
+  await _push('media', jsonEncode(payload));
+}
+
 Future<void> _push(String kind, String payload) async {
   try {
     await _relay.push(kind, payload);
@@ -142,6 +152,7 @@ void listenForRelay({
   void Function(SpeedcamSnapshot)? onSpeedcam,
   void Function(GuidanceEvent)? onGuidance,
   void Function(bool)? onNavActive,
+  void Function(MediaNowPlaying?)? onMedia,
 }) {
   _relay.listen((kind, payload) {
     try {
@@ -175,6 +186,11 @@ void listenForRelay({
           if (onNavActive != null) {
             final m = Map<String, Object?>.from(jsonDecode(payload) as Map);
             onNavActive(m['navActive'] == true);
+          }
+        case 'media':
+          if (onMedia != null) {
+            final m = Map<String, Object?>.from(jsonDecode(payload) as Map);
+            onMedia(MediaNowPlaying.fromJson(m));
           }
       }
     } catch (_) {

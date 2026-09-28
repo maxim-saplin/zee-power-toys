@@ -16,6 +16,7 @@ import 'providers/services.dart';
 import 'providers/usb_mode.dart';
 import 'relay/hub.dart';
 import 'services/adapters/native_car_signals.dart';
+import 'services/adapters/native_media_now_playing.dart';
 import 'services/adapters/native_hud_host.dart';
 import 'services/adapters/native_installer.dart';
 import 'services/adapters/native_package_status.dart';
@@ -195,8 +196,11 @@ Future<void> dhuMain(List<String> args) async {
       ? NativeHudHost()
       : FakeHudHost();
 
-  // 0123: T1 Fake now-playing until MediaSession bind (soft).
-  final mediaNowPlayingRaw = FakeMediaNowPlaying();
+  // 0125: Android DHU binds MediaSession; T1 desktop keeps Fake (inject fallback).
+  final MediaNowPlayingSource mediaNowPlayingRaw =
+      (!kIsWeb && Platform.isAndroid)
+          ? NativeMediaNowPlaying()
+          : FakeMediaNowPlaying();
 
   // Explicit ProviderContainer (rather than a bare declarative ProviderScope)
   // so hudGeometryProvider can be updated from the onHudReady stream listener
@@ -266,6 +270,7 @@ Future<void> dhuMain(List<String> args) async {
     // Re-seed charge/battery after settings toggles — HUD may have missed
     // EventChannel ticks while Presentation was recreating.
     seedHudFromCarSignals(carSignalsRaw);
+    seedHudFromMedia(mediaNowPlayingRaw);
   });
 
   // After setupHud() completes, native fires hudReady with the actual HUD
@@ -312,12 +317,15 @@ Future<void> dhuMain(List<String> args) async {
       );
       // Re-seed car signals — HUD engine just came up; prior Charge ticks dropped.
       seedHudFromCarSignals(carSignalsRaw);
+      seedHudFromMedia(mediaNowPlayingRaw);
     });
   }
 
   // Relay every car-signal event to the HUD isolate.
   // Subscribes to whatever CarSignals was injected — works for both fake and native.
   carSignalsRaw.events.listen(pushCarSignalToHud);
+  // 0125: MediaSession (or inject) on DHU → HUD chrome via hub.
+  mediaNowPlayingRaw.changes.listen(pushMediaToHud);
   // Speedcam (0033): DHU owns pack+pose; HUD paints CRT from relay.
   speedcamRaw.snapshots.listen((snap) async {
     // 0070: await overlay update so FlutterEngine exists before hub fan-out.
@@ -436,6 +444,11 @@ Future<void> seedHudFromCarSignals(CarSignals cs) async {
   }
 }
 
+/// Push current now-playing to HUD (0125) — same arming race as car signals.
+Future<void> seedHudFromMedia(MediaNowPlayingSource src) async {
+  await pushMediaToHud(src.current);
+}
+
 // ---------------------------------------------------------------------------
 // HUD — secondary surface; spawned by desktop_multi_window (T1) or by the
 // native FlutterEngineGroup host (T2 Android).
@@ -445,7 +458,7 @@ void hudMain(List<String> args) {
   // ADR 0003: each isolate has its own FakeCarSignals; the DHU one is the source.
   final store = SharedPrefsConfigStore();
   final carSignals = FakeCarSignals();
-  // 0123: HUD-local Fake until MediaSession+relay (soft FAIL-open).
+  // 0125: HUD Fake is the relay sink (+ dens320 inject debug fallback).
   final mediaNowPlaying = FakeMediaNowPlaying();
   // HUD Speedcam is a relay sink — pack+pose live on DHU (ADR 0003).
   final speedcam = FakeSpeedcamService();
@@ -478,6 +491,7 @@ void hudMain(List<String> args) {
     onSpeedcam: speedcam.applyRelaySnapshot,
     onGuidance: minimapHost.emitGuidance,
     onNavActive: minimapHost.emitNavigationActive,
+    onMedia: mediaNowPlaying.setNowPlaying,
   );
   store.load().then((_) {
     speedcamAlert.setVolume(store.value.speedcam.soundVolume);

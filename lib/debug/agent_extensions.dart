@@ -157,6 +157,7 @@ void registerZeeExtensions({
           'tempC': snap?.batteryTempC,
           'charging': snap?.charging,
           'media': mediaNowPlaying?.current?.toJson(),
+          'mediaSource': mediaNowPlaying?.debugSourceKind,
           'kw': snap?.chargeKw,
           'showBattery': bat.showBattery,
           'showTemp': bat.showTemp,
@@ -645,8 +646,8 @@ void registerZeeExtensions({
     developer.registerExtension('ext.zee.inject', (method, params) async {
       final fake = carSignals is FakeCarSignals ? carSignals : null;
       final kind = params['kind'];
-      // 0123: media inject works with FakeMediaNowPlaying even on T2 when
-      // CarSignals is native (no Fake). Other kinds still need Fake or ADB.
+      // 0125: media inject is debug fallback (Native MediaSession is primary).
+      // Works even on T2 when CarSignals is native. Other kinds need Fake or ADB.
       if (kind != 'media' && fake == null) {
         return _extError(
           'ext.zee.inject not available on this surface '
@@ -719,6 +720,7 @@ void registerZeeExtensions({
             'ok': true,
             'surface': surface,
             'media': mediaNowPlaying?.current?.toJson(),
+            'mediaSource': mediaNowPlaying?.debugSourceKind,
           }),
         );
       }
@@ -1115,8 +1117,8 @@ void registerZeeExtensions({
     });
   } // end if (surface == 'dhu')
 
-  // 0123: media inject on every surface that owns a MediaNowPlayingSource
-  // (HUD needs this for dens320 chrome proof; DHU also via kind=media above).
+  // 0125: media inject debug fallback on HUD (dens320 without real player).
+  // Preferred prove: real MediaSession on DHU → hub relay → HUD chrome.
   if (mediaNowPlaying != null && surface != 'dhu') {
     developer.registerExtension('ext.zee.inject', (method, params) async {
       final kind = params['kind'];
@@ -1154,6 +1156,7 @@ void registerZeeExtensions({
           'ok': true,
           'surface': surface,
           'media': cur?.toJson(),
+          'mediaSource': mediaNowPlaying.debugSourceKind,
         }),
       );
     });

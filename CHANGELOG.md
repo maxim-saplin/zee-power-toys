@@ -7,6 +7,9 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+### Changed
+- **0125** HUD media chrome binds native Android **MediaSession** now-playing (DHU `zee/media` + hub relay); Soft FakeMediaOnly closed. `ext.zee.inject kind=media` remains debug fallback. Live hold **1.1.0+29** (no bump on this tip).
+
 ## [1.1.0+29] — 2026-09-28
 
 Live ship: ACCEPTed **0123** HUD media B · compact + **0124** Just-text default + larger media title.

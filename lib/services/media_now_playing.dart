@@ -1,6 +1,6 @@
 import 'dart:async';
 
-/// Immutable now-playing snapshot for HUD media chrome (0123).
+/// Immutable now-playing snapshot for HUD media chrome (0123 / 0125).
 ///
 /// [progress] is 0.0…1.0 (bar only — no elapsed/remaining times in chrome).
 /// Null / inactive → BatteryWidget hides media chrome.
@@ -48,6 +48,24 @@ class MediaNowPlaying {
         'isPlaying': isPlaying,
       };
 
+  /// Relay / inject decode. Returns null when [j] is a clear envelope or
+  /// lacks both artist and title.
+  static MediaNowPlaying? fromJson(Map<String, Object?> j) {
+    if (j['clear'] == true) return null;
+    final artist = (j['artist'] as String?)?.trim() ?? '';
+    final title = (j['title'] as String?)?.trim() ?? '';
+    if (artist.isEmpty && title.isEmpty) return null;
+    final progress =
+        ((j['progress'] as num?)?.toDouble() ?? 0.0).clamp(0.0, 1.0);
+    final playing = j['isPlaying'] as bool? ?? true;
+    return MediaNowPlaying(
+      artist: artist,
+      title: title,
+      progress: progress,
+      isPlaying: playing,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is MediaNowPlaying &&
@@ -60,18 +78,24 @@ class MediaNowPlaying {
   int get hashCode => Object.hash(artist, title, progress, isPlaying);
 }
 
-/// Port for now-playing metadata. T1 uses [FakeMediaNowPlaying]; native
-/// MediaSession bind is soft/deferred (0123 FAIL-open).
+/// Port for now-playing metadata.
+///
+/// Production (Android DHU): [NativeMediaNowPlaying] bound to
+/// MediaSessionManager (0125). HUD isolate: Fake sink fed by DHU→HUD relay.
+/// [FakeMediaNowPlaying] + `ext.zee.inject kind=media` remain **debug
+/// fallback** only (dens320 without a real player / T1 desktop).
 abstract class MediaNowPlayingSource {
   MediaNowPlaying? get current;
   Stream<MediaNowPlaying?> get changes;
 
-  /// Push / clear a session (T1 inject + future native bridge).
+  /// Push / clear a session (debug inject + HUD relay sink).
   void setNowPlaying(MediaNowPlaying? value);
+
+  /// FL/QA provenance: `mediasession` | `inject` | `fake`.
+  String get debugSourceKind => 'fake';
 }
 
-/// In-memory source for T1 concepts + dens320 inject until MediaSession
-/// binding is proven on car/DHU.
+/// In-memory source — T1 desktop, HUD relay sink, and dens320 inject fallback.
 class FakeMediaNowPlaying implements MediaNowPlayingSource {
   FakeMediaNowPlaying([MediaNowPlaying? seed])
       : _current = seed,
@@ -91,6 +115,9 @@ class FakeMediaNowPlaying implements MediaNowPlayingSource {
     _current = value;
     _ctrl.add(value);
   }
+
+  @override
+  String get debugSourceKind => 'fake';
 
   void dispose() {
     _ctrl.close();

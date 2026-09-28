@@ -35,6 +35,10 @@
     <!-- 0065: Speedcam DHU system overlay (TYPE_APPLICATION_OVERLAY). -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- 0125: MediaSessionManager.getActiveSessions — signature|privileged;
+         granted via sharedUserId=system + AOSP platform signing (dens320 + car). -->
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+
     <!-- YNavi CarApp host permissions (Block YNavi / YNaviCarAppHost).
          TEMPLATE_RENDERER: system/signature permission pre-granted on Zeekr OS;
          required to bind the CarApp cluster host.  Declaring it here is harmless
