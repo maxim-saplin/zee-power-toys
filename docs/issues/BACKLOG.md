@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [ ] **0125** HUD media native MediaSession bind (+ DHU→HUD relay; inject debug fallback) — tip `2161990` / Live **1.1.0+29** hold — `0125-hud-media-mediasession-bind.md`
+- [x] **0125** HUD media native MediaSession bind — ACCEPT soft tip `2161990` (Preferred FAIL-open dens320 debug) / Live → **+30** — `0125-hud-media-mediasession-bind.md`
 - [x] **0124** HUD Just text default + larger media title — ACCEPT tip `94e3970` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0124-hud-justtext-default-media-type.md`
 - [x] **0123** HUD media B · compact (inject brace + bat pad) — ACCEPT tip `6ba9c36` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0123-hud-media-compact.md`
 - [x] **0122** YNavi Zee v30≡Zee v27 full parity — dens320 soft leftover sweep ACCEPT ynavi `45fada46` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` / evidence `tmp/qa/0122-t2-softs-45fada46/` / prior Live seal `7b9a076` — P9/0101/0038 PASS · T1 PASS* · G1 SKIP · M4 SKIP* · OOS Deepal/T3/SHARED_USER — `0122-ynavi-v30-full-parity.md`

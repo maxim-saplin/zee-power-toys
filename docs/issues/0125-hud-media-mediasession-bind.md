@@ -1,6 +1,7 @@
 ---
-status: in-progress
+status: accepted
 tip: 2161990
+accepted: 2026-09-28
 labels: [hud, media, mediasession]
 created: 2026-09-28
 satisfies: HUD utility info — now-playing from native MediaSession
@@ -56,6 +57,22 @@ If the AVD has no media app that owns an active session:
 ### Car path
 
 Same native bind on DHU + hub relay to HUD Presentation. No ynavi-zee change required (in-process `zee/hub`).
+
+
+## ACCEPT (PDM 2026-09-28) — soft Alternate
+
+**PDM ACCEPT soft** tip `2161990` / docs stamp *(this commit)*. dens320 own-check: Soft FakeMediaOnly **closed**; DHU `mediaSource=mediasession` armed; inject debug fallback layout PASS. **Preferred** real-session windshield on dens320 debug **FAIL soft** (`MEDIA_CONTENT_CONTROL` SecurityException) — full Preferred deferred to **platform Live / car T3**.
+
+| Stamp | Value |
+|-------|-------|
+| PDM ACCEPT tip | `2161990` |
+| Evidence | `tmp/qa/0125-mediasession-2161990/FINDINGS.md` |
+| Verdict | **PASS soft (Alternate)** — Preferred FAIL-open |
+| Live | hold **1.1.0+29** → auto publish **1.1.0+30** (Maxim GO) |
+
+## Who-next
+
+@zee-dev Live **1.1.0+30** bump + release now. @zee-qa dens320 ship-gate after APK. Preferred session prove on car / platform Live.
 
 ## Soft leftovers
 
