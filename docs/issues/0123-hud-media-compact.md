@@ -90,3 +90,6 @@ Shipped under Live **1.1.0+29** tip `6e8a907` / tag `1.1.0+29` / APK sha256 `ec5
 - Live hold **1.1.0+28** (no bump).
 - Who-next: **@zee-qa** dens320 re-cut (HUD-surface inject prove + bat pad).
 
+## Live ACCEPT (PDM 2026-09-28) — 1.1.0+29
+
+**PDM ACCEPT** dens320 ship-gate Live **1.1.0+29** tip `6e8a907` / docs `df6c101` · APK sha256 `ec5f25d55ead44349278e01e8cb3bb9688efaa998d7f62d513ae8b2242e4d7db` **MATCH**. Evidence `tmp/qa/1.1.0+29-ship/`. Governing: Just-text idle + Media B larger title. Soft: SHARED_USER Live sideload · FakeMediaOnly (closes on 0125) · Deepal/OS7 · car T3.
