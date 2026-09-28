@@ -423,7 +423,18 @@ class _InstallCardState extends State<_InstallCard>
   /// True after we actually left the app for the system uninstall sheet.
   /// Ignores spurious resumed events that fire before the sheet pauses us.
   bool _sawPauseWhileAwaiting = false;
+  /// Guards re-entrant complete while probe retries / poll overlap.
+  bool _completingReplace = false;
   String? _replaceStatus;
+  Timer? _uninstallPoll;
+  Timer? _uninstallDeadline;
+
+  /// How often to re-probe while the system uninstall sheet may be up.
+  /// Translucent UninstallerActivity on some Tablets never delivers [paused],
+  /// so lifecycle alone cannot resume → install after DELETE_SUCCEEDED.
+  static const Duration _uninstallPollInterval = Duration(milliseconds: 400);
+  /// Clear Failed if still awaiting (cancelled sheet / blocked uninstall).
+  static const Duration _uninstallWatchTimeout = Duration(seconds: 60);
 
   bool get _busy =>
       _awaitingUninstall ||
@@ -451,21 +462,58 @@ class _InstallCardState extends State<_InstallCard>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _cancelUninstallWatch();
     _sub?.cancel();
     super.dispose();
+  }
+
+  void _cancelUninstallWatch() {
+    _uninstallPoll?.cancel();
+    _uninstallPoll = null;
+    _uninstallDeadline?.cancel();
+    _uninstallDeadline = null;
+  }
+
+  void _armUninstallWatch() {
+    _cancelUninstallWatch();
+    _uninstallPoll = Timer.periodic(_uninstallPollInterval, (_) {
+      if (!_awaitingUninstall || !mounted || _completingReplace) return;
+      unawaited(_pollReplaceAfterUninstall());
+    });
+    _uninstallDeadline = Timer(_uninstallWatchTimeout, () {
+      if (!_awaitingUninstall || !mounted) return;
+      unawaited(_completeReplaceAfterUninstall(forceFailIfPresent: true));
+    });
+  }
+
+  Future<void> _pollReplaceAfterUninstall() async {
+    if (!_awaitingUninstall || _completingReplace) return;
+    final probe = await widget.packages.probe(widget.packageName);
+    if (!mounted || !_awaitingUninstall) return;
+    if (probe.state == PackageInstallState.missing) {
+      await _completeReplaceAfterUninstall(forceFailIfPresent: true);
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_awaitingUninstall) return;
-    // Require paused (another Activity on top). Dialog routes only flip
-    // inactive/resumed and must NOT count as uninstall round-trip.
-    if (state == AppLifecycleState.paused) {
+    // Dialog routes only flip inactive/resumed — do NOT arm on inactive.
+    // paused OR hidden = another Activity covered us (incl. some DELETE UIs).
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
       _sawPauseWhileAwaiting = true;
       return;
     }
-    if (state == AppLifecycleState.resumed && _sawPauseWhileAwaiting) {
-      _completeReplaceAfterUninstall();
+    if (state == AppLifecycleState.resumed) {
+      // Always attempt: translucent UninstallerActivity may never pause us
+      // (dens320 Tablet QA: DELETE_SUCCEEDED + stale tipAhead, no download).
+      // forceFail only after a real cover→return; else soft (poll/deadline).
+      unawaited(
+        _completeReplaceAfterUninstall(
+          forceFailIfPresent: _sawPauseWhileAwaiting,
+        ),
+      );
     }
   }
 
@@ -520,20 +568,24 @@ class _InstallCardState extends State<_InstallCard>
 
     // Arm BEFORE startActivity — UninstallerActivity often pauses us during
     // the native call; resetting sawPause after would drop that pause.
+    // Poll watch covers translucent sheets that never deliver paused.
     setState(() {
       _awaitingUninstall = true;
       _sawPauseWhileAwaiting = false;
+      _completingReplace = false;
       _progress = null;
       _replaceStatus = l10n.installReplaceWaitingUninstall(
         widget.name,
         widget.releaseLabel,
       );
     });
+    _armUninstallWatch();
 
     final result = await widget.packages.requestUninstall(widget.packageName);
     if (!mounted) return;
     switch (result) {
       case UninstallLaunchResult.unsupported:
+        _cancelUninstallWatch();
         setState(() {
           _awaitingUninstall = false;
           _sawPauseWhileAwaiting = false;
@@ -546,6 +598,7 @@ class _InstallCardState extends State<_InstallCard>
         });
       case UninstallLaunchResult.failed:
         final detail = widget.packages.lastUninstallError ?? 'unknown';
+        _cancelUninstallWatch();
         setState(() {
           _awaitingUninstall = false;
           _sawPauseWhileAwaiting = false;
@@ -576,48 +629,55 @@ class _InstallCardState extends State<_InstallCard>
   Future<void> _completeReplaceAfterUninstall({
     bool forceFailIfPresent = true,
   }) async {
-    if (!_awaitingUninstall) return;
-    final l10n = AppLocalizations.of(context);
-    // Uninstall commit can finish a beat after resume — retry briefly.
-    PackageProbe probe = await widget.packages.probe(widget.packageName);
-    if (probe.state != PackageInstallState.missing && forceFailIfPresent) {
-      for (var i = 0; i < 6; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 250));
-        if (!mounted || !_awaitingUninstall) return;
-        probe = await widget.packages.probe(widget.packageName);
-        if (probe.state == PackageInstallState.missing) break;
+    if (!_awaitingUninstall || _completingReplace) return;
+    _completingReplace = true;
+    try {
+      final l10n = AppLocalizations.of(context);
+      // Uninstall commit can finish a beat after resume — retry briefly.
+      PackageProbe probe = await widget.packages.probe(widget.packageName);
+      if (probe.state != PackageInstallState.missing && forceFailIfPresent) {
+        for (var i = 0; i < 6; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 250));
+          if (!mounted || !_awaitingUninstall) return;
+          probe = await widget.packages.probe(widget.packageName);
+          if (probe.state == PackageInstallState.missing) break;
+        }
       }
-    }
-    if (!mounted) return;
-    if (probe.state == PackageInstallState.missing) {
+      if (!mounted || !_awaitingUninstall) return;
+      if (probe.state == PackageInstallState.missing) {
+        _cancelUninstallWatch();
+        setState(() {
+          _awaitingUninstall = false;
+          _sawPauseWhileAwaiting = false;
+          _replaceStatus = null;
+          _probe = probe;
+        });
+        _startInstall();
+        return;
+      }
+      if (!forceFailIfPresent) {
+        // Soft resume (no pause/hidden) — sheet may still be up; poll continues.
+        return;
+      }
+      // Still installed (or unknown) after user returned — clear, never silent.
+      _cancelUninstallWatch();
       setState(() {
         _awaitingUninstall = false;
         _sawPauseWhileAwaiting = false;
         _replaceStatus = null;
         _probe = probe;
+        _progress = InstallProgress(
+          phase: InstallPhase.failed,
+          fraction: 0.0,
+          message: l10n.installReplaceStillInstalled(
+            widget.name,
+            widget.releaseLabel,
+          ),
+        );
       });
-      _startInstall();
-      return;
+    } finally {
+      _completingReplace = false;
     }
-    if (!forceFailIfPresent) {
-      // Still waiting on system sheet — keep awaiting status.
-      return;
-    }
-    // Still installed (or unknown) after user returned — clear, never silent.
-    setState(() {
-      _awaitingUninstall = false;
-      _sawPauseWhileAwaiting = false;
-      _replaceStatus = null;
-      _probe = probe;
-      _progress = InstallProgress(
-        phase: InstallPhase.failed,
-        fraction: 0.0,
-        message: l10n.installReplaceStillInstalled(
-          widget.name,
-          widget.releaseLabel,
-        ),
-      );
-    });
   }
 
   void _startInstall() {

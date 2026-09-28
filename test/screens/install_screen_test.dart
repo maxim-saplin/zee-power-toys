@@ -529,6 +529,99 @@ void main() {
       expect(find.text('Downloading…'), findsNothing);
     });
 
+    testWidgets(
+        '0121: translucent sheet — missing via poll (no pause) → install',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(
+        probes: {
+          CompanionPackages.ynavi: const PackageProbe(
+            state: PackageInstallState.installed,
+            versionCode: 739652660,
+            versionName: '30.8.1',
+          ),
+        },
+        uninstallResult: UninstallLaunchResult.launched,
+        // Stay installed until poll — simulates DELETE after translucent sheet.
+        autoMarkMissingOnUninstall: false,
+      );
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('install-ynavi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('replace-older-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.textContaining('Confirm uninstall'), findsOneWidget);
+
+      // No paused lifecycle — package flips missing; poll must start install.
+      packages.setProbe(
+        CompanionPackages.ynavi,
+        const PackageProbe(state: PackageInstallState.missing),
+      );
+      await tester.pump(const Duration(milliseconds: 400)); // poll tick
+      await tester.pump(); // flush async probe → complete → install
+      expect(find.text('Downloading…'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets(
+        '0121: resume without pause + missing → install (never stale tipAhead)',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      final packages = FakePackageStatus(
+        probes: {
+          CompanionPackages.ynavi: const PackageProbe(
+            state: PackageInstallState.installed,
+            versionCode: 739652660,
+            versionName: '30.8.1',
+          ),
+        },
+        uninstallResult: UninstallLaunchResult.launched,
+        autoMarkMissingOnUninstall: false,
+      );
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('install-ynavi')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('replace-older-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      packages.setProbe(
+        CompanionPackages.ynavi,
+        const PackageProbe(state: PackageInstallState.missing),
+      );
+      // Soft resume only (no paused) — dens320 translucent UninstallerActivity.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(); // start complete
+      await tester.pump(); // flush async probe → install
+      expect(find.text('Downloading…'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(find.text('Done'), findsOneWidget);
+    });
+
     testWidgets('0121: uninstall UI failed → clear message', (tester) async {
       final (store, installer) = await _makeFixture();
       final packages = FakePackageStatus(
