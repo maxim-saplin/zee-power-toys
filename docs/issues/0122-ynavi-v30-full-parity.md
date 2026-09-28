@@ -1,6 +1,6 @@
 ---
-status: accepted
-tip: 65ffdd5
+status: accepted  # scale soft-rescind then restored — see SOFT-RESCIND below
+tip: ce50781
 accepted: 2026-09-28
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
@@ -64,3 +64,16 @@ Hard Zee matrix green (letterbox left SoT 70/10/480, minimap CarApp handshake SU
 - **Release** `ynavi-zeekr-v30` asset recut sha `a1a90227…` (letterbox + MINIMAP P1–P4)
 - **Evidence:** `tmp/qa/0122-zee-letterbox-minimap/FINDINGS.md` — left letterbox v27↔v30 side-by-side; CarApp `onHandshakeCompleted SUCCESS`
 - Soft: Live toys sharedUser on non-rooted Tablet; full 0097 matrix → @zee-qa
+
+
+## SOFT-RESCIND scale (PDM 2026-09-28) — restored
+
+0122 ACCEPT soft-rescinded on **ZeeUiScale chrome scale** until re-proven.
+Locked RCA: shipped `a1a90227…` baked 175/130 XML but **no** `wrapBaseContext`
+callers after R8 (`v63` / `q`). See `tmp/qa/0122-scale-rca/RCA.md`.
+
+**Restored** on ynavi tip `45fada46` (this grind): `v63` reflection + Application `q` direct
+`wrapBaseContext`; MapActivity `applyToConfiguration` always / before super.
+Own-check dens320 Override 160: `map_activity_root` **L=840 T=123**.
+Release asset sha `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e`.
+Live Toys still **1.1.0+27** (no bump). Soft: Deepal/OS7 recut; full 0097 matrix @zee-qa.
