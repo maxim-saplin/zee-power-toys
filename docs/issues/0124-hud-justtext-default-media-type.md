@@ -1,6 +1,7 @@
 ---
-status: in-progress
+status: accepted
 tip: 94e3970
+accepted: 2026-09-28
 labels: [hud, battery, defaults, media]
 created: 2026-09-28
 satisfies: HUD-on battery Just text default + larger media artist—song
@@ -25,11 +26,28 @@ Live hold **1.1.0+28** — no version bump, no release.
 
 ## DoD (dens320 QA)
 
-- [ ] New / reset HUD-on: **Just text** — `%` only, **no** pack icon.
-- [ ] showTemp + rightBottom still on; charging kW stacks **above** % (grow-up).
-- [ ] Media artist — song visibly **larger** than post-`6ba9c36` B·compact.
-- [ ] Pack looks (Battery / Battery+text / Battery with bars) still choosable.
-- [ ] Tip to `origin/main`. Live still **1.1.0+28**.
+- [x] New / reset HUD-on: **Just text** — `%` only, **no** pack icon.
+- [x] showTemp + rightBottom still on; charging kW stacks **above** % (grow-up).
+- [x] Media artist — song visibly **larger** than post-`6ba9c36` B·compact.
+- [x] Pack looks (Battery / Battery+text / Battery with bars) still choosable.
+- [x] Tip to `origin/main`. Live still **1.1.0+28**.
+
+
+## ACCEPT (PDM 2026-09-28)
+
+**PDM ACCEPT 2026-09-28:** dens320 own-check PASS — after clear, HUD-on default Just text (**72% + 24°C**, no pack); charging grow-up **bottom_delta=0** / top_delta=**−26**; media Artist—Song glyph h **14 vs 11** on `6ba9c36` (~1.27×); pack looks still switchable. Soft FakeMediaOnly; existing prefs keep prior look.
+
+| Stamp | Value |
+|-------|-------|
+| PDM ACCEPT tip | `94e3970` |
+| docs stamp | *(this commit)* |
+| Evidence | `tmp/qa/hud-bat-just-text-94e3970/FINDINGS.md` |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** |
+| Live Toys | **1.1.0+28** hold (no bump) |
+
+## Who-next
+
+@zee-dev-beta four-point soft. Live stays **+28** unless Maxim GOs bump.
 
 ## Soft / out of scope
 
