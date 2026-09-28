@@ -470,14 +470,15 @@ bool batteryPlacementAnchorsBottom(BatteryPlacement placement) =>
 
 /// Battery widget appearance + placement config.
 ///
-/// Defaults (0120 HUD-on): everything shown (showBattery/showTemp/
-/// showChargingStats = true), look = batteryText (PDM "Battery + text", %
-/// visible — not bars-only / not just-text), sizeScale = 1.0, placement =
-/// rightBottom (bottom-right + temp; charging row stacks above, bottom
-/// edge stays put). The charging stats panel is show-while-charging — it
-/// appears automatically when the car reports charging and is hidden
-/// otherwise (app policy per ADR 0003); showChargingStats merely lets the
-/// user suppress the panel entirely if they prefer.
+/// Defaults (0124 PDM / overrides 0120 look): everything shown (showBattery/
+/// showTemp/showChargingStats = true), look = justText (PDM "Just text" —
+/// % only, no pack icon; pack looks remain user-selectable), sizeScale =
+/// 1.0, placement = rightBottom (bottom-right + temp; charging row stacks
+/// above, bottom edge stays put). The charging stats panel is
+/// show-while-charging — it appears automatically when the car reports
+/// charging and is hidden otherwise (app policy per ADR 0003);
+/// showChargingStats merely lets the user suppress the panel entirely if
+/// they prefer.
 /// 0118/0119 — legacy dual Est. mode (HUD forced Cons-only in 0119).
 enum RangePrimaryMode {
   /// Own-trip weighted window (0117 bands).
@@ -495,9 +496,9 @@ class BatteryConfig {
     this.rangePrimaryMode = RangePrimaryMode.adaptCons,
     this.showDriveModeCornerDot = false,
     this.sizeScale = 1.0,
-    this.look = BatteryLook.batteryText,
-    this.contentMode = BatteryContentMode.both,
-    this.style = BatteryStyle.pctInside,
+    this.look = BatteryLook.justText,
+    this.contentMode = BatteryContentMode.textOnly,
+    this.style = BatteryStyle.outline,
     this.placement = BatteryPlacement.rightBottom,
     this.vertFrac = 0.010,
     this.sidePadFrac = 0.04,
@@ -652,16 +653,16 @@ class BatteryConfig {
     final contentMode = modeName != null
         ? BatteryContentMode.values.firstWhere(
             (e) => e.name == modeName,
-            orElse: () => BatteryContentMode.both,
+            orElse: () => BatteryContentMode.textOnly,
           )
-        : BatteryContentMode.both;
+        : BatteryContentMode.textOnly;
     final styleName = json['style'] as String?;
     final style = styleName != null
         ? BatteryStyle.values.firstWhere(
             (e) => e.name == styleName,
-            orElse: () => BatteryStyle.pctInside,
+            orElse: () => BatteryStyle.outline,
           )
-        : BatteryStyle.pctInside;
+        : BatteryStyle.outline;
     final lookName = json['look'] as String?;
     final hasLook = lookName != null;
     final look = hasLook

@@ -307,9 +307,10 @@ class _MediaChrome extends StatelessWidget {
     final showBar = cfg.showProgressBar || barOnly;
     final label = nowPlaying.artistSongLabel;
     final progress = nowPlaying.progress.clamp(0.0, 1.0);
+    // 0124: enlarge artist — song vs 0123 B·compact (0.42) for windshield.
     final textStyle = TextStyle(
       color: _kText,
-      fontSize: base * 0.42,
+      fontSize: base * 0.55,
       fontWeight: FontWeight.w500,
       height: 1.05,
     );
@@ -336,7 +337,7 @@ class _MediaChrome extends StatelessWidget {
               ],
               if (showText && label.isNotEmpty)
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: base * 4.0),
+                  constraints: BoxConstraints(maxWidth: base * 5.2),
                   child: Text(
                     label,
                     key: const ValueKey('hud-media-artist-song'),

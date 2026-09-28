@@ -19,7 +19,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('BatteryConfig model', () {
-    test('defaults are all-on, sizeScale 1.0, batteryText look, rightBottom', () {
+    test('defaults are all-on, sizeScale 1.0, justText look, rightBottom', () {
       const cfg = BatteryConfig();
       expect(cfg.showBattery, isTrue);
       expect(cfg.showTemp, isTrue);
@@ -27,9 +27,9 @@ void main() {
       expect(cfg.showOwnRangeEstimate, isFalse);
       expect(cfg.showDriveModeCornerDot, isFalse);
       expect(cfg.sizeScale, 1.0);
-      expect(cfg.look, BatteryLook.batteryText);
-      expect(cfg.contentMode, BatteryContentMode.both);
-      expect(cfg.style, BatteryStyle.pctInside);
+      expect(cfg.look, BatteryLook.justText);
+      expect(cfg.contentMode, BatteryContentMode.textOnly);
+      expect(cfg.style, BatteryStyle.outline);
       expect(cfg.placement, BatteryPlacement.rightBottom);
       expect(cfg.vertFrac, 0.010);
       expect(cfg.sidePadFrac, 0.04);
@@ -157,7 +157,7 @@ void main() {
       expect(find.text('--°C'), findsNothing);
     });
 
-    testWidgets('F2: charging with null pct still shows chrome (bolt/kW)', (tester) async {
+    testWidgets('F2: charging with null pct still shows chrome (kW + --%)', (tester) async {
       final signals = FakeCarSignals();
       await tester.binding.setSurfaceSize(const Size(200, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -171,8 +171,10 @@ void main() {
       signals.emitCharge(charging: true, kw: 7.4);
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      // 0124 justText: no pack/bolt; charging stats + placeholder % still show.
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
     });
 
     testWidgets('showBattery=false renders nothing', (tester) async {
@@ -195,7 +197,7 @@ void main() {
       expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
     });
 
-    testWidgets('battery icon and pct text visible with default config',
+    testWidgets('justText default: plain % + temp, no pack icon',
         (tester) async {
       final signals = FakeCarSignals();
       await tester.binding.setSurfaceSize(const Size(200, 200));
@@ -210,12 +212,12 @@ void main() {
       signals.emitBattery(levelPct: 50, tempC: 25.0);
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
-      // 0062: Battery + text puts % inside the pack (dual-color), not below.
-      expect(find.byKey(const ValueKey('battery-inline-pct')), findsOneWidget);
-      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
-      // Two Text nodes (white + black layers) share the same label.
-      expect(find.text('50%'), findsNWidgets(2));
+      // 0124 PDM: Just text — % only, no pack.
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-inline-pct')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
+      expect(find.text('50%'), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-temp-text')), findsOneWidget);
     });
 
     // battery fill ∝ pct: test 0%, 50%, 100% all render the icon without crash.
@@ -234,7 +236,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('0%'), findsWidgets);
-      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      // 0124 default justText: no pack icon.
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
     });
 
     testWidgets('battery renders at pct=50', (tester) async {
@@ -532,7 +536,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       final config = AppConfig(
-        battery: const BatteryConfig(style: BatteryStyle.filled),
+        battery: const BatteryConfig().withLook(BatteryLook.batteryBars),
       );
       await tester.pumpWidget(wrapWithProviders(
         const SizedBox(width: 200, height: 200, child: BatteryWidget()),
@@ -545,7 +549,8 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
-      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
+      // batteryBars = iconOnly — no separate % below the pack.
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsNothing);
     });
 
   // ---------------------------------------------------------------------------
@@ -582,11 +587,12 @@ void main() {
 
       final signals = FakeCarSignals();
       final config = AppConfig(
+        // Pack look so "all rows" includes icon (0124 default is justText).
         battery: const BatteryConfig(
           sizeScale: 2.5,
           showTemp: true,
           showChargingStats: true,
-        ),
+        ).withLook(BatteryLook.batteryText),
       );
       await tester.pumpWidget(wrapWithProviders(
         SizedBox.fromSize(size: grown, child: const BatteryWidget()),
@@ -699,7 +705,8 @@ void main() {
   // 0120 — charging row stacks above % (bottom edge stays put on BR default)
   // -------------------------------------------------------------------------
   group('0120 charging stacks above %', () {
-    testWidgets('charging-stats is above battery-icon', (tester) async {
+    testWidgets('charging-stats is above battery-pct-text (justText default)',
+        (tester) async {
       final signals = FakeCarSignals();
       await tester.binding.setSurfaceSize(const Size(200, 200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -709,19 +716,22 @@ void main() {
         signals: signals,
         scaffold: true,
         localizations: false,
-        config: const AppConfig(), // default rightBottom + batteryText + temp
+        config: const AppConfig(), // default rightBottom + justText + temp
       ));
       signals.emitBattery(levelPct: 72, tempC: 31.0);
       signals.emitCharge(charging: true, kw: 11.0);
       await tester.pump();
 
       expect(find.byKey(const ValueKey('charging-stats')), findsOneWidget);
-      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-temp-text')), findsOneWidget);
-      final statsTop = tester.getTopLeft(find.byKey(const ValueKey('charging-stats')));
-      final iconTop = tester.getTopLeft(find.byKey(const ValueKey('battery-icon')));
-      expect(statsTop.dy, lessThan(iconTop.dy),
-          reason: 'power/stats row must stack above the pack/%');
+      final statsTop =
+          tester.getTopLeft(find.byKey(const ValueKey('charging-stats')));
+      final pctTop =
+          tester.getTopLeft(find.byKey(const ValueKey('battery-pct-text')));
+      expect(statsTop.dy, lessThan(pctTop.dy),
+          reason: 'power/stats row must stack above the % (grow-up)');
     });
   });
 

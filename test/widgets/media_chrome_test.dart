@@ -75,11 +75,16 @@ void main() {
       expect(find.byKey(const ValueKey('hud-media-icon')), findsOneWidget);
       expect(find.byKey(const ValueKey('hud-media-artist-song')), findsOneWidget);
       expect(find.text('Artist — Song'), findsOneWidget);
+      // 0124: artist — song larger than 0123 B·compact (base*0.42 → base*0.55).
+      final mediaText =
+          tester.widget<Text>(find.byKey(const ValueKey('hud-media-artist-song')));
+      expect(mediaText.style?.fontSize, closeTo(20.0 * 0.55, 0.01));
       expect(find.byKey(const ValueKey('hud-media-progress')), findsOneWidget);
       // No time labels (no mm:ss).
       expect(find.textContaining(':'), findsNothing);
-      // Battery cluster still below (0120 default = pctInside + temp).
-      expect(find.byKey(const ValueKey('battery-icon')), findsOneWidget);
+      // Battery cluster still below (0124 default = justText % + temp).
+      expect(find.byKey(const ValueKey('battery-icon')), findsNothing);
+      expect(find.byKey(const ValueKey('battery-pct-text')), findsOneWidget);
       expect(find.byKey(const ValueKey('battery-temp-text')), findsOneWidget);
     });
 
