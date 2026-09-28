@@ -16,8 +16,7 @@ Live ship: ACCEPTed **0123** HUD media B · compact + **0124** Just-text default
 - **0123** HUD media B · compact above bat/temp; HUD-surface `kind=media` inject + tighter bat pad (`6ba9c36`).
 
 ### Notes
-- Docs: 0123/0124 ACCEPTed on tip under Live **1.1.0+28** hold; this bump publishes them for car T3 / dens320 QA.
-- Soft FakeMediaOnly stays FAIL-open (no native MediaSession in this bump). Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**.
+- **Live ship** — tip `6e8a907` (release `de9d601` + gate fix) / APK sha256 `ec5f25d55ead44349278e01e8cb3bb9688efaa998d7f62d513ae8b2242e4d7db` / tag `1.1.0+29` GH Latest. Soft FakeMediaOnly FAIL-open. Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**. dens320 ship-gate DoD for QA: Install/Live APK **+29** contains **0123** B·compact + **0124** Just-text default + larger media.
 - AOSP platform-signed via `release.yml`.
 
 

@@ -52,6 +52,11 @@ First cook — **B · compact** default:
 
 @zee-dev-beta four-point soft. Live stays **+28** unless Maxim GOs bump.
 
+
+## Live ship (2026-09-28) — 1.1.0+29
+
+Shipped under Live **1.1.0+29** tip `6e8a907` / tag `1.1.0+29` / APK sha256 `ec5f25d5…`. Soft FakeMediaOnly stays FAIL-open (no native MediaSession). dens320 ship-gate: Install/Live APK +29 contains 0123 B·compact behavior.
+
 ## Soft / FAIL-open
 
 - **MediaSession binding** — unclear on Zeekr DHU (which session token / host). Soft: T1 `FakeMediaNowPlaying` + `ext.zee.inject kind=media` on **HUD** isolate (windshield). Hard bind + DHU→HUD relay deferred.
