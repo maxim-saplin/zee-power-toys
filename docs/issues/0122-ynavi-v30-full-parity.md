@@ -1,6 +1,6 @@
 ---
 status: accepted  # scale soft-rescind then restored — see SOFT-RESCIND below
-tip: 5e327ff
+tip: 7b9a076
 accepted: 2026-09-28
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
@@ -144,3 +144,21 @@ in this seal. No green inheritance from rescinded asset `a1a90227`.
 
 **PDM ACCEPT** dens320 ship-gate. Live tip `b5c3ca8` / tag `1.1.0+28` / APK sha256 `693eebdfbe48c1e2c51dc544339cc4bfe542e2e0a5fc75ff3e9cb65eb8001124`. Install UI: **default = YNavi v27.0.2** · **v30.8.1 = beta non-default** (“Not default — prefer v27”). YNavi tip stays `45fada46` / asset `a000a77f…`. Evidence `tmp/qa/1.1.0+28-ship/` (FINDINGS · FOURPOINT PASS soft). Soft: SHARED_USER Live Tablet · Deepal/OS7 · car T3 later (Maxim). No pubspec bump in this seal.
 
+## ACCEPT (PDM 2026-09-28) — dens320 soft leftover sweep ACCEPT
+
+PDM ACCEPT closes the soft leftover sweep on the same scale-LIVE tip under
+HOST_SOT Override 160. Four-point **PASS soft**. No code or Live Toys bump;
+prior Live seal `7b9a076` stays tip.
+
+| Stamp | Value |
+|-------|-------|
+| ynavi tip | `45fada46` |
+| Release asset sha256 | `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e` |
+| Prior Live seal | `7b9a076` |
+| Live Toys | **1.1.0+28** tip `b5c3ca8` / APK sha256 `693eebdf…` (no bump) |
+| Evidence | `tmp/qa/0122-t2-softs-45fada46/` (+ `FOURPOINT.md`) |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · ZeeUiScale LIVE **L=840** · overlay **1024×576@213** |
+| Met | **P9** / **0101** / **0038** PASS · **T1** PASS* · **G1** SKIP (YNavi no-internet route shutter) · **M4** SKIP* (inactive-hide PASS; nav start/end blocked same) · no hard FAIL |
+| OOS soft | Deepal / car T3 / SHARED_USER |
+
+**Soft residuals (stay soft):** G1 / M4 route-gated SKIP(+*); T1 airplane path *; Deepal / OS7 / car T3 / SHARED_USER OOS. Do not chase in this seal.

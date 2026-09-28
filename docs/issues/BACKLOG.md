@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [x] **0122** YNavi Zee v30≡Zee v27 full parity — T2 uncut dens320 ACCEPT ynavi `45fada46` / asset `a000a77f…` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` ship-gate ACCEPT — soft G1/M4/P9/T1/Deepal/OS7/SHARED_USER/T3 — `0122-ynavi-v30-full-parity.md`
+- [x] **0122** YNavi Zee v30≡Zee v27 full parity — dens320 soft leftover sweep ACCEPT ynavi `45fada46` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` / evidence `tmp/qa/0122-t2-softs-45fada46/` / prior Live seal `7b9a076` — P9/0101/0038 PASS · T1 PASS* · G1 SKIP · M4 SKIP* · OOS Deepal/T3/SHARED_USER — `0122-ynavi-v30-full-parity.md`
 - [x] **0121** Install companion downgrade (v30→v27) — ACCEPT tip `7f3f836` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` (Install default v27 / v30 beta) — `0121-install-companion-downgrade.md`
 - [x] **0120** HUD battery defaults (%+temp BR; charging stack above, bottom-anchor) — ACCEPT tip `e06a1ac` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` — `0120-hud-battery-defaults.md`
 - [x] **0119c** Remove range feature (RCA Own/Cons dead; historical alias was also called “0120”) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
@@ -34,7 +34,7 @@ Most rows are one-line **stubs**; a stub becomes a full `NNNN-slug.md` (copy [TE
 See also: [PRINCIPLES.md](../PRINCIPLES.md) (Definition of Done) · [ADR 0007](../adr/0007-block-by-block-agentic-delivery.md) (delivery model).
 
 ## Discipline
-- [x] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap+scale+enrich+T2-uncut) — ACCEPT ynavi `45fada46` / asset `a000a77f…` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` — `0122-ynavi-v30-full-parity.md`
+- [x] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap+scale+enrich+T2-uncut+softs) — dens320 soft leftover ACCEPT ynavi `45fada46` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` / evidence `tmp/qa/0122-t2-softs-45fada46/` / prior Live seal `7b9a076` — `0122-ynavi-v30-full-parity.md`
 
 
 1. **One Block in-progress at a time.** Foundation first; the **walking skeleton (0001) before anything else**.
