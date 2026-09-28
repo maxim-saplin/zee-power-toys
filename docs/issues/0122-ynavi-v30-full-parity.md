@@ -1,5 +1,5 @@
 ---
-status: tip-ready
+status: ready-for-qa
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
 satisfies: YNavi Zee v30 full complete parity with Zee v27 — T2 enough; Deepal is a different flavor
@@ -40,3 +40,10 @@ Stumbling on many more after those is **not acceptable**. Expect Zee v30 to beha
 - Deepal flavor parity (separate unless Maxim expands scope).
 - Toys Live bump unless install-screen (0121) ships in the same grind and Maxim GOs.
 - New features beyond restoring Zee v27 parity.
+
+## DEV tip (2026-09-28 Europe/Minsk) — **not PASS/ACCEPT**
+
+- **ynavi-zee** `e9fbe3308` — `config.env.example` → Zee 70/10/480; `docs/0122-v30-zee-parity.md`
+- **Release** `ynavi-zeekr-v30` asset recut sha `a1a90227…` (letterbox + MINIMAP P1–P4)
+- **Evidence:** `tmp/qa/0122-zee-letterbox-minimap/FINDINGS.md` — left letterbox v27↔v30 side-by-side; CarApp `onHandshakeCompleted SUCCESS`
+- Soft: Live toys sharedUser on non-rooted Tablet; full 0097 matrix → @zee-qa

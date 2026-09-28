@@ -31,6 +31,8 @@ Most rows are one-line **stubs**; a stub becomes a full `NNNN-slug.md` (copy [TE
 See also: [PRINCIPLES.md](../PRINCIPLES.md) (Definition of Done) · [ADR 0007](../adr/0007-block-by-block-agentic-delivery.md) (delivery model).
 
 ## Discipline
+- [ ] **0122** YNavi Zee v30≡Zee v27 (letterbox+minimap) — DEV tip `e9fbe3308` / asset `a1a90227…` — see `0122-ynavi-v30-full-parity.md` → @zee-qa
+
 
 1. **One Block in-progress at a time.** Foundation first; the **walking skeleton (0001) before anything else**.
 2. **Lifecycle:** `backlog` → `ready-for-agent` → `in-progress` → `done` (or `blocked` + one-line why + `blocked-by`).
