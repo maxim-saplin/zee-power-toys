@@ -40,7 +40,7 @@ Live hold **1.1.0+28** — no version bump, no release.
 | Stamp | Value |
 |-------|-------|
 | PDM ACCEPT tip | `94e3970` |
-| docs stamp | *(this commit)* |
+| docs stamp | `04ef314` |
 | Evidence | `tmp/qa/hud-bat-just-text-94e3970/FINDINGS.md` |
 | HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** |
 | Live Toys | **1.1.0+28** hold (no bump) |
