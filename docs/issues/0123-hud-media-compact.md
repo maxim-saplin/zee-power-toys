@@ -42,7 +42,7 @@ First cook — **B · compact** default:
 | Stamp | Value |
 |-------|-------|
 | PDM ACCEPT tip | `6ba9c36` |
-| docs stamp | *(this commit)* |
+| docs stamp | `93c320a` |
 | Evidence | `tmp/qa/hud-media-b-6ba9c36/FINDINGS.md` |
 | Prior FAIL (brace) | `tmp/qa/hud-media-b-c0947d3/` retained |
 | HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** |
