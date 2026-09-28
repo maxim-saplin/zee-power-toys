@@ -1,6 +1,7 @@
 ---
-status: tip-ready
+status: accepted
 tip: 7f3f836
+accepted: 2026-09-28
 labels: [install, companion, downgrade, ynavi]
 created: 2026-09-28
 satisfies: Install APKs screen — uninstall/replace newer companion so older can install (YNavi 27 after 30)
@@ -26,7 +27,7 @@ Install screen must let the user get an **older** companion APK onto the device 
 
 - [x] From Install APKs, user can remove or replace a newer companion (YNavi minimum; same pattern for other companions on that screen).
 - [x] Installing older after newer succeeds (or fails with a clear message — never silent no-op).
-- [ ] T2 dens320 proof: v30 → Replace → OK → auto-install Release v27 (or clear Failed) — @zee-qa re-cut.
+- [x] T2 dens320 proof: v30 → Replace → OK → auto-install Release v27 (or clear Failed).
 - [x] Tip to `origin/main`.
 
 ## Soft / out of scope
@@ -43,3 +44,17 @@ Install screen must let the user get an **older** companion APK onto the device 
 - Evidence FAIL: `tmp/qa/0121-cut-e63ae16/FINDINGS.md`
 - Live: **1.1.0+27** hold.
 - Who-next: **@zee-qa** re-cut Replace→OK→auto v27 (or Failed).
+
+## ACCEPT (PDM 2026-09-28)
+
+**PDM ACCEPT 2026-09-28:** T2 dens320 PASS — tipAhead → Replace → DELETE → **auto-install same second** (fixes e63ae16 stale tipAhead).
+
+| Stamp | Value |
+|-------|--------|
+| PDM ACCEPT tip | `7f3f836` |
+| docs stamp | `4ea3518` |
+| Evidence | `tmp/qa/0121-cut-7f3f836/` (`FINDINGS.md`) |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** |
+| Live Toys | **1.1.0+27** hold (no bump) |
+
+Governing: tipAhead Replace → DELETE → auto-install same-second. Soft: Done-on-commit ≠ pm present; Live hold **1.1.0+27**. Cancel → still tipAhead PASS.

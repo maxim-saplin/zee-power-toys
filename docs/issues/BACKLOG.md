@@ -1,8 +1,9 @@
 # Issues — the backlog & board
 
 - [x] **0122** YNavi Zee v30≡Zee v27 full parity — ACCEPT ynavi `e9fbe330` / asset `a1a90227…` toys docs `65ffdd5e` Live **1.1.0+27** (no bump) — `0122-ynavi-v30-full-parity.md`
-- [ ] **0121** Install companion downgrade (v30→v27) — tip `7f3f836` (post-DELETE auto-install fix) → @zee-qa re-cut — `0121-install-companion-downgrade.md`
-- [x] **0119c** / **0120** Remove range feature (RCA Own/Cons dead) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
+- [x] **0121** Install companion downgrade (v30→v27) — ACCEPT tip `7f3f836` / docs `4ea3518` Live **1.1.0+27** hold — `0121-install-companion-downgrade.md`
+- [ ] **0120** HUD battery defaults (%+temp BR; charging stack above, bottom-anchor) — tip-ready — `0120-hud-battery-defaults.md`
+- [x] **0119c** Remove range feature (RCA Own/Cons dead; historical alias was also called “0120”) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`
 - [x] **0119b** Cons1 FW ID remap (dashes RCA) — superseded by 0119c (03300/7.8 DCDC ≠ dash Cons) — `0119b-cons1-fw-id-remap.md`
 - [x] **0119** Adapt-Cons HUD only — seed Cons1 + drop Own Est — tip `a73fd73` (superseded → 0119b → 0119c) — `0119-adapt-cons-hud-only.md`
 - [x] **0118** Float SoC + Cons1 dual Est. (own vs Adapt-Cons) — ACCEPT `9b0c0ba` — `0118-float-soc-cons1-dual-est.md`
