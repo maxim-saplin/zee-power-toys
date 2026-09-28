@@ -1,6 +1,7 @@
 ---
-status: ready-for-qa
+status: accepted
 tip: 6ba9c36
+accepted: 2026-09-28
 labels: [hud, media, battery]
 created: 2026-09-28
 satisfies: HUD · utility info — now-playing chrome in BATTERY slot
@@ -26,12 +27,30 @@ First cook — **B · compact** default:
 
 ## DoD (dens320 cut)
 
-- [ ] Compact media chrome paints above bat/temp in BATTERY slot (bottom-anchored grow-up).
-- [ ] Prefs: showMedia / icon / artist—song / progress / barOnly.
-- [ ] T1 unit + widget green; dens320 Tablet can prove layout (inject `kind=media` on **HUD** surface).
+- [x] Compact media chrome paints above bat/temp in BATTERY slot (bottom-anchored grow-up).
+- [x] Prefs: showMedia / icon / artist—song / progress / barOnly.
+- [x] T1 unit + widget green; dens320 Tablet can prove layout (inject `kind=media` on **HUD** surface).
 - [x] Tip to `origin/main` (`6ba9c36` follow-up; was `c0947d3`). No release.yml / no version bump.
 - [x] HUD-surface `ext.zee.inject kind=media` live (brace fix — not nested under `surface == dhu`).
 - [x] Battery pack fill↔outline pad tighter (`batteryPackInnerPad` extra `bodyH*0.04`).
+
+
+## ACCEPT (PDM 2026-09-28)
+
+**PDM ACCEPT 2026-09-28:** dens320 own-check PASS — HUD-surface `ext.zee.inject kind=media` live; B · compact (♪ Artist — Song · bar, no times) stacks above bat/temp with **bottom_delta=0** / top_delta=**−27**; barOnly + piece toggles; bat fill↔outline pad tighter (soft 4 vs 5). Soft FakeMediaOnly locked.
+
+| Stamp | Value |
+|-------|-------|
+| PDM ACCEPT tip | `6ba9c36` |
+| docs stamp | *(this commit)* |
+| Evidence | `tmp/qa/hud-media-b-6ba9c36/FINDINGS.md` |
+| Prior FAIL (brace) | `tmp/qa/hud-media-b-c0947d3/` retained |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** |
+| Live Toys | **1.1.0+28** hold (no bump) |
+
+## Who-next
+
+@zee-dev-beta four-point soft. Live stays **+28** unless Maxim GOs bump.
 
 ## Soft / FAIL-open
 
