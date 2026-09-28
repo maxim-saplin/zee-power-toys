@@ -1,6 +1,6 @@
 ---
 status: accepted  # scale soft-rescind then restored — see SOFT-RESCIND below
-tip: 947af8f
+tip: 5e327ff
 accepted: 2026-09-28
 labels: [ynavi, zee, v30, parity, letterbox, minimap]
 created: 2026-09-28
@@ -120,3 +120,22 @@ gate without a code or Live Toys bump.
 **Soft / non-blocking:** Deepal / OS7 later; full-matrix leftovers SKIP;
 navigation shields were not driven. The accepted gate is the Zee scale-LIVE
 enrich and guidance-chrome cut above; no new feature is implied.
+
+## ACCEPT (PDM 2026-09-28) — T2 uncut dens320 ACCEPT
+
+PDM ACCEPT closes the hard U1–U12 T2 dens320 corner sweep on the same
+scale-LIVE tip under HOST_SOT Override 160. Four-point **PASS soft** (U12
+PASS*). No code or Live Toys bump; no inherit from rescinded `a1a90227`.
+
+| Stamp | Value |
+|-------|-------|
+| ynavi tip | `45fada46` |
+| Release asset sha256 | `a000a77f158fcccb87e0c12c1001b0f93f99366341ba9be2fc11daf8509b0e8e` |
+| Prior toys docs seal | `5e327ff` |
+| Evidence | `tmp/qa/0122-t2-uncut-45fada46/` (+ `OWN_CHECK.md`, `FOURPOINT.md`) |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · ZeeUiScale **175/130** · overlay **1024×576@213** (never `wm density`) |
+| Met | Hard **U1–U12** dens320 PASS; ZeeUiScale LIVE **L=840**; Four-point **PASS soft** (U12 PASS*) |
+| Live Toys | **1.1.0+27** hold (Maxim GO for Live — no bump this tip) |
+
+**Soft leftovers (stay soft):** G1 / M4 / P9 / T1 / Deepal / OS7. Do not chase
+in this seal. No green inheritance from rescinded asset `a1a90227`.
