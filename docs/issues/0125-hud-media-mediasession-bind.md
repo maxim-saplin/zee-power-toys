@@ -74,6 +74,10 @@ Same native bind on DHU + hub relay to HUD Presentation. No ynavi-zee change req
 
 @zee-dev Live **1.1.0+30** bump + release now. @zee-qa dens320 ship-gate after APK. Preferred session prove on car / platform Live.
 
+## Live ship (2026-09-28) — 1.1.0+30
+
+Shipped under Live **1.1.0+30** tip `b9ddade` / tag `1.1.0+30` / APK sha256 `ef6c5e47…`. Soft FakeMediaOnly closed; Preferred real-session FAIL soft on debug Tablet — platform Live/car leftover OK. Install UI unchanged (v27 default / v30 beta non-default). dens320 ship-gate: Install/Live APK +30 contains 0125 MediaSession bind (+ 0123/0124 ancestry).
+
 ## Soft leftovers
 
 - Unprivileged (non-platform) installs: `getActiveSessions` SecurityException → inactive; inject remains debug fallback.

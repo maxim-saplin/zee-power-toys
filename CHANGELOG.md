@@ -15,8 +15,7 @@ Live ship: ACCEPTed **0125** MediaSession bind (Soft FakeMediaOnly closed) + pri
 - **0125** HUD media chrome binds native Android **MediaSession** now-playing (DHU `zee/media` + hub relay); Soft FakeMediaOnly closed. `ext.zee.inject kind=media` remains debug fallback (`2161990`).
 
 ### Notes
-- Docs: 0125 ACCEPTed soft on tip under Live **1.1.0+29** hold; this bump publishes it for car T3 / dens320 QA.
-- Soft Preferred real-session FAIL soft on debug Tablet (`MEDIA_CONTENT_CONTROL`) — platform Live/car leftover OK. Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**.
+- **Live ship** — tip `b9ddade` / APK sha256 `ef6c5e473481ea32543b5b7f60158d32fb336a2c5206b9e56d2f536a998a6722` / tag `1.1.0+30` GH Latest. Soft FakeMediaOnly closed; Preferred real-session FAIL soft on debug Tablet (`MEDIA_CONTENT_CONTROL`) — platform Live/car leftover OK. Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**. dens320 ship-gate DoD for QA: Install/Live APK **+30** contains **0125** MediaSession bind (+ **0123** B·compact + **0124** Just-text default ancestry).
 - AOSP platform-signed via `release.yml`.
 
 
