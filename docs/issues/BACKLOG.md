@@ -1,5 +1,6 @@
 # Issues — the backlog & board
 
+- [ ] **0124** HUD Just text default + larger media artist—song — tip `94e3970` / Live hold **1.1.0+28** → @zee-qa — `0124-hud-justtext-default-media-type.md`
 - [x] **0123** HUD media B · compact (inject brace + bat pad) — ACCEPT tip `6ba9c36` / Live hold **1.1.0+28** — `0123-hud-media-compact.md`
 - [x] **0122** YNavi Zee v30≡Zee v27 full parity — dens320 soft leftover sweep ACCEPT ynavi `45fada46` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` / evidence `tmp/qa/0122-t2-softs-45fada46/` / prior Live seal `7b9a076` — P9/0101/0038 PASS · T1 PASS* · G1 SKIP · M4 SKIP* · OOS Deepal/T3/SHARED_USER — `0122-ynavi-v30-full-parity.md`
 - [x] **0121** Install companion downgrade (v30→v27) — ACCEPT tip `7f3f836` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` (Install default v27 / v30 beta) — `0121-install-companion-downgrade.md`
