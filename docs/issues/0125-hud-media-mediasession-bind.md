@@ -61,7 +61,7 @@ Same native bind on DHU + hub relay to HUD Presentation. No ynavi-zee change req
 
 ## ACCEPT (PDM 2026-09-28) — soft Alternate
 
-**PDM ACCEPT soft** tip `2161990` / docs stamp *(this commit)*. dens320 own-check: Soft FakeMediaOnly **closed**; DHU `mediaSource=mediasession` armed; inject debug fallback layout PASS. **Preferred** real-session windshield on dens320 debug **FAIL soft** (`MEDIA_CONTENT_CONTROL` SecurityException) — full Preferred deferred to **platform Live / car T3**.
+**PDM ACCEPT soft** tip `2161990` / docs stamp `5df495d`. dens320 own-check: Soft FakeMediaOnly **closed**; DHU `mediaSource=mediasession` armed; inject debug fallback layout PASS. **Preferred** real-session windshield on dens320 debug **FAIL soft** (`MEDIA_CONTENT_CONTROL` SecurityException) — full Preferred deferred to **platform Live / car T3**.
 
 | Stamp | Value |
 |-------|-------|
