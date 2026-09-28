@@ -7,6 +7,20 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+29] — 2026-09-28
+
+Live ship: ACCEPTed **0123** HUD media B · compact + **0124** Just-text default + larger media title.
+
+### Changed
+- **0124** HUD battery default **Just text** (`look=justText` / `%` only, no pack) + larger media artist—song (`94e3970`).
+- **0123** HUD media B · compact above bat/temp; HUD-surface `kind=media` inject + tighter bat pad (`6ba9c36`).
+
+### Notes
+- Docs: 0123/0124 ACCEPTed on tip under Live **1.1.0+28** hold; this bump publishes them for car T3 / dens320 QA.
+- Soft FakeMediaOnly stays FAIL-open (no native MediaSession in this bump). Install UI unchanged: **v27.0.2 default** · **v30.8.1 beta non-default**.
+- AOSP platform-signed via `release.yml`.
+
+
 ## [1.1.0+28] — 2026-09-28
 
 Live ship: Install screen **v30 beta** companion (non-default) + ACCEPTed **0120** HUD battery defaults / **0121** Replace older / **0122** Zee v30 parity tip.
