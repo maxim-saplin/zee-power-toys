@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [ ] **0126** Toys discovers current YNavi release/build identity without a Toys bump — `0126-ynavi-release-update-discovery.md`
+- [ ] **0126** YNavi gets immutable upstream+mod-build releases; Toys discovers each build without a Toys bump — `0126-ynavi-release-update-discovery.md`
 - [x] **0125** HUD media native MediaSession bind — ACCEPT soft tip `2161990` (Preferred FAIL-open dens320 debug) / Live **1.1.0+30** tip `b9ddade` APK `ef6c5e47…` — `0125-hud-media-mediasession-bind.md`
 - [x] **0124** HUD Just text default + larger media title — ACCEPT tip `94e3970` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0124-hud-justtext-default-media-type.md`
 - [x] **0123** HUD media B · compact (inject brace + bat pad) — ACCEPT tip `6ba9c36` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0123-hud-media-compact.md`
