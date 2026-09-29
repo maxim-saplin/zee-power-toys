@@ -7,6 +7,18 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.1.0+31] — 2026-09-29
+
+Live ship: **0122A** YNavi v30 minimap live-session fix.
+
+### Fixed
+- **0122A** Preserve the active YNavi minimap surface session across cold rebind and superseded teardown (`757db4d`).
+
+### Notes
+- T2 soft ACCEPT: minimap surface callback + live overlay tiles; evidence `tmp/qa/0122a-minimap-prove/`.
+- AOSP platform-signed via `release.yml`.
+
+
 ## [1.1.0+30] — 2026-09-28
 
 Live ship: ACCEPTed **0125** MediaSession bind (Soft FakeMediaOnly closed) + prior **0123**/**0124** ancestry from +29.
