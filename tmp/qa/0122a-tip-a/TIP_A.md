@@ -67,3 +67,11 @@ nonblack / 0.000 colorful).
 
 Car USB remains for later physical verification; the same host lifecycle and
 P9 path are fixed. **C not cooked.**
+
+## ACCEPT soft dens320 (2026-09-29)
+
+PDM/QA **PASS soft** dens320 callback+tiles. Evidence
+`tmp/qa/0122a-minimap-prove/` (FOURPOINT + FINDINGS). Tip SHAs sealed into
+ynavi `docs/0122-v30-zee-parity.md` Tip A stamp table + toys issue
+`docs/issues/0122-ynavi-v30-full-parity.md`. Soft: car USB re-prove; C held.
+

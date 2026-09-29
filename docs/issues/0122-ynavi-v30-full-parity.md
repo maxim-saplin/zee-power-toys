@@ -162,3 +162,25 @@ prior Live seal `7b9a076` stays tip.
 | OOS soft | Deepal / car T3 / SHARED_USER |
 
 **Soft residuals (stay soft):** G1 / M4 route-gated SKIP(+*); T1 airplane path *; Deepal / OS7 / car T3 / SHARED_USER OOS. Do not chase in this seal.
+
+## ACCEPT soft (PDM 2026-09-29) — dens320 0122A minimap callback+tiles
+
+**PDM ACCEPT soft** dens320 0122A. Governing DoD: `IAppHost.setSurfaceCallback`
++ `onSurfaceAvailable SUCCESS` **and** live overlay tiles (handshake alone is
+not PASS). Four-point **PASS soft**. No Live Toys bump; no release upload.
+
+| Stamp | Value |
+|-------|-------|
+| ynavi tip | `4b3bab9df6e956f3fe74867d31f53d0948ecf835` |
+| YNavi APK sha256 | `864bc52fe8adb30504fa49f61a24c67b2d43ef7beeced015ffbd788b7bba3672` |
+| Toys code tip | `757db4de13c87cf73a067a253e9ffc5311bc7f82` |
+| Toys docs tip (TIP_A) | `6e329fd07d973f29145d7f236ac9824a6042a7af` |
+| Toys debug sha256 | `a4e426bc995fc2dcefae3da96d1d430cf136cb8fd51c4164eb57399f34018611` |
+| Evidence | `tmp/qa/0122a-minimap-prove/` (+ `tmp/qa/0122a-tip-a/`) |
+| HOST_SOT | Phys **2560×1600@320** · Override dens **160** · overlay **1024×576@213** · ZeeUiScale LIVE **L=840** |
+| Met | callback+tiles **PASS**; crop nonblack **0.306** / colorful **0.343** |
+| Live Toys | **1.1.0+30** hold (debug prove build only; no bump) |
+
+**Soft / non-blocking:** Car USB minimap re-prove when DHU available; Tip C
+(car-only chrome +82) held for cook; Deepal/OS7 OOS.
+
