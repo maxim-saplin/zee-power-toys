@@ -167,7 +167,8 @@ prior Live seal `7b9a076` stays tip.
 
 **PDM ACCEPT soft** dens320 0122A. Governing DoD: `IAppHost.setSurfaceCallback`
 + `onSurfaceAvailable SUCCESS` **and** live overlay tiles (handshake alone is
-not PASS). Four-point **PASS soft**. No Live Toys bump; no release upload.
+not PASS). Four-point **PASS soft**. At acceptance time, no Live Toys bump or
+release upload; the later ship is recorded below.
 
 | Stamp | Value |
 |-------|-------|
@@ -183,4 +184,11 @@ not PASS). Four-point **PASS soft**. No Live Toys bump; no release upload.
 
 **Soft / non-blocking:** Car USB minimap re-prove when DHU available; Tip C
 (car-only chrome +82) held for cook; Deepal/OS7 OOS.
+
+## Live ship (2026-09-29) — YNavi v30 and Toys +31
+
+- YNavi prerelease `ynavi-zeekr-v30` asset replaced with the accepted 0122A APK, including the 0122B switch-thumb shape fix. Asset SHA-256: `864bc52fe8adb30504fa49f61a24c67b2d43ef7beeced015ffbd788b7bba3672`. Upstream version remains `30.8.1` / `739652660`.
+- Toys release `1.1.0+31`, tag commit `e50301e`, APK SHA-256 `ab26187c7f8416f22f5181b3846e05af102ec26e30457b2de81a82c49e71270f`. GitHub Actions run `36566167379` passed analysis, tests, build, and upload.
+- T2 YNavi install/launch smoke passed on `Tablet_Android_12L`; version `30.8.1` / `739652660`, no fatal startup log.
+- Toys release install smoke is blocked on both Android 12L AVDs: their system certificates do not match the car platform key required by `android.uid.system` (`INSTALL_FAILED_SHARED_USER_INCOMPATIBLE`). No T3 car was attached. Do not treat emulator install as passed.
 

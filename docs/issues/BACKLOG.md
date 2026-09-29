@@ -4,7 +4,7 @@
 - [x] **0125** HUD media native MediaSession bind — ACCEPT soft tip `2161990` (Preferred FAIL-open dens320 debug) / Live **1.1.0+30** tip `b9ddade` APK `ef6c5e47…` — `0125-hud-media-mediasession-bind.md`
 - [x] **0124** HUD Just text default + larger media title — ACCEPT tip `94e3970` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0124-hud-justtext-default-media-type.md`
 - [x] **0123** HUD media B · compact (inject brace + bat pad) — ACCEPT tip `6ba9c36` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0123-hud-media-compact.md`
-- [x] **0122** YNavi Zee v30≡Zee v27 full parity — dens320 soft leftover sweep ACCEPT ynavi `45fada46` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` / evidence `tmp/qa/0122-t2-softs-45fada46/` / prior Live seal `7b9a076` — P9/0101/0038 PASS · T1 PASS* · G1 SKIP · M4 SKIP* · OOS Deepal/T3/SHARED_USER — `0122-ynavi-v30-full-parity.md`
+- [x] **0122** YNavi Zee v30≡Zee v27 parity + minimap session restore — v30 beta asset SHA `864bc52…` / Toys Live **1.1.0+31** tip `757db4d` APK `ab26187c…` — YNavi T2 install PASS; Toys platform-signed install blocked by emulator certificate mismatch — `0122-ynavi-v30-full-parity.md`
 - [x] **0121** Install companion downgrade (v30→v27) — ACCEPT tip `7f3f836` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` (Install default v27 / v30 beta) — `0121-install-companion-downgrade.md`
 - [x] **0120** HUD battery defaults (%+temp BR; charging stack above, bottom-anchor) — ACCEPT tip `e06a1ac` / Live **1.1.0+28** tip `b5c3ca8` APK `693eebdf…` — `0120-hud-battery-defaults.md`
 - [x] **0119c** Remove range feature (RCA Own/Cons dead; historical alias was also called “0120”) — ACCEPT `0c69ee5` Live `0066daf` **1.1.0+27** — `0119c-remove-range-feature.md`

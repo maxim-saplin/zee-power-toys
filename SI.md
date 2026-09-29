@@ -6,7 +6,13 @@
 
 ## Open
 
-_(empty)_
+## 2026-09-29 15:18 — T2 platform-signed install mismatch -
+Toys `1.1.0+31` passed release CI, but install smoke failed on both Android 12L
+AVDs with `INSTALL_FAILED_SHARED_USER_INCOMPATIBLE`: their system certificates
+do not match the committed car platform key for `android.uid.system`. YNavi
+v30 installs on T2. Use a T2 image signed with the matching platform key or
+reserve this release-install smoke for T3; do not uninstall debug QA state to
+force the test.
 
 ## Cleared
 

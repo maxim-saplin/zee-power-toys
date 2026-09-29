@@ -16,6 +16,8 @@ Live ship: **0122A** YNavi v30 minimap live-session fix.
 
 ### Notes
 - T2 soft ACCEPT: minimap surface callback + live overlay tiles; evidence `tmp/qa/0122a-minimap-prove/`.
+- Published tag `1.1.0+31`; APK SHA-256 `ab26187c7f8416f22f5181b3846e05af102ec26e30457b2de81a82c49e71270f` (CI run `36566167379`).
+- YNavi v30 beta asset refreshed at `ynavi-zeekr-v30`; SHA-256 `864bc52fe8adb30504fa49f61a24c67b2d43ef7beeced015ffbd788b7bba3672`; upstream versionCode unchanged.
 - AOSP platform-signed via `release.yml`.
 
 
