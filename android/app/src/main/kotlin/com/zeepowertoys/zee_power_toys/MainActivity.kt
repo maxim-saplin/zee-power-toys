@@ -1201,6 +1201,13 @@ class MainActivity : FlutterActivity() {
                             else -> null
                         }
                     }
+                    // 0122A: snapshot geometry before mutation so a Flutter dump of the
+                    // same minimapScale/bufScale/dpiScale does not stop→start and race
+                    // epoch-1 onAppPause over a live session (empty minimap / no
+                    // setSurfaceCallback).
+                    val prevMinimapScale = minimapParams.minimapScale
+                    val prevBufScale = minimapParams.bufScale
+                    val prevDpiScale = minimapParams.dpiScale
                     var recognized = true
                     when (key) {
                         "contrast"   -> asFloat()?.let { minimapParams.contrast = it }
@@ -1260,8 +1267,15 @@ class MainActivity : FlutterActivity() {
                             // geographic zoom on this YNavi build (onSurfaceAvailable
                             // re-dispatch is ignored). Stop + parkForYNavi forces a
                             // fresh SurfaceTexture and start() with new buffer size.
+                            // Skip when Flutter re-applies the same geometry (0122A).
+                            val geometryUnchanged =
+                                minimapParams.minimapScale == prevMinimapScale &&
+                                    minimapParams.bufScale == prevBufScale &&
+                                    minimapParams.dpiScale == prevDpiScale
                             val host = yNaviCarAppHost
-                            if (host != null && host.isActive) {
+                            if (geometryUnchanged) {
+                                Log.i(TAG, "setMinimapParam($key): skip cold rebind — geometry unchanged scale=${minimapParams.minimapScale}")
+                            } else if (host != null && host.isActive) {
                                 host.stop()
                                 v.parkForYNavi()
                                 Log.i(TAG, "setMinimapParam($key): cold rebind via parkForYNavi scale=${minimapParams.minimapScale}")

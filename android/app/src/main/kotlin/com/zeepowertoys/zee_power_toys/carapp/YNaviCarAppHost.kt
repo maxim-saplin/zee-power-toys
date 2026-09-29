@@ -422,8 +422,25 @@ class YNaviCarAppHost(
         val target = carApp
 
         worker.execute {
+            // 0122A: Abandon BEFORE onAppPause/onAppStop. A stop→start race (Flutter
+            // dumps minimapScale right after setMinimap) used to pause the NEWER
+            // session after it had already resumed — YNavi then never called
+            // setSurfaceCallback and MinimapView stayed empty. Unbind-only supersede
+            // was not enough; the late pause was the tile killer.
+            if (sessionEpoch.get() != epoch) {
+                Log.i(TAG, "performStop(epoch=$epoch): superseded by epoch ${sessionEpoch.get()} before pause — skipping teardown")
+                mainHandler.post { onComplete?.invoke() }
+                return@execute
+            }
+
             if (target != null) {
                 callWithTimeout("onAppPause") { cb -> target.onAppPause(cb) }
+                // Re-check after pause: start() may have bumped epoch while we blocked.
+                if (sessionEpoch.get() != epoch) {
+                    Log.i(TAG, "performStop(epoch=$epoch): superseded by epoch ${sessionEpoch.get()} after pause — skipping stop/unbind")
+                    mainHandler.post { onComplete?.invoke() }
+                    return@execute
+                }
                 callWithTimeout("onAppStop") { cb -> target.onAppStop(cb) }
             }
 
