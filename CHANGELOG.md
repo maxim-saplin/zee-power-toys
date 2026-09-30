@@ -15,6 +15,10 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 ### Fixed
 - **0127** Show the label when the first track arrives from idle. Same-track progress updates do not extend its display window.
 
+### Notes
+- Published tag `1.2.0+32`; APK SHA-256 `dd88a267e52869dfd7a99927b18f71500f73cfa92db224988ef1ad106ed0833c` (GitHub Actions run `36712718800`).
+- AOSP platform-signed through `release.yml`.
+
 ## [1.1.0+31] — 2026-09-29
 
 Live ship: **0122A** YNavi v30 minimap live-session fix.
