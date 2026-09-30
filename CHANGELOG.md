@@ -12,6 +12,10 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 ### Fixed
 - **0127** Keep the 3.5-second label deadline across transient paused or missing-media snapshots; resume the same track with the remaining window.
 
+### Notes
+- Published tag `1.2.2+34`; release workflow `36755097632`.
+- APK SHA-256 `485c78c976809958bad5a4bae7b495f9c1c1f20041d12e986202813510ccfe35`; AOSP platform-signed through `release.yml`.
+
 ## [1.2.1+33] — 2026-09-30
 
 ### Fixed

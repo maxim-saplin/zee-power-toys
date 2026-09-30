@@ -1,6 +1,6 @@
 # Issues — the backlog & board
 
-- [x] **0127** HUD media: one DHU toggle, progress by default, 3.5-second text-only track label resilient to transient media gaps — T2 PASS (`tmp/qa/0127-flicker/FINDINGS.md`) — `0127-hud-media-progress-track-toast.md`
+- [x] **0127** HUD media: one DHU toggle, progress by default, 3.5-second text-only track label resilient to transient media gaps — T2 PASS, Live **1.2.2+34** APK `485c78c9…` — `0127-hud-media-progress-track-toast.md`
 - [ ] **0126** YNavi gets immutable upstream+mod-build releases; Toys discovers each build without a Toys bump — `0126-ynavi-release-update-discovery.md`
 - [x] **0125** HUD media native MediaSession bind — ACCEPT soft tip `2161990` (Preferred FAIL-open dens320 debug) / Live **1.1.0+30** tip `b9ddade` APK `ef6c5e47…` — `0125-hud-media-mediasession-bind.md`
 - [x] **0124** HUD Just text default + larger media title — ACCEPT tip `94e3970` / Live **1.1.0+29** tip `6e8a907` APK `ec5f25d5…` — `0124-hud-justtext-default-media-type.md`
