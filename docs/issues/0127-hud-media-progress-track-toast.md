@@ -42,4 +42,4 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 ## Reconciliation
 
-T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime. The follow-up fixes the label window at 3.5 seconds, reserves a fixed row above the bar, and isolates progress ticks to the bar subtree. Final T2 evidence is recorded in `tmp/qa/0127-live/FINDINGS.md`. Release `1.2.0+32` predates this follow-up; target patch release is `1.2.1+33`.
+T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime. The follow-up fixes the label window at 3.5 seconds, reserves a fixed row above the bar, and isolates progress ticks to the bar subtree. Final T2 evidence is recorded in `tmp/qa/0127-live/FINDINGS.md`. Released as `1.2.1+33`; CI run `36736926916`; APK SHA-256 `4b9cd9f73eb00b186cffce67b6c1d38fd7b3abc6631e658499a7353b73947fc1`.

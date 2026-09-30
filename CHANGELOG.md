@@ -12,6 +12,10 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 ### Fixed
 - **0127** Hold the track label for 3.5 seconds. Reserve a fixed media row above the bar; progress ticks update only the bar.
 
+### Notes
+- Published tag `1.2.1+33`; release workflow `36736926916`.
+- APK SHA-256 `4b9cd9f73eb00b186cffce67b6c1d38fd7b3abc6631e658499a7353b73947fc1`; AOSP platform-signed through `release.yml`.
+
 ## [1.2.0+32] — 2026-09-30
 
 ### Changed
