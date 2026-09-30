@@ -32,8 +32,9 @@ import 'battery_geometry.dart';
 /// placements). Hidden when not charging (ADR 0003 show-while-charging
 /// rule — app policy enforced here, not toggled by the user).
 ///
-/// Media progress with a brief text-only track-change label. Stacks above
-/// charging/battery/temp while [mediaNowPlayingProvider] reports playback.
+/// Media progress with a 3.5-second text-only track-change label. Its fixed
+/// row stacks above charging/battery/temp while [mediaNowPlayingProvider]
+/// reports playback.
 ///
 /// Emissive palette: bright marks on black.  No light backgrounds, cards, or
 /// panels — only the marks themselves emit light.  Scaled by [BatteryConfig.sizeScale].
@@ -72,7 +73,8 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
 
   // ---------------------------------------------------------------------------
 
-  static const Duration _trackLabelDuration = Duration(seconds: 5);
+  /// Fixed label window; progress updates for the same track do not extend it.
+  static const Duration _trackLabelDuration = Duration(milliseconds: 3500);
 
   bool _showTrackLabel = false;
   bool _hasInitializedMedia = false;
@@ -127,15 +129,20 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
 
     final cfg = ref.watch(batteryConfigProvider);
     final mediaCfg = ref.watch(mediaConfigProvider);
-    final nowPlaying = ref.watch(mediaNowPlayingProvider);
+    final isMediaPlaying = ref.watch(
+      mediaNowPlayingProvider.select(
+        (nowPlaying) => nowPlaying?.isPlaying == true,
+      ),
+    );
     if (!_hasInitializedMedia) {
       _hasInitializedMedia = true;
+      final nowPlaying = ref.read(mediaNowPlayingProvider);
       if (nowPlaying?.isPlaying == true) {
         _lastPlayingTrackLabel = nowPlaying!.artistSongLabel;
       }
     }
 
-    final mediaChrome = _mediaChromeVisible(mediaCfg, nowPlaying);
+    final mediaChrome = _mediaChromeVisible(mediaCfg, isMediaPlaying);
 
     // showBattery=false → render absolutely nothing (0 pixels), unless media
     // chrome alone is on (media may show above an empty battery hide).
@@ -227,10 +234,11 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
               if (mediaChrome) ...<Widget>[
                 _MediaChrome(
                   key: const ValueKey('hud-media-chrome'),
-                  nowPlaying: nowPlaying!,
+                  trackLabel: _showTrackLabel
+                      ? ref.read(mediaNowPlayingProvider)?.artistSongLabel ?? ''
+                      : '',
                   showTrackLabel: _showTrackLabel,
                   base: base,
-                  crossAxisAlignment: clusterCross,
                 ),
                 SizedBox(height: base * 0.28),
               ],
@@ -320,79 +328,117 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
   }
 }
 
-bool _mediaChromeVisible(MediaConfig cfg, MediaNowPlaying? np) {
-  return cfg.showMedia && np != null && np.isPlaying;
+bool _mediaChromeVisible(MediaConfig cfg, bool isPlaying) {
+  return cfg.showMedia && isPlaying;
 }
 
 class _MediaChrome extends StatelessWidget {
   const _MediaChrome({
     super.key,
-    required this.nowPlaying,
+    required this.trackLabel,
     required this.showTrackLabel,
     required this.base,
-    required this.crossAxisAlignment,
   });
 
-  final MediaNowPlaying nowPlaying;
+  final String trackLabel;
   final bool showTrackLabel;
   final double base;
-  final CrossAxisAlignment crossAxisAlignment;
 
   static const Color _kText = Color(0xFFEEEEEE);
-  static const Color _kBarTrack = Color(0xFF444444);
-  static const Color _kBarFill = Color(0xFF67E8F9);
 
   @override
   Widget build(BuildContext context) {
-    final label = nowPlaying.artistSongLabel;
-    final progress = nowPlaying.progress.clamp(0.0, 1.0);
+    final width = base * 5.2;
+    final labelHeight = base * 0.45;
+    final labelGap = base * 0.14;
     final barW = base * 4.2;
     final barH = base * 0.14;
     final textStyle = TextStyle(
       color: _kText,
-      fontSize: base * 0.45,
+      fontSize: labelHeight,
       fontWeight: FontWeight.w500,
       height: 1.0,
     );
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: crossAxisAlignment,
-      children: <Widget>[
-        if (showTrackLabel && label.isNotEmpty) ...<Widget>[
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: base * 5.2),
-            child: Text(
-              label,
-              key: const ValueKey('hud-media-artist-song'),
-              style: textStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
+    // Reserve a fixed label row and media width. Build upward from the bar so
+    // track metadata only paints into its row; it cannot move the bar or the
+    // battery/temp rows below it. Left-align within the fixed-width block so
+    // tracks with different title lengths share one stable origin.
+    return SizedBox(
+      width: width,
+      height: labelHeight + labelGap + barH,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        verticalDirection: VerticalDirection.up,
+        children: <Widget>[
+          _MediaProgressBar(width: barW, height: barH),
+          SizedBox(height: labelGap),
+          SizedBox(
+            width: width,
+            height: labelHeight,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: showTrackLabel && trackLabel.isNotEmpty
+                  ? ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: width),
+                      child: Text(
+                        trackLabel,
+                        key: const ValueKey('hud-media-artist-song'),
+                        style: textStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
-          SizedBox(height: base * 0.14),
         ],
-        SizedBox(
-          key: const ValueKey('hud-media-progress'),
-          width: barW,
-          height: barH,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(barH),
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                const ColoredBox(color: _kBarTrack),
-                FractionallySizedBox(
-                  widthFactor: progress,
-                  alignment: Alignment.centerLeft,
-                  child: const ColoredBox(color: _kBarFill),
-                ),
-              ],
-            ),
+      ),
+    );
+  }
+}
+
+/// The 500ms MediaSession ticker updates only the progress bar subtree.
+class _MediaProgressBar extends ConsumerWidget {
+  const _MediaProgressBar({required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  static const Color _kTrack = Color(0xFF444444);
+  static const Color _kFill = Color(0xFF67E8F9);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref
+        .watch(
+          mediaNowPlayingProvider.select(
+            (nowPlaying) => nowPlaying?.progress ?? 0.0,
           ),
+        )
+        .clamp(0.0, 1.0)
+        .toDouble();
+
+    return SizedBox(
+      key: const ValueKey('hud-media-progress'),
+      width: width,
+      height: height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(height),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            const ColoredBox(color: _kTrack),
+            FractionallySizedBox(
+              widthFactor: progress,
+              alignment: Alignment.centerLeft,
+              child: const ColoredBox(color: _kFill),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

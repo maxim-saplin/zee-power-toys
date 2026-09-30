@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.1+33] — 2026-09-30
+
+### Fixed
+- **0127** Hold the track label for 3.5 seconds. Reserve a fixed media row above the bar; progress ticks update only the bar.
+
 ## [1.2.0+32] — 2026-09-30
 
 ### Changed

@@ -9,8 +9,9 @@ import '../services/config_store.dart'
 // Mirrors blinker_geometry / minimap_viewport: sizing/placement math lives
 // here so relationship tests can assert rects without pumping the widget tree.
 // The BATTERY slot is a tall-narrow box; BatteryWidget fits its cluster
-// (icon + % + temp + charging kW + media chrome) inside it. While charging
-// the slot grows (0067); media chrome (0123) also grows the slot upward.
+// (icon + % + temp + charging kW + fixed media label row + bar) inside it.
+// While charging the slot grows (0067); media chrome (0123) also grows it
+// upward. The reserved label row keeps bar and battery/temp positions fixed.
 // Temp/charging/media move with the cluster (children of BatteryWidget).
 // ---------------------------------------------------------------------------
 
@@ -28,7 +29,7 @@ const double kBatterySlotHeightFracCharging = 0.82;
 /// Slightly wider while charging so kW digits are not clipped.
 const double kBatterySlotWidthFracCharging = 0.15;
 
-/// Wider when media chrome is shown (artist — song + bar above pack, 0123).
+/// Wider when media chrome is shown (reserved label row + bar above pack, 0123).
 const double kBatterySlotWidthFracMedia = 0.22;
 
 /// Taller when media chrome stacks above bat/temp (0123 grow-up).

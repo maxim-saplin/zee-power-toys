@@ -171,13 +171,16 @@ class _HudSlots extends ConsumerWidget {
     // rightBottom) + fine adjust. Default rightBottom (0120 HUD-on).
     final batteryCfg = ref.watch(batteryConfigProvider);
     final mediaCfg = ref.watch(mediaConfigProvider);
-    final nowPlaying = ref.watch(mediaNowPlayingProvider);
+    final mediaIsPlaying = ref.watch(
+      mediaNowPlayingProvider.select(
+        (nowPlaying) => nowPlaying?.isPlaying == true,
+      ),
+    );
     // 0067: grow slot when charging stats are shown (3 lines vs 2).
     final chargingStatsVisible =
         ref.watch(chargingProvider) && batteryCfg.showChargingStats;
-    // 0123: grow when B · compact media chrome stacks above bat/temp.
-    final mediaChromeVisible =
-        mediaCfg.showMedia && nowPlaying != null && nowPlaying.isPlaying;
+    // Keep layout geometry independent of 500ms progress updates.
+    final mediaChromeVisible = mediaCfg.showMedia && mediaIsPlaying;
     final slotFracs = batteryClusterSlotFracs(
       chargingStatsVisible: chargingStatsVisible,
       mediaChromeVisible: mediaChromeVisible,

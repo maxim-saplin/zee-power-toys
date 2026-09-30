@@ -131,7 +131,7 @@ void main() {
       expect(find.text('Artist — Changed While Paused'), findsOneWidget);
     });
 
-    testWidgets('track change shows a five-second text-only label', (
+    testWidgets('track label lasts exactly 3.5s despite progress updates', (
       tester,
     ) async {
       final media = FakeMediaNowPlaying(
@@ -164,7 +164,7 @@ void main() {
       expect(label.style?.fontSize, temperature.style?.fontSize);
       expect(tester.getTopLeft(temperatureFinder), temperatureOffsetBefore);
 
-      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 3000));
       media.setNowPlaying(
         const MediaNowPlaying(
           artist: 'Next Artist',
@@ -175,12 +175,103 @@ void main() {
       await tester.pump();
       expect(labelFinder, findsOneWidget);
 
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 499));
+      expect(labelFinder, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1));
       expect(labelFinder, findsNothing);
       expect(find.byKey(const ValueKey('hud-media-progress')), findsOneWidget);
     });
 
-    testWidgets('a later track change starts a fresh five-second window', (
+    testWidgets('track label uses a fixed top row without moving other items', (
+      tester,
+    ) async {
+      final media = FakeMediaNowPlaying(
+        const MediaNowPlaying(artist: 'A', title: 'Short', progress: 0.2),
+      );
+      await pumpBattery(tester, media: media);
+
+      final chromeFinder = find.byKey(const ValueKey('hud-media-chrome'));
+      final progressFinder = find.byKey(const ValueKey('hud-media-progress'));
+      final progressFillFinder = find.descendant(
+        of: progressFinder,
+        matching: find.byType(FractionallySizedBox),
+      );
+      final pctFinder = find.byKey(const ValueKey('battery-pct-text'));
+      final tempFinder = find.byKey(const ValueKey('battery-temp-text'));
+      final chromeSize = tester.getSize(chromeFinder);
+      final progressOffset = tester.getTopLeft(progressFinder);
+      final pctOffset = tester.getTopLeft(pctFinder);
+      final tempOffset = tester.getTopLeft(tempFinder);
+
+      media.setNowPlaying(
+        const MediaNowPlaying(
+          artist: 'Long Artist',
+          title: 'A title that is much wider than the progress bar',
+          progress: 0.3,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final labelFinder = find.byKey(const ValueKey('hud-media-artist-song'));
+      expect(labelFinder, findsOneWidget);
+      final firstLabelOffset = tester.getTopLeft(labelFinder);
+      expect(
+        firstLabelOffset.dy,
+        lessThan(tester.getTopLeft(progressFinder).dy),
+      );
+      expect(
+        tester.widget<FractionallySizedBox>(progressFillFinder).widthFactor,
+        closeTo(0.3, 0.001),
+      );
+      expect(tester.getSize(chromeFinder), chromeSize);
+      expect(tester.getTopLeft(progressFinder), progressOffset);
+      expect(tester.getTopLeft(pctFinder), pctOffset);
+      expect(tester.getTopLeft(tempFinder), tempOffset);
+
+      media.setNowPlaying(
+        const MediaNowPlaying(
+          artist: 'A',
+          title: 'Different short title',
+          progress: 0.4,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.getTopLeft(labelFinder).dx, firstLabelOffset.dx);
+      expect(tester.getSize(chromeFinder), chromeSize);
+      expect(tester.getTopLeft(progressFinder), progressOffset);
+      expect(tester.getTopLeft(pctFinder), pctOffset);
+      expect(tester.getTopLeft(tempFinder), tempOffset);
+
+      media.setNowPlaying(
+        const MediaNowPlaying(
+          artist: 'A',
+          title: 'Different short title',
+          progress: 0.8,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(
+        tester.widget<FractionallySizedBox>(progressFillFinder).widthFactor,
+        closeTo(0.8, 0.001),
+      );
+      expect(tester.getSize(chromeFinder), chromeSize);
+      expect(tester.getTopLeft(progressFinder), progressOffset);
+      expect(tester.getTopLeft(pctFinder), pctOffset);
+      expect(tester.getTopLeft(tempFinder), tempOffset);
+
+      await tester.pump(const Duration(milliseconds: 3500));
+      expect(labelFinder, findsNothing);
+      expect(tester.getSize(chromeFinder), chromeSize);
+      expect(tester.getTopLeft(progressFinder), progressOffset);
+      expect(tester.getTopLeft(pctFinder), pctOffset);
+      expect(tester.getTopLeft(tempFinder), tempOffset);
+    });
+
+    testWidgets('a later track change starts a fresh 3.5-second window', (
       tester,
     ) async {
       final media = FakeMediaNowPlaying(
@@ -202,9 +293,9 @@ void main() {
       await tester.pump();
       expect(find.text('Artist — Third'), findsOneWidget);
 
-      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 3499));
       expect(find.text('Artist — Third'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 1));
       expect(find.byKey(const ValueKey('hud-media-artist-song')), findsNothing);
     });
 

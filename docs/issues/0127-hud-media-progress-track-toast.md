@@ -22,17 +22,19 @@ Show playback progress on the HUD and briefly identify a newly playing track. Th
 
 1. One persisted **Show media on HUD** toggle in DHU HUD Settings; default ON. Remove the icon, artist/title, progress, and bar-only options.
 2. While an active track is playing, show its progress bar by default. Do not show an icon or elapsed/remaining time.
-3. When artist/title changes, briefly show `artist — song` above the bar, then return to progress-only. Use a 5-second display window; progress ticks for the same track must not restart it.
-4. Match the transient label's font size to the battery-temperature label. Keep the battery/temp bottom anchor stable while the label appears and disappears.
-5. Preserve a stored `showMedia` preference. Read existing configs with their current toggle value; ignore legacy per-piece fields.
-6. Paused or inactive media follows the existing hidden-media behavior. No YNavi or MediaSession transport commands are added.
+3. When artist/title changes, show `artist — song` above the bar for exactly 3.5 seconds, then return to progress-only. Progress ticks for the same track must not restart the timer.
+4. Flow upward from the bottom anchor. Reserve a fixed label row above the progress bar; showing, hiding, or changing the label must not move the bar or battery/temp rows. Keep the media row left-aligned within its fixed-width block.
+5. Match the transient label's font size to the battery-temperature label. Keep the battery/temp bottom anchor stable while the label appears and disappears.
+6. Preserve a stored `showMedia` preference. Read existing configs with their current toggle value; ignore legacy per-piece fields.
+7. Paused or inactive media follows the existing hidden-media behavior. No YNavi or MediaSession transport commands are added.
 
 ## Definition of Done
 
 Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 - [x] Media defaults to one visible progress bar with no icon or track text; disabling the toggle hides it.
-- [x] A track change shows text-only artist/title for 5 seconds; progress-only updates do not extend the window; a subsequent track change starts a new window.
+- [x] A track change shows text-only artist/title for exactly 3.5 seconds; progress-only updates do not extend the window; a subsequent track change starts a new window.
+- [x] The media block grows upward from a reserved label row; label visibility and title length do not move the progress bar or battery/temp rows.
 - [x] Artist/title font size equals the battery-temperature font size; the battery/temp anchor does not move.
 - [x] DHU HUD Settings exposes exactly one media toggle and persists it across reload.
 - [x] Widget/config tests cover defaults, old-config migration, one-toggle UI, visibility timing, progress updates, track changes, and text sizing.
@@ -40,4 +42,4 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 ## Reconciliation
 
-T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime and owns the five-second label timer, even while the media child is absent. Final T2 reconformance proves the first-track label, changed-while-paused label on resume, progress-only expiry, later track changes, and toggle persistence. The real MediaSession source from 0125 is unchanged. Final findings and captures are in `tmp/qa/0127-live/FINDINGS.md`. Released as `1.2.0+32`; CI run `36712718800`; APK SHA-256 `dd88a267e52869dfd7a99927b18f71500f73cfa92db224988ef1ad106ed0833c`.
+T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime. The follow-up fixes the label window at 3.5 seconds, reserves a fixed row above the bar, and isolates progress ticks to the bar subtree. Final T2 evidence is recorded in `tmp/qa/0127-live/FINDINGS.md`. Release `1.2.0+32` predates this follow-up; target patch release is `1.2.1+33`.
