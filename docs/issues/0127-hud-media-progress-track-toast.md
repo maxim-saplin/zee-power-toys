@@ -34,6 +34,7 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 - [x] Media defaults to one visible progress bar with no icon or track text; disabling the toggle hides it.
 - [x] A track change shows text-only artist/title for exactly 3.5 seconds; progress-only updates do not extend the window; a subsequent track change starts a new window.
+- [x] Transient non-playing or missing-media snapshots hide chrome without canceling that deadline; a same-track resume restores only the remaining label window.
 - [x] The media block grows upward from a reserved label row; label visibility and title length do not move the progress bar or battery/temp rows.
 - [x] Artist/title font size equals the battery-temperature font size; the battery/temp anchor does not move.
 - [x] DHU HUD Settings exposes exactly one media toggle and persists it across reload.
@@ -42,4 +43,4 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 ## Reconciliation
 
-T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime. The follow-up fixes the label window at 3.5 seconds, reserves a fixed row above the bar, and isolates progress ticks to the bar subtree. Final T2 evidence is recorded in `tmp/qa/0127-live/FINDINGS.md`. Released as `1.2.1+33`; CI run `36736926916`; APK SHA-256 `4b9cd9f73eb00b186cffce67b6c1d38fd7b3abc6631e658499a7353b73947fc1`.
+T2 exposed a missing label when the first track arrived after idle. `BatteryWidget` now observes media for the battery-slot lifetime. A later T2 investigation found that transient non-playing or missing-media snapshots canceled the label timer; the widget now keeps the original deadline while chrome is hidden. T2 injected DHU→HUD checks verify same-track resume and expiry at the original deadline. Evidence: `tmp/qa/0127-live/` and `tmp/qa/0127-flicker/FINDINGS.md`. The debug AVD lacks `MEDIA_CONTENT_CONTROL`, so the real MediaSession transition remains unverified there; no T3 car was attached.

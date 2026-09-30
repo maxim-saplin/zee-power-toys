@@ -82,20 +82,16 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
   Timer? _trackLabelTimer;
 
   void _onMediaChanged(MediaNowPlaying? next) {
-    if (next == null || !next.isPlaying) {
-      _hideTrackLabel();
-      return;
-    }
+    // Media chrome is hidden separately when playback is paused or unavailable.
+    // Keep this track's original label deadline alive across brief state/metadata
+    // gaps, so the same track can resume with only the remaining time.
+    if (next == null || !next.isPlaying) return;
 
     final nextLabel = next.artistSongLabel;
+    if (nextLabel.isEmpty) return;
     final trackChanged = nextLabel != _lastPlayingTrackLabel;
     _lastPlayingTrackLabel = nextLabel;
-    if (nextLabel.isEmpty ||
-        !trackChanged ||
-        !ref.read(mediaConfigProvider).showMedia) {
-      if (nextLabel.isEmpty) _hideTrackLabel();
-      return;
-    }
+    if (!trackChanged || !ref.read(mediaConfigProvider).showMedia) return;
 
     _trackLabelTimer?.cancel();
     setState(() => _showTrackLabel = true);

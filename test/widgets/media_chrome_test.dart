@@ -131,6 +131,68 @@ void main() {
       expect(find.text('Artist — Changed While Paused'), findsOneWidget);
     });
 
+    testWidgets(
+      'track label resumes for its remaining window after media gaps',
+      (tester) async {
+        final media = FakeMediaNowPlaying(
+          const MediaNowPlaying(
+            artist: 'Artist',
+            title: 'First',
+            progress: 0.1,
+          ),
+        );
+        await pumpBattery(tester, media: media);
+
+        media.setNowPlaying(
+          const MediaNowPlaying(artist: 'Artist', title: 'Next', progress: 0.2),
+        );
+        await tester.pump();
+        await tester.pump();
+        final labelFinder = find.text('Artist — Next');
+        expect(labelFinder, findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 1));
+        media.setNowPlaying(
+          const MediaNowPlaying(
+            artist: 'Artist',
+            title: 'Next',
+            progress: 0.3,
+            isPlaying: false,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.byKey(const ValueKey('hud-media-chrome')), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 250));
+        media.setNowPlaying(
+          const MediaNowPlaying(artist: 'Artist', title: 'Next', progress: 0.4),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(labelFinder, findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 750));
+        media.setNowPlaying(null);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byKey(const ValueKey('hud-media-chrome')), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 250));
+        media.setNowPlaying(
+          const MediaNowPlaying(artist: 'Artist', title: 'Next', progress: 0.5),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(labelFinder, findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 1249));
+        expect(labelFinder, findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(labelFinder, findsNothing);
+      },
+    );
+
     testWidgets('track label lasts exactly 3.5s despite progress updates', (
       tester,
     ) async {

@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.2+34] — 2026-09-30
+
+### Fixed
+- **0127** Keep the 3.5-second label deadline across transient paused or missing-media snapshots; resume the same track with the remaining window.
+
 ## [1.2.1+33] — 2026-09-30
 
 ### Fixed
