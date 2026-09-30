@@ -13,8 +13,8 @@ import '../support/harness.dart';
 
 /// Full-service wrapper needed because navigating to HudSettingsScreen
 /// renders HudPreview which subscribes to carSignals/config providers.
-Widget _wrap(Widget child, ConfigStore store) => wrapWithProviders(child, store: store);
-
+Widget _wrap(Widget child, ConfigStore store) =>
+    wrapWithProviders(child, store: store);
 
 Future<void> _pumpHome(WidgetTester tester, Widget home) async {
   await tester.binding.setSurfaceSize(const Size(1100, 1400));
@@ -24,7 +24,9 @@ Future<void> _pumpHome(WidgetTester tester, Widget home) async {
   await tester.pump(const Duration(milliseconds: 50));
 }
 
-Future<SharedPrefsConfigStore> _makeStore([AppConfig cfg = const AppConfig()]) async {
+Future<SharedPrefsConfigStore> _makeStore([
+  AppConfig cfg = const AppConfig(),
+]) async {
   SharedPreferences.setMockInitialValues({});
   final store = SharedPrefsConfigStore();
   await store.load();
@@ -51,11 +53,13 @@ void main() {
       expect(find.byKey(const ValueKey('nav-diagnostics')), findsOneWidget);
       expect(find.byKey(const ValueKey('nav-language')), findsOneWidget);
       expect(find.byKey(const ValueKey('nav-install')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home-install-launcher')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('home-install-launcher')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('home-install-ynavi')), findsOneWidget);
     });
 
-    
     testWidgets('two-column home has no overflow at 800x600', (tester) async {
       final store = await _makeStore();
       await tester.binding.setSurfaceSize(const Size(800, 600));
@@ -65,7 +69,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(tester.takeException(), isNull);
-      expect(find.byKey(const ValueKey('home-sections-scroll')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('home-sections-scroll')),
+        findsOneWidget,
+      );
       // USB/ADB tile exists (may need scroll to tap; presence in tree is enough).
       expect(find.byKey(const ValueKey('nav-usb')), findsOneWidget);
     });
@@ -84,11 +91,32 @@ void main() {
 
       // HudSettingsScreen appbar title appears.
       expect(find.text('HUD Settings'), findsOneWidget);
+      expect(find.byKey(const ValueKey('media-show-media')), findsOneWidget);
+      expect(find.byKey(const ValueKey('media-show-icon')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('media-show-artist-song')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('media-show-progress')), findsNothing);
+      expect(find.byKey(const ValueKey('media-bar-only')), findsNothing);
+
+      final mediaToggle = find.byKey(const ValueKey('media-show-media'));
+      expect(tester.widget<Switch>(mediaToggle).value, isTrue);
+      await tester.ensureVisible(mediaToggle);
+      await tester.tap(mediaToggle);
+      await tester.pump();
+      expect(store.value.media.showMedia, isFalse);
+
+      final reloadedStore = SharedPrefsConfigStore();
+      await reloadedStore.load();
+      expect(reloadedStore.value.media.showMedia, isFalse);
     });
   });
 
   group('Language picker', () {
-    testWidgets('shows App language options (System default, EN, RU)', (tester) async {
+    testWidgets('shows App language options (System default, EN, RU)', (
+      tester,
+    ) async {
       final store = await _makeStore();
       await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
@@ -109,7 +137,9 @@ void main() {
       expect(find.byKey(const ValueKey('lang-ru')), findsOneWidget);
     });
 
-    testWidgets('tapping English sets locale=en in ConfigStore', (tester) async {
+    testWidgets('tapping English sets locale=en in ConfigStore', (
+      tester,
+    ) async {
       final store = await _makeStore();
       await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 
@@ -124,7 +154,9 @@ void main() {
       expect(store.value.locale, equals('en'));
     });
 
-    testWidgets('tapping Russian sets locale=ru in ConfigStore', (tester) async {
+    testWidgets('tapping Russian sets locale=ru in ConfigStore', (
+      tester,
+    ) async {
       final store = await _makeStore();
       await _pumpHome(tester, _wrap(const SettingsHomeScreen(), store));
 

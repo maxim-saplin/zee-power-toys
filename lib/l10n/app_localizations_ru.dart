@@ -909,17 +909,5 @@ class AppLocalizationsRu extends AppLocalizations {
   String get mediaSection => 'Медиа (HUD)';
 
   @override
-  String get showMedia => 'Показывать сейчас играет';
-
-  @override
-  String get showMediaIcon => 'Иконка музыки';
-
-  @override
-  String get showMediaArtistSong => 'Исполнитель — трек';
-
-  @override
-  String get showMediaProgress => 'Полоса прогресса';
-
-  @override
-  String get mediaBarOnly => 'Только полоса (минимум)';
+  String get showMedia => 'Показывать медиа на HUD';
 }

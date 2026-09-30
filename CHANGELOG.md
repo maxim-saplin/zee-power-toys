@@ -7,6 +7,14 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.0+32] — 2026-09-30
+
+### Changed
+- **0127** Replace per-piece media controls with one persisted HUD toggle; show progress by default and a five-second text-only label on track change.
+
+### Fixed
+- **0127** Show the label when the first track arrives from idle. Same-track progress updates do not extend its display window.
+
 ## [1.1.0+31] — 2026-09-29
 
 Live ship: **0122A** YNavi v30 minimap live-session fix.

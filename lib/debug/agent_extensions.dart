@@ -454,30 +454,13 @@ void registerZeeExtensions({
       );
     }
 
-    // Media chrome (0123): mediaShow / mediaIcon / mediaArtistSong /
-    // mediaProgress / mediaBarOnly = true|false.
+    // Media indicator: mediaShow=true|false.
     final rawMediaShow = params['mediaShow'];
-    final rawMediaIcon = params['mediaIcon'];
-    final rawMediaArtistSong = params['mediaArtistSong'];
-    final rawMediaProgress = params['mediaProgress'];
-    final rawMediaBarOnly = params['mediaBarOnly'];
-    if (rawMediaShow != null ||
-        rawMediaIcon != null ||
-        rawMediaArtistSong != null ||
-        rawMediaProgress != null ||
-        rawMediaBarOnly != null) {
+    if (rawMediaShow != null) {
       final m = next.media;
       next = next.copyWith(
         media: m.copyWith(
-          showMedia: rawMediaShow != null ? rawMediaShow == 'true' : null,
-          showIcon: rawMediaIcon != null ? rawMediaIcon == 'true' : null,
-          showArtistSong: rawMediaArtistSong != null
-              ? rawMediaArtistSong == 'true'
-              : null,
-          showProgressBar: rawMediaProgress != null
-              ? rawMediaProgress == 'true'
-              : null,
-          barOnly: rawMediaBarOnly != null ? rawMediaBarOnly == 'true' : null,
+          showMedia: rawMediaShow == 'true',
         ),
       );
     }

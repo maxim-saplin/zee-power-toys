@@ -119,621 +119,589 @@ class _HudSettingsScreenState extends ConsumerState<HudSettingsScreen> {
                   ],
                 ),
 
-          const SizedBox(height: Insets.xl),
+                const SizedBox(height: Insets.xl),
 
-          // ----------------------------------------------------------------
-          // Blinker section
-          // ----------------------------------------------------------------
-          SettingsSection(
-            title: l10n.blinkerSection,
-            children: <Widget>[
-              Text(
-                l10n.blinkerShape,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: Insets.sm),
-              SegmentedButton<BlinkerShape>(
-                segments: <ButtonSegment<BlinkerShape>>[
-                  ButtonSegment(
-                    value: BlinkerShape.dots,
-                    label: Text(l10n.blinkerShapeDots),
-                    icon: const Icon(Icons.circle_outlined),
-                  ),
-                  ButtonSegment(
-                    value: BlinkerShape.arrows,
-                    label: Text(l10n.blinkerShapeArrows),
-                    icon: const Icon(Icons.arrow_forward),
-                  ),
-                  ButtonSegment(
-                    value: BlinkerShape.smiley,
-                    label: Text(l10n.blinkerShapeSmiley),
-                    icon: const Icon(Icons.sentiment_satisfied_alt),
-                  ),
-                ],
-                selected: <BlinkerShape>{blinkerCfg.shape},
-                onSelectionChanged: (Set<BlinkerShape> sel) {
-                  if (sel.isEmpty) return;
-                  store.setConfig(
-                    store.value.copyWith(
-                      blinker: blinkerCfg.copyWith(shape: sel.first),
-                    ),
-                  );
-                },
-              ),
-              // ValueKey hooks for agent-driven tap (one per segment).
-              Opacity(
-                opacity: 0,
-                child: Row(
+                // ----------------------------------------------------------------
+                // Blinker section
+                // ----------------------------------------------------------------
+                SettingsSection(
+                  title: l10n.blinkerSection,
                   children: <Widget>[
-                    GestureDetector(
-                      key: const ValueKey('blinker-shape-dots'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          blinker: blinkerCfg.copyWith(
-                            shape: BlinkerShape.dots,
-                          ),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
+                    Text(
+                      l10n.blinkerShape,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                    GestureDetector(
-                      key: const ValueKey('blinker-shape-arrows'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          blinker: blinkerCfg.copyWith(
-                            shape: BlinkerShape.arrows,
-                          ),
+                    const SizedBox(height: Insets.sm),
+                    SegmentedButton<BlinkerShape>(
+                      segments: <ButtonSegment<BlinkerShape>>[
+                        ButtonSegment(
+                          value: BlinkerShape.dots,
+                          label: Text(l10n.blinkerShapeDots),
+                          icon: const Icon(Icons.circle_outlined),
                         ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
+                        ButtonSegment(
+                          value: BlinkerShape.arrows,
+                          label: Text(l10n.blinkerShapeArrows),
+                          icon: const Icon(Icons.arrow_forward),
+                        ),
+                        ButtonSegment(
+                          value: BlinkerShape.smiley,
+                          label: Text(l10n.blinkerShapeSmiley),
+                          icon: const Icon(Icons.sentiment_satisfied_alt),
+                        ),
+                      ],
+                      selected: <BlinkerShape>{blinkerCfg.shape},
+                      onSelectionChanged: (Set<BlinkerShape> sel) {
+                        if (sel.isEmpty) return;
+                        store.setConfig(
+                          store.value.copyWith(
+                            blinker: blinkerCfg.copyWith(shape: sel.first),
+                          ),
+                        );
+                      },
                     ),
-                    GestureDetector(
-                      key: const ValueKey('blinker-shape-smiley'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          blinker: blinkerCfg.copyWith(
-                            shape: BlinkerShape.smiley,
+                    // ValueKey hooks for agent-driven tap (one per segment).
+                    Opacity(
+                      opacity: 0,
+                      child: Row(
+                        children: <Widget>[
+                          GestureDetector(
+                            key: const ValueKey('blinker-shape-dots'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                blinker: blinkerCfg.copyWith(
+                                  shape: BlinkerShape.dots,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
                           ),
-                        ),
+                          GestureDetector(
+                            key: const ValueKey('blinker-shape-arrows'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                blinker: blinkerCfg.copyWith(
+                                  shape: BlinkerShape.arrows,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('blinker-shape-smiley'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                blinker: blinkerCfg.copyWith(
+                                  shape: BlinkerShape.smiley,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                        ],
                       ),
-                      child: const SizedBox(width: 1, height: 1),
+                    ),
+
+                    const SizedBox(height: Insets.lg),
+                    SettingsSlider(
+                      label: l10n.blinkerSize,
+                      valueLabel: '${blinkerCfg.sizeScale.toStringAsFixed(2)}×',
+                      minLabel: '0.5×',
+                      maxLabel: '2×',
+                      sliderKey: const ValueKey('blinker-size'),
+                      min: 0.5,
+                      max: 2.0,
+                      divisions: 30,
+                      value: blinkerCfg.sizeScale.clamp(0.5, 2.0),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            blinker: blinkerCfg.copyWith(sizeScale: v),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.blinkerVerticalPosition,
+                      valueLabel:
+                          '${(blinkerCfg.vertFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: l10n.positionTop,
+                      maxLabel: l10n.positionBottom,
+                      sliderKey: const ValueKey('blinker-vert'),
+                      min: 0.1,
+                      max: 0.9,
+                      divisions: 16,
+                      value: blinkerCfg.vertFrac.clamp(0.1, 0.9),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            blinker: blinkerCfg.copyWith(vertFrac: v),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.blinkerSidePadding,
+                      valueLabel:
+                          '${(blinkerCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: l10n.positionEdge,
+                      maxLabel: '35%',
+                      sliderKey: const ValueKey('blinker-side-pad'),
+                      min: 0.0,
+                      max: 0.35,
+                      divisions: 35,
+                      value: blinkerCfg.sidePadFrac.clamp(0.0, 0.35),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            blinker: blinkerCfg.copyWith(sidePadFrac: v),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: 'Horizontal bias',
+                      valueLabel:
+                          '${(blinkerCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: '←',
+                      maxLabel: '→',
+                      sliderKey: const ValueKey('blinker-horiz-bias'),
+                      min: -0.25,
+                      max: 0.25,
+                      divisions: 50,
+                      value: blinkerCfg.horizBiasFrac.clamp(-0.25, 0.25),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            blinker: blinkerCfg.copyWith(horizBiasFrac: v),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: Insets.lg),
-              SettingsSlider(
-                label: l10n.blinkerSize,
-                valueLabel: '${blinkerCfg.sizeScale.toStringAsFixed(2)}×',
-                minLabel: '0.5×',
-                maxLabel: '2×',
-                sliderKey: const ValueKey('blinker-size'),
-                min: 0.5,
-                max: 2.0,
-                divisions: 30,
-                value: blinkerCfg.sizeScale.clamp(0.5, 2.0),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      blinker: blinkerCfg.copyWith(sizeScale: v),
+                const SizedBox(height: Insets.xl),
+
+                // ----------------------------------------------------------------
+                // Media section (0123 B · compact)
+                // ----------------------------------------------------------------
+                SettingsSection(
+                  title: l10n.mediaSection,
+                  children: <Widget>[
+                    SettingsToggleRow(
+                      label: l10n.showMedia,
+                      control: Switch(
+                        key: const ValueKey('media-show-media'),
+                        value: mediaCfg.showMedia,
+                        onChanged: (v) => store.setConfig(
+                          store.value.copyWith(
+                            media: mediaCfg.copyWith(showMedia: v),
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.blinkerVerticalPosition,
-                valueLabel:
-                    '${(blinkerCfg.vertFrac * 100).toStringAsFixed(0)}%',
-                minLabel: l10n.positionTop,
-                maxLabel: l10n.positionBottom,
-                sliderKey: const ValueKey('blinker-vert'),
-                min: 0.1,
-                max: 0.9,
-                divisions: 16,
-                value: blinkerCfg.vertFrac.clamp(0.1, 0.9),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      blinker: blinkerCfg.copyWith(vertFrac: v),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.blinkerSidePadding,
-                valueLabel:
-                    '${(blinkerCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
-                minLabel: l10n.positionEdge,
-                maxLabel: '35%',
-                sliderKey: const ValueKey('blinker-side-pad'),
-                min: 0.0,
-                max: 0.35,
-                divisions: 35,
-                value: blinkerCfg.sidePadFrac.clamp(0.0, 0.35),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      blinker: blinkerCfg.copyWith(sidePadFrac: v),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: 'Horizontal bias',
-                valueLabel:
-                    '${(blinkerCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
-                minLabel: '←',
-                maxLabel: '→',
-                sliderKey: const ValueKey('blinker-horiz-bias'),
-                min: -0.25,
-                max: 0.25,
-                divisions: 50,
-                value: blinkerCfg.horizBiasFrac.clamp(-0.25, 0.25),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      blinker: blinkerCfg.copyWith(horizBiasFrac: v),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: Insets.xl),
-
-
-          // ----------------------------------------------------------------
-          // Media section (0123 B · compact)
-          // ----------------------------------------------------------------
-          SettingsSection(
-            title: l10n.mediaSection,
-            children: <Widget>[
-              SettingsToggleRow(
-                label: l10n.showMedia,
-                control: Switch(
-                  key: const ValueKey('media-show-media'),
-                  value: mediaCfg.showMedia,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      media: mediaCfg.copyWith(showMedia: v),
-                    ),
-                  ),
+                  ],
                 ),
-              ),
-              SettingsToggleRow(
-                label: l10n.showMediaIcon,
-                control: Switch(
-                  key: const ValueKey('media-show-icon'),
-                  value: mediaCfg.showIcon,
-                  onChanged: mediaCfg.barOnly
-                      ? null
-                      : (v) => store.setConfig(
+
+                const SizedBox(height: Insets.xl),
+
+                // ----------------------------------------------------------------
+                // Battery section
+                // ----------------------------------------------------------------
+                SettingsSection(
+                  title: l10n.batterySection,
+                  children: <Widget>[
+                    SettingsToggleRow(
+                      label: l10n.showBattery,
+                      control: Switch(
+                        key: const ValueKey('battery-show-battery'),
+                        value: batteryCfg.showBattery,
+                        onChanged: (v) => store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(showBattery: v),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Insets.md),
+                    Text(
+                      l10n.batteryLook,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: Insets.sm),
+                    // 0056 PDM names — Wrap so long labels fit DHU width.
+                    Wrap(
+                      spacing: Insets.sm,
+                      runSpacing: Insets.sm,
+                      children: <Widget>[
+                        ChoiceChip(
+                          key: const ValueKey('battery-look-battery'),
+                          label: Text(l10n.batteryLookBattery),
+                          selected: batteryCfg.look == BatteryLook.battery,
+                          onSelected: (_) => store.setConfig(
                             store.value.copyWith(
-                              media: mediaCfg.copyWith(showIcon: v),
+                              battery: batteryCfg.withLook(BatteryLook.battery),
                             ),
                           ),
-                ),
-              ),
-              SettingsToggleRow(
-                label: l10n.showMediaArtistSong,
-                control: Switch(
-                  key: const ValueKey('media-show-artist-song'),
-                  value: mediaCfg.showArtistSong,
-                  onChanged: mediaCfg.barOnly
-                      ? null
-                      : (v) => store.setConfig(
+                        ),
+                        ChoiceChip(
+                          key: const ValueKey('battery-look-battery-text'),
+                          label: Text(l10n.batteryLookBatteryText),
+                          selected: batteryCfg.look == BatteryLook.batteryText,
+                          onSelected: (_) => store.setConfig(
                             store.value.copyWith(
-                              media: mediaCfg.copyWith(showArtistSong: v),
+                              battery: batteryCfg.withLook(
+                                BatteryLook.batteryText,
+                              ),
                             ),
                           ),
-                ),
-              ),
-              SettingsToggleRow(
-                label: l10n.showMediaProgress,
-                control: Switch(
-                  key: const ValueKey('media-show-progress'),
-                  value: mediaCfg.showProgressBar,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      media: mediaCfg.copyWith(showProgressBar: v),
-                    ),
-                  ),
-                ),
-              ),
-              SettingsToggleRow(
-                label: l10n.mediaBarOnly,
-                control: Switch(
-                  key: const ValueKey('media-bar-only'),
-                  value: mediaCfg.barOnly,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      media: mediaCfg.copyWith(barOnly: v),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: Insets.xl),
-
-          // ----------------------------------------------------------------
-          // Battery section
-          // ----------------------------------------------------------------
-          SettingsSection(
-            title: l10n.batterySection,
-            children: <Widget>[
-              SettingsToggleRow(
-                label: l10n.showBattery,
-                control: Switch(
-                  key: const ValueKey('battery-show-battery'),
-                  value: batteryCfg.showBattery,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(showBattery: v),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: Insets.md),
-              Text(
-                l10n.batteryLook,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: Insets.sm),
-              // 0056 PDM names — Wrap so long labels fit DHU width.
-              Wrap(
-                spacing: Insets.sm,
-                runSpacing: Insets.sm,
-                children: <Widget>[
-                  ChoiceChip(
-                    key: const ValueKey('battery-look-battery'),
-                    label: Text(l10n.batteryLookBattery),
-                    selected: batteryCfg.look == BatteryLook.battery,
-                    onSelected: (_) => store.setConfig(
-                      store.value.copyWith(
-                        battery: batteryCfg.withLook(BatteryLook.battery),
-                      ),
-                    ),
-                  ),
-                  ChoiceChip(
-                    key: const ValueKey('battery-look-battery-text'),
-                    label: Text(l10n.batteryLookBatteryText),
-                    selected: batteryCfg.look == BatteryLook.batteryText,
-                    onSelected: (_) => store.setConfig(
-                      store.value.copyWith(
-                        battery: batteryCfg.withLook(BatteryLook.batteryText),
-                      ),
-                    ),
-                  ),
-                  ChoiceChip(
-                    key: const ValueKey('battery-look-battery-bars'),
-                    label: Text(l10n.batteryLookBatteryBars),
-                    selected: batteryCfg.look == BatteryLook.batteryBars,
-                    onSelected: (_) => store.setConfig(
-                      store.value.copyWith(
-                        battery: batteryCfg.withLook(BatteryLook.batteryBars),
-                      ),
-                    ),
-                  ),
-                  ChoiceChip(
-                    key: const ValueKey('battery-look-just-text'),
-                    label: Text(l10n.batteryLookJustText),
-                    selected: batteryCfg.look == BatteryLook.justText,
-                    onSelected: (_) => store.setConfig(
-                      store.value.copyWith(
-                        battery: batteryCfg.withLook(BatteryLook.justText),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              // Legacy FL keys — map onto PDM looks (keep Feedback Loop taps).
-              Opacity(
-                opacity: 0,
-                child: Row(
-                  children: <Widget>[
-                    GestureDetector(
-                      key: const ValueKey('battery-content-both'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(BatteryLook.batteryText),
                         ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('battery-content-icon-only'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(BatteryLook.battery),
+                        ChoiceChip(
+                          key: const ValueKey('battery-look-battery-bars'),
+                          label: Text(l10n.batteryLookBatteryBars),
+                          selected: batteryCfg.look == BatteryLook.batteryBars,
+                          onSelected: (_) => store.setConfig(
+                            store.value.copyWith(
+                              battery: batteryCfg.withLook(
+                                BatteryLook.batteryBars,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('battery-content-text-only'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(BatteryLook.justText),
+                        ChoiceChip(
+                          key: const ValueKey('battery-look-just-text'),
+                          label: Text(l10n.batteryLookJustText),
+                          selected: batteryCfg.look == BatteryLook.justText,
+                          onSelected: (_) => store.setConfig(
+                            store.value.copyWith(
+                              battery: batteryCfg.withLook(
+                                BatteryLook.justText,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
+                      ],
                     ),
-                    GestureDetector(
-                      key: const ValueKey('battery-style-outline'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(
-                            batteryCfg.contentMode == BatteryContentMode.textOnly
-                                ? BatteryLook.justText
-                                : batteryCfg.contentMode ==
-                                        BatteryContentMode.iconOnly
-                                    ? BatteryLook.battery
-                                    : BatteryLook.batteryText,
+                    // Legacy FL keys — map onto PDM looks (keep Feedback Loop taps).
+                    Opacity(
+                      opacity: 0,
+                      child: Row(
+                        children: <Widget>[
+                          GestureDetector(
+                            key: const ValueKey('battery-content-both'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  BatteryLook.batteryText,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-content-icon-only'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  BatteryLook.battery,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-content-text-only'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  BatteryLook.justText,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-style-outline'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  batteryCfg.contentMode ==
+                                          BatteryContentMode.textOnly
+                                      ? BatteryLook.justText
+                                      : batteryCfg.contentMode ==
+                                            BatteryContentMode.iconOnly
+                                      ? BatteryLook.battery
+                                      : BatteryLook.batteryText,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-style-filled'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  BatteryLook.batteryBars,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-style-pct-inside'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withLook(
+                                  BatteryLook.batteryText,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SettingsToggleRow(
+                      label: l10n.showTemp,
+                      control: Switch(
+                        key: const ValueKey('battery-show-temp'),
+                        value: batteryCfg.showTemp,
+                        onChanged: (v) => store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(showTemp: v),
                           ),
                         ),
                       ),
-                      child: const SizedBox(width: 1, height: 1),
                     ),
-                    GestureDetector(
-                      key: const ValueKey('battery-style-filled'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(BatteryLook.batteryBars),
+                    SettingsToggleRow(
+                      label: l10n.showChargingStats,
+                      control: Switch(
+                        key: const ValueKey('battery-show-charging'),
+                        value: batteryCfg.showChargingStats,
+                        onChanged: (v) => store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(showChargingStats: v),
+                          ),
                         ),
                       ),
-                      child: const SizedBox(width: 1, height: 1),
                     ),
-                    GestureDetector(
-                      key: const ValueKey('battery-style-pct-inside'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withLook(BatteryLook.batteryText),
+                    // 0119c: range toggle + Cons Est readout removed.
+                    SettingsToggleRow(
+                      label: l10n.showDriveModeCornerDot,
+                      control: Switch(
+                        key: const ValueKey('battery-show-drive-mode-dot'),
+                        value: batteryCfg.showDriveModeCornerDot,
+                        onChanged: (v) => store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(
+                              showDriveModeCornerDot: v,
+                            ),
+                          ),
                         ),
                       ),
-                      child: const SizedBox(width: 1, height: 1),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Insets.sm),
+                      child: Text(
+                        l10n.showDriveModeCornerDotHint,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    const SizedBox(height: Insets.md),
+                    Text(
+                      l10n.batteryPlacement,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: Insets.sm),
+                    SegmentedButton<BatteryPlacement>(
+                      segments: <ButtonSegment<BatteryPlacement>>[
+                        ButtonSegment(
+                          value: BatteryPlacement.left,
+                          label: Text(l10n.batteryPlacementLeft),
+                          icon: const Icon(Icons.align_horizontal_left),
+                        ),
+                        ButtonSegment(
+                          value: BatteryPlacement.rightBottom,
+                          label: Text(l10n.batteryPlacementRightBottom),
+                          icon: const Icon(Icons.vertical_align_bottom),
+                        ),
+                        ButtonSegment(
+                          value: BatteryPlacement.right,
+                          label: Text(l10n.batteryPlacementRight),
+                          icon: const Icon(Icons.align_horizontal_right),
+                        ),
+                        ButtonSegment(
+                          value: BatteryPlacement.rightTop,
+                          label: Text(l10n.batteryPlacementRightTop),
+                          icon: const Icon(Icons.vertical_align_top),
+                        ),
+                      ],
+                      selected: <BatteryPlacement>{batteryCfg.placement},
+                      onSelectionChanged: (Set<BatteryPlacement> sel) {
+                        if (sel.isEmpty) return;
+                        store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.withPlacement(sel.first),
+                          ),
+                        );
+                      },
+                    ),
+                    Opacity(
+                      opacity: 0,
+                      child: Row(
+                        children: <Widget>[
+                          GestureDetector(
+                            key: const ValueKey('battery-placement-left'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withPlacement(
+                                  BatteryPlacement.left,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-placement-right'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withPlacement(
+                                  BatteryPlacement.right,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey('battery-placement-right-top'),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withPlacement(
+                                  BatteryPlacement.rightTop,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                          GestureDetector(
+                            key: const ValueKey(
+                              'battery-placement-right-bottom',
+                            ),
+                            onTap: () => store.setConfig(
+                              store.value.copyWith(
+                                battery: batteryCfg.withPlacement(
+                                  BatteryPlacement.rightBottom,
+                                ),
+                              ),
+                            ),
+                            child: const SizedBox(width: 1, height: 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.batteryVerticalPosition,
+                      valueLabel:
+                          '${(batteryCfg.vertFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: l10n.positionTop,
+                      maxLabel: l10n.positionBottom,
+                      sliderKey: const ValueKey('battery-vert'),
+                      min: 0.0,
+                      max: 0.7,
+                      divisions: 70,
+                      value: batteryCfg.vertFrac.clamp(0.0, 0.7),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(vertFrac: v),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.batterySidePadding,
+                      valueLabel:
+                          '${(batteryCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: l10n.positionEdge,
+                      maxLabel: '35%',
+                      sliderKey: const ValueKey('battery-side-pad'),
+                      min: 0.0,
+                      max: 0.35,
+                      divisions: 35,
+                      value: batteryCfg.sidePadFrac.clamp(0.0, 0.35),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(sidePadFrac: v),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.batteryHorizBias,
+                      valueLabel:
+                          '${(batteryCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
+                      minLabel: '←',
+                      maxLabel: '→',
+                      sliderKey: const ValueKey('battery-horiz-bias'),
+                      min: -0.25,
+                      max: 0.25,
+                      divisions: 50,
+                      value: batteryCfg.horizBiasFrac.clamp(-0.25, 0.25),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(horizBiasFrac: v),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: Insets.md),
+                    SettingsSlider(
+                      label: l10n.batterySize,
+                      valueLabel: '${batteryCfg.sizeScale.toStringAsFixed(2)}×',
+                      minLabel: '0.5×',
+                      maxLabel: '2.5×',
+                      sliderKey: const ValueKey('battery-size'),
+                      min: 0.5,
+                      max: 2.5,
+                      divisions: 40,
+                      value: batteryCfg.sizeScale.clamp(0.5, 2.5),
+                      onChanged: (v) {
+                        store.setConfig(
+                          store.value.copyWith(
+                            battery: batteryCfg.copyWith(sizeScale: v),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
-              SettingsToggleRow(
-                label: l10n.showTemp,
-                control: Switch(
-                  key: const ValueKey('battery-show-temp'),
-                  value: batteryCfg.showTemp,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(showTemp: v),
-                    ),
-                  ),
-                ),
-              ),
-              SettingsToggleRow(
-                label: l10n.showChargingStats,
-                control: Switch(
-                  key: const ValueKey('battery-show-charging'),
-                  value: batteryCfg.showChargingStats,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(showChargingStats: v),
-                    ),
-                  ),
-                ),
-              ),
-              // 0119c: range toggle + Cons Est readout removed.
-              SettingsToggleRow(
-                label: l10n.showDriveModeCornerDot,
-                control: Switch(
-                  key: const ValueKey('battery-show-drive-mode-dot'),
-                  value: batteryCfg.showDriveModeCornerDot,
-                  onChanged: (v) => store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(showDriveModeCornerDot: v),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: Insets.sm),
-                child: Text(
-                  l10n.showDriveModeCornerDotHint,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              const SizedBox(height: Insets.md),
-              Text(
-                l10n.batteryPlacement,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: Insets.sm),
-              SegmentedButton<BatteryPlacement>(
-                segments: <ButtonSegment<BatteryPlacement>>[
-                  ButtonSegment(
-                    value: BatteryPlacement.left,
-                    label: Text(l10n.batteryPlacementLeft),
-                    icon: const Icon(Icons.align_horizontal_left),
-                  ),
-                  ButtonSegment(
-                    value: BatteryPlacement.rightBottom,
-                    label: Text(l10n.batteryPlacementRightBottom),
-                    icon: const Icon(Icons.vertical_align_bottom),
-                  ),
-                  ButtonSegment(
-                    value: BatteryPlacement.right,
-                    label: Text(l10n.batteryPlacementRight),
-                    icon: const Icon(Icons.align_horizontal_right),
-                  ),
-                  ButtonSegment(
-                    value: BatteryPlacement.rightTop,
-                    label: Text(l10n.batteryPlacementRightTop),
-                    icon: const Icon(Icons.vertical_align_top),
-                  ),
-                ],
-                selected: <BatteryPlacement>{batteryCfg.placement},
-                onSelectionChanged: (Set<BatteryPlacement> sel) {
-                  if (sel.isEmpty) return;
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.withPlacement(sel.first),
-                    ),
-                  );
-                },
-              ),
-              Opacity(
-                opacity: 0,
-                child: Row(
-                  children: <Widget>[
-                    GestureDetector(
-                      key: const ValueKey('battery-placement-left'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withPlacement(
-                            BatteryPlacement.left,
-                          ),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('battery-placement-right'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withPlacement(
-                            BatteryPlacement.right,
-                          ),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('battery-placement-right-top'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withPlacement(
-                            BatteryPlacement.rightTop,
-                          ),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                    GestureDetector(
-                      key: const ValueKey('battery-placement-right-bottom'),
-                      onTap: () => store.setConfig(
-                        store.value.copyWith(
-                          battery: batteryCfg.withPlacement(
-                            BatteryPlacement.rightBottom,
-                          ),
-                        ),
-                      ),
-                      child: const SizedBox(width: 1, height: 1),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.batteryVerticalPosition,
-                valueLabel:
-                    '${(batteryCfg.vertFrac * 100).toStringAsFixed(0)}%',
-                minLabel: l10n.positionTop,
-                maxLabel: l10n.positionBottom,
-                sliderKey: const ValueKey('battery-vert'),
-                min: 0.0,
-                max: 0.7,
-                divisions: 70,
-                value: batteryCfg.vertFrac.clamp(0.0, 0.7),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(vertFrac: v),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.batterySidePadding,
-                valueLabel:
-                    '${(batteryCfg.sidePadFrac * 100).toStringAsFixed(0)}%',
-                minLabel: l10n.positionEdge,
-                maxLabel: '35%',
-                sliderKey: const ValueKey('battery-side-pad'),
-                min: 0.0,
-                max: 0.35,
-                divisions: 35,
-                value: batteryCfg.sidePadFrac.clamp(0.0, 0.35),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(sidePadFrac: v),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.batteryHorizBias,
-                valueLabel:
-                    '${(batteryCfg.horizBiasFrac * 100).toStringAsFixed(0)}%',
-                minLabel: '←',
-                maxLabel: '→',
-                sliderKey: const ValueKey('battery-horiz-bias'),
-                min: -0.25,
-                max: 0.25,
-                divisions: 50,
-                value: batteryCfg.horizBiasFrac.clamp(-0.25, 0.25),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(horizBiasFrac: v),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: Insets.md),
-              SettingsSlider(
-                label: l10n.batterySize,
-                valueLabel: '${batteryCfg.sizeScale.toStringAsFixed(2)}×',
-                minLabel: '0.5×',
-                maxLabel: '2.5×',
-                sliderKey: const ValueKey('battery-size'),
-                min: 0.5,
-                max: 2.5,
-                divisions: 40,
-                value: batteryCfg.sizeScale.clamp(0.5, 2.5),
-                onChanged: (v) {
-                  store.setConfig(
-                    store.value.copyWith(
-                      battery: batteryCfg.copyWith(sizeScale: v),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
 
-          const SizedBox(height: Insets.xl),
+                const SizedBox(height: Insets.xl),
 
-          // Current Safe Area values — useful during T3 calibration.
-          SettingsSection(
-            title: l10n.safeAreaSection,
-            children: <Widget>[_SafeAreaReadout(safeArea: safeArea)],
-          ),
-        ],
-      ),
-    ), // end Expanded
-    ], // end Column children
-  ), // end Column
-);
+                // Current Safe Area values — useful during T3 calibration.
+                SettingsSection(
+                  title: l10n.safeAreaSection,
+                  children: <Widget>[_SafeAreaReadout(safeArea: safeArea)],
+                ),
+              ],
+            ),
+          ), // end Expanded
+        ], // end Column children
+      ), // end Column
+    );
   }
 }
 

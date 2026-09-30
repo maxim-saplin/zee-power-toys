@@ -1142,26 +1142,10 @@
 
   "mediaSection": "Медиа (HUD)",
   "@mediaSection": {
-    "description": "0123 HUD media chrome section title"
+    "description": "0127 HUD media indicator section title"
   },
-  "showMedia": "Показывать сейчас играет",
+  "showMedia": "Показывать медиа на HUD",
   "@showMedia": {
-    "description": "0123 master media chrome toggle"
-  },
-  "showMediaIcon": "Иконка музыки",
-  "@showMediaIcon": {
-    "description": "0123 media icon piece toggle"
-  },
-  "showMediaArtistSong": "Исполнитель — трек",
-  "@showMediaArtistSong": {
-    "description": "0123 artist—song piece toggle"
-  },
-  "showMediaProgress": "Полоса прогресса",
-  "@showMediaProgress": {
-    "description": "0123 progress bar piece toggle (no times)"
-  },
-  "mediaBarOnly": "Только полоса (минимум)",
-  "@mediaBarOnly": {
-    "description": "0123 bar-only minimal mode"
+    "description": "0127 single HUD media visibility toggle"
   }
 }

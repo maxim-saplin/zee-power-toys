@@ -908,17 +908,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mediaSection => 'Media (HUD)';
 
   @override
-  String get showMedia => 'Show now playing';
-
-  @override
-  String get showMediaIcon => 'Music icon';
-
-  @override
-  String get showMediaArtistSong => 'Artist — song';
-
-  @override
-  String get showMediaProgress => 'Progress bar';
-
-  @override
-  String get mediaBarOnly => 'Bar only (minimal)';
+  String get showMedia => 'Show media on HUD';
 }

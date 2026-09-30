@@ -13,7 +13,6 @@ Map<String, Object?>? _asStringKeyedMap(Object? value) {
   return null;
 }
 
-
 // ---------------------------------------------------------------------------
 // MinimapLooks
 // ---------------------------------------------------------------------------
@@ -104,8 +103,7 @@ class MinimapLooks {
   }
 
   /// Native ColorMatrix tint token (never `default` — maps to white).
-  String get nativePreset =>
-      colorPreset == 'default' ? 'white' : colorPreset;
+  String get nativePreset => colorPreset == 'default' ? 'white' : colorPreset;
 
   MinimapLooks copyWith({
     String? colorPreset,
@@ -138,7 +136,10 @@ class MinimapLooks {
     // white without huePass, treat as mono white; missing keys → phase0 default.
     if (!json.containsKey('huePass') && !json.containsKey('hueAngle')) {
       if (name == 'white') return MinimapLooks.bundle('white');
-      if (name == 'default' || name == 'green-yellow' || name == 'cyan' || name == 'amber') {
+      if (name == 'default' ||
+          name == 'green-yellow' ||
+          name == 'cyan' ||
+          name == 'amber') {
         return MinimapLooks.bundle(name);
       }
     }
@@ -172,8 +173,14 @@ class MinimapLooks {
       other.hueAngle == hueAngle;
 
   @override
-  int get hashCode =>
-      Object.hash(colorPreset, contrast, threshold, brightness, huePass, hueAngle);
+  int get hashCode => Object.hash(
+    colorPreset,
+    contrast,
+    threshold,
+    brightness,
+    huePass,
+    hueAngle,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -317,7 +324,10 @@ class MinimapConfig {
     onlyWhileGuidance: json['onlyWhileGuidance'] as bool? ?? false,
     guidanceOverlay: json['guidanceOverlay'] as bool? ?? true,
     etaBar: json['etaBar'] as bool? ?? true,
-    overlayScale: ((json['overlayScale'] as num?)?.toDouble() ?? 0.5).clamp(0.25, 1.0),
+    overlayScale: ((json['overlayScale'] as num?)?.toDouble() ?? 0.5).clamp(
+      0.25,
+      1.0,
+    ),
     preset: json['preset'] as String? ?? 'balanced',
     advanced: json['advanced'] as bool? ?? false,
     sizeFraction: (json['sizeFraction'] as num?)?.toDouble(),
@@ -345,11 +355,19 @@ class MinimapConfig {
       other.looks == looks;
 
   @override
-  int get hashCode =>
-      Object.hash(enabled, onlyWhileGuidance, guidanceOverlay, etaBar,
-          overlayScale, preset, advanced, sizeFraction, contentScale, looks);
+  int get hashCode => Object.hash(
+    enabled,
+    onlyWhileGuidance,
+    guidanceOverlay,
+    etaBar,
+    overlayScale,
+    preset,
+    advanced,
+    sizeFraction,
+    contentScale,
+    looks,
+  );
 }
-
 
 /// Effective minimap surface visibility (0057).
 ///
@@ -387,26 +405,25 @@ enum BatteryLook { battery, batteryText, batteryBars, justText }
 /// Map a [BatteryLook] onto contentMode + style.
 ({BatteryContentMode contentMode, BatteryStyle style}) batteryLookParts(
   BatteryLook look,
-) =>
-    switch (look) {
-      BatteryLook.battery => (
-          contentMode: BatteryContentMode.iconOnly,
-          style: BatteryStyle.outline,
-        ),
-      BatteryLook.batteryText => (
-          contentMode: BatteryContentMode.both,
-          // 0062: % lives inside the pack (dual-color clip), not below.
-          style: BatteryStyle.pctInside,
-        ),
-      BatteryLook.batteryBars => (
-          contentMode: BatteryContentMode.iconOnly,
-          style: BatteryStyle.filled,
-        ),
-      BatteryLook.justText => (
-          contentMode: BatteryContentMode.textOnly,
-          style: BatteryStyle.outline,
-        ),
-    };
+) => switch (look) {
+  BatteryLook.battery => (
+    contentMode: BatteryContentMode.iconOnly,
+    style: BatteryStyle.outline,
+  ),
+  BatteryLook.batteryText => (
+    contentMode: BatteryContentMode.both,
+    // 0062: % lives inside the pack (dual-color clip), not below.
+    style: BatteryStyle.pctInside,
+  ),
+  BatteryLook.batteryBars => (
+    contentMode: BatteryContentMode.iconOnly,
+    style: BatteryStyle.filled,
+  ),
+  BatteryLook.justText => (
+    contentMode: BatteryContentMode.textOnly,
+    style: BatteryStyle.outline,
+  ),
+};
 
 /// Derive [BatteryLook] from legacy contentMode + style (prefs migration).
 BatteryLook batteryLookFromParts(
@@ -454,14 +471,13 @@ enum BatteryPlacement {
 /// source of truth (no hud/ → services cycle).
 ({double vertFrac, double sidePadFrac}) batteryPlacementDefaults(
   BatteryPlacement placement,
-) =>
-    switch (placement) {
-      BatteryPlacement.left => (vertFrac: 0.010, sidePadFrac: 0.04),
-      BatteryPlacement.right => (vertFrac: 0.35, sidePadFrac: 0.04),
-      BatteryPlacement.rightTop => (vertFrac: 0.010, sidePadFrac: 0.04),
-      // Bottom-anchored: vertFrac = pad from Safe Area bottom to slot bottom.
-      BatteryPlacement.rightBottom => (vertFrac: 0.010, sidePadFrac: 0.04),
-    };
+) => switch (placement) {
+  BatteryPlacement.left => (vertFrac: 0.010, sidePadFrac: 0.04),
+  BatteryPlacement.right => (vertFrac: 0.35, sidePadFrac: 0.04),
+  BatteryPlacement.rightTop => (vertFrac: 0.010, sidePadFrac: 0.04),
+  // Bottom-anchored: vertFrac = pad from Safe Area bottom to slot bottom.
+  BatteryPlacement.rightBottom => (vertFrac: 0.010, sidePadFrac: 0.04),
+};
 
 /// Whether [placement] anchors the cluster on the Safe Area bottom edge
 /// (slot grows upward when height increases — 0120 charging stack).
@@ -483,6 +499,7 @@ bool batteryPlacementAnchorsBottom(BatteryPlacement placement) =>
 enum RangePrimaryMode {
   /// Own-trip weighted window (0117 bands).
   own,
+
   /// Adapt Cons1-derived: (soc/100)×packWh / (cons×10).
   adaptCons,
 }
@@ -600,8 +617,7 @@ class BatteryConfig {
       showBattery: showBattery ?? this.showBattery,
       showTemp: showTemp ?? this.showTemp,
       showChargingStats: showChargingStats ?? this.showChargingStats,
-      showOwnRangeEstimate:
-          showOwnRangeEstimate ?? this.showOwnRangeEstimate,
+      showOwnRangeEstimate: showOwnRangeEstimate ?? this.showOwnRangeEstimate,
       rangePrimaryMode: rangePrimaryMode ?? this.rangePrimaryMode,
       showDriveModeCornerDot:
           showDriveModeCornerDot ?? this.showDriveModeCornerDot,
@@ -696,8 +712,7 @@ class BatteryConfig {
           orElse: () => RangePrimaryMode.adaptCons,
         );
       }(),
-      showDriveModeCornerDot:
-          json['showDriveModeCornerDot'] as bool? ?? false,
+      showDriveModeCornerDot: json['showDriveModeCornerDot'] as bool? ?? false,
       sizeScale: (json['sizeScale'] as num?)?.toDouble() ?? 1.0,
       look: look,
       contentMode: resolvedMode,
@@ -930,20 +945,15 @@ class HudSafeArea {
   int get hashCode => Object.hash(left, top, right, bottom);
 }
 
-
 /// Speedcam HUD/DHU radar appearance (0034).
 /// When to re-fetch the OSM pack from Overpass (0037).
 /// 0079 — named corner for the DHU system overlay window.
-enum SpeedcamOverlayPlacement {
-  topEnd,
-  topStart,
-  bottomEnd,
-  bottomStart,
-}
+enum SpeedcamOverlayPlacement { topEnd, topStart, bottomEnd, bottomStart }
 
 enum SpeedcamRadarLook {
   /// Clean HUD-first: distance + bearing, no CRT cosplay.
   defaultLook,
+
   /// Motion-tracker CRT wedge + range ping (fun mode).
   alien,
 }
@@ -1082,25 +1092,25 @@ class SpeedcamConfig {
   }
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'hudMode': hudMode.name,
-        'soundMode': soundMode.name,
-        // Legacy mirrors for older readers / dumpState.
-        'hudRadarEnabled': hudRadarEnabled,
-        'dhuRangeM': dhuRangeM,
-        'soundEnabled': soundEnabled,
-        'soundVolume': soundVolume,
-        'radarLook': radarLook.name,
-        'refreshPolicy': refreshPolicy.name,
-        'staleAfterDays': staleAfterDays,
-        'dhuSystemOverlay': dhuSystemOverlay,
-        'ynaviEnrichEnabled': ynaviEnrichEnabled,
-        'ynaviCollectEnabled': ynaviCollectEnabled,
-        'ynaviAlertEnabled': ynaviAlertEnabled,
-        'alertLaneCams': alertLaneCams,
-        'ynaviPointTtlDays': ynaviPointTtlDays,
-        'overlaySizeScale': overlaySizeScale,
-        'overlayPlacement': overlayPlacement.name,
-      };
+    'hudMode': hudMode.name,
+    'soundMode': soundMode.name,
+    // Legacy mirrors for older readers / dumpState.
+    'hudRadarEnabled': hudRadarEnabled,
+    'dhuRangeM': dhuRangeM,
+    'soundEnabled': soundEnabled,
+    'soundVolume': soundVolume,
+    'radarLook': radarLook.name,
+    'refreshPolicy': refreshPolicy.name,
+    'staleAfterDays': staleAfterDays,
+    'dhuSystemOverlay': dhuSystemOverlay,
+    'ynaviEnrichEnabled': ynaviEnrichEnabled,
+    'ynaviCollectEnabled': ynaviCollectEnabled,
+    'ynaviAlertEnabled': ynaviAlertEnabled,
+    'alertLaneCams': alertLaneCams,
+    'ynaviPointTtlDays': ynaviPointTtlDays,
+    'overlaySizeScale': overlaySizeScale,
+    'overlayPlacement': overlayPlacement.name,
+  };
 
   factory SpeedcamConfig.fromJson(Map<String, Object?> json) {
     final policyName = json['refreshPolicy'] as String?;
@@ -1110,7 +1120,9 @@ class SpeedcamConfig {
     );
     final lookName = json['radarLook'] as String?;
     final look = SpeedcamRadarLook.values.firstWhere(
-      (e) => e.name == lookName || (lookName == 'default' && e == SpeedcamRadarLook.defaultLook),
+      (e) =>
+          e.name == lookName ||
+          (lookName == 'default' && e == SpeedcamRadarLook.defaultLook),
       orElse: () => SpeedcamRadarLook.defaultLook,
     );
     final vol = (json['soundVolume'] as num?)?.toDouble() ?? 0.85;
@@ -1138,10 +1150,8 @@ class SpeedcamConfig {
       ynaviAlertEnabled: json['ynaviAlertEnabled'] as bool? ?? true,
       alertLaneCams: json['alertLaneCams'] as bool? ?? false,
       ynaviPointTtlDays: (json['ynaviPointTtlDays'] as num?)?.toInt() ?? 7,
-      overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0).clamp(
-        kSpeedcamOverlaySizeScaleMin,
-        kSpeedcamOverlaySizeScaleMax,
-      ),
+      overlaySizeScale: ((json['overlaySizeScale'] as num?)?.toDouble() ?? 1.0)
+          .clamp(kSpeedcamOverlaySizeScaleMin, kSpeedcamOverlaySizeScaleMax),
       overlayPlacement: SpeedcamOverlayPlacement.values.firstWhere(
         (e) => e.name == json['overlayPlacement'],
         orElse: () => SpeedcamOverlayPlacement.topEnd,
@@ -1170,22 +1180,22 @@ class SpeedcamConfig {
 
   @override
   int get hashCode => Object.hash(
-        hudMode,
-        soundMode,
-        dhuRangeM,
-        soundVolume,
-        radarLook,
-        refreshPolicy,
-        staleAfterDays,
-        dhuSystemOverlay,
-        ynaviEnrichEnabled,
-        ynaviCollectEnabled,
-        ynaviAlertEnabled,
-        alertLaneCams,
-        ynaviPointTtlDays,
-        overlaySizeScale,
-        overlayPlacement,
-      );
+    hudMode,
+    soundMode,
+    dhuRangeM,
+    soundVolume,
+    radarLook,
+    refreshPolicy,
+    staleAfterDays,
+    dhuSystemOverlay,
+    ynaviEnrichEnabled,
+    ynaviCollectEnabled,
+    ynaviAlertEnabled,
+    alertLaneCams,
+    ynaviPointTtlDays,
+    overlaySizeScale,
+    overlayPlacement,
+  );
 }
 
 SpeedcamPresenceMode _presenceModeFromJson(
@@ -1204,88 +1214,28 @@ SpeedcamPresenceMode _presenceModeFromJson(
   return defaultMode;
 }
 
-
-/// HUD media chrome prefs (0123 — Maxim lock B · compact).
-///
-/// Default **B · compact**: music icon + `artist — song` + progress bar under
-/// texts (**no times**). Stacks above battery/temp in the BATTERY slot
-/// (grow upward like charging). [barOnly] is the minimal mode (progress bar
-/// only). Per-piece toggles gate icon / text / bar when not bar-only.
-///
-/// Chrome paints only while a now-playing session is active (T1 fake inject
-/// or future MediaSession bind — soft until native binding lands).
+/// HUD media progress visibility. One DHU toggle controls the progress bar
+/// and transient track-change label.
 class MediaConfig {
-  const MediaConfig({
-    this.showMedia = true,
-    this.showIcon = true,
-    this.showArtistSong = true,
-    this.showProgressBar = true,
-    this.barOnly = false,
-  });
+  const MediaConfig({this.showMedia = true});
 
   /// Master: hide all media chrome when false.
   final bool showMedia;
 
-  /// Music note / media icon (ignored when [barOnly]).
-  final bool showIcon;
+  MediaConfig copyWith({bool? showMedia}) =>
+      MediaConfig(showMedia: showMedia ?? this.showMedia);
 
-  /// `artist — song` line (ignored when [barOnly]).
-  final bool showArtistSong;
+  Map<String, Object?> toJson() => <String, Object?>{'showMedia': showMedia};
 
-  /// Progress bar under texts (no elapsed/remaining times).
-  final bool showProgressBar;
-
-  /// Minimal mode: progress bar only (hides icon + text).
-  final bool barOnly;
-
-  MediaConfig copyWith({
-    bool? showMedia,
-    bool? showIcon,
-    bool? showArtistSong,
-    bool? showProgressBar,
-    bool? barOnly,
-  }) =>
-      MediaConfig(
-        showMedia: showMedia ?? this.showMedia,
-        showIcon: showIcon ?? this.showIcon,
-        showArtistSong: showArtistSong ?? this.showArtistSong,
-        showProgressBar: showProgressBar ?? this.showProgressBar,
-        barOnly: barOnly ?? this.barOnly,
-      );
-
-  Map<String, Object?> toJson() => <String, Object?>{
-        'showMedia': showMedia,
-        'showIcon': showIcon,
-        'showArtistSong': showArtistSong,
-        'showProgressBar': showProgressBar,
-        'barOnly': barOnly,
-      };
-
-  factory MediaConfig.fromJson(Map<String, Object?> json) => MediaConfig(
-        showMedia: json['showMedia'] as bool? ?? true,
-        showIcon: json['showIcon'] as bool? ?? true,
-        showArtistSong: json['showArtistSong'] as bool? ?? true,
-        showProgressBar: json['showProgressBar'] as bool? ?? true,
-        barOnly: json['barOnly'] as bool? ?? false,
-      );
+  factory MediaConfig.fromJson(Map<String, Object?> json) =>
+      MediaConfig(showMedia: json['showMedia'] as bool? ?? true);
 
   @override
   bool operator ==(Object other) =>
-      other is MediaConfig &&
-      other.showMedia == showMedia &&
-      other.showIcon == showIcon &&
-      other.showArtistSong == showArtistSong &&
-      other.showProgressBar == showProgressBar &&
-      other.barOnly == barOnly;
+      other is MediaConfig && other.showMedia == showMedia;
 
   @override
-  int get hashCode => Object.hash(
-        showMedia,
-        showIcon,
-        showArtistSong,
-        showProgressBar,
-        barOnly,
-      );
+  int get hashCode => showMedia.hashCode;
 }
 
 /// Minimal app configuration.
@@ -1409,9 +1359,7 @@ class AppConfig {
       battery: battery != null
           ? BatteryConfig.fromJson(battery)
           : const BatteryConfig(),
-      media: media != null
-          ? MediaConfig.fromJson(media)
-          : const MediaConfig(),
+      media: media != null ? MediaConfig.fromJson(media) : const MediaConfig(),
       minimap: minimap != null
           ? MinimapConfig.fromJson(minimap)
           : const MinimapConfig(),
@@ -1460,14 +1408,12 @@ class AppConfig {
 // Sentinel used by copyWith to distinguish "pass null" from "omit".
 const Object _unset = Object();
 
-
 String _themeModeFromJson(Object? raw) {
   // 'auto' = follow system (default). 'system' accepted as alias.
   if (raw == 'light' || raw == 'dark' || raw == 'auto') return raw as String;
   if (raw == 'system') return 'auto';
   return 'auto';
 }
-
 
 /// Port for config persistence. Each isolate owns its own instance.
 abstract class ConfigStore {

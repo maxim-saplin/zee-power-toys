@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -30,17 +32,19 @@ import 'battery_geometry.dart';
 /// placements). Hidden when not charging (ADR 0003 show-while-charging
 /// rule — app policy enforced here, not toggled by the user).
 ///
-/// Media chrome (0123 Maxim lock **B · compact**): music icon ·
-/// `artist — song` · progress bar under texts (**no times**). Stacks
-/// **above** charging/battery/temp (grow upward). Prefs via [MediaConfig]
-/// (per-piece toggles + [MediaConfig.barOnly] minimal mode). Paints only
-/// while [mediaNowPlayingProvider] reports an active session.
+/// Media progress with a brief text-only track-change label. Stacks above
+/// charging/battery/temp while [mediaNowPlayingProvider] reports playback.
 ///
 /// Emissive palette: bright marks on black.  No light backgrounds, cards, or
 /// panels — only the marks themselves emit light.  Scaled by [BatteryConfig.sizeScale].
-class BatteryWidget extends ConsumerWidget {
+class BatteryWidget extends ConsumerStatefulWidget {
   const BatteryWidget({super.key});
 
+  @override
+  ConsumerState<BatteryWidget> createState() => _BatteryWidgetState();
+}
+
+class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
   // ---------------------------------------------------------------------------
   // Emissive palette — all colours bright on black.
   // ---------------------------------------------------------------------------
@@ -68,11 +72,68 @@ class BatteryWidget extends ConsumerWidget {
 
   // ---------------------------------------------------------------------------
 
+  static const Duration _trackLabelDuration = Duration(seconds: 5);
+
+  bool _showTrackLabel = false;
+  bool _hasInitializedMedia = false;
+  String? _lastPlayingTrackLabel;
+  Timer? _trackLabelTimer;
+
+  void _onMediaChanged(MediaNowPlaying? next) {
+    if (next == null || !next.isPlaying) {
+      _hideTrackLabel();
+      return;
+    }
+
+    final nextLabel = next.artistSongLabel;
+    final trackChanged = nextLabel != _lastPlayingTrackLabel;
+    _lastPlayingTrackLabel = nextLabel;
+    if (nextLabel.isEmpty ||
+        !trackChanged ||
+        !ref.read(mediaConfigProvider).showMedia) {
+      if (nextLabel.isEmpty) _hideTrackLabel();
+      return;
+    }
+
+    _trackLabelTimer?.cancel();
+    setState(() => _showTrackLabel = true);
+    _trackLabelTimer = Timer(_trackLabelDuration, () {
+      if (mounted) setState(() => _showTrackLabel = false);
+    });
+  }
+
+  void _hideTrackLabel() {
+    _trackLabelTimer?.cancel();
+    _trackLabelTimer = null;
+    if (_showTrackLabel) setState(() => _showTrackLabel = false);
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _trackLabelTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Keep listening while the battery slot is idle. Its media child is only
+    // mounted during playback, so a child listener would miss null → track.
+    ref.listen<MediaNowPlaying?>(mediaNowPlayingProvider, (previous, next) {
+      _onMediaChanged(next);
+    });
+    ref.listen<MediaConfig>(mediaConfigProvider, (previous, next) {
+      if (!next.showMedia) _hideTrackLabel();
+    });
+
     final cfg = ref.watch(batteryConfigProvider);
     final mediaCfg = ref.watch(mediaConfigProvider);
     final nowPlaying = ref.watch(mediaNowPlayingProvider);
+    if (!_hasInitializedMedia) {
+      _hasInitializedMedia = true;
+      if (nowPlaying?.isPlaying == true) {
+        _lastPlayingTrackLabel = nowPlaying!.artistSongLabel;
+      }
+    }
 
     final mediaChrome = _mediaChromeVisible(mediaCfg, nowPlaying);
 
@@ -104,7 +165,6 @@ class BatteryWidget extends ConsumerWidget {
     final bodyH = base; // height of the battery body
     final nubW = base * 0.15; // terminal nub width
     final nubH = base * 0.40; // terminal nub height
-
     // Fill level (0.0–1.0); null → show empty shell.
     final fillFrac = (pct != null) ? (pct.clamp(0, 100) / 100.0) : 0.0;
 
@@ -118,13 +178,13 @@ class BatteryWidget extends ConsumerWidget {
       fillColor = _kFillRed;
     }
 
-    final showStats =
-        showBatteryCluster && isCharging && cfg.showChargingStats;
+    final showStats = showBatteryCluster && isCharging && cfg.showChargingStats;
     final showIcon =
         showBatteryCluster && cfg.contentMode != BatteryContentMode.textOnly;
     // 0119c: range feature removed — % only (no `N% · N km` / pending ellipsis).
     final pctInsidePack = showIcon && cfg.style == BatteryStyle.pctInside;
-    final showPctBelow = showBatteryCluster &&
+    final showPctBelow =
+        showBatteryCluster &&
         cfg.contentMode != BatteryContentMode.iconOnly &&
         !pctInsidePack;
     final showTempRow = showBatteryCluster && cfg.showTemp;
@@ -143,11 +203,6 @@ class BatteryWidget extends ConsumerWidget {
     // Inside-pack DualColor still wants a short plain SoC string.
     final String pctInsideLabel = pct != null ? '$pct%' : '--%';
 
-    // Align the cluster toward the active edge so left placement mirrors
-    // right without changing pack/styles (0051). Temp + charging stay in
-    // this Column, so they move with the battery.
-    // 0120: bottom-anchored presets pin content to the slot bottom so the
-    // charging row can stack above % without moving the bottom edge.
     final alignEnd = cfg.placement != BatteryPlacement.left;
     final anchorBottom = batteryPlacementAnchorsBottom(cfg.placement);
     final Alignment clusterAlign;
@@ -156,221 +211,187 @@ class BatteryWidget extends ConsumerWidget {
     } else {
       clusterAlign = alignEnd ? Alignment.topRight : Alignment.topLeft;
     }
-    final clusterCross =
-        alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final clusterCross = alignEnd
+        ? CrossAxisAlignment.end
+        : CrossAxisAlignment.start;
 
     return Padding(
-      // Small inset from slot edges so marks breathe.
       padding: EdgeInsets.all(base * 0.3),
-      // 0067b: no FittedBox(scaleDown) — it reversed sizeScale past ~1.5×
-      // once content exceeded the slot. Slot grows with sizeScale in
-      // batteryClusterSlotFracs; Align keeps marks at their true size.
       child: ClipRect(
         child: Align(
-        alignment: clusterAlign,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: clusterCross,
-          children: <Widget>[
-            // ---- Media chrome (0123 B · compact: stack ABOVE bat/temp) ----
-            if (mediaChrome) ...<Widget>[
-              _MediaChrome(
-                key: const ValueKey('hud-media-chrome'),
-                nowPlaying: nowPlaying!,
-                cfg: mediaCfg,
-                base: base,
-                crossAxisAlignment: clusterCross,
-              ),
-              SizedBox(height: base * 0.28),
-            ],
+          alignment: clusterAlign,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: clusterCross,
+            children: <Widget>[
+              if (mediaChrome) ...<Widget>[
+                _MediaChrome(
+                  key: const ValueKey('hud-media-chrome'),
+                  nowPlaying: nowPlaying!,
+                  showTrackLabel: _showTrackLabel,
+                  base: base,
+                  crossAxisAlignment: clusterCross,
+                ),
+                SizedBox(height: base * 0.28),
+              ],
+              if (showStats) ...<Widget>[
+                _ChargingStats(
+                  key: const ValueKey('charging-stats'),
+                  kw: kw,
+                  base: base,
+                  kwColor: _kKwColor,
+                  secondaryColor: _kTextSecondary,
+                  crossAxisAlignment: clusterCross,
+                ),
+                SizedBox(height: base * 0.30),
+              ],
 
-            // ---- Charging stats (0120: stack ABOVE %; bottom edge stays) ----
-            if (showStats) ...<Widget>[
-              _ChargingStats(
-                key: const ValueKey('charging-stats'),
-                kw: kw,
-                base: base,
-                kwColor: _kKwColor,
-                secondaryColor: _kTextSecondary,
-                crossAxisAlignment: clusterCross,
-              ),
-              SizedBox(height: base * 0.30),
-            ],
-
-            // ---- Battery icon (pack) ----
-            if (showIcon)
-              SizedBox(
-                key: const ValueKey('battery-icon'),
-                width: bodyW + nubW,
-                height: bodyH,
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: <Widget>[
-                    CustomPaint(
-                      size: Size(bodyW + nubW, bodyH),
-                      painter: _BatteryPainter(
-                        fillFrac: fillFrac,
-                        fillColor: fillColor,
-                        outlineColor: _kOutline,
-                        bodyW: bodyW,
-                        bodyH: bodyH,
-                        nubW: nubW,
-                        nubH: nubH,
-                        style: cfg.style,
-                        // Charging bolt is gated on raw isCharging state alone,
-                        // not on showChargingStats: the bolt communicates
-                        // *that* the car is charging; the stats panel is
-                        // supplementary detail the user may suppress.
-                        showBolt: isCharging,
-                      ),
-                    ),
-                    if (pctInsidePack)
-                      Positioned(
-                        left: 0,
-                        width: bodyW,
-                        top: 0,
-                        bottom: 0,
-                        child: _DualColorPctLabel(
-                          key: const ValueKey('battery-inline-pct'),
-                          label: pctInsideLabel,
+              // ---- Battery icon (pack) ----
+              if (showIcon)
+                SizedBox(
+                  key: const ValueKey('battery-icon'),
+                  width: bodyW + nubW,
+                  height: bodyH,
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[
+                      CustomPaint(
+                        size: Size(bodyW + nubW, bodyH),
+                        painter: _BatteryPainter(
+                          fillFrac: fillFrac,
+                          fillColor: fillColor,
+                          outlineColor: _kOutline,
                           bodyW: bodyW,
                           bodyH: bodyH,
-                          fillFrac: fillFrac,
-                          filledColor: const Color(0xFF000000),
-                          emptyColor: _kTextPrimary,
+                          nubW: nubW,
+                          nubH: nubH,
+                          style: cfg.style,
+                          // Charging bolt is gated on raw isCharging state alone,
+                          // not on showChargingStats: the bolt communicates
+                          // *that* the car is charging; the stats panel is
+                          // supplementary detail the user may suppress.
+                          showBolt: isCharging,
                         ),
                       ),
-                  ],
+                      if (pctInsidePack)
+                        Positioned(
+                          left: 0,
+                          width: bodyW,
+                          top: 0,
+                          bottom: 0,
+                          child: _DualColorPctLabel(
+                            key: const ValueKey('battery-inline-pct'),
+                            label: pctInsideLabel,
+                            bodyW: bodyW,
+                            bodyH: bodyH,
+                            fillFrac: fillFrac,
+                            filledColor: const Color(0xFF000000),
+                            emptyColor: _kTextPrimary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
 
-            // ---- Percentage text (below pack, when not painted inside) ----
-            if (showPctBelow) ...<Widget>[
-              if (showIcon) SizedBox(height: base * 0.12),
-              Text(
-                key: const ValueKey('battery-pct-text'),
-                pct != null ? '$pct%' : '--%',
-                style: labelStyle,
-              ),
-            ],
+              // ---- Percentage text (below pack, when not painted inside) ----
+              if (showPctBelow) ...<Widget>[
+                if (showIcon) SizedBox(height: base * 0.12),
+                Text(
+                  key: const ValueKey('battery-pct-text'),
+                  pct != null ? '$pct%' : '--%',
+                  style: labelStyle,
+                ),
+              ],
 
-            // ---- Temperature row (optional) ----
-            if (showTempRow) ...<Widget>[
-              SizedBox(height: base * 0.18),
-              Text(
-                tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
-                key: const ValueKey('battery-temp-text'),
-                style: tempStyle,
-              ),
+              // ---- Temperature row (optional) ----
+              if (showTempRow) ...<Widget>[
+                SizedBox(height: base * 0.18),
+                Text(
+                  tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
+                  key: const ValueKey('battery-temp-text'),
+                  style: tempStyle,
+                ),
+              ],
             ],
-          ],
-        ),
+          ),
         ),
       ),
     );
   }
 }
 
-
 bool _mediaChromeVisible(MediaConfig cfg, MediaNowPlaying? np) {
-  if (!cfg.showMedia) return false;
-  if (np == null || !np.isPlaying) return false;
-  if (cfg.barOnly) return cfg.showProgressBar;
-  return cfg.showIcon || cfg.showArtistSong || cfg.showProgressBar;
+  return cfg.showMedia && np != null && np.isPlaying;
 }
 
-/// 0123 B · compact media chrome — icon · artist — song · bar (no times).
 class _MediaChrome extends StatelessWidget {
   const _MediaChrome({
     super.key,
     required this.nowPlaying,
-    required this.cfg,
+    required this.showTrackLabel,
     required this.base,
     required this.crossAxisAlignment,
   });
 
   final MediaNowPlaying nowPlaying;
-  final MediaConfig cfg;
+  final bool showTrackLabel;
   final double base;
   final CrossAxisAlignment crossAxisAlignment;
 
   static const Color _kText = Color(0xFFEEEEEE);
   static const Color _kBarTrack = Color(0xFF444444);
   static const Color _kBarFill = Color(0xFF67E8F9);
-  static const Color _kIcon = Color(0xFFEEEEEE);
 
   @override
   Widget build(BuildContext context) {
-    final barOnly = cfg.barOnly;
-    final showIcon = !barOnly && cfg.showIcon;
-    final showText = !barOnly && cfg.showArtistSong;
-    final showBar = cfg.showProgressBar || barOnly;
     final label = nowPlaying.artistSongLabel;
     final progress = nowPlaying.progress.clamp(0.0, 1.0);
-    // 0124: enlarge artist — song vs 0123 B·compact (0.42) for windshield.
-    final textStyle = TextStyle(
-      color: _kText,
-      fontSize: base * 0.55,
-      fontWeight: FontWeight.w500,
-      height: 1.05,
-    );
     final barW = base * 4.2;
     final barH = base * 0.14;
+    final textStyle = TextStyle(
+      color: _kText,
+      fontSize: base * 0.45,
+      fontWeight: FontWeight.w500,
+      height: 1.0,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: crossAxisAlignment,
       children: <Widget>[
-        if (showIcon || showText)
-          Row(
-            key: const ValueKey('hud-media-row'),
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (showIcon) ...<Widget>[
-                Icon(
-                  Icons.music_note,
-                  key: const ValueKey('hud-media-icon'),
-                  size: base * 0.55,
-                  color: _kIcon,
-                ),
-                if (showText) SizedBox(width: base * 0.15),
-              ],
-              if (showText && label.isNotEmpty)
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: base * 5.2),
-                  child: Text(
-                    label,
-                    key: const ValueKey('hud-media-artist-song'),
-                    style: textStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                ),
-            ],
-          ),
-        if (showBar) ...<Widget>[
-          if (showIcon || showText) SizedBox(height: base * 0.14),
-          SizedBox(
-            key: const ValueKey('hud-media-progress'),
-            width: barW,
-            height: barH,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(barH),
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  const ColoredBox(color: _kBarTrack),
-                  FractionallySizedBox(
-                    widthFactor: progress,
-                    alignment: Alignment.centerLeft,
-                    child: const ColoredBox(color: _kBarFill),
-                  ),
-                ],
-              ),
+        if (showTrackLabel && label.isNotEmpty) ...<Widget>[
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: base * 5.2),
+            child: Text(
+              label,
+              key: const ValueKey('hud-media-artist-song'),
+              style: textStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
           ),
+          SizedBox(height: base * 0.14),
         ],
+        SizedBox(
+          key: const ValueKey('hud-media-progress'),
+          width: barW,
+          height: barH,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(barH),
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                const ColoredBox(color: _kBarTrack),
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  alignment: Alignment.centerLeft,
+                  child: const ColoredBox(color: _kBarFill),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -447,8 +468,7 @@ class _BatteryPainter extends CustomPainter {
       // ---- Segmented bars ----
       if (innerW > 0 && innerH > 0) {
         final gap = innerW * 0.06;
-        final segW =
-            (innerW - gap * (_kSegmentCount - 1)) / _kSegmentCount;
+        final segW = (innerW - gap * (_kSegmentCount - 1)) / _kSegmentCount;
         final lit = (fillFrac * _kSegmentCount).ceil().clamp(0, _kSegmentCount);
         final fillPaint = Paint()
           ..color = fillColor
@@ -524,7 +544,6 @@ class _BatteryPainter extends CustomPainter {
 // SoC (+ optional own-range) label — 0105/0107.
 // ---------------------------------------------------------------------------
 
-
 // ---------------------------------------------------------------------------
 // Dual-color % inside pack (0062) — black on fill, white on empty, clipped.
 // ---------------------------------------------------------------------------
@@ -566,14 +585,14 @@ class _DualColorPctLabel extends StatelessWidget {
     // Without expand, ClipRect sizes to the Text and fillEdge (pack space)
     // often covers the whole glyph — white on empty never shows (0062 FAIL).
     Widget pct(Color color) => Center(
-          child: Text(
-            label,
-            style: style.copyWith(color: color),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            softWrap: false,
-          ),
-        );
+      child: Text(
+        label,
+        style: style.copyWith(color: color),
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        softWrap: false,
+      ),
+    );
     return Stack(
       fit: StackFit.expand,
       alignment: Alignment.center,
@@ -584,10 +603,7 @@ class _DualColorPctLabel extends StatelessWidget {
           child: pct(emptyColor),
         ),
         // Filled portion (left of fill edge) — black, clipped at boundary.
-        ClipRect(
-          clipper: _LeftEdgeClipper(fillEdge),
-          child: pct(filledColor),
-        ),
+        ClipRect(clipper: _LeftEdgeClipper(fillEdge), child: pct(filledColor)),
       ],
     );
   }

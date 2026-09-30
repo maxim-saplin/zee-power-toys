@@ -72,60 +72,60 @@ class HudRoot extends ConsumerWidget {
 
     // No background fill — the surface (black HUD / grey preview) provides it.
     return LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          final h = constraints.maxHeight;
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
 
-          final saLeft = safeArea.left * w;
-          final saTop = safeArea.top * h;
-          final saRight = safeArea.right * w;
-          final saBottom = safeArea.bottom * h;
-          final saWidth = saRight - saLeft;
-          final saHeight = saBottom - saTop;
+        final saLeft = safeArea.left * w;
+        final saTop = safeArea.top * h;
+        final saRight = safeArea.right * w;
+        final saBottom = safeArea.bottom * h;
+        final saWidth = saRight - saLeft;
+        final saHeight = saBottom - saTop;
 
-          return Stack(
-            children: <Widget>[
-              // Safe Area clip — all HUD content lives inside here.
+        return Stack(
+          children: <Widget>[
+            // Safe Area clip — all HUD content lives inside here.
+            Positioned(
+              left: saLeft,
+              top: saTop,
+              width: saWidth,
+              height: saHeight,
+              child: ClipRect(
+                child: _HudSlots(
+                  saWidth: saWidth,
+                  saHeight: saHeight,
+                  showStubs: showSafeAreaBorder,
+                  forceBlinkOn: forceBlinkOn,
+                  forceDemoSpeedcam: forceDemoSpeedcam,
+                ),
+              ),
+            ),
+
+            // Faint Safe Area border — debug visual; not visible on the
+            // physical HUD (it is part of the DHU preview, not the HUD image).
+            if (showSafeAreaBorder)
               Positioned(
                 left: saLeft,
                 top: saTop,
                 width: saWidth,
                 height: saHeight,
-                child: ClipRect(
-                  child: _HudSlots(
-                    saWidth: saWidth,
-                    saHeight: saHeight,
-                    showStubs: showSafeAreaBorder,
-                    forceBlinkOn: forceBlinkOn,
-                    forceDemoSpeedcam: forceDemoSpeedcam,
-                  ),
-                ),
-              ),
-
-              // Faint Safe Area border — debug visual; not visible on the
-              // physical HUD (it is part of the DHU preview, not the HUD image).
-              if (showSafeAreaBorder)
-                Positioned(
-                  left: saLeft,
-                  top: saTop,
-                  width: saWidth,
-                  height: saHeight,
-                  child: IgnorePointer(
-                    key: const ValueKey('hud-safe-area-border'),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          // Dim cyan — visible over black without adding HUD glare.
-                          color: const Color(0xFF00FFFF).withValues(alpha: 0.35),
-                          width: 1.0,
-                        ),
+                child: IgnorePointer(
+                  key: const ValueKey('hud-safe-area-border'),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        // Dim cyan — visible over black without adding HUD glare.
+                        color: const Color(0xFF00FFFF).withValues(alpha: 0.35),
+                        width: 1.0,
                       ),
                     ),
                   ),
                 ),
-            ],
-          );
-        },
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -176,14 +176,8 @@ class _HudSlots extends ConsumerWidget {
     final chargingStatsVisible =
         ref.watch(chargingProvider) && batteryCfg.showChargingStats;
     // 0123: grow when B · compact media chrome stacks above bat/temp.
-    final mediaChromeVisible = mediaCfg.showMedia &&
-        nowPlaying != null &&
-        nowPlaying.isPlaying &&
-        (mediaCfg.barOnly
-            ? mediaCfg.showProgressBar
-            : (mediaCfg.showIcon ||
-                mediaCfg.showArtistSong ||
-                mediaCfg.showProgressBar));
+    final mediaChromeVisible =
+        mediaCfg.showMedia && nowPlaying != null && nowPlaying.isPlaying;
     final slotFracs = batteryClusterSlotFracs(
       chargingStatsVisible: chargingStatsVisible,
       mediaChromeVisible: mediaChromeVisible,
@@ -202,7 +196,10 @@ class _HudSlots extends ConsumerWidget {
     );
 
     // 0083/0080: shared landscape CRT plate (HUD / preview / Overlay).
-    final radarSlot = speedcamCrtHudSlotSize(safeWidth: saWidth, safeHeight: saHeight);
+    final radarSlot = speedcamCrtHudSlotSize(
+      safeWidth: saWidth,
+      safeHeight: saHeight,
+    );
     final radarW = radarSlot.width;
     final radarH = radarSlot.height;
 
@@ -211,9 +208,7 @@ class _HudSlots extends ConsumerWidget {
         // BLINKER — full Safe Area layer (lowest z-order).
         // BlinkerWidget positions marks at left/right edges via Positioned inside
         // its own Stack, so hazard shows both simultaneously.
-        Positioned.fill(
-          child: BlinkerWidget(forceBlinkOn: forceBlinkOn),
-        ),
+        Positioned.fill(child: BlinkerWidget(forceBlinkOn: forceBlinkOn)),
 
         // BATTERY — freely placeable cluster (icon + % + temp + charging kW).
         // Geometry from batteryClusterRect; default = bottom-right (0120).
@@ -237,9 +232,7 @@ class _HudSlots extends ConsumerWidget {
                 ? SpeedcamRadarWidget.demoDanger
                 : null,
             // Desktop T1 demo only — do not flip Default look in unit tests.
-            lookOverride: forceDemoSpeedcam
-                ? SpeedcamRadarLook.alien
-                : null,
+            lookOverride: forceDemoSpeedcam ? SpeedcamRadarLook.alien : null,
           ),
         ),
 
