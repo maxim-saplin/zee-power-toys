@@ -5,6 +5,7 @@ import '../services/media_now_playing.dart';
 import '../services/config_store.dart';
 import '../services/hud_host.dart';
 import '../services/app_self_update.dart';
+import '../services/ynavi_release_discovery.dart';
 import '../services/installer.dart';
 import '../services/package_status.dart';
 import '../services/speedcam.dart';
@@ -75,5 +76,10 @@ final speedcamLocationProvider = Provider<NativeSpeedcamLocation?>((ref) {
 /// Toys self-update probe (0115). Default hits GitHub; tests override.
 final appUpdateCheckerProvider = Provider<AppUpdateChecker>((ref) {
   return () => AppSelfUpdate().check();
+});
+
+/// YNavi Release manifest discovery (0126). Default hits GitHub; tests override.
+final ynaviReleaseDiscovererProvider = Provider<YnaviReleaseDiscoverer>((ref) {
+  return () => YnaviReleaseDiscovery().discover();
 });
 

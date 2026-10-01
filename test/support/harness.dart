@@ -25,6 +25,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zee_power_toys/l10n/app_localizations.dart';
 import 'package:zee_power_toys/providers/services.dart';
 import 'package:zee_power_toys/services/app_self_update.dart';
+import 'package:zee_power_toys/services/ynavi_release_discovery.dart';
+import 'ynavi_discovery_fixtures.dart';
 import 'package:zee_power_toys/providers/usb_mode.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
@@ -99,6 +101,7 @@ Widget wrapWithProviders(
   SystemConfig? systemConfig,
   UsbModePort? usbMode,
   AppUpdateChecker? appUpdateChecker,
+  YnaviReleaseDiscoverer? ynaviReleaseDiscoverer,
   List? extraOverrides,
 }) {
   final effectiveStore = store ?? SharedPrefsConfigStore();
@@ -122,6 +125,9 @@ Widget wrapWithProviders(
       appUpdateCheckerProvider.overrideWithValue(
         appUpdateChecker ??
             (() async => const AppUpdateNonePublished()),
+      ),
+      ynaviReleaseDiscovererProvider.overrideWithValue(
+        ynaviReleaseDiscoverer ?? baselineYnaviDiscoverer,
       ),
       speedcamServiceProvider.overrideWithValue(FakeSpeedcamService()),
       speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
