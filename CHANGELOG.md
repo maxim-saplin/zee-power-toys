@@ -12,6 +12,10 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 ### Fixed
 - **0127** Hold the last playing media snapshot and slot geometry for one second through transient non-playing or missing-media updates. Stable inactive media still hides; same-track resume keeps the original 3.5-second label deadline.
 
+### Notes
+- Published tag `1.2.3+35`; release workflow `36854096536`.
+- APK SHA-256 `e1de09a860038e2f4b623f4236b201f0336a3e86d39f01a6fb1b44a1c0ebc976`; AOSP platform-signed through `release.yml`.
+
 ## [1.2.2+34] — 2026-09-30
 
 ### Fixed
