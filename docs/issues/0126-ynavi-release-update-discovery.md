@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: in-progress
 labels: [release, versioning, install, update, ynavi]
 created: 2026-09-29
 satisfies: YNavi mod builds have versioned releases and Toys detects them without a Toys release
@@ -54,4 +54,10 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md). For this Block specifically:
 
 ## Reconciliation
 
-None.
+- **2026-10-01** — YNavi half merged to `ynavi-zee` main (`9354e06`, PR #5). Toys half: Install open resolves stable v27 + beta v30 via `ynavi-release-manifest.json` on public Releases; compile pins are install fallback only (no “latest” claim when discovery fails). T2 still open.
+
+## Toys implementation notes
+
+- Contract/schema: `maxim-saplin/ynavi-zee` @ main — `releases/ynavi-release-manifest.schema.json`, `releases/lines.json`, `docs/0126-release-version-contract.md`.
+- Discovery: `lib/services/ynavi_release_discovery.dart`; wired on Install open (`ynaviReleaseDiscovererProvider`).
+- Compare uses manifest `versionCode` (Update / Reinstall / Replace older unchanged).

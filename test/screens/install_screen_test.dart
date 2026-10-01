@@ -13,6 +13,8 @@ import 'package:zee_power_toys/services/fakes/fake_package_status.dart';
 import 'package:zee_power_toys/services/shared_prefs_config_store.dart';
 
 import '../support/harness.dart';
+import '../support/ynavi_discovery_fixtures.dart';
+import 'package:zee_power_toys/services/ynavi_release_discovery.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -633,6 +635,95 @@ void main() {
       await tester.pump(const Duration(milliseconds: 60));
       await tester.pump(const Duration(milliseconds: 60));
       expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets('0126: newer mod build → Update on YNavi card', (tester) async {
+      final (store, installer) = await _makeFixture();
+      final baseline = baselineYnaviDiscoveryOk();
+      final stable = baseline.stable!;
+      final bumpedManifest = YnaviReleaseManifest(
+        channel: stable.manifest.channel,
+        lineId: stable.manifest.lineId,
+        upstreamVersionName: stable.manifest.upstreamVersionName,
+        modBuild: 2,
+        versionName: '27.0.2+2',
+        versionCode: kYnaviReleaseVersionCode + 2,
+        tag: 'ynavi-zeekr-v27.0.2+2',
+        assets: stable.manifest.assets,
+      );
+      final bumped = YnaviReleaseDiscoveryOk(
+        stable: YnaviResolvedRelease(
+          manifest: bumpedManifest,
+          assetsByVariant: stable.assetsByVariant,
+        ),
+        beta: baseline.beta,
+      );
+      final packages = FakePackageStatus(probes: {
+        CompanionPackages.ynavi: const PackageProbe(
+          state: PackageInstallState.installed,
+          versionCode: kYnaviReleaseVersionCode,
+        ),
+      });
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          ynaviReleaseDiscoverer: () async => bumped,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-ynavi')),
+          matching: find.text('Update'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('27.0.2+2'), findsWidgets);
+    });
+
+    testWidgets('0126: discovery failed does not claim Reinstall from pin',
+        (tester) async {
+      final (store, installer) = await _makeFixture();
+      var discoverCalls = 0;
+      final packages = FakePackageStatus(probes: {
+        CompanionPackages.ynavi: const PackageProbe(
+          state: PackageInstallState.installed,
+          versionCode: kYnaviReleaseVersionCode,
+        ),
+      });
+      await tester.pumpWidget(
+        wrapWithProviders(
+          const InstallScreen(),
+          store: store,
+          installer: installer,
+          packageStatus: packages,
+          appUpdateChecker: () async => const AppUpdateNonePublished(),
+          ynaviReleaseDiscoverer: () async {
+            discoverCalls++;
+            return const YnaviReleaseDiscoveryFailed('offline');
+          },
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pumpAndSettle();
+      expect(discoverCalls, 1);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('ynavi-discovery-error')),
+        200,
+      );
+      expect(find.textContaining('Update check failed'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('card-ynavi')),
+          matching: find.text('Reinstall'),
+        ),
+        findsNothing,
+      );
+      expect(find.textContaining('Up to date'), findsNothing);
     });
 
     testWidgets('0121: uninstall UI failed → clear message', (tester) async {

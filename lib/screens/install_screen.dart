@@ -10,18 +10,98 @@ import '../services/install_targets.dart';
 import '../services/installer.dart';
 import '../services/package_status.dart';
 import '../services/release_compare.dart';
+import '../services/ynavi_release_discovery.dart';
 import '../theme/app_theme.dart';
 
 /// Install screen — companions from GitHub Releases + self-update (0069 / 0103).
-class InstallScreen extends ConsumerWidget {
+class InstallScreen extends ConsumerStatefulWidget {
   const InstallScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InstallScreen> createState() => _InstallScreenState();
+}
+
+class _InstallScreenState extends ConsumerState<InstallScreen> {
+  YnaviReleaseDiscoveryOk? _ynaviLastGood;
+  String? _ynaviDiscoveryError;
+  bool _ynaviDiscovering = false;
+  bool _ynaviDiscoveryStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_ynaviDiscoveryStarted) {
+      _ynaviDiscoveryStarted = true;
+      unawaited(_runYnaviDiscovery());
+    }
+  }
+
+  Future<void> _runYnaviDiscovery() async {
+    if (_ynaviDiscovering) return;
+    final previous = _ynaviLastGood;
+    setState(() => _ynaviDiscovering = true);
+    final result = await ref.read(ynaviReleaseDiscovererProvider)();
+    if (!mounted) return;
+    setState(() {
+      _ynaviDiscovering = false;
+      if (result is YnaviReleaseDiscoveryOk) {
+        _ynaviLastGood = result;
+        _ynaviDiscoveryError = null;
+      } else if (result is YnaviReleaseDiscoveryFailed) {
+        // Soft fail: keep last good remote; never fall back to compile pins.
+        if (previous == null) _ynaviLastGood = null;
+        _ynaviDiscoveryError = result.message;
+      }
+    });
+  }
+
+  _YnaviCardRelease _ynaviCardRelease({
+    required String variantId,
+    required GithubAsset fallbackAsset,
+    required String fallbackLabel,
+    required int fallbackVersionCode,
+    YnaviResolvedRelease? channel,
+  }) {
+    final trusted = channel != null;
+    final asset = trusted
+        ? (channel.assetsByVariant[variantId] ?? fallbackAsset)
+        : fallbackAsset;
+    return _YnaviCardRelease(
+      asset: asset,
+      releaseLabel: trusted ? channel.versionLabel : fallbackLabel,
+      releaseVersionCode: trusted ? channel.versionCode : fallbackVersionCode,
+      releaseCompareEnabled: trusted,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final installer = ref.read(installerProvider);
     final packages = ref.read(packageStatusProvider);
     final updateChecker = ref.read(appUpdateCheckerProvider);
+    final ynavi = _ynaviLastGood;
+    final v27 = _ynaviCardRelease(
+      variantId: kYnaviVariantZeekrMargined,
+      fallbackAsset: kYnaviAsset,
+      fallbackLabel: kYnaviUpstreamVersionBuild,
+      fallbackVersionCode: kYnaviReleaseVersionCode,
+      channel: ynavi?.stable,
+    );
+    final v27Os7 = _ynaviCardRelease(
+      variantId: kYnaviVariantZeekrOs7,
+      fallbackAsset: kYnaviOs7Asset,
+      fallbackLabel: kYnaviUpstreamVersionBuild,
+      fallbackVersionCode: kYnaviReleaseVersionCode,
+      channel: ynavi?.stable,
+    );
+    final v30 = _ynaviCardRelease(
+      variantId: kYnaviVariantZeekrV30,
+      fallbackAsset: kYnaviV30Asset,
+      fallbackLabel: kYnaviV30UpstreamVersionBuild,
+      fallbackVersionCode: kYnaviV30ReleaseVersionCode,
+      channel: ynavi?.beta,
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.installTitle)),
@@ -52,10 +132,11 @@ class InstallScreen extends ConsumerWidget {
             installKey: const ValueKey('install-ynavi'),
             name: l10n.installYnaviName,
             description: l10n.installYnaviDesc,
-            asset: kYnaviAsset,
+            asset: v27.asset,
             packageName: CompanionPackages.ynavi,
-            releaseVersionCode: kYnaviReleaseVersionCode,
-            releaseLabel: kYnaviUpstreamVersionBuild,
+            releaseVersionCode: v27.releaseVersionCode,
+            releaseLabel: v27.releaseLabel,
+            releaseCompareEnabled: v27.releaseCompareEnabled,
             installer: installer,
             packages: packages,
           ),
@@ -65,10 +146,11 @@ class InstallScreen extends ConsumerWidget {
             installKey: const ValueKey('install-ynavi-os7'),
             name: l10n.installYnaviOs7Name,
             description: l10n.installYnaviOs7Desc,
-            asset: kYnaviOs7Asset,
+            asset: v27Os7.asset,
             packageName: CompanionPackages.ynavi,
-            releaseVersionCode: kYnaviReleaseVersionCode,
-            releaseLabel: kYnaviUpstreamVersionBuild,
+            releaseVersionCode: v27Os7.releaseVersionCode,
+            releaseLabel: v27Os7.releaseLabel,
+            releaseCompareEnabled: v27Os7.releaseCompareEnabled,
             installer: installer,
             packages: packages,
           ),
@@ -78,17 +160,42 @@ class InstallScreen extends ConsumerWidget {
             installKey: const ValueKey('install-ynavi-v30-beta'),
             name: l10n.installYnaviV30BetaName,
             description: l10n.installYnaviV30BetaDesc,
-            asset: kYnaviV30Asset,
+            asset: v30.asset,
             packageName: CompanionPackages.ynavi,
-            releaseVersionCode: kYnaviV30ReleaseVersionCode,
-            releaseLabel: kYnaviV30UpstreamVersionBuild,
+            releaseVersionCode: v30.releaseVersionCode,
+            releaseLabel: v30.releaseLabel,
+            releaseCompareEnabled: v30.releaseCompareEnabled,
             installer: installer,
             packages: packages,
           ),
+          if (_ynaviDiscoveryError != null && _ynaviLastGood == null) ...[
+            const SizedBox(height: Insets.sm),
+            Text(
+              l10n.updateStatusFailed(_ynaviDiscoveryError!),
+              key: const ValueKey('ynavi-discovery-error'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _YnaviCardRelease {
+  const _YnaviCardRelease({
+    required this.asset,
+    required this.releaseLabel,
+    required this.releaseVersionCode,
+    required this.releaseCompareEnabled,
+  });
+
+  final GithubAsset asset;
+  final String releaseLabel;
+  final int releaseVersionCode;
+  final bool releaseCompareEnabled;
 }
 
 /// Progress-bar value for [InstallProgress].
@@ -406,6 +513,7 @@ class _InstallCard extends StatefulWidget {
     required this.packageName,
     required this.releaseVersionCode,
     required this.releaseLabel,
+    this.releaseCompareEnabled = true,
     required this.installer,
     required this.packages,
   });
@@ -417,6 +525,8 @@ class _InstallCard extends StatefulWidget {
   final String packageName;
   final int releaseVersionCode;
   final String releaseLabel;
+  /// When false, do not compare against compile pins (0126 discovery pending/failed).
+  final bool releaseCompareEnabled;
   final Installer installer;
   final PackageStatus packages;
 
@@ -456,6 +566,9 @@ class _InstallCardState extends State<_InstallCard>
           _progress!.phase != InstallPhase.failed);
 
   ReleaseActionKind get _action {
+    if (!widget.releaseCompareEnabled) {
+      return ReleaseActionKind.installOrUpdate;
+    }
     final p = _probe;
     if (p == null) return ReleaseActionKind.installOrUpdate;
     return releaseActionFor(
