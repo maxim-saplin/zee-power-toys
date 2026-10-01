@@ -3,7 +3,8 @@ import 'dart:async';
 /// Immutable now-playing snapshot for HUD media chrome (0123 / 0125).
 ///
 /// [progress] is 0.0…1.0 (bar only — no elapsed/remaining times in chrome).
-/// Null / inactive → BatteryWidget hides media chrome.
+/// The HUD presentation provider hides null/inactive snapshots after its
+/// 1-second transient-state grace.
 class MediaNowPlaying {
   const MediaNowPlaying({
     required this.artist,

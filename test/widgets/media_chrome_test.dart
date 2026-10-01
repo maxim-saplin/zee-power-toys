@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zee_power_toys/hud/battery_widget.dart';
+import 'package:zee_power_toys/hud/hud_root.dart';
 import 'package:zee_power_toys/services/config_store.dart';
 import 'package:zee_power_toys/services/fakes/fake_car_signals.dart';
 import 'package:zee_power_toys/services/media_now_playing.dart';
@@ -117,6 +118,8 @@ void main() {
       );
       await tester.pump();
       await tester.pump();
+      expect(find.byKey(const ValueKey('hud-media-chrome')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 1));
       expect(find.byKey(const ValueKey('hud-media-chrome')), findsNothing);
 
       media.setNowPlaying(
@@ -162,7 +165,7 @@ void main() {
         );
         await tester.pump();
         await tester.pump();
-        expect(find.byKey(const ValueKey('hud-media-chrome')), findsNothing);
+        expect(find.byKey(const ValueKey('hud-media-chrome')), findsOneWidget);
 
         await tester.pump(const Duration(milliseconds: 250));
         media.setNowPlaying(
@@ -176,9 +179,13 @@ void main() {
         media.setNowPlaying(null);
         await tester.pump();
         await tester.pump();
+        expect(find.byKey(const ValueKey('hud-media-chrome')), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 999));
+        expect(find.byKey(const ValueKey('hud-media-chrome')), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 1));
         expect(find.byKey(const ValueKey('hud-media-chrome')), findsNothing);
 
-        await tester.pump(const Duration(milliseconds: 250));
         media.setNowPlaying(
           const MediaNowPlaying(artist: 'Artist', title: 'Next', progress: 0.5),
         );
@@ -186,10 +193,111 @@ void main() {
         await tester.pump();
         expect(labelFinder, findsOneWidget);
 
-        await tester.pump(const Duration(milliseconds: 1249));
+        await tester.pump(const Duration(milliseconds: 499));
         expect(labelFinder, findsOneWidget);
         await tester.pump(const Duration(milliseconds: 1));
         expect(labelFinder, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'holds the media card and last snapshot through transient state gaps',
+      (tester) async {
+        final media = FakeMediaNowPlaying();
+        await pumpHud(
+          tester,
+          wrapWithProviders(
+            const HudRoot(),
+            media: media,
+            signals: FakeCarSignals(),
+          ),
+        );
+
+        final slotFinder = find.byKey(const ValueKey('hud-battery-slot'));
+        double slotHeight() => tester.widget<Positioned>(slotFinder).height!;
+        final idleSlotHeight = slotHeight();
+
+        media.setNowPlaying(
+          const MediaNowPlaying(
+            artist: 'Artist',
+            title: 'First',
+            progress: 0.1,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        media.setNowPlaying(
+          const MediaNowPlaying(
+            artist: 'Artist',
+            title: 'Next',
+            progress: 0.42,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final chromeFinder = find.byKey(const ValueKey('hud-media-chrome'));
+        final labelFinder = find.text('Artist — Next');
+        final progressFinder = find.byKey(const ValueKey('hud-media-progress'));
+        final fillFinder = find.descendant(
+          of: progressFinder,
+          matching: find.byType(FractionallySizedBox),
+        );
+        double progress() =>
+            tester.widget<FractionallySizedBox>(fillFinder).widthFactor!;
+
+        expect(chromeFinder, findsOneWidget);
+        expect(labelFinder, findsOneWidget);
+        expect(progress(), closeTo(0.42, 0.001));
+        final playingSlotHeight = slotHeight();
+        expect(playingSlotHeight, greaterThan(idleSlotHeight));
+
+        await tester.pump(const Duration(milliseconds: 250));
+        media.setNowPlaying(
+          const MediaNowPlaying(
+            artist: 'Artist',
+            title: 'Next',
+            progress: 0.05,
+            isPlaying: false,
+          ),
+        );
+        await tester.pump();
+        expect(chromeFinder, findsOneWidget);
+        expect(labelFinder, findsOneWidget);
+        expect(progress(), closeTo(0.42, 0.001));
+        expect(slotHeight(), playingSlotHeight);
+
+        await tester.pump(const Duration(milliseconds: 400));
+        media.setNowPlaying(null);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 599));
+        expect(chromeFinder, findsOneWidget);
+        expect(labelFinder, findsOneWidget);
+        expect(progress(), closeTo(0.42, 0.001));
+        expect(slotHeight(), playingSlotHeight);
+
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(chromeFinder, findsNothing);
+        expect(slotHeight(), idleSlotHeight);
+
+        // Same-track resume restores the cached progress and remaining label
+        // window. It must not start a fresh 3.5-second label timer.
+        await tester.pump(const Duration(milliseconds: 200));
+        media.setNowPlaying(
+          const MediaNowPlaying(artist: 'Artist', title: 'Next', progress: 0.8),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(chromeFinder, findsOneWidget);
+        expect(labelFinder, findsOneWidget);
+        expect(progress(), closeTo(0.8, 0.001));
+        expect(slotHeight(), playingSlotHeight);
+
+        await tester.pump(const Duration(milliseconds: 2049));
+        expect(labelFinder, findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(labelFinder, findsNothing);
+        expect(progressFinder, findsOneWidget);
       },
     );
 

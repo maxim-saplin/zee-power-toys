@@ -1,4 +1,4 @@
-# Publish platform-signed APK as zee-power-toys.apk on tag MAJOR.MINOR.PATCH+BUILD (e.g. 1.1.0+11).
+# Publish platform-signed APK as zee-power-toys.apk on tag MAJOR.MINOR.PATCH+BUILD (e.g. 1.2.3+35).
 # Uses committed android/tools/zeekr/androiddebugkey.jks (public AOSP debug key; no secret).
 name: release
 on:
@@ -14,10 +14,12 @@ on:
       - 'v1.2.1+*'
       - '1.2.2+*'
       - 'v1.2.2+*'
+      - '1.2.3+*'
+      - 'v1.2.3+*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to create/attach (e.g. 1.0.0+6) — optional for dispatch'
+        description: 'Tag to create/attach (e.g. 1.2.3+35) — optional for dispatch'
         required: false
 
 jobs:

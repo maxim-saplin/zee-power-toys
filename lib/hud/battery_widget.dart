@@ -33,8 +33,8 @@ import 'battery_geometry.dart';
 /// rule — app policy enforced here, not toggled by the user).
 ///
 /// Media progress with a 3.5-second text-only track-change label. Its fixed
-/// row stacks above charging/battery/temp while [mediaNowPlayingProvider]
-/// reports playback.
+/// row stacks above charging/battery/temp while the presentation provider
+/// holds an active media snapshot, including a 1-second transient-state grace.
 ///
 /// Emissive palette: bright marks on black.  No light backgrounds, cards, or
 /// panels — only the marks themselves emit light.  Scaled by [BatteryConfig.sizeScale].
@@ -82,9 +82,9 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
   Timer? _trackLabelTimer;
 
   void _onMediaChanged(MediaNowPlaying? next) {
-    // Media chrome is hidden separately when playback is paused or unavailable.
-    // Keep this track's original label deadline alive across brief state/metadata
-    // gaps, so the same track can resume with only the remaining time.
+    // The presentation provider holds chrome and its last snapshot through
+    // brief state/metadata gaps. Keep this track's original label deadline so
+    // same-track resume uses only the remaining window.
     if (next == null || !next.isPlaying) return;
 
     final nextLabel = next.artistSongLabel;
@@ -125,11 +125,10 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
 
     final cfg = ref.watch(batteryConfigProvider);
     final mediaCfg = ref.watch(mediaConfigProvider);
-    final isMediaPlaying = ref.watch(
-      mediaNowPlayingProvider.select(
-        (nowPlaying) => nowPlaying?.isPlaying == true,
-      ),
+    final mediaPresentationVisible = ref.watch(
+      mediaPresentationProvider.select((presentation) => presentation.visible),
     );
+    final mediaSnapshot = ref.read(mediaPresentationProvider).nowPlaying;
     if (!_hasInitializedMedia) {
       _hasInitializedMedia = true;
       final nowPlaying = ref.read(mediaNowPlayingProvider);
@@ -138,7 +137,7 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
       }
     }
 
-    final mediaChrome = _mediaChromeVisible(mediaCfg, isMediaPlaying);
+    final mediaChrome = _mediaChromeVisible(mediaCfg, mediaPresentationVisible);
 
     // showBattery=false → render absolutely nothing (0 pixels), unless media
     // chrome alone is on (media may show above an empty battery hide).
@@ -231,7 +230,7 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
                 _MediaChrome(
                   key: const ValueKey('hud-media-chrome'),
                   trackLabel: _showTrackLabel
-                      ? ref.read(mediaNowPlayingProvider)?.artistSongLabel ?? ''
+                      ? mediaSnapshot?.artistSongLabel ?? ''
                       : '',
                   showTrackLabel: _showTrackLabel,
                   base: base,
@@ -324,8 +323,8 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
   }
 }
 
-bool _mediaChromeVisible(MediaConfig cfg, bool isPlaying) {
-  return cfg.showMedia && isPlaying;
+bool _mediaChromeVisible(MediaConfig cfg, bool isVisible) {
+  return cfg.showMedia && isVisible;
 }
 
 class _MediaChrome extends StatelessWidget {
@@ -410,8 +409,8 @@ class _MediaProgressBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref
         .watch(
-          mediaNowPlayingProvider.select(
-            (nowPlaying) => nowPlaying?.progress ?? 0.0,
+          mediaPresentationProvider.select(
+            (presentation) => presentation.nowPlaying?.progress ?? 0.0,
           ),
         )
         .clamp(0.0, 1.0)

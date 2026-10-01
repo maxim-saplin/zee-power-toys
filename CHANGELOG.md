@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.3+35] — 2026-10-01
+
+### Fixed
+- **0127** Hold the last playing media snapshot and slot geometry for one second through transient non-playing or missing-media updates. Stable inactive media still hides; same-track resume keeps the original 3.5-second label deadline.
+
 ## [1.2.2+34] — 2026-09-30
 
 ### Fixed
