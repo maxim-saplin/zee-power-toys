@@ -13,6 +13,10 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 - **0128** Load the selected radar look before the system overlay's first frame, including after engine recreation.
 - **0129** Scale the Default system-overlay readout with the overlay size setting.
 
+### Notes
+- Published tag `1.2.4+36`; release workflow `37007346489`.
+- APK SHA-256 `99a1058584ab1bf2c8e23ac036e396df944666985defe91f7d38f6118ade768b`; AOSP platform-signed through `release.yml`.
+
 ## [1.2.3+35] — 2026-10-01
 
 ### Fixed
