@@ -87,6 +87,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
     this.displayRadiusM,
     this.alwaysShow = false,
     this.lookOverride,
+    this.defaultLookScale = 1.0,
   });
 
   final SpeedcamDanger? forceDemoDanger;
@@ -100,6 +101,9 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
 
   /// Optional look pin (T1 desktop HUD demo → Alien). Null = config look.
   final SpeedcamRadarLook? lookOverride;
+
+  /// Scale Default readout typography and spacing with a resized overlay.
+  final double defaultLookScale;
 
   static const Color phosphor = Color(0xFF39FF14);
   static const Color phosphorDim = Color(0xFF1A7A0A);
@@ -253,6 +257,7 @@ class SpeedcamRadarWidget extends HookConsumerWidget {
           bearingDeg: labelBearing,
           maxspeed: labelMax,
           compact: variant == SpeedcamRadarVariant.hudCompact,
+          scale: defaultLookScale,
         ),
       );
     }
@@ -311,12 +316,14 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     required this.bearingDeg,
     required this.maxspeed,
     required this.compact,
+    required this.scale,
   });
 
   final double? distanceM;
   final double? bearingDeg;
   final int? maxspeed;
   final bool compact;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -324,22 +331,26 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     final bearing = bearingDeg;
     final arrow = _bearingArrow(bearing);
     final distLabel = dist == null ? '—' : '${dist.round()} m';
+    final textScale = compact ? 1.0 : scale;
     // Dangerous / approach target readout is white (0064; Default has no multi-blip).
     final style = TextStyle(
       color: Colors.white.withValues(alpha: 0.92),
-      fontSize: compact ? 18 : 28,
+      fontSize: (compact ? 18 : 28) * textScale,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
+      letterSpacing: 0.5 * textScale,
       shadows: const [
         Shadow(blurRadius: 4, color: Colors.black87),
       ],
+    );
+    final scaledStyle = style.copyWith(
+      shadows: [Shadow(blurRadius: 4 * textScale, color: Colors.black87)],
     );
     // 0080: square HUD radar slot can be shorter than Default text stack
     // under HudPreview letterbox — scaleDown instead of RenderFlex overflow.
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
-        padding: EdgeInsets.only(right: compact ? 8 : 16),
+        padding: EdgeInsets.only(right: (compact ? 8 : 16) * textScale),
         child: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerRight,
@@ -350,19 +361,21 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
               Text(
                 arrow,
                 key: const ValueKey('speedcam-default-bearing'),
-                style: style.copyWith(fontSize: compact ? 22 : 36),
+                style: scaledStyle.copyWith(
+                  fontSize: (compact ? 22 : 36) * textScale,
+                ),
               ),
               Text(
                 distLabel,
                 key: const ValueKey('speedcam-default-distance'),
-                style: style,
+                style: scaledStyle,
               ),
               if (maxspeed != null)
                 Text(
                   '$maxspeed',
                   key: const ValueKey('speedcam-default-maxspeed'),
-                  style: style.copyWith(
-                    fontSize: compact ? 14 : 20,
+                  style: scaledStyle.copyWith(
+                    fontSize: (compact ? 14 : 20) * textScale,
                     color: Colors.white70,
                   ),
                 ),
@@ -764,4 +777,3 @@ class _AlienWedgePainter extends CustomPainter {
       old.readoutM != readoutM ||
       old.maxspeed != maxspeed;
 }
-

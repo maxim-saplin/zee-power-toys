@@ -59,6 +59,7 @@ class _OverlayHome extends ConsumerWidget {
                   ? SpeedcamRadarVariant.hudCompact
                   : SpeedcamRadarVariant.dhuLarge,
               alwaysShow: false,
+              defaultLookScale: scale,
             ),
           ),
         ),

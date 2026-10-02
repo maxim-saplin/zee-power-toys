@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zee_power_toys/app/speedcam_overlay_app.dart';
 import 'package:zee_power_toys/hud/speedcam_crt_geometry.dart';
 import 'package:zee_power_toys/hud/speedcam_radar_widget.dart';
 import 'package:zee_power_toys/providers/services.dart';
@@ -80,5 +81,57 @@ void main() {
     expect(max5x.width / large.width, closeTo(5.0, 0.02));
     expect(small.width / small.height, closeTo(kSpeedcamCrtPlateAspect, 0.05));
     svc.dispose();
+  });
+
+  testWidgets('0129: Default readout scales with overlay window', (
+    tester,
+  ) async {
+    final service = FakeSpeedcamService();
+    await service.approachCam(
+      FakeSpeedcamService.kFakeBySampleCams.first,
+      distanceM: 100,
+    );
+    final store = SharedPrefsConfigStore();
+    await store.load();
+    await store.setConfig(
+      store.value.copyWith(
+        speedcam: store.value.speedcam.copyWith(
+          radarLook: SpeedcamRadarLook.defaultLook,
+          dhuSystemOverlay: true,
+          overlaySizeScale: 1.0,
+        ),
+      ),
+    );
+
+    await tester.binding.setSurfaceSize(const Size(280, 205));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          speedcamServiceProvider.overrideWithValue(service),
+          speedcamAlertProvider.overrideWithValue(FakeSpeedcamAlert()),
+          configStoreProvider.overrideWithValue(store),
+        ],
+        child: const SpeedcamOverlayApp(),
+      ),
+    );
+    await tester.pump();
+
+    final distanceFinder = find.byKey(
+      const ValueKey('speedcam-default-distance'),
+    );
+    final baseFontSize = tester.widget<Text>(distanceFinder).style!.fontSize!;
+
+    await store.setConfig(
+      store.value.copyWith(
+        speedcam: store.value.speedcam.copyWith(overlaySizeScale: 4.4),
+      ),
+    );
+    await tester.binding.setSurfaceSize(const Size(1232, 902));
+    await tester.pump();
+
+    final largeFontSize = tester.widget<Text>(distanceFinder).style!.fontSize!;
+    expect(largeFontSize / baseFontSize, closeTo(4.4, 0.01));
+    service.dispose();
   });
 }

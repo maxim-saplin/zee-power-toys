@@ -409,30 +409,31 @@ void speedcamOverlayMain() {
   );
   store.load().then((_) {
     speedcam.setApproachRadiusM(store.value.speedcam.dhuRangeM);
+    runApp(
+      ProviderScope(
+        overrides: [
+          configStoreProvider.overrideWithValue(store),
+          carSignalsProvider.overrideWithValue(FakeCarSignals()),
+          mediaNowPlayingSourceProvider.overrideWithValue(
+            FakeMediaNowPlaying(),
+          ),
+          minimapHostProvider.overrideWithValue(FakeMinimapHost()),
+          hudHostProvider.overrideWithValue(FakeHudHost()),
+          installerProvider.overrideWithValue(FakeInstaller()),
+          packageStatusProvider.overrideWithValue(FakePackageStatus()),
+          speedcamServiceProvider.overrideWithValue(speedcam),
+          speedcamPackStoreProvider.overrideWithValue(speedcamPack),
+          speedcamAlertProvider.overrideWithValue(speedcamAlert),
+          speedcamSystemOverlayProvider.overrideWithValue(
+            FakeSpeedcamSystemOverlay(),
+          ),
+          systemConfigProvider.overrideWithValue(FakeSystemConfig()),
+          usbModeProvider.overrideWithValue(FakeUsbMode()),
+        ],
+        child: const SpeedcamOverlayApp(),
+      ),
+    );
   });
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        configStoreProvider.overrideWithValue(store),
-        carSignalsProvider.overrideWithValue(FakeCarSignals()),
-        mediaNowPlayingSourceProvider.overrideWithValue(FakeMediaNowPlaying()),
-        minimapHostProvider.overrideWithValue(FakeMinimapHost()),
-        hudHostProvider.overrideWithValue(FakeHudHost()),
-        installerProvider.overrideWithValue(FakeInstaller()),
-        packageStatusProvider.overrideWithValue(FakePackageStatus()),
-        speedcamServiceProvider.overrideWithValue(speedcam),
-        speedcamPackStoreProvider.overrideWithValue(speedcamPack),
-        speedcamAlertProvider.overrideWithValue(speedcamAlert),
-        speedcamSystemOverlayProvider.overrideWithValue(
-          FakeSpeedcamSystemOverlay(),
-        ),
-        systemConfigProvider.overrideWithValue(FakeSystemConfig()),
-        usbModeProvider.overrideWithValue(FakeUsbMode()),
-      ],
-      child: const SpeedcamOverlayApp(),
-    ),
-  );
 }
 
 /// Push latest DHU [CarSignals.snapshot] to HUD (Charge+Battery+Speed+…).
