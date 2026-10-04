@@ -12,9 +12,9 @@ calling the `ext.zee.*` extensions registered in `lib/debug/agent_extensions.dar
 
 Discovery (in precedence order):
   1. explicit --vm-uri / $ZEE_VM_URI override
-  2. canonical session file /tmp/zee_vm_uri.txt (written by zee_run.py up)
-  3. flutter-run log file ($ZEE_RUN_LOG, default /tmp/zee_run_t1.log)
-  4. adb logcat scan + adb forward  [Android only]
+    2. selected tier's session file /tmp/zee_vm_uri_<tier>.txt
+    3. selected tier's flutter-run log file
+    4. adb logcat scan + adb forward  [T2/T3 only]
 
 Subcommands:
   isolates                 list every isolate (id, name, number, ext.zee.* RPCs)
@@ -53,7 +53,7 @@ DEFAULT_SERIAL = os.environ.get("ADB_SERIAL", "emulator-5554")
 LOCAL_FORWARD_PORT = int(os.environ.get("ZEE_LOCAL_PORT", "8181"))
 RPC_TIMEOUT_S = float(os.environ.get("ZEE_RPC_TIMEOUT", "30"))
 ZEE_PKG = "com.zeepowertoys.zee_power_toys"
-# Default log path for `flutter run -d linux` output (T1 desktop).
+# Default log path for T1 desktop flutter-run output (Linux or macOS).
 # Set $ZEE_RUN_LOG to override (useful for parallel sessions).
 DEFAULT_RUN_LOG = os.environ.get("ZEE_RUN_LOG", "/tmp/zee_run_t1.log")
 # Per-tier session URI files written by `zee_run.py up`, deleted by `down`
@@ -124,9 +124,8 @@ def _scan_logcat_for_vm_uri(serial: str, max_lines: int = 6000) -> str | None:
 def _scan_flutter_run_log_for_vm_uri(log_path: str = DEFAULT_RUN_LOG) -> str | None:
     """Return the most recent VM service http URI from a flutter-run log file, or None.
 
-    flutter run -d linux writes its stdout to the file at [log_path] (or
-    $ZEE_RUN_LOG).  This is the only reliable URI source on T1 desktop — there
-    is no logcat on Linux.  The same patterns work for Android flutter run logs.
+    `flutter run` writes its stdout to [log_path] (or $ZEE_RUN_LOG). This is
+    the host-local URI source for desktop T1 and also works for Android runs.
     """
     try:
         with open(log_path, "r", errors="replace") as fh:
@@ -348,24 +347,17 @@ def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
          unreachable overrides are ignored and discovery falls through
       2. per-tier session file /tmp/zee_vm_uri_<tier>.txt (written by
          `zee_run.py up --tier <tier>`, deleted by `zee_run.py down --tier
-         <tier>`) — tried first if [tier] is given, but [tier] is a
-         PREFERENCE, not an exclusive filter: if that tier's file is
-         missing/stale, falls back to whichever tier's session file was
-         written most recently (QA3-5 fix — a single shared file made a T2
-         launch shadow a live T1 session; per-tier files fix that for
-         explicit-tier callers while this fallback keeps "just works against
-         whatever's up" for callers — e.g. feedback_loop.py's CLI, whose
-         --tier defaults to "t1" whether or not the caller actually asked for
-         T1). A file-sourced URI is liveness-probed (`getVersion`) first; a
-         stale/unreachable one is deleted and discovery falls through instead
-         of hanging.
+         <tier>`). A selected tier is exclusive: T1 must not attach to a T2/T3
+         VM, or fall through to Android logcat. A file-sourced URI is
+         liveness-probed (`getVersion`) first; a stale/unreachable one is
+         deleted and discovery falls through instead of hanging.
       3. flutter-run log file — $ZEE_RUN_LOG if the caller set it explicitly,
          else /tmp/zee_run_<tier>.log when [tier] is given (this fallback
          used to always read T1's log regardless of tier, so a T2 discovery
          that fell through here would silently read the wrong file), else
          /tmp/zee_run_t1.log — legacy fallback for sessions started without
          zee_run.py
-      4. adb logcat scan + adb forward  [Android/T2/T3 fallback]
+        4. adb logcat scan + adb forward [T2/T3 only]
     """
     override = override or os.environ.get("ZEE_VM_URI")
     if override:
@@ -381,15 +373,8 @@ def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
             file=sys.stderr,
         )
 
-    # Per-tier session file(s) — written by `zee_run.py up`. A given [tier] is
-    # a PREFERENCE, not an exclusive filter: callers like feedback_loop.py's
-    # CLI always pass *some* tier (default "t1") even when the caller didn't
-    # ask for one, so if that tier's own file is missing/stale, fall back to
-    # whichever tier's file was written most recently — preserving the old
-    # single-shared-file ergonomics ("just works against whatever's up") for
-    # the common single-active-session case, while still supporting the
-    # QA3-5 parallel-sessions case for callers that pass an explicit --tier.
-    candidates = [vm_uri_file(tier) if tier else None, _latest_tier_uri_file()]
+    # A named tier is exclusive. Auto-discovery uses the most recent session.
+    candidates = [vm_uri_file(tier)] if tier else [_latest_tier_uri_file()]
     seen: set[str] = set()
     for session_path in candidates:
         if not session_path or session_path in seen:
@@ -407,9 +392,21 @@ def resolve_ws_uri(serial: str = DEFAULT_SERIAL, override: str | None = None,
         run_log = f"/tmp/zee_run_{tier}.log"
     uri = _scan_flutter_run_log_for_vm_uri(run_log)
     if uri:
-        # T1 desktop: the VM service is host-local; no adb forward needed.
-        # T2 with flutter run: flutter run already set up the forward — use as-is.
-        return _normalize_ws_uri(uri)
+        normalized = _normalize_ws_uri(uri)
+        if asyncio.run(_probe_uri_alive(normalized)):
+            # Flutter-run URIs are host-local or already forwarded by Flutter.
+            return normalized
+        print(
+            "[zee_drive] stale run-log URI (unreachable) — ignoring",
+            file=sys.stderr,
+        )
+
+    if tier == "t1":
+        raise RuntimeError(
+            "could not find a T1 desktop VM-service URI in "
+            f"{vm_uri_file('t1')} or run log ({run_log}). "
+            "Launch T1 with `uv run dev/zee_run.py up`."
+        )
 
     # Fallback: logcat scan for adb-started builds (T2/T3, am start workflow).
     uri = _scan_logcat_for_vm_uri(serial)
@@ -556,9 +553,9 @@ def _print_whoami_table(rows: list[dict[str, Any]]) -> None:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Minimal zee-power-toys Feedback Loop client.")
     p.add_argument("--serial", default=DEFAULT_SERIAL, help="adb serial (default: %(default)s)")
-    p.add_argument("--vm-uri", default=None, help="override VM service URI (else $ZEE_VM_URI / logcat)")
-    p.add_argument("--tier", choices=["t1", "t2", "t3"], default=None,
-                   help="which per-tier session file to prefer (default: most-recently-written)")
+    p.add_argument("--vm-uri", default=None, help="override VM service URI (else tier session/log)")
+    p.add_argument("--tier", choices=["t1", "t2", "t3"], default="t1",
+                   help="target tier (default: t1; T2/T3 may fall back to adb logcat)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("isolates", help="list every isolate + its ext.zee.* RPCs")

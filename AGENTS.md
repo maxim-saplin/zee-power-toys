@@ -50,8 +50,8 @@ recommendation, the next step, or the risk.
 
 ## Where to work
 
-- **T1** — Linux desktop fakes (`uv run dev/zee_run.py up`). Fastest Dart loop.
-  Not available as a Mac host runner.
+- **T1** — Linux/macOS desktop fakes (`uv run dev/zee_run.py up`). Fastest Dart
+  loop; available on a Mac host through Flutter's macOS desktop runner.
 - **T2** — Android emulator Tablet_12L / DHU-sized (`up --tier t2`). Truth tier
   for native edge, Overlay, HUD geometry simulation.
 - **T3** — Zeekr car DHU. Real AdaptAPI, real HUD optics. Use only when T2

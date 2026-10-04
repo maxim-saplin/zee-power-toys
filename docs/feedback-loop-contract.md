@@ -39,7 +39,7 @@ builds only.
 
 ## Two-channel routing table per tier
 
-| Op | T1 (Linux desktop) | T2 (Android emulator) | T3 (car) |
+| Op | T1 (Linux/macOS desktop) | T2 (Android emulator) | T3 (car) |
 |---|---|---|---|
 | `whoami_all` | VM service | VM service | VM service |
 | `dump_state(surface)` | VM service | VM service | VM service |
@@ -49,8 +49,8 @@ builds only.
 | `shot(surface)` | VM service | VM service | VM service |
 | `inject(…)` | **T1NativeStub** (raises) | Broadcast → native service | Real AdaptAPI |
 
-The VM-service channel is **uniform across all three tiers** (verified
-PoC-proven on Linux desktop and Android).  The native channel's injection
+The VM-service channel is **uniform across all three tiers** (verified on
+Linux/macOS desktop and Android). The native channel's injection
 point descends the stack as the tier rises — that descent is the fidelity
 gradient (ADR 0004).
 

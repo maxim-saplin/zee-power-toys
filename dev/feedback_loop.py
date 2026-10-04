@@ -6,7 +6,7 @@
 """feedback_loop.py — tier-agnostic Feedback Loop client (ADR 0004, Block 0002).
 
 One class (`FeedbackLoop`) fronts semantic ops and routes each to the right
-channel per tier.  T1 (Linux desktop) uses the VM-service channel for
+channel per tier. T1 desktop (Linux/macOS) uses the VM-service channel for
 everything including `inject` (Block 0003: VM-service routes to ext.zee.inject
 which calls FakeCarSignals on the DHU isolate; the DHU relay propagates to HUD).
 The native channel is a clean stub that refuses with an explicit error — no fake
@@ -536,7 +536,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--vm-uri",
         default=None,
-        help="VM-service URI override (else $ZEE_VM_URI / logcat scan)",
+        help="VM-service URI override (else tier session/log; T2/T3 may use logcat)",
     )
     p.add_argument(
         "--serial",

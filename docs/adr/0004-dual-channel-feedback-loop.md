@@ -4,7 +4,7 @@ Driving and inspecting the app is the project's cornerstone: every tier must giv
 
 **Decision:** The Feedback Loop has **two channels**, fronted by one tier-agnostic client that routes semantic ops (`inject`, `setConfig`, `dumpState`, `tap`, `readViewModel`) to the right channel per tier:
 
-1. **VM-service channel** — `ext.zee.*` extensions (the `nothingness` `drive.py` pattern, i.e. the reused "flutter debug skill") for UI driving + reading the Dart view-model. **Uniform across T1/T2/T3** — verified identical on Linux desktop and Android.
+1. **VM-service channel** — `ext.zee.*` extensions (the `nothingness` `drive.py` pattern, i.e. the reused "flutter debug skill") for UI driving + reading the Dart view-model. **Uniform across T1/T2/T3** — verified on Linux/macOS desktop and Android.
 2. **Native ADB/broadcast channel** — signal injection at the native services + native-state inspection (AdaptAPI/YNavi/Presentation). The **injection point descends the stack as the tier rises** — T1 Dart fake → T2 broadcast→native service → T3 real AdaptAPI — and that descent *is* the fidelity gradient, so higher tiers earn their cost instead of an expensive T1 re-run.
 
 Native inspection returns a **synchronous structured dump** (broadcast result-extras or a small debug dump service), upgrading phase0's async/logcat probe so agents get deterministic JSON back, matching the VM channel's feel.

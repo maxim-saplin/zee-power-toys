@@ -651,8 +651,7 @@ def cmd_up(tier: str, self_heal: bool = True) -> int:
 
     # --- build flutter run command ---------------------------------------------
     if tier == "t1":
-        # T1 is pure-Dart fakes on desktop. Linux historically; macOS once
-        # macos/ + desktop_multi_window MainFlutterWindow wiring exist.
+        # T1 uses pure-Dart fakes on the host's Flutter desktop target.
         import platform as _platform
         t1_device = "macos" if _platform.system() == "Darwin" else "linux"
         cmd = ["flutter", "run", "-d", t1_device]

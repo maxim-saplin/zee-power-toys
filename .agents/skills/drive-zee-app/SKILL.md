@@ -20,15 +20,15 @@ routing contract see `docs/feedback-loop-contract.md`.
 
 | Tier | Device | Launch device flag |
 |------|--------|--------------------|
-| T1   | Linux desktop — pure-Dart fakes, fastest iteration | `-d linux` |
+| T1   | Linux/macOS desktop — pure-Dart fakes | `-d linux` / `-d macos` |
 | T2   | Android emulator `emulator-5554` — real native plumbing | `-d emulator-5554` |
 | T3   | Zeekr car (DHU) — real AdaptAPI, real HUD optics | physical device |
 
-T1 is Linux-only — `dev/zee_run.py:372` hardcodes `flutter run -d linux`, and there is no
-`macos/` runner directory, so it will not launch on a macOS host. On macOS, use `flutter test`
-for the fast loop and treat T2 as the truth tier for anything touching the native edge. T1
-also runs against `FakeMinimapHost` (not `NativeMinimapHost`), so it structurally cannot
-verify the Minimap on any host — that always needs T2 or T3.
+T1 supports Linux (`-d linux`) and macOS (`-d macos`). `dev/zee_run.py up`
+selects the host platform and waits for both desktop surfaces. T1 uses pure-Dart
+fakes, so it does not exercise native Android plumbing. It also uses
+`FakeMinimapHost` (not `NativeMinimapHost`) and cannot verify the Minimap; use
+T2 or T3 for that.
 
 ---
 

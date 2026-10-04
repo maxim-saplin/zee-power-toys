@@ -31,9 +31,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - run: uv run --script dev/test_zee_drive.py
       - name: Assert in-repo AOSP platform keystore
         run: |
           set -euo pipefail
