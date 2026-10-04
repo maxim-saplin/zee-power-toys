@@ -117,6 +117,22 @@ void main() {
     );
     await tester.pump();
 
+    final readoutColor = Colors.yellow.withValues(alpha: 0.92);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('speedcam-default-bearing')))
+          .style!
+          .color,
+      readoutColor,
+    );
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('speedcam-default-distance')))
+          .style!
+          .color,
+      readoutColor,
+    );
+
     final distanceFinder = find.byKey(
       const ValueKey('speedcam-default-distance'),
     );

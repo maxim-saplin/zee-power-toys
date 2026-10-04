@@ -332,9 +332,8 @@ class _DefaultSpeedcamReadout extends StatelessWidget {
     final arrow = _bearingArrow(bearing);
     final distLabel = dist == null ? '—' : '${dist.round()} m';
     final textScale = compact ? 1.0 : scale;
-    // Dangerous / approach target readout is white (0064; Default has no multi-blip).
     final style = TextStyle(
-      color: Colors.white.withValues(alpha: 0.92),
+      color: Colors.yellow.withValues(alpha: 0.92),
       fontSize: (compact ? 18 : 28) * textScale,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.5 * textScale,

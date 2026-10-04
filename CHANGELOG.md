@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.4+37] — 2026-10-04
+
+### Changed
+- Make the Default speedcam bearing arrow and distance readout yellow.
+
 ## [1.2.4+36] — 2026-10-02
 
 ### Fixed

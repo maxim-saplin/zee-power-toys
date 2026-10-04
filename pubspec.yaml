@@ -1,7 +1,7 @@
 name: zee_power_toys
 description: "Zeekr DHU head-unit app — HUD + touchscreen"
 publish_to: none
-version: 1.2.4+36
+version: 1.2.4+37
 
 environment:
   sdk: ^3.12.1

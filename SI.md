@@ -6,6 +6,12 @@
 
 ## Open
 
+## 2026-10-04 16:24 — T1 probe falls through to T2 ADB -
+On macOS, `flutter devices` lists no Linux target. `feedback_loop.py --tier t1
+whoami-all` still probes `emulator-5554` and times out instead of reporting that
+no T1 session is available. Make tier-specific discovery fail clearly when its
+session URI is missing, or run the T1 gate on a Linux host.
+
 ## 2026-09-29 15:18 — T2 platform-signed install mismatch -
 Toys `1.1.0+31` passed release CI, but install smoke failed on both Android 12L
 AVDs with `INSTALL_FAILED_SHARED_USER_INCOMPATIBLE`: their system certificates
