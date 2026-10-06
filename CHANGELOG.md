@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.5+38] — 2026-10-06
+
+### Fixed
+- Avoid re-dispatching YNavi's surface callback when minimap bounds are unchanged.
+
 ## [1.2.4+37] — 2026-10-04
 
 ### Changed

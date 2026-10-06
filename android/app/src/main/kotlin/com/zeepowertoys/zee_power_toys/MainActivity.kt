@@ -1140,6 +1140,9 @@ class MainActivity : FlutterActivity() {
                     val bufW = (call.argument<Any?>("bufW") as? Number)?.toInt()
                     val bufH = (call.argument<Any?>("bufH") as? Number)?.toInt()
                     val dpiArg = (call.argument<Any?>("dpi") as? Number)?.toInt()
+                    val previousBounds = lastMinimapBounds
+                    val surfaceSizeChanged = previousBounds == null ||
+                        previousBounds[2] != w || previousBounds[3] != h
                     // Phase0 model (hud-presentation-host.md §5): size the filterWrapper
                     // to the viewport rect, NOT the MinimapView.  The filterWrapper carries
                     // the LAYER_TYPE_HARDWARE ColorMatrix filter; sizing it to the square
@@ -1164,7 +1167,13 @@ class MainActivity : FlutterActivity() {
                     // Live-bug fix: a bounds change (e.g. preset switch) must re-negotiate
                     // the YNavi surface too, or YNavi keeps rendering into a stale buffer
                     // sized for the OLD viewport (updateSurface previously had zero callers).
-                    resizeYNaviSurface(w, h, bufW, bufH, dpiArg)
+                    // Do not replay onSurfaceAvailable for app-wide config changes that
+                    // reapply the same bounds; YNavi expects that callback once per surface.
+                    if (surfaceSizeChanged || bufW != null || bufH != null || dpiArg != null) {
+                        resizeYNaviSurface(w, h, bufW, bufH, dpiArg)
+                    } else {
+                        Log.i(TAG, "setMinimapBounds($x,$y,$w,$h): surface size unchanged - skip YNavi redispatch")
+                    }
                     // 0055: GuidanceOverlayView tracks the same viewport as filterWrapper
                     // (Zee HUD 2 updateSurfaceLayout parity).
                     lastMinimapBounds = intArrayOf(x, y, w, h)
