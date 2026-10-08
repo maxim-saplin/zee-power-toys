@@ -205,6 +205,17 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
     // Inside-pack DualColor still wants a short plain SoC string.
     final String pctInsideLabel = pct != null ? '$pct%' : '--%';
 
+    final pctText = Text(
+      key: const ValueKey('battery-pct-text'),
+      pct != null ? '$pct%' : '--%',
+      style: labelStyle,
+    );
+    final tempText = Text(
+      tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
+      key: const ValueKey('battery-temp-text'),
+      style: tempStyle,
+    );
+
     final alignEnd = cfg.placement != BatteryPlacement.left;
     final anchorBottom = batteryPlacementAnchorsBottom(cfg.placement);
     final Alignment clusterAlign;
@@ -226,6 +237,8 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: clusterCross,
             children: <Widget>[
+              // Media row space stays reserved while "show media" is on, even
+              // when nothing plays, so battery/temp never shift on play/stop.
               if (mediaChrome) ...<Widget>[
                 _MediaChrome(
                   key: const ValueKey('hud-media-chrome'),
@@ -236,7 +249,11 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
                   base: base,
                 ),
                 SizedBox(height: base * 0.28),
-              ],
+              ] else if (mediaCfg.showMedia)
+                SizedBox(
+                  key: const ValueKey('hud-media-reserved'),
+                  height: _MediaChrome.heightFor(base) + base * 0.28,
+                ),
               if (showStats) ...<Widget>[
                 _ChargingStats(
                   key: const ValueKey('charging-stats'),
@@ -297,23 +314,30 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
                 ),
 
               // ---- Percentage text (below pack, when not painted inside) ----
-              if (showPctBelow) ...<Widget>[
-                if (showIcon) SizedBox(height: base * 0.12),
-                Text(
-                  key: const ValueKey('battery-pct-text'),
-                  pct != null ? '$pct%' : '--%',
-                  style: labelStyle,
-                ),
-              ],
+              // Text charge (no pack icon): % and temp share one row. With an
+              // icon the temp keeps its own row below.
+              if (showPctBelow && showTempRow && !showIcon)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: <Widget>[
+                    pctText,
+                    SizedBox(width: base * 0.3),
+                    tempText,
+                  ],
+                )
+              else ...<Widget>[
+                if (showPctBelow) ...<Widget>[
+                  if (showIcon) SizedBox(height: base * 0.12),
+                  pctText,
+                ],
 
-              // ---- Temperature row (optional) ----
-              if (showTempRow) ...<Widget>[
-                SizedBox(height: base * 0.18),
-                Text(
-                  tempC != null ? '${tempC.toStringAsFixed(0)}°C' : '--°C',
-                  key: const ValueKey('battery-temp-text'),
-                  style: tempStyle,
-                ),
+                // ---- Temperature row (optional) ----
+                if (showTempRow) ...<Widget>[
+                  SizedBox(height: base * 0.18),
+                  tempText,
+                ],
               ],
             ],
           ),
@@ -340,14 +364,21 @@ class _MediaChrome extends StatelessWidget {
   final double base;
 
   static const Color _kText = Color(0xFFEEEEEE);
+  static const double _kLabelH = 0.45;
+  static const double _kLabelGap = 0.14;
+  static const double _kBarH = 0.14;
+
+  /// Height of the chrome block; also the space reserved while idle.
+  static double heightFor(double base) =>
+      base * (_kLabelH + _kLabelGap + _kBarH);
 
   @override
   Widget build(BuildContext context) {
     final width = base * 5.2;
-    final labelHeight = base * 0.45;
-    final labelGap = base * 0.14;
+    final labelHeight = base * _kLabelH;
+    final labelGap = base * _kLabelGap;
     final barW = base * 4.2;
-    final barH = base * 0.14;
+    final barH = base * _kBarH;
     final textStyle = TextStyle(
       color: _kText,
       fontSize: labelHeight,

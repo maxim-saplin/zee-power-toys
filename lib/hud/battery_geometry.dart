@@ -10,8 +10,8 @@ import '../services/config_store.dart'
 // here so relationship tests can assert rects without pumping the widget tree.
 // The BATTERY slot is a tall-narrow box; BatteryWidget fits its cluster
 // (icon + % + temp + charging kW + fixed media label row + bar) inside it.
-// While charging the slot grows (0067); media chrome (0123) also grows it
-// upward. The reserved label row keeps bar and battery/temp positions fixed.
+// While charging the slot grows (0067). Media (0123) reserves its row whenever
+// "show media" is on, playing or not, so battery/temp never move on play/stop.
 // Temp/charging/media move with the cluster (children of BatteryWidget).
 // ---------------------------------------------------------------------------
 

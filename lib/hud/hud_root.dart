@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/car_signals.dart';
 import '../providers/config.dart';
-import '../providers/media_now_playing.dart';
 import '../services/config_store.dart';
 import '../services/minimap_viewport.dart';
 import 'battery_geometry.dart';
@@ -171,17 +170,15 @@ class _HudSlots extends ConsumerWidget {
     // rightBottom) + fine adjust. Default rightBottom (0120 HUD-on).
     final batteryCfg = ref.watch(batteryConfigProvider);
     final mediaCfg = ref.watch(mediaConfigProvider);
-    final mediaPresentationVisible = ref.watch(
-      mediaPresentationProvider.select((presentation) => presentation.visible),
-    );
     // 0067: grow slot when charging stats are shown (3 lines vs 2).
     final chargingStatsVisible =
         ref.watch(chargingProvider) && batteryCfg.showChargingStats;
     // Keep layout geometry independent of 500ms progress updates.
-    final mediaChromeVisible = mediaCfg.showMedia && mediaPresentationVisible;
+    // Slot reserves the media row whenever media is enabled (not only while
+    // playing) so the battery/temp rows keep their position on play/stop.
     final slotFracs = batteryClusterSlotFracs(
       chargingStatsVisible: chargingStatsVisible,
-      mediaChromeVisible: mediaChromeVisible,
+      mediaChromeVisible: mediaCfg.showMedia,
       sizeScale: batteryCfg.sizeScale,
       ownRangeEstimate: false, // 0119c: range feature removed
     );

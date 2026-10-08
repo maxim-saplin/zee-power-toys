@@ -250,7 +250,8 @@ void main() {
         expect(labelFinder, findsOneWidget);
         expect(progress(), closeTo(0.42, 0.001));
         final playingSlotHeight = slotHeight();
-        expect(playingSlotHeight, greaterThan(idleSlotHeight));
+        // Media row space is reserved while idle, so the slot does not resize.
+        expect(playingSlotHeight, idleSlotHeight);
 
         await tester.pump(const Duration(milliseconds: 250));
         media.setNowPlaying(
