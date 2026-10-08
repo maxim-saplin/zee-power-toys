@@ -7,6 +7,14 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.5+39] — 2026-10-08
+
+### Changed
+- HUD: in the "Just text" look, battery % and temperature share one row; icon looks keep temperature on its own row.
+
+### Fixed
+- HUD: battery % / temperature no longer jump when media starts or stops. The media row stays reserved while "show media" is on.
+
 ## [1.2.5+38] — 2026-10-06
 
 ### Fixed
