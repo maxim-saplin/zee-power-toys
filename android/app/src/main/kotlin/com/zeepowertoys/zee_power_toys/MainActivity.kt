@@ -619,7 +619,7 @@ class MainActivity : FlutterActivity() {
                 // isYnaviAvailable() passing its static check, force the surface back
                 // dark rather than leaving it VISIBLE with nothing ever drawn into it.
                 host.onBindFailed = {
-                    minimapView?.visibility = View.INVISIBLE
+                    minimapView?.setRequestedSurfaceVisible(false)
                     Log.w(TAG, "YNavi bind failed — MinimapView forced INVISIBLE")
                 }
                 host.onLocation = { loc ->
@@ -1075,14 +1075,14 @@ class MainActivity : FlutterActivity() {
                         val host = yNaviCarAppHost
                         val available = host != null && isYnaviAvailable()
                         if (!available) {
-                            if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                            v.pendingYNaviStart = false
+                            v.setRequestedSurfaceVisible(false)
                             guidanceOverlay?.visibility = View.GONE
                             guidanceOverlay?.clearGuidance()
                             Log.i(TAG, "setMinimap(true): YNavi unavailable — native gate APPLIED, view INVISIBLE")
                             result.success("unavailable")
                             return@post
                         }
-                        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
                         if (host!!.isActive) {
                             // YNavi already hosting — nothing to (re)start.
                             Log.i(TAG, "setMinimap(true): YNavi host already active — NOOP")
@@ -1099,7 +1099,8 @@ class MainActivity : FlutterActivity() {
                         Log.i(TAG, "setMinimap(true): APPLIED")
                         result.success("applied:true")
                     } else {
-                        if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        v.pendingYNaviStart = false
+                        v.setRequestedSurfaceVisible(false)
                         guidanceOverlay?.visibility = View.GONE
                         guidanceOverlay?.clearGuidance()
                         val host = yNaviCarAppHost
@@ -1107,7 +1108,6 @@ class MainActivity : FlutterActivity() {
                             host.stop()
                             Log.i(TAG, "setMinimap(false): YNavi host stopped")
                         }
-                        v.pendingYNaviStart = false
                         Log.i(TAG, "setMinimap(false): APPLIED")
                         result.success("applied:false")
                     }
@@ -1117,12 +1117,12 @@ class MainActivity : FlutterActivity() {
                     // navigationStarted can still arrive while gated off.
                     val visible = call.argument<Boolean>("visible") ?: true
                     if (visible) {
-                        if (v.visibility != View.VISIBLE) v.visibility = View.VISIBLE
+                        v.setRequestedSurfaceVisible(true)
                         // Overlay follows surface gate; trip data re-shows bars.
                         guidanceOverlay?.visibility = View.VISIBLE
                         lastMinimapBounds?.let { layoutGuidanceOverlay(it[0], it[1], it[2], it[3]) }
                     } else {
-                        if (v.visibility != View.INVISIBLE) v.visibility = View.INVISIBLE
+                        v.setRequestedSurfaceVisible(false)
                         guidanceOverlay?.visibility = View.GONE
                         guidanceOverlay?.clearGuidance()
                     }
@@ -1345,7 +1345,7 @@ class MainActivity : FlutterActivity() {
             // setMinimap() already refuses to parkForYNavi() when YNavi is
             // unavailable — but defensively keep the view dark rather than
             // falling back to the removed placeholder render loop.
-            minimapView?.visibility = View.INVISIBLE
+            minimapView?.setRequestedSurfaceVisible(false)
             Log.i(TAG, "startYNaviOnSurfaceReady: YNavi unavailable — view kept INVISIBLE (no placeholder)")
         }
     }
@@ -1486,6 +1486,22 @@ class MinimapView(context: android.content.Context) :
      * is not yet available. onSurfaceTextureAvailable will call back to start YNavi.
      */
     @Volatile var pendingYNaviStart: Boolean = false
+    @Volatile private var requestedSurfaceVisible: Boolean = true
+
+    fun setRequestedSurfaceVisible(visible: Boolean) {
+        requestedSurfaceVisible = visible
+        if (!visible && pendingYNaviStart) {
+            visibility = View.VISIBLE
+            Log.i("ZEE", "MinimapView: defer hide until YNavi surface starts")
+            return
+        }
+        visibility = if (visible) View.VISIBLE else View.INVISIBLE
+    }
+
+    private fun applyRequestedSurfaceVisibility() {
+        visibility = if (requestedSurfaceVisible) View.VISIBLE else View.INVISIBLE
+        Log.i("ZEE", "MinimapView: apply requested visibility=$requestedSurfaceVisible after YNavi start")
+    }
 
     /**
      * Force a full TextureView lifecycle cycle (detach/re-attach) so YNavi gets a
@@ -1499,6 +1515,7 @@ class MinimapView(context: android.content.Context) :
         // This is set BEFORE the detach/re-attach so it is in place when
         // onSurfaceTextureAvailable fires on the re-attach.
         pendingYNaviStart = true
+        visibility = View.VISIBLE
         //   removeView()  → onDetachedFromWindow()  → mSurface.release()
         //   addView()     → onAttachedToWindow()  → new hardware layer created
         //                 → new GL-attached SurfaceTexture allocated internally
@@ -1531,7 +1548,15 @@ class MinimapView(context: android.content.Context) :
         if (pendingYNaviStart) {
             pendingYNaviStart = false
             // Delegate to MainActivity to start the YNavi host on the main thread.
-            (mainActivity ?: context as? MainActivity)?.startYNaviOnSurfaceReady(surface, width, height)
+            try {
+                (mainActivity ?: context as? MainActivity)?.startYNaviOnSurfaceReady(
+                    surface,
+                    width,
+                    height,
+                )
+            } finally {
+                applyRequestedSurfaceVisibility()
+            }
         }
         // No placeholder fallback: YNavi absence is gated natively in
         // MainActivity.handleMinimap's setMinimap branch BEFORE parkForYNavi is

@@ -5,7 +5,7 @@ created: 2026-09-20
 satisfies: HUD · Minimap
 blocked-by: [0055, 0056]
 modules: [MinimapHost, MinimapConfig, HudRoot, main]
-tier: T1
+tier: T2
 owner: zee-dev
 ---
 
@@ -45,3 +45,11 @@ hides the whole minimap until guidance is active.
 0057 soft-hides via `setMinimapSurfaceVisible` / `setSurfaceVisible` while
 keeping the bind when `enabled` is true. Nav-session truth from `onNavState`
 (not trip-row inference). Guidance trip rows still relay DHU→HUD (0055 FAIL).
+
+## T2 cold-start regression (1.2.5+40)
+The guidance gate hid the native TextureView before YNavi could create its
+surface, so the host never bound on cold start. The native host now defers
+that hide until the surface starts. T2 confirmed the surface callback, bind,
+handshake, and deferred hidden state with the persisted gate enabled. The
+emulator had no internet during the route attempt, so the live guidance-on
+transition was not revalidated.

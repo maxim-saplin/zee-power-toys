@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.5+40] — 2026-10-26
+
+### Fixed
+- Minimap: defer the guidance-only hide until YNavi's native surface starts, so cold start can bind to YNavi.
+
 ## [1.2.5+39] — 2026-10-08
 
 ### Changed
