@@ -228,15 +228,23 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
         ? CrossAxisAlignment.end
         : CrossAxisAlignment.start;
 
+    List<Widget> anchorRows(List<Widget> topFirst) => anchorBottom
+        ? topFirst.reversed.toList(growable: false)
+        : topFirst;
+
     return Padding(
       padding: EdgeInsets.all(base * 0.3),
       child: ClipRect(
-        child: Align(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
           alignment: clusterAlign,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: clusterCross,
-            children: <Widget>[
+            verticalDirection: anchorBottom
+                ? VerticalDirection.up
+                : VerticalDirection.down,
+            children: anchorRows(<Widget>[
               // Media row space stays reserved while "show media" is on, even
               // when nothing plays, so battery/temp never shift on play/stop.
               if (mediaChrome) ...<Widget>[
@@ -339,7 +347,7 @@ class _BatteryWidgetState extends ConsumerState<BatteryWidget> {
                   tempText,
                 ],
               ],
-            ],
+            ]),
           ),
         ),
       ),

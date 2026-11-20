@@ -54,3 +54,20 @@ Source: existing AdaptApi comment + `docs/knowledge/car-signals-adaptapi.md`
 `event == 1` was wrong. zee_hud_2 ENERGY_SIGNAL_ANALYSIS: charging enums are
 2102530 / 2102545 / 2102546 (etc.). Maxim saw `chargeKw` in raw snapshot while
 `charging: false` — confirms V/A/kW path OK, flag decode broken.
+
+## T3 live diagnosis — 2026-11-20
+The live native path now works. At 11:04 local time, AdaptAPI reported:
+
+- voltage: about `788 V`
+- current: about `77 A`
+- power: fluctuating around `57–65 kW`
+- charge state: `2102530`
+
+Zee logged the same power in `CarSignals →Dart` events. The remaining defect
+was state precedence. Positive `kW` overrode a later idle `CHARGE_STATE`, and
+the value callbacks used `lastSnapshot.charging || ...`. This could leave
+`chargingProvider` true after unplug.
+
+The enum state is authoritative when present. Positive power is only a
+fallback when no enum is available. The poller and all V/A/kW callbacks use the
+same resolver. T3 unplug validation remains pending.

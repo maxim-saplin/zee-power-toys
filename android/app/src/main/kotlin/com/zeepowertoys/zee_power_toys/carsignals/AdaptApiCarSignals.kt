@@ -8,6 +8,13 @@ import android.util.Log
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
 
+internal fun resolveChargingState(event: Int?, kw: Double?): Boolean =
+    when (event) {
+        null -> (kw ?: 0.0) > 0.05
+        2102529, 2102530, 2102545, 2102546, 2102550, 2102551, 2102552, 2102553 -> true
+        else -> false
+    }
+
 // AdaptAPI CarSignalSource — live car signals via Ecarx AdaptAPI reflection.
 // The AdaptAPI SDK is a system framework class (boot classpath only) — every
 // call goes through ReflectionUtils, not compile-time types. This means:
@@ -84,6 +91,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
 
     // Current in-memory state (updated by callbacks for snapshot())
     @Volatile private var lastSnapshot = CarSignalSnapshot()
+    @Volatile private var lastChargeStateEvent: Int? = null
 
     // Try to connect to AdaptAPI — throws if Car.create() fails.
     // Used by CarSignalsController to probe availability.
@@ -133,6 +141,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         functionMgr = null
         sensorListenerProxy = null
         functionWatcherProxy = null
+        lastChargeStateEvent = null
         emitter = null
         Log.i(TAG, "AdaptApiCarSignals stopped")
     }
@@ -288,8 +297,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                     when (id) {
                         CHARGE_VOLTS -> {
                             lastSnapshot = lastSnapshot.copy(chargeVolts = value.toDouble())
-                            val charging = lastSnapshot.charging ||
-                                ((lastSnapshot.chargeKw ?: 0.0) > 0.05)
+                            val charging = resolveChargingState(
+                                lastChargeStateEvent,
+                                lastSnapshot.chargeKw,
+                            )
                             lastSnapshot = lastSnapshot.copy(charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
                                 charging,
@@ -298,8 +309,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                         }
                         CHARGE_AMPS -> {
                             lastSnapshot = lastSnapshot.copy(chargeAmps = value.toDouble())
-                            val charging = lastSnapshot.charging ||
-                                ((lastSnapshot.chargeKw ?: 0.0) > 0.05) || value > 0.05f
+                            val charging = resolveChargingState(
+                                lastChargeStateEvent,
+                                lastSnapshot.chargeKw,
+                            )
                             lastSnapshot = lastSnapshot.copy(charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
                                 charging,
@@ -308,7 +321,7 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                         }
                         CHARGE_KW -> {
                             val kw = value.toDouble()
-                            val charging = lastSnapshot.charging || kw > 0.05
+                            val charging = resolveChargingState(lastChargeStateEvent, kw)
                             lastSnapshot = lastSnapshot.copy(chargeKw = kw, charging = charging)
                             emitter?.invoke(SignalEvent.Charge(
                                 charging,
@@ -398,12 +411,8 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
         }
         // Unknown/absent CHARGE_STATE → false (not charging). Never leave null.
         // Live positive kW still proves charging even when the enum is missing.
-        val kwPositive = (lastSnapshot.chargeKw ?: 0.0) > 0.05
-        val derived = when {
-            event != null -> isChargingBatteryState(event) || kwPositive
-            kwPositive -> true
-            else -> false
-        }
+        lastChargeStateEvent = event
+        val derived = resolveChargingState(event, lastSnapshot.chargeKw)
         if (lastSnapshot.charging != derived) {
             lastSnapshot = lastSnapshot.copy(charging = derived)
             emitter?.invoke(
@@ -426,25 +435,14 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
      * Map SENSOR_TYPE_EV_BATTERY_STATE event → charging bool.
      * Source: zee_hud_2 docs/research/ENERGY_SIGNAL_ANALYSIS.md §2.
      */
-    private fun isChargingBatteryState(event: Int): Boolean = when (event) {
-        2102529, // BATTERY_STATE_CHARGING_PREPARED
-        2102530, // BATTERY_STATE_CHARGING
-        2102545, // BATTERY_STATE_FAST_CHARGING
-        2102546, // BATTERY_STATE_SUPER_FAST_CHARGING
-        2102550, // BATTERY_STATE_CHARGE_PREHEATING
-        2102551, // BATTERY_STATE_CHARGE_BOOKING
-        2102552, // BATTERY_STATE_CHARGE_BOOSTING
-        2102553, // BATTERY_STATE_CHARGE_WIRELESS
-        -> true
-        else -> false
-    }
-
     private fun publishChargeState(event: Int) {
-        // Belt: live chargeKw already proves charging even if enum surprises us.
-        val kw = lastSnapshot.chargeKw
-        val charging = isChargingBatteryState(event) || (kw != null && kw > 0.05)
+        lastChargeStateEvent = event
+        val charging = resolveChargingState(event, lastSnapshot.chargeKw)
         lastSnapshot = lastSnapshot.copy(charging = charging)
-        Log.i(TAG, "Charge state: event=$event charging=$charging kW=$kw")
+        Log.i(
+            TAG,
+            "Charge state: event=$event charging=$charging kW=${lastSnapshot.chargeKw}",
+        )
         // Always emit — Dart may have missed earlier events (EventChannel resubscribe /
         // HUD relay). Early-return on unchanged bool starved V/A/kW updates.
         emitter?.invoke(
@@ -530,8 +528,10 @@ class AdaptApiCarSignals(private val ctx: Context) : CarSignalSource {
                     if (chargeEvent != null) {
                         publishChargeState(chargeEvent)
                     } else {
-                        val kwPositive = (lastSnapshot.chargeKw ?: 0.0) > 0.05
-                        val derived = kwPositive
+                        val derived = resolveChargingState(
+                            lastChargeStateEvent,
+                            lastSnapshot.chargeKw,
+                        )
                         if (lastSnapshot.charging != derived) {
                             lastSnapshot = lastSnapshot.copy(charging = derived)
                         }

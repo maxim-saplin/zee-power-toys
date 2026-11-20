@@ -62,11 +62,12 @@ const double kBatterySlotWidthFracOwnRange = 0.18;
   if (ownRangeEstimate && baseW < kBatterySlotWidthFracOwnRange) {
     baseW = kBatterySlotWidthFracOwnRange;
   }
-  var baseH = chargingStatsVisible
-      ? kBatterySlotHeightFracCharging
-      : kBatterySlotHeightFrac;
-  if (mediaChromeVisible && baseH < kBatterySlotHeightFracMedia) {
-    baseH = kBatterySlotHeightFracMedia;
+  var baseH = kBatterySlotHeightFrac;
+  if (chargingStatsVisible) {
+    baseH += kBatterySlotHeightFracCharging - kBatterySlotHeightFrac;
+  }
+  if (mediaChromeVisible) {
+    baseH += kBatterySlotHeightFracMedia - kBatterySlotHeightFrac;
   }
   // Cap so we never overflow Safe Area (width ≤ 0.28, height ≤ 0.95).
   return (

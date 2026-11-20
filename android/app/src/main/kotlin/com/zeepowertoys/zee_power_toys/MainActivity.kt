@@ -102,6 +102,12 @@ class MainActivity : FlutterActivity() {
         private const val HUD_SPAWN_DELAY_MS = 1500L
         /** Max retries when secondary display is absent at spawn (leave/return / soft reboot). */
         private const val HUD_RETRY_MAX = 12
+        // HUD liveness watchdog (2026-11-20 T3 incident: whole HUD went blank —
+        // map + battery + media — while the engine ref + Presentation.isShowing
+        // still looked healthy, so ensureHudPresentation never recovered it).
+        private const val HUD_WATCHDOG_INTERVAL_MS = 30_000L
+        private const val HUD_WATCHDOG_PONG_TIMEOUT_MS = 5_000L
+        private const val HUD_WATCHDOG_MAX_STRIKES = 2
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -180,6 +186,62 @@ class MainActivity : FlutterActivity() {
     private var hudRetryAttempt = 0
     private val hudRetryRunnable = Runnable {
         ensureHudPresentation("retry:$hudRetryAttempt")
+    }
+
+    // HUD liveness watchdog (2026-11-20 T3 incident). "Engine ref exists +
+    // Presentation.isShowing" does not prove the HUD isolate still renders:
+    // the whole HUD (map + battery + media) went blank while both checks
+    // passed. Every HUD_WATCHDOG_INTERVAL_MS, ping the HUD isolate over the
+    // zee/hub channel. ANY reply (success / error / notImplemented) proves the
+    // isolate's event loop is processing platform messages. No reply within
+    // HUD_WATCHDOG_PONG_TIMEOUT_MS = strike (covers both a destroyed engine —
+    // "FlutterJNI was detached" drops the reply — and a frozen isolate).
+    // HUD_WATCHDOG_MAX_STRIKES consecutive misses → tear down and recreate the
+    // whole Presentation + engine. Strikes reset on every pong.
+    private var hudWatchdogStrikes = 0
+    private val hudWatchdogRunnable = object : Runnable {
+        override fun run() {
+            val hud = hudHub
+            val engine = hudEngine
+            if (hud == null || engine == null) {
+                // No HUD expected or mid-teardown — ensure()/retry own recovery.
+                handler.postDelayed(this, HUD_WATCHDOG_INTERVAL_MS)
+                return
+            }
+            var responded = false
+            val onPong = {
+                responded = true
+                hudWatchdogStrikes = 0
+            }
+            hud.invokeMethod(
+                "ping",
+                null,
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) = onPong()
+                    override fun error(code: String, msg: String?, details: Any?) = onPong()
+                    override fun notImplemented() = onPong()
+                },
+            )
+            handler.postDelayed({
+                // Only strike if the SAME engine is still current — a teardown
+                // or recreate between ping and check must not count.
+                if (!responded && hudEngine === engine) {
+                    hudWatchdogStrikes++
+                    Log.w(
+                        TAG,
+                        "HUD watchdog: no pong (strike " +
+                            "$hudWatchdogStrikes/$HUD_WATCHDOG_MAX_STRIKES)",
+                    )
+                    if (hudWatchdogStrikes >= HUD_WATCHDOG_MAX_STRIKES) {
+                        hudWatchdogStrikes = 0
+                        Log.e(TAG, "HUD watchdog: HUD isolate unresponsive — recreating Presentation + engine")
+                        tearDownHud()
+                        ensureHudPresentation("watchdog:unresponsive")
+                    }
+                }
+            }, HUD_WATCHDOG_PONG_TIMEOUT_MS)
+            handler.postDelayed(this, HUD_WATCHDOG_INTERVAL_MS)
+        }
     }
     private val hudDisplayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
@@ -417,6 +479,8 @@ class MainActivity : FlutterActivity() {
         // Defer HUD setup: give the primary view time to attach and render.
         registerHudDisplayListener()
         handler.postDelayed({ ensureHudPresentation("initial") }, HUD_SPAWN_DELAY_MS)
+        // Arm the HUD liveness watchdog — self-reschedules; no-ops while no engine.
+        handler.postDelayed(hudWatchdogRunnable, HUD_WATCHDOG_INTERVAL_MS)
     }
 
     // -------------------------------------------------------------------------
@@ -676,6 +740,9 @@ class MainActivity : FlutterActivity() {
             )
         } catch (t: Throwable) {
             Log.e(TAG, "setupHud: exception during HUD setup", t)
+            // Partial setup must not leave stale refs that make ensure() think
+            // the HUD is healthy (engine != null) while nothing renders.
+            tearDownHud()
         }
     }
 
@@ -780,6 +847,7 @@ class MainActivity : FlutterActivity() {
 
     private fun tearDownHud() {
         Log.i(TAG, "tearDownHud: stopping HUD engine + Presentation")
+        hudWatchdogStrikes = 0
         val v = minimapView
         if (v != null) {
             val host = yNaviCarAppHost
@@ -1425,6 +1493,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         cancelHudRetry()
+        handler.removeCallbacks(hudWatchdogRunnable)
         unregisterHudDisplayListener()
         speedcamSystemOverlay?.dispose()
         speedcamSystemOverlay = null

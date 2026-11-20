@@ -95,6 +95,7 @@ dependencies {
     // HandshakeInfo, SessionInfo, CarAppApiLevels, and all AIDL types used by YNaviCarAppHost.
     // Host-side types are @RestrictTo(LIBRARY) but publicly available in the AAR.
     implementation("androidx.car.app:app:1.4.0")
+    testImplementation("junit:junit:4.13.2")
 }
 
 // 0054: release/car builds must fail loudly when platform key is required but missing.

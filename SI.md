@@ -6,6 +6,15 @@
 
 ## Open
 
+## 2026-11-20 11:25 — T3 car session blind to Kotlin compile/test -
+Fixing charging-state + HUD watchdog in Kotlin while USB-tethered to the car →
+`gradlew` could not resolve `:gradle` build-logic jars (`kotlin-reflect-2.2.0`,
+`kotlin-gradle-plugin-2.0.0-gradle85`): Maven unreachable offline and never
+cached under Gradle 9.1.0 on this Mac. No native compile/unit-test validation
+possible in-car; JUnit test for `resolveChargingState` deferred to CI. Fix:
+pre-warm the Gradle cache (`gradlew :app:testDebugUnitTest` once with network)
+before car sessions, or keep a known-good offline cache.
+
 ## 2026-09-29 15:18 — T2 platform-signed install mismatch -
 Toys `1.1.0+31` passed release CI, but install smoke failed on both Android 12L
 AVDs with `INSTALL_FAILED_SHARED_USER_INCOMPATIBLE`: their system certificates

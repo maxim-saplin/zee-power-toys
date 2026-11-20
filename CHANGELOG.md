@@ -7,6 +7,15 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.6+41] — 2026-11-20
+
+### Fixed
+- **0066** Charging flag follows the car's charge-state enum when present; stale positive kW no longer keeps "charging" latched after unplug (T3 live-verified while charging at ~60 kW; unplug check pending).
+- **0130** Bottom-anchored HUD battery cluster grows strictly upward when charging or media rows appear; rows no longer overflow past the bottom Safe-Area edge.
+
+### Added
+- **0131** HUD liveness watchdog: pings the HUD isolate every 30 s over `zee/hub`; two missed pongs recreate the Presentation + engine (recovers the blank-HUD failure seen on T3 2026-11-20).
+
 ## [1.2.5+40] — 2026-10-26
 
 ### Fixed

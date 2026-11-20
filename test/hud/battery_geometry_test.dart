@@ -376,13 +376,74 @@ void main() {
       expect(on.heightFrac, kBatterySlotHeightFracMedia);
     });
 
-    test('media + charging takes the larger fracs', () {
+    test('media + charging reserves both row increments', () {
       final both = batteryClusterSlotFracs(
         chargingStatsVisible: true,
         mediaChromeVisible: true,
       );
       expect(both.widthFrac, kBatterySlotWidthFracMedia);
-      expect(both.heightFrac, kBatterySlotHeightFracMedia);
+      expect(
+        both.heightFrac,
+        0.95,
+        reason: 'combined row growth is capped at the Safe-Area height limit',
+      );
+    });
+
+    test('bottom anchor stays fixed with each optional row', () {
+      final defaults = batteryPlacementDefaults(BatteryPlacement.rightBottom);
+      final states = <({bool charging, bool media})>[
+        (charging: false, media: false),
+        (charging: true, media: false),
+        (charging: true, media: true),
+      ];
+      final rects = states.map((state) {
+        final fracs = batteryClusterSlotFracs(
+          chargingStatsVisible: state.charging,
+          mediaChromeVisible: state.media,
+        );
+        return batteryClusterRect(
+          saW: saW,
+          saH: saH,
+          placement: BatteryPlacement.rightBottom,
+          vertFrac: defaults.vertFrac,
+          sidePadFrac: defaults.sidePadFrac,
+          widthFrac: fracs.widthFrac,
+          heightFrac: fracs.heightFrac,
+        );
+      }).toList();
+
+      expect(rects[1].top, lessThan(rects[0].top));
+      expect(rects[2].top, lessThan(rects[1].top));
+      expect(rects[1].bottom, closeTo(rects[0].bottom, 0.01));
+      expect(rects[2].bottom, closeTo(rects[0].bottom, 0.01));
+    });
+
+    test('top placement keeps its top edge while rows grow', () {
+      final defaults = batteryPlacementDefaults(BatteryPlacement.left);
+      final idle = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.left,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+      );
+      final grownFracs = batteryClusterSlotFracs(
+        chargingStatsVisible: true,
+        mediaChromeVisible: true,
+      );
+      final grown = batteryClusterRect(
+        saW: saW,
+        saH: saH,
+        placement: BatteryPlacement.left,
+        vertFrac: defaults.vertFrac,
+        sidePadFrac: defaults.sidePadFrac,
+        widthFrac: grownFracs.widthFrac,
+        heightFrac: grownFracs.heightFrac,
+      );
+
+      expect(grown.top, closeTo(idle.top, 0.01));
+      expect(grown.bottom, greaterThan(idle.bottom));
+      expect(grown.left, lessThan(saW / 2));
     });
   });
 }
