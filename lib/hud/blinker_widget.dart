@@ -10,13 +10,16 @@ import '../providers/config.dart';
 import '../services/car_signals.dart';
 import '../services/config_store.dart';
 
-/// Emissive yellow blinker indicator for the HUD BLINKER slot.
+/// Emissive blinker indicator for the HUD BLINKER slot.
 ///
 /// Watches [blinkerProvider] and [blinkerConfigProvider].  Renders the active
 /// side(s) with the configured shape and blink cadence.  Nothing is drawn (or
 /// animated) when the blinker is off — no always-on timers (ADR 0003).
 ///
-/// Emissive yellow: [_kAmber] ≈ #FFC107, matching phase0 hud_amber.  Emissive
+/// Colors: `arrows` renders in indicator green ([_kIndicatorGreen]) — the
+/// color every real car cluster uses for turn signals (Maxim's reference,
+/// 2026-11-20). `dots` and `smiley` keep emissive amber ([_kAmber] ≈ #FFC107,
+/// phase0 hud_amber; REQUIREMENTS says *yellow* smileys).  Emissive
 /// rendering rule: no light backgrounds — the widget is transparent except for
 /// the bright marks themselves.
 ///
@@ -46,8 +49,13 @@ class BlinkerWidget extends HookConsumerWidget {
   final bool? forceBlinkOn;
 
   // Phase0 hud_amber: #FFC107.  Slightly warmer than Material Yellow 500
-  // (#FFEB3B) — matches the physical HUD amber exactly.
+  // (#FFEB3B) — matches the physical HUD amber exactly. Used by dots/smiley.
   static const Color _kAmber = Color(0xFFFFC107);
+
+  // Turn-indicator green for the arrows shape — bright and emissive-friendly
+  // (Material greenAccent 400), matching the green every real car cluster
+  // uses for its turn-signal arrows.
+  static const Color _kIndicatorGreen = Color(0xFF00E676);
 
   // 450ms matches BlinkerOverlayView.BLINK_INTERVAL_MS (production embedded value).
   static const Duration _kBlinkHalf = kBlinkerHalfCycle;
@@ -127,7 +135,10 @@ class BlinkerWidget extends HookConsumerWidget {
         final leftPad = (slotW * cfg.sidePadFrac + bias).clamp(0.0, slotW);
         final rightPad = (slotW * cfg.sidePadFrac - bias).clamp(0.0, slotW);
 
-        final color = blinkOn ? _kAmber : Colors.transparent;
+        final onColor = cfg.shape == BlinkerShape.arrows
+            ? _kIndicatorGreen
+            : _kAmber;
+        final color = blinkOn ? onColor : Colors.transparent;
 
         return Stack(
           children: <Widget>[
@@ -227,13 +238,12 @@ class _CircleShape extends StatelessWidget {
 // Shape: arrows
 // ---------------------------------------------------------------------------
 
-/// A small solid turn-signal triangle — the ISO 2575 idiom, tip pointing
-/// outward. Geometry lives in [blinkerArrowPath]; see its doc comment for why
-/// this has no tail (an earlier tailed pentagon read as a banner, not an
-/// indicator, and any tail detail mushes to nothing at this mark's small
-/// default size on an emissive projector). Rendered in a compact
-/// [1.2·diameter × diameter] box (via [blinkerMarkBox]) — wide enough to show
-/// the taper, small enough to stay a neat indicator like the circle.
+/// The standard car-cluster turn-signal glyph — solid triangular head with a
+/// short bold stem, tip pointing outward (ISO 2575 idiom). Geometry lives in
+/// [blinkerArrowPath]; see its doc comment for the shape history (notched
+/// pentagon → plain triangle → this). Rendered in a [1.6·diameter × diameter]
+/// box (via [blinkerMarkBox]) so the stem has room while the head keeps
+/// near-square proportions.
 class _ArrowShape extends StatelessWidget {
   const _ArrowShape({
     required this.diameter,

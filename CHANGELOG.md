@@ -7,6 +7,11 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.7+42] — 2026-11-20
+
+### Changed
+- **HUD blinker arrows** now look like a real car cluster indicator: solid triangular head with a bold stem, rendered in indicator green (dots and smiley stay amber). Replaces the plain amber triangle.
+
 ## [1.2.6+41] — 2026-11-20
 
 ### Fixed

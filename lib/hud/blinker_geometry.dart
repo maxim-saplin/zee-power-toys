@@ -62,61 +62,75 @@ double blinkerMarkDiameter({required double slotH, required double sizeScale}) {
 /// Computes the render-box size for [shape] given a mark [diameter].
 ///
 /// `dots` and `smiley` are drawn in a square box. `arrows` is drawn in a
-/// `1.2 × diameter` wide box: wide enough that the triangle reads as a
-/// sideways-pointing wedge rather than a symmetric dart, but nowhere near the
-/// old `1.4×` — that ratio was inherited from a shape whose width was mostly
-/// spent on a rectangular tail (see [blinkerArrowPath]). A plain triangle has
-/// no tail to fill that extra width, so `1.4×` just stretched it into a flat,
-/// shallow sliver. `1.2×` keeps a visible taper while staying close enough to
-/// square that the glyph still reads as a compact indicator, not a chevron
-/// banner.
+/// `1.6 × diameter` wide box — the head-plus-stem indicator glyph (see
+/// [blinkerArrowPath]) needs the extra width for its stem; the head alone
+/// occupies [kBlinkerArrowHeadWidthFrac] of it, so the visible head keeps
+/// near-square proportions and the glyph matches the wide-but-compact aspect
+/// of a real cluster indicator.
 Size blinkerMarkBox(BlinkerShape shape, double diameter) {
   switch (shape) {
     case BlinkerShape.dots:
       return Size(diameter, diameter);
     case BlinkerShape.arrows:
-      return Size(diameter * 1.2, diameter);
+      return Size(diameter * 1.6, diameter);
     case BlinkerShape.smiley:
       return Size(diameter, diameter);
   }
 }
 
-/// Builds the filled turn-signal triangle path for a mark of [size], pointing
+/// Fraction of the arrow box width taken by the triangular head; the rest is
+/// the stem. Head-dominant, like the ISO 2575 cluster glyph.
+const double kBlinkerArrowHeadWidthFrac = 0.55;
+
+/// Stem thickness as a fraction of the arrow box height. Bold on purpose:
+/// at the default mark size (box 28.8×18 px) the stem is 9 px thick — far
+/// above the ~2 px floor where detail mushes on the emissive projector.
+const double kBlinkerArrowStemHeightFrac = 0.5;
+
+/// Builds the filled turn-signal arrow path for a mark of [size], pointing
 /// left ([isLeft] = true) or right ([isLeft] = false).
 ///
-/// This replaces an earlier pentagon (tip + rectangular tail) ported from a
-/// phase0 SVG that was authored as an *outline* meant to be stroked, not
-/// filled. Filled solid, that tail dominated the silhouette and the "arrow"
-/// read as a luggage tag or banner, not a turn indicator — rejected on
-/// exactly that basis. The tail's own defining feature (the notch that used
-/// to make it read as an arrow when stroked) was a ~4.8px sliver in the
-/// authored viewport; at the default mark size (`kBlinkerBaseDiameter` =
-/// 18px), any tail detail of that kind is sub-2px and mushes into a blob on
-/// this emissive projector (fine detail disappears — see CONTEXT.md). A
-/// plain solid triangle — the ISO 2575 idiom for a turn-signal arrow — has no
-/// such fine detail to lose: it is legible at any size down to a handful of
-/// pixels, which is why it has no tail at all rather than a shrunken one.
+/// Shape: the standard car-cluster indicator glyph (ISO 2575 idiom) — a
+/// solid triangular head with a short, bold rectangular stem. The head spans
+/// the box's full height from the outward tip back to
+/// [kBlinkerArrowHeadWidthFrac] of the width; the stem is a centred bar
+/// [kBlinkerArrowStemHeightFrac] of the height running to the inward edge.
 ///
-/// Tip sits at the outward edge of the box (left mark points left, right
-/// mark points right); the base is a vertical edge at the inward side,
-/// filling the box's full height. No intermediate authoring viewport is
-/// needed (unlike the old pentagon) — the triangle is simple enough to
-/// describe directly in the box's own coordinate space, so it never distorts
-/// regardless of [size]'s actual aspect ratio.
+/// History, so this does not oscillate again:
+/// 1. A phase0 SVG pentagon (outline filled verbatim, with a ~sub-2px notch)
+///    was rejected — the notch mushed to nothing on the emissive projector
+///    and the filled tail dominated ("luggage tag").
+/// 2. The replacement plain tailless triangle fixed the mush but read as an
+///    abstract wedge, not a car indicator (Maxim, 2026-11-20: "awkward").
+/// This glyph is neither: it has the stem a real indicator needs, and every
+/// feature (stem 0.5·h thick, head 0.55·w long) is far above the fine-detail
+/// floor at the default 18 px mark size. Described directly in the box's own
+/// coordinate space — no authoring viewport, no distortion at any size.
 Path blinkerArrowPath(Size size, {required bool isLeft}) {
   final w = size.width;
   final h = size.height;
+  final headW = w * kBlinkerArrowHeadWidthFrac;
+  final stemTop = h * (0.5 - kBlinkerArrowStemHeightFrac / 2);
+  final stemBottom = h * (0.5 + kBlinkerArrowStemHeightFrac / 2);
   final path = Path();
   if (isLeft) {
-    // Tip at the left (outward) edge; vertical base on the right (inward).
-    path.moveTo(w, 0);
-    path.lineTo(0, h / 2);
-    path.lineTo(w, h);
+    // Tip at the left (outward) edge; stem runs to the right (inward) edge.
+    path.moveTo(0, h / 2);
+    path.lineTo(headW, 0);
+    path.lineTo(headW, stemTop);
+    path.lineTo(w, stemTop);
+    path.lineTo(w, stemBottom);
+    path.lineTo(headW, stemBottom);
+    path.lineTo(headW, h);
   } else {
-    // Mirror: tip at the right (outward) edge; vertical base on the left.
-    path.moveTo(0, 0);
-    path.lineTo(w, h / 2);
-    path.lineTo(0, h);
+    // Mirror: tip at the right (outward) edge; stem runs to the left.
+    path.moveTo(w, h / 2);
+    path.lineTo(w - headW, 0);
+    path.lineTo(w - headW, stemTop);
+    path.lineTo(0, stemTop);
+    path.lineTo(0, stemBottom);
+    path.lineTo(w - headW, stemBottom);
+    path.lineTo(w - headW, h);
   }
   path.close();
   return path;

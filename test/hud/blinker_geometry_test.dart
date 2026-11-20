@@ -16,15 +16,17 @@
 //      .dismissed, so the mark rendered steady on forever.
 //
 // The first bug's fix (filling the notch) shipped as a 5-point pentagon —
-// tip + full rectangular tail — which was itself rejected on redesign review:
-// filled solid, the tail dominated the silhouette and it read as a banner or
-// luggage tag, not a turn indicator. The `blinkerArrowPath — solid triangle`
-// group below asserts the *replacement* shape instead: a plain tailless
-// triangle. Its defining property is taper — tip and base-centre inside the
-// silhouette, but the corners nearest the tip (cut off by the taper) outside
-// it — which is exactly what a tailed pentagon and a plain rectangle both
-// fail to exhibit, so these assertions would catch either an unintended
-// reversion.
+// tip + full rectangular tail — rejected on redesign review: filled solid,
+// the tail dominated and it read as a banner. Its replacement, a plain
+// tailless triangle, was then rejected by Maxim (2026-11-20) as awkward —
+// an abstract wedge, not a car indicator. The current contract (asserted in
+// the `blinkerArrowPath — head + stem` group below) is the standard cluster
+// glyph: a full-height triangular head plus a bold centred stem
+// (kBlinkerArrowStemHeightFrac of the height) running to the inward edge.
+// Its defining properties: outward corners cut by the taper (not a slab),
+// AND inward corners empty above/below the stem (not a full-height base) —
+// assertions that a plain triangle, a rectangle, and the old pentagon all
+// fail in at least one direction, so any unintended reversion is caught.
 //
 // ⚠️ Never call tester.pumpAndSettle() on a subtree containing BlinkerWidget
 // — its AnimationController.repeat() never settles. Use explicit
@@ -52,12 +54,12 @@ void main() {
   // blinkerArrowPath — solid silhouette, not a bracket
   // ---------------------------------------------------------------------
 
-  group('blinkerArrowPath — solid triangle, tapered not tailed', () {
+  group('blinkerArrowPath — head + stem indicator glyph', () {
     // A generously-sized box (as if diameter = 100) so probe coordinates
-    // have comfortable margin — the shape is a simple triangle described
-    // directly in the box's own coordinate space (no intermediate authoring
-    // viewport), so its relative proportions are identical at any size; the
-    // small production size isn't what's under test here.
+    // have comfortable margin — the glyph is described directly in the box's
+    // own coordinate space (no intermediate authoring viewport), so its
+    // relative proportions are identical at any size; the small production
+    // size isn't what's under test here.
     final box = blinkerMarkBox(BlinkerShape.arrows, 100.0);
     final w = box.width;
     final h = box.height;
@@ -69,23 +71,34 @@ void main() {
       expect(path.contains(Offset(2, h / 2)), isTrue);
     });
 
-    test('left mark: base centre (inward edge, vertical centre) is inside '
-        'the silhouette', () {
+    test('left mark: stem centre (inward edge, vertical centre) is inside '
+        'the silhouette — the stem reaches the box edge', () {
       final path = blinkerArrowPath(box, isLeft: true);
-      // Base is the full vertical edge at x=w; a hair inside it is still
-      // solid fill — this is what "fill the box height fully" means.
       expect(path.contains(Offset(w - 2, h / 2)), isTrue);
     });
 
     test('left mark: the outward corners (top-left / bottom-left) are '
-        'outside — this is the taper, the whole point of a triangle over a '
-        'tailed pentagon', () {
+        'outside — the head tapers to a tip, not a slab', () {
       final path = blinkerArrowPath(box, isLeft: true);
-      // Only the single point (0, h/2) touches the outward edge; the
-      // corners above/below it are cut off by the tip's diagonal edges.
-      // A tailed shape (or a plain rectangle) would *not* exclude these.
       expect(path.contains(Offset(2, 2)), isFalse);
       expect(path.contains(Offset(2, h - 2)), isFalse);
+    });
+
+    test('left mark: the inward corners (top-right / bottom-right) are '
+        'outside — the stem is a bar, not a full-height base (this is what '
+        'distinguishes the glyph from the old plain triangle)', () {
+      final path = blinkerArrowPath(box, isLeft: true);
+      expect(path.contains(Offset(w - 2, 2)), isFalse);
+      expect(path.contains(Offset(w - 2, h - 2)), isFalse);
+    });
+
+    test('left mark: stem is solid off its centreline (within '
+        'kBlinkerArrowStemHeightFrac) but empty beyond it', () {
+      final path = blinkerArrowPath(box, isLeft: true);
+      // h*0.6 is inside the centred 0.5h stem band [0.25h, 0.75h]…
+      expect(path.contains(Offset(w * 0.9, h * 0.6)), isTrue);
+      // …h*0.1 is above it.
+      expect(path.contains(Offset(w * 0.9, h * 0.1)), isFalse);
     });
 
     test('right mark: tip (outward edge) is inside the silhouette', () {
@@ -93,7 +106,7 @@ void main() {
       expect(path.contains(Offset(w - 2, h / 2)), isTrue);
     });
 
-    test('right mark: base centre (inward edge) is inside the silhouette',
+    test('right mark: stem centre (inward edge) is inside the silhouette',
         () {
       final path = blinkerArrowPath(box, isLeft: false);
       expect(path.contains(Offset(2, h / 2)), isTrue);
@@ -104,6 +117,13 @@ void main() {
       final path = blinkerArrowPath(box, isLeft: false);
       expect(path.contains(Offset(w - 2, 2)), isFalse);
       expect(path.contains(Offset(w - 2, h - 2)), isFalse);
+    });
+
+    test('right mark: the inward corners (top-left / bottom-left) are '
+        'outside (mirror of the left-mark stem check)', () {
+      final path = blinkerArrowPath(box, isLeft: false);
+      expect(path.contains(Offset(2, 2)), isFalse);
+      expect(path.contains(Offset(2, h - 2)), isFalse);
     });
   });
 
@@ -125,24 +145,21 @@ void main() {
       final left = blinkerArrowPath(box, isLeft: true);
       final right = blinkerArrowPath(box, isLeft: false);
 
-      // Both triangles span the full box width (each reaches from one edge
-      // to the other), so the discriminating probe isn't "past each other's
-      // extent" (as it was for the old tailed pentagon) — it's *which side
-      // is the sharp tip vs. the flat base*. A point hugging the left edge,
-      // near the vertical centre, sits inside the right mark's wide base but
-      // is squeezed into the left mark's narrow tip wedge; a point that far
-      // off-centre vertically falls outside the tip wedge while still being
-      // within the base's full-height edge.
-      final nearLeftEdgeOffCentre = Offset(w * 0.05, h * 0.15);
+      // Both glyphs span the full box width, so the discriminating probe is
+      // *which side has the stem vs. the narrow tip wedge*. The probe sits
+      // slightly off-centre vertically (h·0.35): that is inside the centred
+      // 0.5h stem band, but outside the tip wedge, which at x = 0.05w has
+      // only ~±0.05h of height around the centreline.
+      final nearLeftEdgeOffCentre = Offset(w * 0.05, h * 0.35);
       expect(right.contains(nearLeftEdgeOffCentre), isTrue,
-          reason: 'right mark has its (wide) base on the left edge');
+          reason: 'right mark has its stem on the left edge');
       expect(left.contains(nearLeftEdgeOffCentre), isFalse,
           reason: "left mark's tip wedge is narrow here, near its point");
 
       // Mirror: same probe reflected onto the right edge.
-      final nearRightEdgeOffCentre = Offset(w * 0.95, h * 0.15);
+      final nearRightEdgeOffCentre = Offset(w * 0.95, h * 0.35);
       expect(left.contains(nearRightEdgeOffCentre), isTrue,
-          reason: 'left mark has its (wide) base on the right edge');
+          reason: 'left mark has its stem on the right edge');
       expect(right.contains(nearRightEdgeOffCentre), isFalse,
           reason: "right mark's tip wedge is narrow here, near its point");
     });
@@ -197,11 +214,11 @@ void main() {
       expect(blinkerMarkBox(BlinkerShape.smiley, 18.0), const Size(18.0, 18.0));
     });
 
-    test('arrows are 1.2× wider than tall — enough taper to read as a '
-        'triangle, not so wide it reads as a flat wedge', () {
+    test('arrows are 1.6× wider than tall — room for the stem while the '
+        'head keeps near-square proportions (cluster-glyph aspect)', () {
       final box = blinkerMarkBox(BlinkerShape.arrows, 18.0);
       expect(box.height, 18.0);
-      expect(box.width, closeTo(18.0 * 1.2, 0.001));
+      expect(box.width, closeTo(18.0 * 1.6, 0.001));
     });
   });
 
@@ -426,6 +443,11 @@ void main() {
         return pixels[idx + 3];
       }
 
+      (int, int, int) rgbAt(int x, int y) {
+        final idx = (y * image.width + x) * 4;
+        return (pixels[idx], pixels[idx + 1], pixels[idx + 2]);
+      }
+
       // Recompute the mark's on-screen rect exactly as BlinkerWidget does,
       // via the same pure functions under test. sizeScale defaults to 1.0 and
       // slotH=200 is roomy, so blinkerMarkDiameter returns the real
@@ -448,12 +470,31 @@ void main() {
       final rect = rects.left!;
 
       // Base centre (inward edge, i.e. the mark's right side for the left
-      // arrow): must be opaque — the base fills the box's full height.
+      // arrow): must be opaque — the stem's centreline reaches the box edge.
       final baseX = (rect.left + box.width - 2).round().clamp(0, image.width - 1);
       final centreY = (rect.top + box.height / 2).round().clamp(0, image.height - 1);
       expect(alphaAt(baseX, centreY), greaterThan(0),
-          reason: 'the vertical base at the inward edge must be solid fill '
+          reason: 'the stem at the inward edge must be solid fill '
               'at the true 18px default size');
+
+      // Arrows render in indicator green (like a real car cluster), not the
+      // amber used by dots/smiley — pin the hue so a silent reversion to
+      // amber is caught (#00E676: green-dominant, low red).
+      final (r, g, b) = rgbAt(baseX, centreY);
+      expect(g, greaterThan(180),
+          reason: 'arrow fill must be indicator green (got rgb($r,$g,$b))');
+      expect(r, lessThan(100),
+          reason: 'arrow fill must not be amber/red-dominant '
+              '(got rgb($r,$g,$b))');
+
+      // Inward corner (top-right for the left arrow): must be transparent —
+      // the stem is a centred bar, not a full-height base. An opaque pixel
+      // here means the glyph regressed to the old plain triangle/slab.
+      final stemCornerX = baseX;
+      final stemCornerY = (rect.top + 2).round().clamp(0, image.height - 1);
+      expect(alphaAt(stemCornerX, stemCornerY), 0,
+          reason: 'above the stem at the inward edge must be empty — the '
+              'stem is a bar, not a full-height base');
 
       // Outward corner (top-left, near the tip): must be transparent — this
       // is the taper that makes the shape a triangle rather than a
