@@ -4,22 +4,11 @@ name: release
 on:
   push:
     tags:
-      - '1.0.0+*'
-      - 'v1.0.0+*'
-      - '1.1.0+*'
-      - 'v1.1.0+*'
-      - '1.2.0+*'
-      - 'v1.2.0+*'
-      - '1.2.1+*'
-      - 'v1.2.1+*'
-      - '1.2.2+*'
-      - 'v1.2.2+*'
-      - '1.2.3+*'
-      - 'v1.2.3+*'
-      - '1.2.4+*'
-      - 'v1.2.4+*'
-      - '1.2.5+*'
-      - 'v1.2.5+*'
+      # Any MAJOR.MINOR.PATCH+BUILD tag (optionally v-prefixed). Replaces the
+      # per-version enumerated list that silently skipped new versions
+      # (1.2.6+41 did not fire until dispatched manually, 2026-11-20).
+      - '[0-9]*.[0-9]*.[0-9]*+*'
+      - 'v[0-9]*.[0-9]*.[0-9]*+*'
   workflow_dispatch:
     inputs:
       tag:
