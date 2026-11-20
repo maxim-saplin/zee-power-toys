@@ -16,6 +16,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pin: runner stable moved to 3.48+, which deprecates
+          # package:flutter/material.dart (material_ui migration — 0132) and
+          # failed analyze repo-wide. Keep in sync with the local toolchain.
+          flutter-version: 3.47.8
       - run: uv run --script dev/test_zee_drive.py
       - run: flutter pub get
       - run: flutter analyze
