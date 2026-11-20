@@ -4,11 +4,12 @@ name: release
 on:
   push:
     tags:
-      # Any MAJOR.MINOR.PATCH+BUILD tag (optionally v-prefixed). Replaces the
-      # per-version enumerated list that silently skipped new versions
-      # (1.2.6+41 did not fire until dispatched manually, 2026-11-20).
-      - '[0-9]*.[0-9]*.[0-9]*+*'
-      - 'v[0-9]*.[0-9]*.[0-9]*+*'
+      # Any release tag (MAJOR.MINOR.PATCH+BUILD, optionally v-prefixed).
+      # Replaces the per-version enumerated list that silently skipped new
+      # versions (1.2.6+41 did not fire, 2026-11-20). NOTE: in Actions filter
+      # syntax `+` is a quantifier, not a literal — match on the digit prefix.
+      - '[0-9]*'
+      - 'v[0-9]*'
   workflow_dispatch:
     inputs:
       tag:
