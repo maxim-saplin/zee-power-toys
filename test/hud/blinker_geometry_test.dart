@@ -106,8 +106,7 @@ void main() {
       expect(path.contains(Offset(w - 2, h / 2)), isTrue);
     });
 
-    test('right mark: stem centre (inward edge) is inside the silhouette',
-        () {
+    test('right mark: stem centre (inward edge) is inside the silhouette', () {
       final path = blinkerArrowPath(box, isLeft: false);
       expect(path.contains(Offset(2, h / 2)), isTrue);
     });
@@ -140,29 +139,43 @@ void main() {
       expect(leftBounds.height, closeTo(rightBounds.height, 0.01));
     });
 
-    test('tip is on the left for isLeft=true, on the right for isLeft=false',
-        () {
-      final left = blinkerArrowPath(box, isLeft: true);
-      final right = blinkerArrowPath(box, isLeft: false);
+    test(
+      'tip is on the left for isLeft=true, on the right for isLeft=false',
+      () {
+        final left = blinkerArrowPath(box, isLeft: true);
+        final right = blinkerArrowPath(box, isLeft: false);
 
-      // Both glyphs span the full box width, so the discriminating probe is
-      // *which side has the stem vs. the narrow tip wedge*. The probe sits
-      // slightly off-centre vertically (h·0.35): that is inside the centred
-      // 0.5h stem band, but outside the tip wedge, which at x = 0.05w has
-      // only ~±0.05h of height around the centreline.
-      final nearLeftEdgeOffCentre = Offset(w * 0.05, h * 0.35);
-      expect(right.contains(nearLeftEdgeOffCentre), isTrue,
-          reason: 'right mark has its stem on the left edge');
-      expect(left.contains(nearLeftEdgeOffCentre), isFalse,
-          reason: "left mark's tip wedge is narrow here, near its point");
+        // Both glyphs span the full box width, so the discriminating probe is
+        // *which side has the stem vs. the narrow tip wedge*. The probe sits
+        // slightly off-centre vertically (h·0.35): that is inside the centred
+        // 0.5h stem band, but outside the tip wedge, which at x = 0.05w has
+        // only ~±0.05h of height around the centreline.
+        final nearLeftEdgeOffCentre = Offset(w * 0.05, h * 0.35);
+        expect(
+          right.contains(nearLeftEdgeOffCentre),
+          isTrue,
+          reason: 'right mark has its stem on the left edge',
+        );
+        expect(
+          left.contains(nearLeftEdgeOffCentre),
+          isFalse,
+          reason: "left mark's tip wedge is narrow here, near its point",
+        );
 
-      // Mirror: same probe reflected onto the right edge.
-      final nearRightEdgeOffCentre = Offset(w * 0.95, h * 0.35);
-      expect(left.contains(nearRightEdgeOffCentre), isTrue,
-          reason: 'left mark has its stem on the right edge');
-      expect(right.contains(nearRightEdgeOffCentre), isFalse,
-          reason: "right mark's tip wedge is narrow here, near its point");
-    });
+        // Mirror: same probe reflected onto the right edge.
+        final nearRightEdgeOffCentre = Offset(w * 0.95, h * 0.35);
+        expect(
+          left.contains(nearRightEdgeOffCentre),
+          isTrue,
+          reason: 'left mark has its stem on the right edge',
+        );
+        expect(
+          right.contains(nearRightEdgeOffCentre),
+          isFalse,
+          reason: "right mark's tip wedge is narrow here, near its point",
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------
@@ -170,13 +183,15 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('blinkerMarkDiameter', () {
-    test('sizeScale=1.0 in a roomy slot returns the calibrated base diameter',
-        () {
-      expect(
-        blinkerMarkDiameter(slotH: 200.0, sizeScale: 1.0),
-        closeTo(kBlinkerBaseDiameter, 0.001),
-      );
-    });
+    test(
+      'sizeScale=1.0 in a roomy slot returns the calibrated base diameter',
+      () {
+        expect(
+          blinkerMarkDiameter(slotH: 200.0, sizeScale: 1.0),
+          closeTo(kBlinkerBaseDiameter, 0.001),
+        );
+      },
+    );
 
     test('sizeScale scales the requested diameter up', () {
       final base = blinkerMarkDiameter(slotH: 200.0, sizeScale: 1.0);
@@ -184,18 +199,29 @@ void main() {
       expect(scaled, greaterThan(base));
     });
 
-    test('clamps to slotH * 0.5 in a slot too short for the requested size',
-        () {
-      // slotH=20 → upper bound 10.0, below the 18.0 requested at scale 1.0.
-      expect(blinkerMarkDiameter(slotH: 20.0, sizeScale: 1.0), closeTo(10.0, 0.001));
-    });
+    test(
+      'clamps to slotH * 0.5 in a slot too short for the requested size',
+      () {
+        // slotH=20 → upper bound 10.0, below the 18.0 requested at scale 1.0.
+        expect(
+          blinkerMarkDiameter(slotH: 20.0, sizeScale: 1.0),
+          closeTo(10.0, 0.001),
+        );
+      },
+    );
 
     test('degrades gracefully (no crash) when slotH * 0.5 < 8.0', () {
       // A Safe Area under 16dp tall would invert the [8.0, slotH*0.5] clamp
       // range and crash. This must return a sane (smaller) value instead.
-      expect(() => blinkerMarkDiameter(slotH: 10.0, sizeScale: 1.0), returnsNormally);
+      expect(
+        () => blinkerMarkDiameter(slotH: 10.0, sizeScale: 1.0),
+        returnsNormally,
+      );
       final d = blinkerMarkDiameter(slotH: 10.0, sizeScale: 1.0);
-      expect(d, closeTo(5.0, 0.001)); // slotH * 0.5, below the nominal 8.0 floor
+      expect(
+        d,
+        closeTo(5.0, 0.001),
+      ); // slotH * 0.5, below the nominal 8.0 floor
     });
 
     test('zero/negative slotH returns zero rather than crashing', () {
@@ -214,11 +240,18 @@ void main() {
       expect(blinkerMarkBox(BlinkerShape.smiley, 18.0), const Size(18.0, 18.0));
     });
 
-    test('arrows are 1.6× wider than tall — room for the stem while the '
-        'head keeps near-square proportions (cluster-glyph aspect)', () {
+    test('arrows are scaled to 70% horizontally — 1.12× wider than tall', () {
       final box = blinkerMarkBox(BlinkerShape.arrows, 18.0);
       expect(box.height, 18.0);
-      expect(box.width, closeTo(18.0 * 1.6, 0.001));
+      expect(kBlinkerArrowHorizontalScale, closeTo(0.70, 0.001));
+      expect(
+        box.width,
+        closeTo(18.0 * 1.6 * kBlinkerArrowHorizontalScale, 0.001),
+      );
+      expect(
+        box.width / blinkerMarkBox(BlinkerShape.arrows, 18.0).height,
+        closeTo(1.12, 0.001),
+      );
     });
   });
 
@@ -254,28 +287,30 @@ void main() {
       expect(r.right, isNotNull);
     });
 
-    test('left state yields only the left rect; right state only the right',
-        () {
-      final left = blinkerMarkRects(
-        slotW: slotW,
-        slotH: slotH,
-        shape: BlinkerShape.dots,
-        config: const BlinkerConfig(),
-        state: BlinkerState.left,
-      );
-      expect(left.left, isNotNull);
-      expect(left.right, isNull);
+    test(
+      'left state yields only the left rect; right state only the right',
+      () {
+        final left = blinkerMarkRects(
+          slotW: slotW,
+          slotH: slotH,
+          shape: BlinkerShape.dots,
+          config: const BlinkerConfig(),
+          state: BlinkerState.left,
+        );
+        expect(left.left, isNotNull);
+        expect(left.right, isNull);
 
-      final right = blinkerMarkRects(
-        slotW: slotW,
-        slotH: slotH,
-        shape: BlinkerShape.dots,
-        config: const BlinkerConfig(),
-        state: BlinkerState.right,
-      );
-      expect(right.left, isNull);
-      expect(right.right, isNotNull);
-    });
+        final right = blinkerMarkRects(
+          slotW: slotW,
+          slotH: slotH,
+          shape: BlinkerShape.dots,
+          config: const BlinkerConfig(),
+          state: BlinkerState.right,
+        );
+        expect(right.left, isNull);
+        expect(right.right, isNotNull);
+      },
+    );
 
     test('sizeScale up produces a wider box for both sides', () {
       final small = blinkerMarkRects(
@@ -296,27 +331,29 @@ void main() {
       expect(big.right!.width, greaterThan(small.right!.width));
     });
 
-    test('sidePadFrac up moves the left rect right and the right rect left',
-        () {
-      final tight = blinkerMarkRects(
-        slotW: slotW,
-        slotH: slotH,
-        shape: BlinkerShape.dots,
-        config: const BlinkerConfig(sidePadFrac: 0.02),
-        state: BlinkerState.hazard,
-      );
-      final loose = blinkerMarkRects(
-        slotW: slotW,
-        slotH: slotH,
-        shape: BlinkerShape.dots,
-        config: const BlinkerConfig(sidePadFrac: 0.10),
-        state: BlinkerState.hazard,
-      );
-      // Left rect's left edge moves inward (rightward) as padding grows.
-      expect(loose.left!.left, greaterThan(tight.left!.left));
-      // Right rect's left edge moves inward (leftward) as padding grows.
-      expect(loose.right!.left, lessThan(tight.right!.left));
-    });
+    test(
+      'sidePadFrac up moves the left rect right and the right rect left',
+      () {
+        final tight = blinkerMarkRects(
+          slotW: slotW,
+          slotH: slotH,
+          shape: BlinkerShape.dots,
+          config: const BlinkerConfig(sidePadFrac: 0.02),
+          state: BlinkerState.hazard,
+        );
+        final loose = blinkerMarkRects(
+          slotW: slotW,
+          slotH: slotH,
+          shape: BlinkerShape.dots,
+          config: const BlinkerConfig(sidePadFrac: 0.10),
+          state: BlinkerState.hazard,
+        );
+        // Left rect's left edge moves inward (rightward) as padding grows.
+        expect(loose.left!.left, greaterThan(tight.left!.left));
+        // Right rect's left edge moves inward (leftward) as padding grows.
+        expect(loose.right!.left, lessThan(tight.right!.left));
+      },
+    );
 
     test('vertFrac = 0.5 centres the mark vertically in the slot', () {
       final r = blinkerMarkRects(
@@ -393,124 +430,167 @@ void main() {
   // space.
   // ---------------------------------------------------------------------
 
-  group('BlinkerWidget arrows — pixel probe (real 18px default, taper visible)',
-      () {
-    testWidgets('left arrow at the true default size: base is opaque, the '
-        'outward corner (cut by the taper) stays transparent', (tester) async {
-      final signals = FakeCarSignals();
-      const config = AppConfig(blinker: BlinkerConfig(shape: BlinkerShape.arrows));
-      final boundaryKey = GlobalKey();
-
-      // forceBlinkOn: true — deterministic, no need to pump wall-clock time
-      // through the blink cycle for this probe.
-      await pumpHud(
+  group(
+    'BlinkerWidget arrows — pixel probe (real 18px default, taper visible)',
+    () {
+      testWidgets('left arrow at the true default size: base is opaque, the '
+          'outward corner (cut by the taper) stays transparent', (
         tester,
-        wrapWithProviders(
-          RepaintBoundary(
-            key: boundaryKey,
-            child: const SizedBox(
-              width: 400,
-              height: 200,
-              child: BlinkerWidget(forceBlinkOn: true),
+      ) async {
+        final signals = FakeCarSignals();
+        const config = AppConfig(
+          blinker: BlinkerConfig(shape: BlinkerShape.arrows),
+        );
+        final boundaryKey = GlobalKey();
+
+        // forceBlinkOn: true — deterministic, no need to pump wall-clock time
+        // through the blink cycle for this probe.
+        await pumpHud(
+          tester,
+          wrapWithProviders(
+            RepaintBoundary(
+              key: boundaryKey,
+              child: const SizedBox(
+                width: 400,
+                height: 200,
+                child: BlinkerWidget(forceBlinkOn: true),
+              ),
             ),
+            config: config,
+            signals: signals,
           ),
-          config: config,
-          signals: signals,
-        ),
-        size: const Size(400, 200),
-      );
+          size: const Size(400, 200),
+        );
 
-      signals.emitBlinker(BlinkerState.left);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
+        signals.emitBlinker(BlinkerState.left);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 10));
 
-      final boundary =
-          boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+        final boundary =
+            boundaryKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
 
-      // toImage()/toByteData() do real (non-fake-clock) async engine work —
-      // must run inside tester.runAsync(), or the future never resolves
-      // under flutter_test's FakeAsync zone.
-      late ui.Image image;
-      late Uint8List pixels;
-      await tester.runAsync(() async {
-        image = await boundary.toImage(pixelRatio: 1.0);
-        final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-        pixels = byteData!.buffer.asUint8List();
+        // toImage()/toByteData() do real (non-fake-clock) async engine work —
+        // must run inside tester.runAsync(), or the future never resolves
+        // under flutter_test's FakeAsync zone.
+        late ui.Image image;
+        late Uint8List pixels;
+        await tester.runAsync(() async {
+          image = await boundary.toImage(pixelRatio: 1.0);
+          final byteData = await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          pixels = byteData!.buffer.asUint8List();
+        });
+
+        int alphaAt(int x, int y) {
+          final idx = (y * image.width + x) * 4;
+          return pixels[idx + 3];
+        }
+
+        (int, int, int) rgbAt(int x, int y) {
+          final idx = (y * image.width + x) * 4;
+          return (pixels[idx], pixels[idx + 1], pixels[idx + 2]);
+        }
+
+        // Recompute the mark's on-screen rect exactly as BlinkerWidget does,
+        // via the same pure functions under test. sizeScale defaults to 1.0 and
+        // slotH=200 is roomy, so blinkerMarkDiameter returns the real
+        // production default (kBlinkerBaseDiameter = 18px) — this probe is
+        // exercising the actual small size the mark renders at on the HUD, not
+        // an inflated test-only size.
+        final diameter = blinkerMarkDiameter(
+          slotH: 200.0,
+          sizeScale: config.blinker.sizeScale,
+        );
+        expect(
+          diameter,
+          closeTo(kBlinkerBaseDiameter, 0.001),
+          reason:
+              'this probe is only meaningful if it exercises the real '
+              'default mark size, not some larger stand-in',
+        );
+        final box = blinkerMarkBox(BlinkerShape.arrows, diameter);
+        final rects = blinkerMarkRects(
+          slotW: 400.0,
+          slotH: 200.0,
+          shape: BlinkerShape.arrows,
+          config: config.blinker,
+          state: BlinkerState.left,
+        );
+        final rect = rects.left!;
+
+        // Base centre (inward edge, i.e. the mark's right side for the left
+        // arrow): must be opaque — the stem's centreline reaches the box edge.
+        final baseX = (rect.left + box.width - 2).round().clamp(
+          0,
+          image.width - 1,
+        );
+        final centreY = (rect.top + box.height / 2).round().clamp(
+          0,
+          image.height - 1,
+        );
+        expect(
+          alphaAt(baseX, centreY),
+          greaterThan(0),
+          reason:
+              'the stem at the inward edge must be solid fill '
+              'at the true 18px default size',
+        );
+
+        // Arrows render in indicator green (like a real car cluster), not the
+        // amber used by dots/smiley — pin the hue so a silent reversion to
+        // amber is caught (#00E676: green-dominant, low red).
+        final (r, g, b) = rgbAt(baseX, centreY);
+        expect(
+          g,
+          greaterThan(180),
+          reason: 'arrow fill must be indicator green (got rgb($r,$g,$b))',
+        );
+        expect(
+          r,
+          lessThan(100),
+          reason:
+              'arrow fill must not be amber/red-dominant '
+              '(got rgb($r,$g,$b))',
+        );
+
+        // Inward corner (top-right for the left arrow): must be transparent —
+        // the stem is a centred bar, not a full-height base. An opaque pixel
+        // here means the glyph regressed to the old plain triangle/slab.
+        final stemCornerX = baseX;
+        final stemCornerY = (rect.top + 2).round().clamp(0, image.height - 1);
+        expect(
+          alphaAt(stemCornerX, stemCornerY),
+          0,
+          reason:
+              'above the stem at the inward edge must be empty — the '
+              'stem is a bar, not a full-height base',
+        );
+
+        // Outward corner (top-left, near the tip): must be transparent — this
+        // is the taper that makes the shape a triangle rather than a
+        // rectangle. If this corner were opaque, the "tip" wouldn't actually
+        // taper and the mark would read as a slab again.
+        final tipCornerX = (rect.left + 2).round().clamp(0, image.width - 1);
+        final tipCornerY = (rect.top + 2).round().clamp(0, image.height - 1);
+        expect(
+          alphaAt(tipCornerX, tipCornerY),
+          0,
+          reason:
+              'the outward corner must be cut off by the taper, not '
+              'painted — a solid corner here would mean no taper at all',
+        );
+
+        // A pixel safely above the whole mark must remain transparent — the
+        // widget must not paint outside its shape's silhouette.
+        final aboveY = (rect.top - 10).round().clamp(0, image.height - 1);
+        expect(
+          alphaAt(baseX, aboveY),
+          0,
+          reason: 'nothing should be painted above the mark',
+        );
       });
-
-      int alphaAt(int x, int y) {
-        final idx = (y * image.width + x) * 4;
-        return pixels[idx + 3];
-      }
-
-      (int, int, int) rgbAt(int x, int y) {
-        final idx = (y * image.width + x) * 4;
-        return (pixels[idx], pixels[idx + 1], pixels[idx + 2]);
-      }
-
-      // Recompute the mark's on-screen rect exactly as BlinkerWidget does,
-      // via the same pure functions under test. sizeScale defaults to 1.0 and
-      // slotH=200 is roomy, so blinkerMarkDiameter returns the real
-      // production default (kBlinkerBaseDiameter = 18px) — this probe is
-      // exercising the actual small size the mark renders at on the HUD, not
-      // an inflated test-only size.
-      final diameter =
-          blinkerMarkDiameter(slotH: 200.0, sizeScale: config.blinker.sizeScale);
-      expect(diameter, closeTo(kBlinkerBaseDiameter, 0.001),
-          reason: 'this probe is only meaningful if it exercises the real '
-              'default mark size, not some larger stand-in');
-      final box = blinkerMarkBox(BlinkerShape.arrows, diameter);
-      final rects = blinkerMarkRects(
-        slotW: 400.0,
-        slotH: 200.0,
-        shape: BlinkerShape.arrows,
-        config: config.blinker,
-        state: BlinkerState.left,
-      );
-      final rect = rects.left!;
-
-      // Base centre (inward edge, i.e. the mark's right side for the left
-      // arrow): must be opaque — the stem's centreline reaches the box edge.
-      final baseX = (rect.left + box.width - 2).round().clamp(0, image.width - 1);
-      final centreY = (rect.top + box.height / 2).round().clamp(0, image.height - 1);
-      expect(alphaAt(baseX, centreY), greaterThan(0),
-          reason: 'the stem at the inward edge must be solid fill '
-              'at the true 18px default size');
-
-      // Arrows render in indicator green (like a real car cluster), not the
-      // amber used by dots/smiley — pin the hue so a silent reversion to
-      // amber is caught (#00E676: green-dominant, low red).
-      final (r, g, b) = rgbAt(baseX, centreY);
-      expect(g, greaterThan(180),
-          reason: 'arrow fill must be indicator green (got rgb($r,$g,$b))');
-      expect(r, lessThan(100),
-          reason: 'arrow fill must not be amber/red-dominant '
-              '(got rgb($r,$g,$b))');
-
-      // Inward corner (top-right for the left arrow): must be transparent —
-      // the stem is a centred bar, not a full-height base. An opaque pixel
-      // here means the glyph regressed to the old plain triangle/slab.
-      final stemCornerX = baseX;
-      final stemCornerY = (rect.top + 2).round().clamp(0, image.height - 1);
-      expect(alphaAt(stemCornerX, stemCornerY), 0,
-          reason: 'above the stem at the inward edge must be empty — the '
-              'stem is a bar, not a full-height base');
-
-      // Outward corner (top-left, near the tip): must be transparent — this
-      // is the taper that makes the shape a triangle rather than a
-      // rectangle. If this corner were opaque, the "tip" wouldn't actually
-      // taper and the mark would read as a slab again.
-      final tipCornerX = (rect.left + 2).round().clamp(0, image.width - 1);
-      final tipCornerY = (rect.top + 2).round().clamp(0, image.height - 1);
-      expect(alphaAt(tipCornerX, tipCornerY), 0,
-          reason: 'the outward corner must be cut off by the taper, not '
-              'painted — a solid corner here would mean no taper at all');
-
-      // A pixel safely above the whole mark must remain transparent — the
-      // widget must not paint outside its shape's silhouette.
-      final aboveY = (rect.top - 10).round().clamp(0, image.height - 1);
-      expect(alphaAt(baseX, aboveY), 0,
-          reason: 'nothing should be painted above the mark');
-    });
-  });
+    },
+  );
 }

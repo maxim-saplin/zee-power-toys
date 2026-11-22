@@ -35,6 +35,11 @@ The result was not a bad bottom coordinate in the pure rect math. It was an
 overflow path in widget layout: the outer slot stayed anchored, but the base
 content could still paint or clip toward the bottom.
 
+The vertical fix now gives `rightBottom` one stable available-height slot.
+The slot keeps the configured bottom edge and fills upward. `BatteryWidget`
+lays its content in normal top-to-bottom order; base battery/temperature
+content remains at the bottom, while media and charging rows remain above it.
+
 ## Definition of Done
 
 - [x] Charging and media height requirements are combined, then capped by the
@@ -47,6 +52,10 @@ content could still paint or clip toward the bottom.
       `battery_bottom_anchor_overflow_test.dart`,
       `battery_geometry_test.dart`, `battery_media_stable_position_test.dart`,
       `battery_temp_row_test.dart`.
+- [x] T1 visual comparison at 2.5×: idle and charging+media keep the base row
+      on the bottom edge; the optional stack grows upward.
+- [x] Focused battery and blinker tests pass on T1 — 69/69 green 2026-11-22,
+      including the stable bottom-slot and 80%-horizontal-arrow checks.
 - [ ] T3 screenshot confirms the live HUD boundary. Until supplied, runtime
       acceptance remains pending.
 

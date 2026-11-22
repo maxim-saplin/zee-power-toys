@@ -89,7 +89,8 @@ bool batteryPlacementIsLeft(BatteryPlacement placement) =>
 ///
 /// For bottom-anchored presets ([BatteryPlacement.rightBottom], 0120):
 /// [vertFrac] is the pad from the Safe Area **bottom** to the slot bottom.
-/// Growing [heightFrac] moves the top edge up — bottom edge stays put.
+/// The painted cluster grows upward inside this stable slot. Optional rows
+/// change content height, not the slot's bottom edge or available height.
 ///
 /// [sidePadFrac] is the inward padding from the active edge (left for
 /// [BatteryPlacement.left], right otherwise), as a fraction of [saW].
@@ -112,11 +113,12 @@ Rect batteryClusterRect({
   final double top;
   final double h;
   if (batteryPlacementAnchorsBottom(placement)) {
-    // Bottom edge fixed; grow upward when heightFrac increases (0120).
+    // Bottom edge fixed. The slot fills the available height above that edge
+    // so base and optional rows share one stable bottom-anchored layout region.
     final bottomPad = (saH * vertFrac).clamp(0.0, saH);
     final bottom = (saH - bottomPad).clamp(0.0, saH);
-    h = hWanted.clamp(0.0, bottom);
-    top = (bottom - h).clamp(0.0, saH);
+    h = bottom;
+    top = 0.0;
   } else {
     top = (saH * vertFrac).clamp(0.0, saH);
     h = hWanted.clamp(0.0, saH - top);

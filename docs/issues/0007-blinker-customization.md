@@ -41,5 +41,8 @@ Inherits [PRINCIPLES.md](../PRINCIPLES.md).
 Built by Sonnet, runtime-verified by the orchestrator (Opus) on T1, 2026-06-11.
 1. **Color = phase0 `hud_amber #FFC107`** (not Material `#FFEB3B`) — phase0 fidelity wins. Smiley features rendered in dark amber (`#7A5C00`) as cutouts so nothing emits bright-white (emissive rule).
 2. **Blink cadence 450 ms** — the embedded `BlinkerOverlayView` production value (not the 500 ms standalone-activity value).
-3. **Arrow chevrons** use the exact `ic_blinker_left/right.xml` path coords (120×60 viewport) scaled to the slot.
+3. **Arrow chevrons** use the head-plus-stem cluster glyph. At default size
+   the intrinsic arrow box is 1.12× the mark diameter (20.16×18 dp), which is
+   70% of the prior 1.6× horizontal span. The 70% change is in
+   `blinkerMarkBox`; the painter uses no runtime horizontal transform.
 4. **Hazard layout:** the BLINKER slot was widened to a full-Safe-Area layer (`Positioned.fill`) so `BlinkerWidget` can place left + right marks at the edges simultaneously — faithful to phase0's full-overlay blinker. Battery/Guidance/Minimap stubs unchanged.

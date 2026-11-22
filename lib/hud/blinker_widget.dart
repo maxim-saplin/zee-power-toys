@@ -241,7 +241,7 @@ class _CircleShape extends StatelessWidget {
 /// The standard car-cluster turn-signal glyph — solid triangular head with a
 /// short bold stem, tip pointing outward (ISO 2575 idiom). Geometry lives in
 /// [blinkerArrowPath]; see its doc comment for the shape history (notched
-/// pentagon → plain triangle → this). Rendered in a [1.6·diameter × diameter]
+/// pentagon → plain triangle → this). Rendered in a [1.12·diameter × diameter]
 /// box (via [blinkerMarkBox]) so the stem has room while the head keeps
 /// near-square proportions.
 class _ArrowShape extends StatelessWidget {

@@ -7,6 +7,14 @@ Bump **+BUILD** on every tip; bump MAJOR.MINOR.PATCH for user-facing size (0091)
 
 ## [Unreleased]
 
+## [1.2.7+43] — 2026-11-22
+
+### Changed
+- HUD turn-signal arrows use a narrower 70% horizontal box, without runtime scaling.
+
+### Fixed
+- Bottom-right battery, temperature, charging, and media rows share a stable bottom-anchored layout slot; optional rows grow upward.
+
 ## [1.2.7+42] — 2026-11-20
 
 ### Changed

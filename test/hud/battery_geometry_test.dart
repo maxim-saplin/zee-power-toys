@@ -53,7 +53,7 @@ void main() {
   });
 
   group('batteryClusterRect — rightBottom bottom-anchor (0120)', () {
-    test('idle bottom stays put when charging height grows', () {
+    test('idle and charging share the full available height and fixed bottom', () {
       final defaults = batteryPlacementDefaults(BatteryPlacement.rightBottom);
       final idle = batteryClusterRect(
         saW: saW,
@@ -71,10 +71,13 @@ void main() {
         widthFrac: kBatterySlotWidthFracCharging,
         heightFrac: kBatterySlotHeightFracCharging,
       );
-      expect(charging.height, greaterThan(idle.height));
-      // Bottom edge unchanged (anchor bottom, grow up).
+      // The painted optional rows grow upward inside a stable bottom slot.
+      // The slot's available height is fixed by the configured bottom edge,
+      // not by which optional rows happen to be visible.
+      expect(charging.height, closeTo(idle.height, 0.01));
       expect(charging.bottom, closeTo(idle.bottom, 0.01));
-      expect(charging.top, lessThan(idle.top));
+      expect(charging.top, closeTo(idle.top, 0.01));
+      expect(idle.top, closeTo(0.0, 0.01));
     });
 
     test('rightBottom anchorsBottom; rightTop does not', () {
@@ -389,7 +392,7 @@ void main() {
       );
     });
 
-    test('bottom anchor stays fixed with each optional row', () {
+    test('bottom anchor keeps one stable available-height slot', () {
       final defaults = batteryPlacementDefaults(BatteryPlacement.rightBottom);
       final states = <({bool charging, bool media})>[
         (charging: false, media: false),
@@ -412,8 +415,10 @@ void main() {
         );
       }).toList();
 
-      expect(rects[1].top, lessThan(rects[0].top));
-      expect(rects[2].top, lessThan(rects[1].top));
+      expect(rects[1].height, closeTo(rects[0].height, 0.01));
+      expect(rects[2].height, closeTo(rects[0].height, 0.01));
+      expect(rects[1].top, closeTo(rects[0].top, 0.01));
+      expect(rects[2].top, closeTo(rects[0].top, 0.01));
       expect(rects[1].bottom, closeTo(rects[0].bottom, 0.01));
       expect(rects[2].bottom, closeTo(rects[0].bottom, 0.01));
     });

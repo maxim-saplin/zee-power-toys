@@ -59,10 +59,15 @@ double blinkerMarkDiameter({required double slotH, required double sizeScale}) {
   return requested.clamp(_kMinDiameter, upperBound);
 }
 
+/// Intrinsic horizontal scale for the arrow asset geometry. This shrinks the
+/// glyph in its own coordinate system; it is not a runtime transform.
+const double kBlinkerArrowHorizontalScale = 0.70;
+
 /// Computes the render-box size for [shape] given a mark [diameter].
 ///
 /// `dots` and `smiley` are drawn in a square box. `arrows` is drawn in a
-/// `1.6 × diameter` wide box — the head-plus-stem indicator glyph (see
+/// `1.12 × diameter` wide box — 70% of the previous horizontal span. The
+/// head-plus-stem indicator glyph (see
 /// [blinkerArrowPath]) needs the extra width for its stem; the head alone
 /// occupies [kBlinkerArrowHeadWidthFrac] of it, so the visible head keeps
 /// near-square proportions and the glyph matches the wide-but-compact aspect
@@ -72,7 +77,7 @@ Size blinkerMarkBox(BlinkerShape shape, double diameter) {
     case BlinkerShape.dots:
       return Size(diameter, diameter);
     case BlinkerShape.arrows:
-      return Size(diameter * 1.6, diameter);
+      return Size(diameter * 1.6 * kBlinkerArrowHorizontalScale, diameter);
     case BlinkerShape.smiley:
       return Size(diameter, diameter);
   }
@@ -83,7 +88,7 @@ Size blinkerMarkBox(BlinkerShape shape, double diameter) {
 const double kBlinkerArrowHeadWidthFrac = 0.55;
 
 /// Stem thickness as a fraction of the arrow box height. Bold on purpose:
-/// at the default mark size (box 28.8×18 px) the stem is 9 px thick — far
+/// at the default mark size (box 20.16×18 px) the stem is 9 px thick — far
 /// above the ~2 px floor where detail mushes on the emissive projector.
 const double kBlinkerArrowStemHeightFrac = 0.5;
 
